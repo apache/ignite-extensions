@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.pubsub.integration.util;
+package org.apache.ignite.stream.pubsub;
 
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.CredentialsProvider;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
-public class MockPubSubServer {
+class MockPubSubServer {
 
     /** Test topic. */
     public static final String TOPIC_NAME = "pagevisits";

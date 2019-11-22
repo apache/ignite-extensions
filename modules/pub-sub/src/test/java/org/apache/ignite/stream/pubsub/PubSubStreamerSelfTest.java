@@ -43,11 +43,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-import org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
 
 import com.google.gson.JsonArray;
@@ -60,8 +56,8 @@ import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.PROJECT;
-import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.TOPIC_NAME;
+import static org.apache.ignite.stream.pubsub.MockPubSubServer.PROJECT;
+import static org.apache.ignite.stream.pubsub.MockPubSubServer.TOPIC_NAME;
 
 public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
 
