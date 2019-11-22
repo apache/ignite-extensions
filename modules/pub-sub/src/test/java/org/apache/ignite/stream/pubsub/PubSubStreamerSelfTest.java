@@ -49,7 +49,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -61,16 +60,9 @@ import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.KAFKA_RULE;
 import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.PROJECT;
-import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.TEMPORARY_FOLDER;
 import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.TOPIC_NAME;
-import static org.apache.ignite.stream.pubsub.integration.util.MockPubSubServer.ZOOKEEPER_RULE;
 
-/**
- * Integration tests for {@link com.google.cloud.partners.pubsub.kafka.PubsubEmulatorServer} using
- * Cloud Pub/Sub veneer libraries.
- */
 public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
 
     private static final Logger LOGGER = Logger.getLogger(PubSubStreamerSelfTest.class.getName());
@@ -96,20 +88,6 @@ public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
     /** Constructor. */
     public PubSubStreamerSelfTest() {
         super(true);
-    }
-
-    @ClassRule
-    public static RuleChain CHAIN =
-            RuleChain.outerRule(TEMPORARY_FOLDER).around(ZOOKEEPER_RULE).around(KAFKA_RULE);
-
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-        mockPubSubServer.setUpBeforeClass();
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        mockPubSubServer.tearDownAfterClass();
     }
 
     /** {@inheritDoc} */
