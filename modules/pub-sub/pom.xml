@@ -38,8 +38,6 @@
 
     <properties>
         <pubsub.version>1.60.0</pubsub.version>
-        <zookeeper.version>3.4.13</zookeeper.version>
-        <kafka.version>1.0.0</kafka.version>
     </properties>
 
     <dependencies>
@@ -62,20 +60,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-test</artifactId>
-            <version>${curator.version}</version>
-            <scope>test</scope>
-            <!-- https://github.com/confluentinc/kafka-connect-elasticsearch/issues/143 -->
-            <exclusions>
-                <exclusion>
-                    <artifactId>guava</artifactId>
-                    <groupId>com.google.guava</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
@@ -89,10 +73,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!--
         <dependency>
             <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>${easymock.version}</version>
+        -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -104,24 +92,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.cloud.partners</groupId>
-            <artifactId>kafka-pubsub-emulator</artifactId>
-            <version>0.1.0</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_2.12</artifactId>
-            <version>${kafka.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
-            <version>${zookeeper.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

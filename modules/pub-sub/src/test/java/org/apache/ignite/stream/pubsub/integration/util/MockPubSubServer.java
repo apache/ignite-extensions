@@ -16,59 +16,42 @@
 
 package org.apache.ignite.stream.pubsub.integration.util;
 
-import static com.google.cloud.partners.pubsub.kafka.config.ConfigurationManager.KAFKA_TOPIC;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.fail;
-
-import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
-import com.google.api.gax.rpc.TransportChannelProvider;
-import com.google.cloud.partners.pubsub.kafka.DefaultModule;
-import com.google.cloud.partners.pubsub.kafka.KafkaClientFactory;
-import com.google.cloud.partners.pubsub.kafka.PubsubEmulatorServer;
-import com.google.cloud.partners.pubsub.kafka.common.AdminGrpc;
-import com.google.cloud.partners.pubsub.kafka.config.ConfigurationManager;
-import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
-import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.pubsub.v1.ProjectSubscriptionName;
-import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
-import com.google.pubsub.v1.Subscription;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import javax.net.ssl.SSLException;
+import com.google.pubsub.v1.PullRequest;
+import com.google.pubsub.v1.PullResponse;
+import com.google.pubsub.v1.ReceivedMessage;
 
-import org.apache.ignite.stream.pubsub.integration.rule.KafkaRule;
-import org.apache.ignite.stream.pubsub.integration.rule.ZookeeperRule;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.common.TopicPartition;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.logging.Logger;
+
+import org.jetbrains.annotations.NotNull;
+import org.mockito.Mockito;
+
+import io.grpc.CallOptions;
+import io.grpc.ClientCall;
+import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
+import io.grpc.Status;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 
 public class MockPubSubServer {
 
@@ -79,173 +62,18 @@ public class MockPubSubServer {
     public static final String PROJECT = "test-project";
     private static final String LOCALHOST = "localhost";
     private static final int PORT = 8080;
-    private static final ExecutorService SERVER_EXECUTOR = Executors.newSingleThreadExecutor();
-    private static final CredentialsProvider NO_CREDENTIALS_PROVIDER = new NoCredentialsProvider();
-    public static final TemporaryFolder TEMPORARY_FOLDER = new TemporaryFolder();
-    public static final ZookeeperRule ZOOKEEPER_RULE = new ZookeeperRule(TEMPORARY_FOLDER, 3);
-    private static final ImmutableList<String> TOPICS =
-            ImmutableList.of(TOPIC_NAME);
+    public static final int MESSAGES_PER_REQUEST = 10;
 
-    public static final KafkaRule KAFKA_RULE = new KafkaRule(TEMPORARY_FOLDER, ZOOKEEPER_RULE, 3);
-
-    @ClassRule
-    public static RuleChain CHAIN =
-            RuleChain.outerRule(TEMPORARY_FOLDER).around(ZOOKEEPER_RULE).around(KAFKA_RULE);
-
-    protected static boolean USE_SSL = false;
-    private static PubsubEmulatorServer pubsubEmulatorServer;
-    private static ConfigurationManager configurationRepository;
-    private static KafkaClientFactory kafkaClientFactory;
-
-    /**
-     * Configures Subscriptions and creates new Kafka topics for each test run to avoid interference
-     * from previous runs.
-     */
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-        // Block until the PubsubEmulatorServer is running
-        CompletableFuture<Void> serverStartedFuture = new CompletableFuture<>();
-        LOGGER.info("Setting up integration test environment");
-        TOPICS.forEach(
-                topic -> {
-                    LOGGER.info("Trying to create " + topic);
-                    try {
-                        KAFKA_RULE.createTopic(topic);
-                    } catch (Exception e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
-
-        Injector injector = getInjector();
-        pubsubEmulatorServer = injector.getInstance(PubsubEmulatorServer.class);
-        configurationRepository = injector.getInstance(ConfigurationManager.class);
-        kafkaClientFactory = injector.getInstance(KafkaClientFactory.class);
-
-        SERVER_EXECUTOR.submit(
-                () -> {
-                    try {
-                        pubsubEmulatorServer.start();
-                        serverStartedFuture.complete(null);
-                        pubsubEmulatorServer.blockUntilShutdown();
-                    } catch (IOException | InterruptedException e) {
-                        System.err.println("Unexpected server failure");
-                        serverStartedFuture.completeExceptionally(e);
-                    }
-                });
-        serverStartedFuture.get();
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-        LOGGER.info("Tearing down integration test environment");
-        pubsubEmulatorServer.stop();
-        pubsubEmulatorServer.blockUntilShutdown();
-
-        String[] topics =
-                configurationRepository
-                        .getTopics(PROJECT)
-                        .stream()
-                        .map(topic -> topic.getLabelsOrDefault(KAFKA_TOPIC, topic.getName()))
-                        .toArray(String[]::new);
-        KAFKA_RULE.deleteTopics(topics);
-    }
-
-    public static TransportChannelProvider getChannelProvider() {
-        ManagedChannel channel = null;
-        if (USE_SSL) {
-            try {
-                channel =
-                        NettyChannelBuilder.forAddress(LOCALHOST, PORT)
-                                           .maxInboundMessageSize(100000)
-                                           .sslContext(
-                                                   GrpcSslContexts.forClient()
-                                                                  .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                                                                  .build())
-                                           .overrideAuthority(LOCALHOST + ":" + PORT)
-                                           .build();
-            } catch (SSLException e) {
-                fail("Unable to create SSL channel " + e.getMessage());
-            }
-        } else {
-            channel = ManagedChannelBuilder.forAddress(LOCALHOST, PORT).usePlaintext(true).build();
-        }
-        return FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
-    }
-
-    public static AdminGrpc.AdminBlockingStub getAdminStub() {
-        ManagedChannel channel = null;
-        if (USE_SSL) {
-            File certificate =
-                    new File(configurationRepository.getServer().getSecurity().getCertificateChainFile());
-            try {
-                channel =
-                        NettyChannelBuilder.forAddress(LOCALHOST, PORT)
-                                           .maxInboundMessageSize(100000)
-                                           .sslContext(GrpcSslContexts.forClient().trustManager(certificate).build())
-                                           .build();
-            } catch (SSLException e) {
-                fail("Unable to create SSL channel " + e.getMessage());
-            }
-        } else {
-            channel = ManagedChannelBuilder.forAddress(LOCALHOST, PORT).usePlaintext(true).build();
-        }
-        return AdminGrpc.newBlockingStub(channel);
-    }
-
-    // Gets the Guice Injector based on the specified configuration
-    private static Injector getInjector() throws IOException {
-        File serverConfig = TEMPORARY_FOLDER.newFile();
-        File pubSubRepository = TEMPORARY_FOLDER.newFile();
-        Files.write(pubSubRepository.toPath(), Configurations.PUBSUB_CONFIG_JSON.getBytes(UTF_8));
-
-        Files.write(serverConfig.toPath(), Configurations.SERVER_CONFIG_JSON.getBytes(UTF_8));
-        return Guice.createInjector(
-                new DefaultModule(serverConfig.getPath(), pubSubRepository.getPath()));
-    }
-
-    protected Subscription getSubscriptionByTopic(String topicName) {
-        return configurationRepository
-                .getSubscriptionsForTopic(topicName)
-                .stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Topic name not found"));
-    }
-
-    /**
-     * Creates a KafkaConsumer that is manually assigned to all partitions of the test topic indicated
-     * by the {@code subscription}.
-     */
-    public Consumer<String, ByteBuffer> getValidationConsumer(String topic, String subscription) {
-        Consumer<String, ByteBuffer> consumer =
-                kafkaClientFactory.createConsumer(
-                        ProjectSubscriptionName.of(PROJECT, subscription).toString());
-
-        Set<TopicPartition> topicPartitions =
-                consumer
-                        .listTopics()
-                        .entrySet()
-                        .stream()
-                        .filter(e -> e.getKey().equals(ProjectTopicName.of(PROJECT, topic).toString()))
-                        .flatMap(
-                                e -> e.getValue().stream().map(p -> new TopicPartition(p.topic(), p.partition())))
-                        .collect(Collectors.toSet());
-        consumer.assign(topicPartitions);
-
-        return consumer;
-    }
-
-    public Subscriber getSubscriber(String subscription, MessageReceiver receiver) {
-        return Subscriber.newBuilder(ProjectSubscriptionName.of(PROJECT, subscription), receiver)
-                         .setChannelProvider(getChannelProvider())
-                         .setCredentialsProvider(NO_CREDENTIALS_PROVIDER)
-                         .build();
-    }
+    private final Map<String, Publisher> publishers = new HashMap<>();
+    private final List<PubsubMessage> topicMessages = new ArrayList<>();
+    private final Queue<PubsubMessage> blockingQueue = new LinkedBlockingDeque<>();
 
     public SubscriberStubSettings createSubscriberStub() throws IOException {
         CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
-        ManagedChannel managedChannel = ManagedChannelBuilder.forTarget(getPubSubAddress()).usePlaintext().build();
-        FixedTransportChannelProvider transportChannel = FixedTransportChannelProvider.create(GrpcTransportChannel.create(managedChannel));
 
+        ManagedChannel managedChannel = managedChannel();
+
+        FixedTransportChannelProvider transportChannel = FixedTransportChannelProvider.create(GrpcTransportChannel.create(managedChannel));
         SubscriberStubSettings subscriberStubSettings = SubscriberStubSettings.newBuilder()
                                                                               .setTransportChannelProvider(transportChannel)
                                                                               .setCredentialsProvider(credentialsProvider)
@@ -253,31 +81,55 @@ public class MockPubSubServer {
         return subscriberStubSettings;
     }
 
-    public Publisher getPublisher(String topicName) throws IOException {
-        return Publisher.newBuilder(ProjectTopicName.of(PROJECT, topicName))
-                        .setChannelProvider(getChannelProvider())
-                        .setCredentialsProvider(NO_CREDENTIALS_PROVIDER)
-                        .build();
+    @NotNull
+    private ManagedChannel managedChannel() {
+        ManagedChannel managedChannel = Mockito.mock(ManagedChannel.class);
+        when(managedChannel.newCall(any(MethodDescriptor.class),any(CallOptions.class))).thenAnswer((la) -> clientCall());
+        return managedChannel;
     }
 
-    public void publish(
-            Publisher publisher,
-            PubsubMessage message,
-            java.util.function.Consumer<Throwable> onFailure,
-            java.util.function.Consumer<String> onSuccess) {
-        ApiFutures.addCallback(
-                publisher.publish(message),
-                new ApiFutureCallback<String>() {
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        onFailure.accept(throwable);
-                    }
+    private ClientCall<PullRequest, PullResponse> clientCall() {
+        ClientCall<PullRequest, PullResponse> clientCall = Mockito.mock(ClientCall.class);
 
-                    @Override
-                    public void onSuccess(String result) {
-                        onSuccess.accept(result);
-                    }
-                });
+        doAnswer(
+            iom ->{
+                Object[] arguments = iom.getArguments();
+                ClientCall.Listener<PullResponse> listener = (ClientCall.Listener<PullResponse>) arguments[0];
+                Metadata metadata = (Metadata) arguments[1];
+                pullMessages(listener, metadata);
+                return null;
+            }
+        ).when(clientCall).start(any(ClientCall.Listener.class),any(Metadata.class));
+        return clientCall;
+    }
+
+    private void pullMessages(ClientCall.Listener<PullResponse> listener, Metadata metadata) {
+        PullResponse.Builder pullResponse = PullResponse.newBuilder();
+
+        for(int i = 0; i < MESSAGES_PER_REQUEST; i++) {
+            pullResponse.addReceivedMessages(ReceivedMessage.newBuilder().mergeMessage(blockingQueue.remove()).build());
+        }
+
+        listener.onMessage(pullResponse.build());
+        listener.onClose(Status.OK, metadata);
+    }
+
+    public Publisher getPublisher(String topicName) throws IOException {
+        publishers.putIfAbsent(topicName, createPublisher(topicName));
+        return publishers.get(topicName);
+    }
+
+    private Publisher createPublisher(String topic) {
+        Publisher publisher = mock(Publisher.class);
+
+        when(publisher.publish(any(PubsubMessage.class))).thenAnswer(
+                (iom) -> {
+                    PubsubMessage pubsubMessage = (PubsubMessage) iom.getArguments()[0];
+                    blockingQueue.add(pubsubMessage);
+                    return ApiFutures.immediateFuture(UUID.randomUUID().toString());
+                }
+        );
+        return publisher;
     }
 
     /**
@@ -288,4 +140,5 @@ public class MockPubSubServer {
     private String getPubSubAddress() {
         return LOCALHOST+ ":" + PORT;
     }
+
 }
