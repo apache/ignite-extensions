@@ -22,18 +22,20 @@ import java.util.Map;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link IgniteSink}.
  */
-public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
+public class FlinkIgniteSinkSelfTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
 
     /** Ignite test configuration file. */
-    private static final String GRID_CONF_FILE = "modules/flink/src/test/resources/example-ignite.xml";
+    private static final String GRID_CONF_FILE = "src/test/resources/example-ignite.xml";
 
     @Test
     public void testIgniteSink() throws Exception {

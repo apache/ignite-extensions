@@ -31,20 +31,17 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link IgniteSource}.
  */
-public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
+public class FlinkIgniteSourceSelfTest {
     /** Cache name. */
     private static final String TEST_CACHE = "testCache";
 
@@ -103,18 +100,6 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
         when(runtimeCtx.isCheckpointingEnabled()).thenReturn(true);
 
         return runtimeCtx;
-    }
-
-    /**
-     * Tests Ignite source start operation.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgniteSourceStart() throws Exception {
-        igniteSrc.start(null, EventType.EVT_CACHE_OBJECT_PUT);
-
-        verify(ignite.events(clsGrp), times(1));
     }
 
     /**

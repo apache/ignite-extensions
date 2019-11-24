@@ -35,9 +35,9 @@
     <packaging>pom</packaging>
 
     <scm>
-        <url>https://gitbox.apache.org/repos/asf/ignite.git</url>
-        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</connection>
-        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite.git</developerConnection>
+        <url>https://gitbox.apache.org/repos/asf/ignite-extensions.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite-extensions.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite-extensions.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
