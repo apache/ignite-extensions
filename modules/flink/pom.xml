@@ -176,14 +176,14 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-log4j.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-spring.version}</version>
             <scope>test</scope>
         </dependency>
 
