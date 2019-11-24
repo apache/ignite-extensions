@@ -35,15 +35,17 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
+        <ignite-core.version>2.7.5</ignite-core.version>
         <flink.version>1.5.0</flink.version>
         <kryo-serializers.version>0.42</kryo-serializers.version>
+
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-core.version}</version>
         </dependency>
 
         <dependency>
