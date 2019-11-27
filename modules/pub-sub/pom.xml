@@ -38,6 +38,8 @@
 
     <properties>
         <pubsub.version>1.60.0</pubsub.version>
+        <ignite-core.version>2.7.6</ignite-core.version>
+        <ignite-log4j.version>2.7.6</ignite-log4j.version>
     </properties>
 
     <dependencies>
