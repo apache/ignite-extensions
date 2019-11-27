@@ -40,13 +40,14 @@
         <pubsub.version>1.60.0</pubsub.version>
         <ignite-core.version>2.7.6</ignite-core.version>
         <ignite-log4j.version>2.7.6</ignite-log4j.version>
+        <ignite-spring.version>2.7.6</ignite-spring.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
@@ -56,7 +57,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-core.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -64,14 +65,14 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-spring.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-log4j.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -83,14 +84,6 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
