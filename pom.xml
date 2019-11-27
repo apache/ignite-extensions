@@ -43,6 +43,7 @@
 
     <modules>
         <module>modules/flink</module>
+        <module>modules/pub-sub</module>
     </modules>
 
     <profiles>
