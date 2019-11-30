@@ -517,6 +517,10 @@
                                 <packages>org.apache.ignite.stream.rocketmq*</packages>
                             </group>
                             <group>
+                            <title>Pub/Sub integration</title>
+                                <packages>org.apache.ignite.stream.pubsub.*</packages>
+                            </group>
+                            <group>
                                 <title>Storm integration</title>
                                 <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
