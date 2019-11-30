@@ -24,14 +24,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.apache.ignite</groupId>
+        <groupId>org.apache.ignite.ext</groupId>
         <artifactId>ignite-parent</artifactId>
         <version>1</version>
         <relativePath>parent</relativePath>
     </parent>
 
     <artifactId>apache-ignite-extensions</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <scm>

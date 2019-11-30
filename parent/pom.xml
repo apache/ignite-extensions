@@ -152,7 +152,7 @@
 
     </properties>
 
-    <groupId>org.apache.ignite</groupId>
+    <groupId>org.apache.ignite.ext</groupId>
     <artifactId>ignite-parent</artifactId>
     <version>1</version>
     <packaging>pom</packaging>
