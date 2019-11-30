@@ -42,7 +42,7 @@
     </scm>
 
     <modules>
-        <module>modules/flink</module>
+        <module>modules/flink-ext</module>
     </modules>
 
     <profiles>
