@@ -35,7 +35,7 @@ public class FlinkIgniteSinkSelfTest {
     private static final String TEST_CACHE = "testCache";
 
     /** Ignite test configuration file. */
-    private static final String GRID_CONF_FILE = "src/test/resources/example-ignite.xml";
+    private static final String GRID_CONF_FILE = "config/example-ignite.xml";
 
     @Test
     public void testIgniteSink() throws Exception {
