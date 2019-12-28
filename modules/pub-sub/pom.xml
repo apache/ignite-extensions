@@ -37,10 +37,10 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <pubsub.version>1.60.0</pubsub.version>
-        <ignite-core.version>2.7.6</ignite-core.version>
-        <ignite-log4j.version>2.7.6</ignite-log4j.version>
-        <ignite-spring.version>2.7.6</ignite-spring.version>
+        <pubsub.version>1.102.0</pubsub.version>
+        <ignite-core.version>2.9.0-SNAPSHOT</ignite-core.version>
+        <ignite-log4j.version>2.9.0-SNAPSHOT</ignite-log4j.version>
+        <ignite-spring.version>2.9.0-SNAPSHOT</ignite-spring.version>
     </properties>
 
     <dependencies>
