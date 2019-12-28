@@ -18,5 +18,4 @@
 /**
  * Contains implementation of Pub/Sub Streamer.
  */
-
 package org.apache.ignite.stream.pubsub;
