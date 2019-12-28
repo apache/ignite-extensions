@@ -34,7 +34,10 @@ import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -44,6 +47,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.gson.JsonArray;
@@ -55,13 +60,28 @@ import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.PROJECT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.TOPIC_NAME;
 
-public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+/**
+ * Tests for {@link PubSubStreamer}.
+ */
+public class PubSubStreamerSelfTest {
 
     private static final Logger LOGGER = Logger.getLogger(PubSubStreamerSelfTest.class.getName());
+
+    /** Cache name. */
+    private static final String DEFAULT_CACHE_NAME = "testCache";
+
+    /** Ignite test configuration file. */
+    private static final String GRID_CONF_FILE = "config/example-ignite.xml";
 
     /** Subscription Name. */
     private static final String SUBSCRIPTION = "ignite_subscription";
@@ -79,24 +99,36 @@ public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
     private static final String JSON_KEY = "key";
     private static final String JSON_VALUE = "value";
 
+    private Ignite ignite;
+
     private static MockPubSubServer mockPubSubServer = new MockPubSubServer();
 
-    /** Constructor. */
-    public PubSubStreamerSelfTest() {
-        super(true);
+    @Before
+    public void beforeTest() {
+        try {
+            // if an ignite instance is already started in same JVM then use it.
+            this.ignite = Ignition.ignite();
+        } catch (IgniteIllegalStateException e) {
+            this.ignite = Ignition.start(GRID_CONF_FILE);
+        }
+
+        ignite.getOrCreateCache(defaultCacheConfiguration());
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
-        grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
+    @After
+    public void afterTest() {
+        ignite.cache(DEFAULT_CACHE_NAME).clear();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        grid().cache(DEFAULT_CACHE_NAME).clear();
+    /**
+     * @return New cache configuration with modified defaults.
+     */
+    public static CacheConfiguration<Integer,String> defaultCacheConfiguration() {
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        return cfg;
     }
-
     /**
      * Tests Pub/Sub streamer.
      *
@@ -118,10 +150,8 @@ public class PubSubStreamerSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If interrupted.
      */
     private void consumerStream(ProjectTopicName topic, Map<String, String> keyValMap)
-            throws TimeoutException, InterruptedException, IOException {
+            throws InterruptedException, IOException {
         PubSubStreamer<String, String> pubSubStmr = null;
-
-        Ignite ignite = grid();
 
         try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
