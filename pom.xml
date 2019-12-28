@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    POM file.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent</artifactId>
+        <version>1</version>
+        <relativePath>parent</relativePath>
+    </parent>
+
+    <artifactId>apache-ignite-extensions</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <scm>
+        <url>https://gitbox.apache.org/repos/asf/ignite-extensions.git</url>
+        <connection>scm:git:https://gitbox.apache.org/repos/asf/ignite-extensions.git</connection>
+        <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/ignite-extensions.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <modules>
+        <module>modules/flink-ext</module>
+    </modules>
+
+    <profiles>
+
+        <profile>
+            <id>test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>test</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/test.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>${basedir}</outputDirectory>
+                                    <finalName>libs</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>timestamp-property</id>
+                                <goals>
+                                    <goal>timestamp-property</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <name>current.year</name>
+                                    <pattern>yyyy</pattern>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>core-javadoc</id>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                                <phase>validate</phase>
+                                <configuration>
+                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
+                                    <destDir>core</destDir>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.communication.tcp.internal:org.apache.ignite.spi.discovery.zk.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>javadoc-postprocessing-new</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <target>
+                                        <copy todir="${basedir}/target/javadoc/core">
+                                            <fileset dir="assembly/docfiles">
+                                                <include name="img/**" />
+                                                <include name="*.js" />
+                                            </fileset>
+                                        </copy>
+
+                                            <taskdef name="doctask" classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask" />
+
+                                            <doctask css="dotted" dir="target/javadoc/core">
+                                                <include name="**/*.html" />
+                                                <exclude name="overview-frame.html" />
+                                                <exclude name="allclasses-frame.html" />
+                                                <exclude name="**/class-use/*" />
+                                            </doctask>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+      <profile>
+            <id>licenses</id>
+            <build>
+                <plugins>
+                    <plugin><!-- skipping generation of dependencies licenses
+                     to keep clean /maven-shared-archive-resources/META-INF
+                     to prevent license.txt moving to sources.zip -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                     <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <inherited>false</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.ignite</groupId>
+                                <artifactId>ignite-tools</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>release-postprocessing</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>initialize</phase>
+                                <configuration>
+                                    <target>
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="pushd &quot;%~dp0&quot;/\.\./\.\.(\s*&amp;::.+)?" />
+                                            <substitution expression="pushd &quot;%~dp0&quot;/.." />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.bat" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="IGNITE_HOME_TMP=&quot;\$\(dirname &quot;\$\{IGNITE_HOME_TMP\}&quot;\)&quot;(\s*#.*)?" />
+                                            <substitution expression="" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.sh" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="set SCRIPTS_HOME=%IGNITE_HOME%\\bin(\s*&amp;::.*)?" />
+                                            <substitution expression="set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.bat" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="SCRIPTS_HOME=&quot;\$\{IGNITE_HOME_TMP\}/bin&quot;(\s*#.*)?" />
+                                            <substitution expression="SCRIPTS_HOME=&quot;$${IGNITE_HOME_TMP}/bin&quot;" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.sh" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="\. &quot;\$\{SCRIPTS_HOME\}&quot;/include/build-classpath.sh(\s*#.*)?" />
+                                            <substitution expression="" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.sh" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="call &quot;%SCRIPTS_HOME%\\include\\build-classpath.bat&quot;(\s*&amp;::.*)?" />
+                                            <substitution expression="" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.bat" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
+                                            <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.sh" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="ENABLE_ASSERTIONS=.*" />
+                                            <substitution expression="ENABLE_ASSERTIONS=0" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.bat" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true">
+                                            <regexp pattern="-DIGNITE_UPDATE_NOTIFIER=false" />
+                                            <substitution expression="" />
+                                            <fileset dir="${basedir}/target/release-package-${ignite.edition}/bin">
+                                                <include name="**/*.sh" />
+                                                <include name="**/*.bat" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${basedir}/target/release-package-${ignite.edition}/examples/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
+
+                                        <replaceregexp file="${basedir}/target/release-package-${ignite.edition}/benchmarks/sources/pom.xml" byline="true">
+                                            <regexp pattern="to_be_replaced_by_ignite_version" />
+                                            <substitution expression="${project.version}" />
+                                        </replaceregexp>
+
+                                        <chmod dir="${basedir}/target/release-package-${ignite.edition}" perm="755" includes="**/*.sh" />
+
+                                        <!--
+                                        Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
+                                        end-of-line characters for Linux shell scripts
+                                        -->
+                                        <fixcrlf srcdir="${basedir}/target/release-package-${ignite.edition}" eol="lf" eof="remove">
+                                            <include name="**/*.sh" />
+                                        </fixcrlf>
+
+                                        <zip destfile="${basedir}/target/bin/${ignite.edition}-${project.version}-bin.zip" encoding="UTF-8">
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin" filemode="755">
+                                                <include name="**/*.sh" />
+                                                <include name="**/configure" />
+                                                <include name="**/install-sh" />
+                                                <include name="**/compile" />
+                                                <include name="**/missing" />
+                                            </zipfileset>
+                                            <zipfileset dir="${basedir}/target/release-package-${ignite.edition}" prefix="${ignite.edition}-${project.version}-bin">
+                                                <exclude name="**/*.sh" />
+                                                <exclude name="**/configure" />
+                                                <exclude name="**/install-sh" />
+                                                <exclude name="**/compile" />
+                                                <exclude name="**/missing" />
+                                            </zipfileset>
+                                        </zip>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>${basedir}/assembly/dependencies-${ignite.edition}.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>${basedir}/target/release-package-${ignite.edition}</outputDirectory>
+                                    <finalName>libs</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>ignite-release</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>release-package-${ignite.edition}</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+
+
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>libs</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
