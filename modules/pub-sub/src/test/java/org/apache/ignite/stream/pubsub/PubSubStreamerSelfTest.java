@@ -72,6 +72,9 @@ public class PubSubStreamerSelfTest {
     /** Count. */
     private static final int CNT = 100;
 
+    /** Messages per request. */
+    private static final int MESSAGES_PER_REQUEST = 10;
+
     /** Topic message key prefix. */
     private static final String KEY_PREFIX = "192.168.2.";
 
@@ -81,7 +84,6 @@ public class PubSubStreamerSelfTest {
 
     private static final String JSON_KEY = "key";
     private static final String JSON_VALUE = "value";
-    private static final int MESSAGES_PER_REQUEST = 10;
 
     private Ignite ignite;
 
