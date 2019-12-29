@@ -30,7 +30,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,6 +81,7 @@ public class PubSubStreamerSelfTest {
 
     private static final String JSON_KEY = "key";
     private static final String JSON_VALUE = "value";
+    private static final int MESSAGES_PER_REQUEST = 10;
 
     private Ignite ignite;
 
@@ -139,7 +139,7 @@ public class PubSubStreamerSelfTest {
 
         try (IgniteDataStreamer<String, String> stmr = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             stmr.allowOverwrite(true);
-            stmr.autoFlushFrequency(10);
+            stmr.autoFlushFrequency(MESSAGES_PER_REQUEST);
 
             // Configure Pub/Sub streamer.
             pubSubStmr = new PubSubStreamer<>();
