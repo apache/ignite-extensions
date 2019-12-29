@@ -60,6 +60,7 @@ import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -123,7 +124,7 @@ public class PubSubStreamerSelfTest {
      */
     public static CacheConfiguration<Integer,String> defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setAtomicityMode(ATOMIC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         return cfg;
     }
