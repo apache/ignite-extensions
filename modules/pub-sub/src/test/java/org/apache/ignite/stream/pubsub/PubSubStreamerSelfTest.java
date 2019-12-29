@@ -107,20 +107,15 @@ public class PubSubStreamerSelfTest {
     private static MockPubSubServer mockPubSubServer = new MockPubSubServer();
 
     @Before
-    public void beforeTest() {
-        try {
-            // if an ignite instance is already started in same JVM then use it.
-            this.ignite = Ignition.ignite();
-        } catch (IgniteIllegalStateException e) {
-            this.ignite = Ignition.start(GRID_CONF_FILE);
-        }
-
-        ignite.getOrCreateCache(defaultCacheConfiguration());
+    public void beforeTest() throws InterruptedException {
+        this.ignite = Ignition.start(GRID_CONF_FILE);
+        IgniteCache<Integer,String> igniteCache = ignite.getOrCreateCache(defaultCacheConfiguration());
     }
 
     @After
     public void afterTest() {
         ignite.cache(DEFAULT_CACHE_NAME).clear();
+        Ignition.stop(true);
     }
 
     /**
@@ -128,7 +123,7 @@ public class PubSubStreamerSelfTest {
      */
     public static CacheConfiguration<Integer,String> defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-        cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+        cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         return cfg;
     }
@@ -218,7 +213,7 @@ public class PubSubStreamerSelfTest {
 
             // Checks all events successfully processed in 10 seconds.
             assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
-                latch.await(10, TimeUnit.SECONDS));
+                latch.await(20, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
