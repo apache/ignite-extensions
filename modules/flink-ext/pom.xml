@@ -38,7 +38,7 @@
         <ignite-core.version>2.9.0-SNAPSHOT</ignite-core.version>
         <ignite-log4j.version>2.9.0-SNAPSHOT</ignite-log4j.version>
         <ignite-spring.version>2.9.0-SNAPSHOT</ignite-spring.version>
-        <flink.version>1.5.0</flink.version>
+        <flink.version>1.9.1</flink.version>
         <kryo-serializers.version>0.42</kryo-serializers.version>
 
     </properties>
