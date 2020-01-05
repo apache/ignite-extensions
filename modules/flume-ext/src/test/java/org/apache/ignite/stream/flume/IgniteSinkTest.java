@@ -28,7 +28,6 @@ import org.apache.flume.conf.Configurables;
 import org.apache.flume.event.EventBuilder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -52,7 +51,7 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSink() throws Exception {
-        IgniteConfiguration cfg = loadConfiguration("config/example-ignite.xml");
+        IgniteConfiguration cfg = loadConfiguration("example-ignite.xml");
 
         cfg.setClientMode(false);
 
@@ -94,7 +93,7 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
         Context ctx = new Context();
 
         ctx.put(IgniteSinkConstants.CFG_CACHE_NAME, CACHE_NAME);
-        ctx.put(IgniteSinkConstants.CFG_PATH, "config/example-ignite.xml");
+        ctx.put(IgniteSinkConstants.CFG_PATH, "example-ignite.xml");
         ctx.put(IgniteSinkConstants.CFG_EVENT_TRANSFORMER, "org.apache.ignite.stream.flume.TestEventTransformer");
 
         Configurables.configure(sink, ctx);
@@ -126,10 +125,6 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
             for (int i = 0; i < EVENT_CNT; i++) {
                 assertEquals(i, (int)cache.get(String.valueOf(i)));
             }
-
-            assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
-
-
         }
         finally {
             sink.stop();
