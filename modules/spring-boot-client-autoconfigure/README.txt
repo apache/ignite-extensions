@@ -5,17 +5,17 @@ Apache Ignite Client Spring Boot Autoconfigure module provides autoconfiguration
 
 Features
 ---------------------------
-This module provides the ability to integrate IgniteClient into you spring-boot application with zero(or minimal) configuration.
+This module provides the ability to integrate `IgniteClient` into you spring-boot application with zero(or minimal) configuration.
 
 After you add this module as a dependency to your spring-boot application
-IgniteClient will be configured and injected into BeanFactory.
+`IgniteClient` will be configured and injected into `BeanFactory`.
 
-Algorithm to configure Ignite is the following:
-  1. If ClientConfiguration bean exists in the BeanFactory it will be used.
-  2. If ClientConfiguration bean doesn't exist following rules are applied:
-    2.1. Default ClientConfiguration configuration created.
-    2.2. If IgniteClientConfigurer bean exists in BeanFactory it will be used to customize ClientConfiguration.
-    2.3  Application properties applied to ClientConfiguration. Prefix for the properties is `ignite-client`.
+Algorithm to configure `Ignite` is the following:
+  1. If `ClientConfiguration` bean exists in the `BeanFactory` it will be used.
+  2. If `ClientConfiguration` bean doesn't exist following rules are applied:
+    2.1. Default `ClientConfiguration` configuration created.
+    2.2. If `IgniteClientConfigurer` bean exists in `BeanFactory` it will be used to customize `ClientConfiguration`.
+    2.3  Application properties applied to `ClientConfiguration`. Prefix for the properties is `ignite-client`.
 
 Importing Spring Boot Autoconfigure Module In Maven Project
 ----------------------------------------
