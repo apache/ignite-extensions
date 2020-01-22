@@ -1,0 +1,24 @@
+ignite:
+  igniteInstanceName: properties-instance-name
+  communicationSpi:
+    localPort: 5555
+  dataStorageConfiguration:
+    defaultDataRegionConfiguration:
+      initialSize: 10485760 #10MB
+    dataRegionConfigurations[0]:
+      name: my-dataregion
+      initialSize: 104857600 #100MB
+  cacheConfiguration[0]:
+    name: accounts
+    queryEntities:
+      - tableName: ACCOUNTS
+        keyFieldName: ID
+        keyType: java.lang.Long
+        valueType: java.lang.Object
+        fields:
+          ID: java.lang.Long
+          amount: java.lang.Double
+          updateDate: java.util.Date
+  cacheConfiguration[1]:
+    name: my-cache2
+

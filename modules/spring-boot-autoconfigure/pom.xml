@@ -30,15 +30,19 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>spring-boot-ignite-autoconfigure</artifactId>
-    <version>2.9.0-SNAPSHOT</version>
+    <artifactId>ignite-spring-boot-autoconfigure</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <ignite.version>2.9.0-SNAPSHOT</ignite.version>
+    </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
@@ -56,7 +60,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -70,7 +74,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
             <exclusions>
@@ -104,4 +108,55 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>examples</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>examples/main/java</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+                <resources>
+                    <resource>
+                        <directory>${project.basedir}/examples/main/resources</directory>
+                    </resource>
+                    <resource>
+                        <directory>${project.basedir}/src/main/resources</directory>
+                    </resource>
+                </resources>
+            </build>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-indexing</artifactId>
+                    <version>${ignite.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
+                    <version>${h2.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+    </profiles>
 </project>
