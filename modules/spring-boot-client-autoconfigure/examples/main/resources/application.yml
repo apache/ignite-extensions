@@ -1,0 +1,4 @@
+ignite-client:
+  addresses: 127.0.0.1:10800
+  timeout: 10000
+  tcpNoDelay: false

@@ -44,6 +44,8 @@
     <modules>
         <module>modules/flink-ext</module>
         <module>modules/pub-sub</module>
+        <module>modules/spring-boot-autoconfigure</module>
+        <module>modules/spring-boot-client-autoconfigure</module>
     </modules>
 
     <profiles>
