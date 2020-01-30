@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(SpringExtension.class)
 public class IgniteClientAutoConfigureTest {
     /** Default address. */
-    public static final String DEFAULT_ADDR = "127.0.0.1:10800";
+    public static final String DEFAULT_ADDR = "127.0.0.1:10801";
 
     /** Cache names. */
     public static final Set<String> CACHES = Collections.singleton("my-cache");
@@ -57,7 +58,9 @@ public class IgniteClientAutoConfigureTest {
     /** */
     @BeforeAll
     public static void beforeClass() {
-        node = Ignition.start(new IgniteConfiguration());
+        node = Ignition.start(new IgniteConfiguration()
+            .setClientConnectorConfiguration(
+                new ClientConnectorConfiguration().setPort(10801)));
 
         for (String cache : CACHES)
             node.createCache(cache);
