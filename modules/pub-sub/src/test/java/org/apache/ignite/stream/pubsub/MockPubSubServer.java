@@ -24,6 +24,8 @@ import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
+import com.google.protobuf.Empty;
+import com.google.pubsub.v1.AcknowledgeRequest;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PullRequest;
 import com.google.pubsub.v1.PullResponse;
@@ -68,7 +70,6 @@ class MockPubSubServer {
     public static final int MESSAGES_PER_REQUEST = 10;
 
     private final Map<String, Publisher> publishers = new HashMap<>();
-    private final List<PubsubMessage> topicMessages = new ArrayList<>();
     private final Queue<PubsubMessage> blockingQueue = new LinkedBlockingDeque<>();
 
     public SubscriberStubSettings createSubscriberStub() throws IOException {
@@ -87,8 +88,29 @@ class MockPubSubServer {
     @NotNull
     private ManagedChannel managedChannel() {
         ManagedChannel managedChannel = Mockito.mock(ManagedChannel.class);
-        when(managedChannel.newCall(any(MethodDescriptor.class),any(CallOptions.class))).thenAnswer((la) -> clientCall());
+        when(managedChannel.newCall(any(MethodDescriptor.class),any(CallOptions.class))).thenAnswer((la) -> {
+            MethodDescriptor methodDescriptor = (MethodDescriptor) la.getArguments()[0];
+            if(methodDescriptor.getFullMethodName().equals("google.pubsub.v1.Subscriber/Acknowledge")) {
+                return acknowledgeCall();
+            }
+
+            return clientCall();
+        });
         return managedChannel;
+    }
+
+    private ClientCall<AcknowledgeRequest, Empty> acknowledgeCall() {
+        ClientCall<AcknowledgeRequest, Empty> clientCall = Mockito.mock(ClientCall.class);
+        doAnswer(iom -> {
+                     Object[] arguments = iom.getArguments();
+                     ClientCall.Listener<Empty> listener = (ClientCall.Listener<Empty>) arguments[0];
+                     listener.onMessage(Empty.getDefaultInstance());
+                     Metadata metadata = (Metadata) arguments[1];
+                     listener.onClose(Status.OK, metadata);
+                     return null;
+                 }
+                ).when(clientCall).start(any(ClientCall.Listener.class),any(Metadata.class));
+        return clientCall;
     }
 
     private ClientCall<PullRequest, PullResponse> clientCall() {
