@@ -8,7 +8,7 @@ Starting data transfer to Ignite cache can be done with the following steps.
 1. Import Ignite ZeroMQ Streamer Module In Maven Project
 
 If you are using Maven to manage dependencies of your project, you can add ZeroMQ module
-dependency like this (replace '${ignite.version}' with actual Ignite version you are
+dependency like this (replace '${ignite-zeromq-ext.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -20,8 +20,8 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-zeromq</artifactId>
-            <version>${ignite.version}</version>
+            <artifactId>ignite-zeromq-ext</artifactId>
+            <version>${ignite-zeromq-ext.version}</version>
         </dependency>
         ...
     </dependencies>
