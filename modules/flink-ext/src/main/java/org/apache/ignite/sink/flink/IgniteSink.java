@@ -143,10 +143,18 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
         A.notNull(cacheName, "Cache name");
 
         try {
-            // if an ignite instance is already started in same JVM then use it.
-            this.ignite = Ignition.ignite();
-        } catch (IgniteIllegalStateException e) {
             this.ignite = Ignition.start(igniteCfgFile);
+        } catch (IgniteException e) {
+            if (e.getMessage().contains("instance has already been started.")) {
+                // ignite instance is already started in same JVM then use it
+                try {
+                    this.ignite = Ignition.ignite();
+                } catch(IgniteIllegalStateException illegalStateException){
+                    throw new IgniteException("Cannot connect to existing ignite instance", e);
+                }
+            } else {
+                throw e;
+            }
         }
 
         this.ignite.getOrCreateCache(cacheName);
