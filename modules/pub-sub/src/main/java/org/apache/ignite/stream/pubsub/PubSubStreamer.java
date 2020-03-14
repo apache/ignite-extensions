@@ -35,6 +35,7 @@ import org.apache.ignite.stream.StreamAdapter;
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
+import com.google.pubsub.v1.AcknowledgeRequest;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PullRequest;
@@ -224,9 +225,18 @@ public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
 
                     PullResponse pullResponse = subscriberStub.pullCallable().call(pullRequest);
 
+                    List<String> ackIds = new ArrayList<>();
                     for (ReceivedMessage message : pullResponse.getReceivedMessagesList()) {
                         addMessage(message.getMessage());
+                        ackIds.add(message.getAckId());
                     }
+
+                    AcknowledgeRequest acknowledgeRequest = AcknowledgeRequest.newBuilder()
+                                                                              .setSubscription(subscriptionName)
+                                                                              .addAllAckIds(ackIds)
+                                                                              .build();
+
+                    subscriberStub.acknowledgeCallable().call(acknowledgeRequest);
                 }
             } finally {
                 subscriberStub.close();
