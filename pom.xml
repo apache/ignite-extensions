@@ -47,6 +47,7 @@
         <module>modules/pub-sub</module>
         <module>modules/spring-boot-autoconfigure</module>
         <module>modules/spring-boot-client-autoconfigure</module>
+        <module>modules/zeromq-ext</module>
     </modules>
 
     <profiles>
