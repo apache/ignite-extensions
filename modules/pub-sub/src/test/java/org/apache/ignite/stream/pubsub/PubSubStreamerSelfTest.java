@@ -28,14 +28,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import java.util.concurrent.TimeoutException;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -61,8 +59,6 @@ import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.PROJECT;
@@ -75,9 +71,6 @@ import static org.junit.Assert.assertTrue;
  * Tests for {@link PubSubStreamer}.
  */
 public class PubSubStreamerSelfTest {
-
-    private static final Logger LOGGER = Logger.getLogger(PubSubStreamerSelfTest.class.getName());
-
     /** Cache name. */
     private static final String DEFAULT_CACHE_NAME = "testCache";
 
@@ -99,12 +92,16 @@ public class PubSubStreamerSelfTest {
     /** Topic message value URL. */
     private static final String VALUE_URL = ",www.example.com,";
 
-
+    /** */
     private static final String JSON_KEY = "key";
+
+    /** */
     private static final String JSON_VALUE = "value";
 
+    /** */
     private Ignite ignite;
 
+    /** */
     private static MockPubSubServer mockPubSubServer = new MockPubSubServer();
 
     @Before
@@ -128,6 +125,7 @@ public class PubSubStreamerSelfTest {
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         return cfg;
     }
+
     /**
      * Tests Pub/Sub streamer.
      *
