@@ -185,6 +185,14 @@
         <url>http://issues.apache.org/jira/browse/IGNITE</url>
     </issueManagement>
 
+    <developers>
+        <developer>
+            <id>samaitra</id>
+            <name>Saikat Maitra</name>
+            <email>saikat dot maitra at gmail dot com</email>
+        </developer>
+    </developers>
+
     <repositories>
         <repository>
             <releases>
