@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.logging.Logger;
 
 import org.jetbrains.annotations.NotNull;
 import org.mockito.Mockito;
@@ -57,17 +56,25 @@ import static org.mockito.Mockito.when;
  * Mock Pub/Sub Server
  */
 class MockPubSubServer {
-
     /** Test topic. */
     public static final String TOPIC_NAME = "pagevisits";
 
-    private static final Logger LOGGER = Logger.getLogger(MockPubSubServer.class.getName());
+    /** */
     public static final String PROJECT = "test-project";
+
+    /** */
     private static final String LOCALHOST = "localhost";
+
+    /** */
     private static final int PORT = 8080;
+
+    /** */
     public static final int MESSAGES_PER_REQUEST = 10;
 
+    /** */
     private final Map<String, Publisher> publishers = new HashMap<>();
+
+    /** */
     private final Queue<PubsubMessage> blockingQueue = new LinkedBlockingDeque<>();
 
     public SubscriberStubSettings createSubscriberStub() throws IOException {
