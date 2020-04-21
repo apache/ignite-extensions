@@ -36,6 +36,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
+        <ignite.version>2.9.0-SNAPSHOT</ignite.version>
+
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
@@ -141,7 +143,6 @@
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
 
-
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
 
@@ -154,7 +155,7 @@
     </properties>
 
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-parent</artifactId>
+    <artifactId>ignite-extensions-parent</artifactId>
     <version>1</version>
     <packaging>pom</packaging>
 
@@ -183,50 +184,6 @@
         <system>jira</system>
         <url>http://issues.apache.org/jira/browse/IGNITE</url>
     </issueManagement>
-
-    <developers>
-        <developer>
-            <id>dsetrakyan</id>
-            <name>Dmitriy Setrakyan</name>
-            <email>dsetrakyan at apache dot org</email>
-        </developer>
-        <developer>
-            <id>agoncharuk</id>
-            <name>Alexey Goncharuk</name>
-            <email>agoncharuk at apache dot org</email>
-        </developer>
-        <developer>
-            <id>vkulichenko</id>
-            <name>Valentin Kulichenko</name>
-            <email>vkulichenko at apache dot org</email>
-        </developer>
-        <developer>
-            <id>svladykin</id>
-            <name>Sergi Vladykin</name>
-            <email>sergi dot vladykin at gmail dot com</email>
-        </developer>
-        <developer>
-            <id>yzhdanov</id>
-            <name>Yakov Zhdanov</name>
-            <email>yzhdanov at apache dot org</email>
-        </developer>
-        <developer>
-            <id>sboikov</id>
-            <name>Semyon Boikov</name>
-            <email>sboikov at gridgain dot com</email>
-        </developer>
-        <developer>
-            <id>vozerov</id>
-            <name>Vladimir Ozerov</name>
-            <email>vozerov at gridgain dot com</email>
-        </developer>
-        <developer>
-            <id>samaitra</id>
-            <name>Saikat Maitra</name>
-            <email>saikat dot maitra at gmail dot com</email>
-        </developer>
-
-    </developers>
 
     <repositories>
         <repository>
@@ -285,35 +242,6 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <version>3.3.2</version>
-                    <configuration>
-                        <jvmArgs>
-                            <jvmArg>-Xms512m</jvmArg>
-                            <jvmArg>-Xmx1024m</jvmArg>
-                        </jvmArgs>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>scala-compile-first</id>
-                            <phase>process-resources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                                <goal>compile</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>scala-test-compile</id>
-                            <phase>process-test-resources</phase>
-                            <goals>
-                                <goal>testCompile</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <configuration>
@@ -332,7 +260,7 @@
                                 <tagletArtifact>
                                     <groupId>org.apache.ignite</groupId>
                                     <artifactId>ignite-tools</artifactId>
-                                    <version>${project.version}</version>
+                                    <version>${ignite.version}</version>
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
@@ -374,106 +302,6 @@
                                 </packages>
                             </group>
                             <group>
-                                <title>Service Grid APIs</title>
-                                <packages>org.apache.ignite.services</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Thin Client APIs</title>
-                                <packages>org.apache.ignite.client</packages>
-                            </group>
-                            <group>
-                                <title>File System APIs</title>
-                                <packages>org.apache.ignite.igfs*</packages>
-                            </group>
-                            <group>
-                                <title>Hadoop Accelerator APIs</title>
-                                <packages>org.apache.ignite.hadoop*</packages>
-                            </group>
-                            <group>
-                                <title>Streaming APIs</title>
-                                <packages>org.apache.ignite.streamer*::org.apache.ignite.stream*</packages>
-                            </group>
-                            <group>
-                                <title>Security APIs</title>
-                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl</packages>
-                            </group>
-                            <group>
-                                <title>MXBeans classes</title>
-                                <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                            </group>
-                            <group>
-                                <title>SPI: CheckPoint</title>
-                                <packages>org.apache.ignite.spi.checkpoint*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Collision</title>
-                                <packages>org.apache.ignite.spi.collision*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Indexing</title>
-                                <packages>org.apache.ignite.spi.indexing*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Load Balancing</title>
-                                <packages>org.apache.ignite.spi.loadbalancing*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Communication</title>
-                                <packages>org.apache.ignite.spi.communication*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Deployment</title>
-                                <packages>org.apache.ignite.spi.deployment*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Swap Space</title>
-                                <packages>org.apache.ignite.spi.swapspace*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Discovery</title>
-                                <packages>org.apache.ignite.spi.discovery*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Failover</title>
-                                <packages>org.apache.ignite.spi.failover*</packages>
-                            </group>
-                            <group>
-                                <title>SPI: Event Storage</title>
-                                <packages>org.apache.ignite.spi.eventstorage*</packages>
-                            </group>
-                            <group>
-                                <title>Communication Failure Detection</title>
-                                <packages>org.apache.ignite.failure</packages>
-                            </group>
-                            <group>
-                                <title>Segmentation Detection</title>
-                                <packages>org.apache.ignite.plugin.segmentation</packages>
-                            </group>
-                            <group>
-                                <title>Ignite plugin API</title>
-                                <packages>org.apache.ignite.plugin*</packages>
-                            </group>
-                            <group>
-                                <title>Logging</title>
-                                <packages>org.apache.ignite.logger*</packages>
-                            </group>
-                            <group>
-                                <title>Loaders</title>
-                                <packages>org.apache.ignite.startup*</packages>
-                            </group>
-                            <group>
-                                <title>Marshallers</title>
-                                <packages>org.apache.ignite.marshaller*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Binary Objects API</title>
-                                <packages>org.apache.ignite.binary*</packages>
-                            </group>
-                            <group>
-                                <title>Visor Plugins</title>
-                                <packages>org.apache.ignite.visor.plugin</packages>
-                            </group>
-                            <group>
                                 <title>Spring Integration</title>
                                 <packages>org.apache.ignite.cache.spring:org.apache.ignite.transactions.spring</packages>
                             </group>
@@ -484,10 +312,6 @@
                             <group>
                                 <title>Yarn Integration</title>
                                 <packages>org.apache.ignite.yarn*</packages>
-                            </group>
-                            <group>
-                                <title>Platforms</title>
-                                <packages>org.apache.ignite.platform*</packages>
                             </group>
                             <group>
                                 <title>Spark Integration</title>
@@ -528,30 +352,6 @@
                             <group>
                                 <title>Ignite Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite ML</title>
-                                <packages>org.apache.ignite.ml*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite TensorFlow</title>
-                                <packages>org.apache.ignite.tensorflow*</packages>
-                            </group>
-                            <group>
-                                <title>Encryption SPI</title>
-                                <packages>org.apache.ignite.spi.encryption*</packages>
-                            </group>
-                            <group>
-                                <title>Ignite Web Console</title>
-                                <packages>org.apache.ignite.console*</packages>
-                            </group>
-                            <group>
-                                <title>Metric SPI</title>
-                                <packages>org.apache.ignite.spi.metric*</packages>
-                            </group>
-                            <group>
-                                <title>System view SPI</title>
-                                <packages>org.apache.ignite.spi.systemview*</packages>
                             </group>
                         </groups>
                         <bottom>
@@ -769,9 +569,9 @@
 [INFO] ------------------------------------------------------------------------
 [ERROR] You are trying to compile Apache Ignite with inappropriate JDK version!
 [ERROR] Detected JDK Version: ${java.runtime.version}
-[ERROR] JDK version should be 1.7.0-* or >= 1.8.0-u40.
+[ERROR] JDK version should be >= 1.8.0-u40.
                             </message>
-                            <version>[1.7,1.8),[1.8.0-40,)</version>
+                            <version>[1.8.0-40,)</version>
                         </requireJavaVersion>
                     </rules>
                 </configuration>
@@ -780,25 +580,6 @@
                         <goals>
                             <goal>enforce</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-libs</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <excludeGroupIds>org.apache.ignite</excludeGroupIds>
-                            <outputDirectory>target/libs</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <excludeTransitive>true</excludeTransitive>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -1123,35 +904,6 @@
                     </plugin>
                 </plugins>
             </build>
-
-            <dependencyManagement>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-common</artifactId>
-                        <type>test-jar</type>
-                        <exclusions>
-                            <exclusion>
-                                <!-- This dependency is not available with java 9.-->
-                                <groupId>jdk.tools</groupId>
-                                <artifactId>jdk.tools</artifactId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
-            </dependencyManagement>
-
         </profile>
 
         <profile>

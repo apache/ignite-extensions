@@ -25,7 +25,7 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-extensions-parent</artifactId>
         <version>1</version>
         <relativePath>../../parent</relativePath>
     </parent>
@@ -34,17 +34,11 @@
     <version>1.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <ignite-core.version>2.9.0-SNAPSHOT</ignite-core.version>
-        <ignite-log4j.version>2.9.0-SNAPSHOT</ignite-log4j.version>
-        <ignite-spring.version>2.9.0-SNAPSHOT</ignite-spring.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite-core.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
@@ -62,21 +56,21 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite-spring.version}</version>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite-log4j.version}</version>
+            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite-core.version}</version>
+            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

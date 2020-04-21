@@ -25,7 +25,7 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent</artifactId>
+        <artifactId>ignite-extensions-parent</artifactId>
         <version>1</version>
         <relativePath>../../parent</relativePath>
     </parent>
@@ -33,10 +33,6 @@
     <artifactId>ignite-spring-boot-autoconfigure</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
-
-    <properties>
-        <ignite.version>2.9.0-SNAPSHOT</ignite.version>
-    </properties>
 
     <dependencies>
         <dependency>
