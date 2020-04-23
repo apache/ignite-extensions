@@ -272,8 +272,8 @@
                                 </tagletArtifact>
                             </taglet>
                         </taglets>
-                        <doctitle>Ignite ${project.version}</doctitle>
-                        <windowtitle>Ignite ${project.version}</windowtitle>
+                        <doctitle>Ignite ${ignite.version}</doctitle>
+                        <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
                         <verbose>true</verbose>
                         <show>protected</show>
@@ -390,7 +390,7 @@
                                                             <b>Ignite Database and Caching Platform</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${project.version}</strong>
+                                                            ver. <strong>${ignite.version}</strong>
                                                         </td>
                                                     </tr>
                                                     <tr style="padding: 0; margin: 0">
@@ -957,7 +957,7 @@
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
                     <artifactId>ignite-apache-license-gen</artifactId>
-                    <version>${project.version}</version>
+                    <version>${ignite.version}</version>
                     <scope>test</scope><!-- hack to have ignite-apache-license-gen at first place at mvn reactor -->
                 </dependency>
             </dependencies>
@@ -975,7 +975,7 @@
                                 </goals>
                                 <configuration>
                                     <resourceBundles>
-                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${project.version}
+                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:${ignite.version}
                                         </resourceBundle>
                                     </resourceBundles>
                                     <excludeTransitive>true</excludeTransitive>
