@@ -48,6 +48,7 @@
         <module>modules/spring-boot-autoconfigure</module>
         <module>modules/spring-boot-client-autoconfigure</module>
         <module>modules/zeromq-ext</module>
+        <module>modules/twitter-ext</module>
     </modules>
 
     <profiles>
