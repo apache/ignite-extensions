@@ -31,7 +31,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-client-spring-boot-autoconfigure</artifactId>
+    <artifactId>ignite-spring-boot-client-autoconfigure</artifactId>
     <version>1.0.0</version>
     <url>http://ignite.apache.org</url>
 
