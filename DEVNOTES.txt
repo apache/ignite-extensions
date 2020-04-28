@@ -3,5 +3,5 @@ Apache Ignite Extensions Maven Build Instructions
 
 1) Compile and install:
 	
-	mvn clean install -Pall-java,all-scala,licenses -DskipTests
+	mvn clean install
 
