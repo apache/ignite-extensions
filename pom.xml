@@ -44,7 +44,7 @@
     <modules>
         <module>modules/flink-ext</module>
         <module>modules/flume-ext</module>
-        <module>modules/pub-sub</module>
+        <module>modules/pub-sub-ext</module>
         <module>modules/spring-boot-autoconfigure-ext</module>
         <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
         <module>modules/zeromq-ext</module>
