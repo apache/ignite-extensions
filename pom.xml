@@ -49,6 +49,7 @@
         <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
         <module>modules/zeromq-ext</module>
         <module>modules/twitter-ext</module>
+        <module>modules/rocketmq-ext</module>
     </modules>
 
     <profiles>
