@@ -75,54 +75,6 @@
         </layout>
     </appender>
 
-    <!--
-        Uncomment to enable Ignite query execution debugging.
-    -->
-    <!--
-    <category name="org.apache.ignite.internal.processors.query">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-        Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.
-    -->
-    <!--
-         <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
-             <level value="DEBUG"/>
-         </category>
-
-        <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology">
-            <level value="DEBUG"/>
-        </category>
-    -->
-
-    <!--
-        Uncomment to enable debugging of partition counters.
-    -->
-    <!--
-        <category name="org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterDebugWrapper">
-            <level value="DEBUG"/>
-        </category>
-    -->
-
-    <!--
-        Uncomment to enable transactions debugging.
-    -->
-    <!--
-         <category name="org.apache.ignite.cache.msg.tx.prepare">
-             <level value="DEBUG"/>
-         </category>
-
-         <category name="org.apache.ignite.cache.msg.tx.finish">
-             <level value="DEBUG"/>
-         </category>
-
-         <category name="org.apache.ignite.cache.msg.tx.recovery">
-             <level value="DEBUG"/>
-         </category>
-    -->
-
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>
