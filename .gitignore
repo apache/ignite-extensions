@@ -23,7 +23,7 @@ buildNumber.properties
 ### Eclipse template
 
 .metadata
-modules/profiling-ext/bin/
+bin/
 tmp/
 *.tmp
 *.bak
