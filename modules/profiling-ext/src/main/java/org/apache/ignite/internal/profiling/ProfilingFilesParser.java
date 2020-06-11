@@ -60,16 +60,7 @@ import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 
 /**
- * Profiling files parser. Creates JSONs for UI interface. Builds the report.
- *
- * To build the performance report follow:
- * <ol>
- *     <li>Start profiling. See {@link IgniteProfilingMBean#startProfiling(long, int, int)}</li>
- *     <li>Collect workload statistics.</li>
- *     <li>Stop profiling. See {@link IgniteProfilingMBean#stopProfiling()}</li>
- *     <li>Collect profiling files from all nodes under an empty directory.</li>
- *     <li>Run script {@code ./bin/profiling.sh path_to_files} to build the performance report.</li>
- * </ol>
+ * Profiling files parser. Parses profiling files and creates JSONs for UI interface. Builds the report.
  */
 public class ProfilingFilesParser {
     /** Profiling file name pattern. */
@@ -84,15 +75,13 @@ public class ProfilingFilesParser {
     /**
      * @param args Only one argument: profiling files directory to parse or '-h' to get usage help.
      */
-    public static void main(String[] args) throws Exception {
-        long startTime = System.currentTimeMillis();
-
+    public static void main(String... args) throws Exception {
         String filesDir = parseArguments(args);
 
         HashMap<UUID, Path> files = findFiles(filesDir);
 
         if (files.isEmpty())
-            throw new Exception("Unable to find profiling files.");
+            throw new Exception("Unable to find profiling files [dir=" + filesDir + ']');
 
         String resDir = createResultDir(filesDir);
 
@@ -100,8 +89,7 @@ public class ProfilingFilesParser {
 
         copyReportSources(resDir);
 
-        System.out.println(U.nl() + "Profiling files parsed successfully [totalTime=" +
-            MILLISECONDS.toSeconds(System.currentTimeMillis() - startTime) + " s]" + U.nl() + U.nl() +
+        System.out.println(U.nl() + "Profiling files parsed successfully." + U.nl() + U.nl() +
             "Report created [dir=" + resDir + "]" + U.nl() +
             "Open '" + resDir + "/index.html' in browser to see the report.");
     }
@@ -113,10 +101,10 @@ public class ProfilingFilesParser {
      * @return Profiling files directory.
      */
     private static String parseArguments(String[] args) {
-        if (args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
+        if (args == null || args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
             System.out.println(
                 "The script is used to create a performance report from profiling files." + U.nl() + U.nl() +
-                    "Usage: profiling.sh path_to_profiling_files" + U.nl() + U.nl() +
+                    "Usage: build-report.sh path_to_profiling_files" + U.nl() + U.nl() +
                     "The path should contain profiling files collected from the cluster." + U.nl() +
                     "Profiling file name mask: node-${sys:nodeId}.prf" + U.nl() +
                     "The report will be created at files path with new directory: " +
@@ -179,8 +167,6 @@ public class ProfilingFilesParser {
 
         // Data directory.
         Files.createDirectory(new File(dir + "/data").toPath());
-
-        System.out.println("Result directory created [dir=" + dir + ']');
 
         return dir;
     }
@@ -294,10 +280,11 @@ public class ProfilingFilesParser {
     private static void copyReportSources(String resDir) throws Exception {
         try (InputStream in = ProfilingFilesParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
-                U.delete(new File(resDir));
+                System.err.println("Run from IDE require custom maven assembly to create UI resources (try to " +
+                    "package 'ignite-profiling-ext' module or set up executing 'package' phase before build). " +
+                    "The report sources will not be copied to the result directory.");
 
-                throw new RuntimeException("Run from IDE require custom maven assembly (try to package " +
-                    "'ignite-profiling' module). The report sources will not be copied to the result directory.");
+                return;
             }
 
             try (ZipInputStream zip = new ZipInputStream(in)) {
