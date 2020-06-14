@@ -55,7 +55,6 @@ import org.apache.ignite.internal.profiling.handlers.TransactionsHandler;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.regex.Pattern.compile;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 

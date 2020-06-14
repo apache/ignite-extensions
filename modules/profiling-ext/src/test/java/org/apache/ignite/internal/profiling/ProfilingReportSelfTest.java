@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.profiling.ProfilingFilesParser;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
