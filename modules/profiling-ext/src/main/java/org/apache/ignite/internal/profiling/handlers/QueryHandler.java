@@ -220,12 +220,6 @@ public class QueryHandler implements IgniteProfilingHandler {
         final Map<UUID, Set<Long>> ids = new HashMap<>();
 
         /** */
-        public void addReads(long logicalReads, long physicalReads) {
-            this.logicalReads += logicalReads;
-            this.physicalReads += physicalReads;
-        }
-
-        /** */
         public void merge(UUID queryNodeId, long id, long duration, boolean success) {
             count += 1;
             totalDuration += duration;
@@ -239,7 +233,7 @@ public class QueryHandler implements IgniteProfilingHandler {
     }
 
     /** Query. */
-    public class Query {
+    private static class Query {
         /** Cache query type. */
         final GridCacheQueryType type;
 

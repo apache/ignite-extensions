@@ -239,8 +239,6 @@ public class ProfilingFilesParser {
         File file = new File(fileName);
 
         writer.writeValue(file, json);
-
-        System.out.println("Json writed to file [file=" + file.getAbsolutePath() + ']');
     }
 
     /**
@@ -267,8 +265,6 @@ public class ProfilingFilesParser {
         }
 
         jsonFile.delete();
-
-        System.out.println("Json converted to js [file=" + jsonFile.getAbsolutePath() + ".js]");
     }
 
     /**

@@ -48,7 +48,7 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
     /** Field name of aggregated by caches/nodes values. */
     private static final String TOTAL = "total";
 
-    /** Cache operations statistics: nodeId->cacheId->opType->aggregatedResults. */
+    /** Cache operations statistics: nodeId -> cacheId -> opType -> aggregatedResults. */
     private final Map<UUID, Map<Integer, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ $('#nodesTable').bootstrapTable({
         title: 'Node name',
         sortable: true
     }, {
-        field: 'verson',
+        field: 'version',
         title: 'Node verson',
         sortable: true
     }, {
@@ -43,7 +43,7 @@ function prepareNodesTableData() {
         data.push({
             "nodeId": nodeId,
             "name": node.name,
-            "verson": node.verson
+            "version": node.version
         });
     });
 

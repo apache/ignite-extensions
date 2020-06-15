@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
  *      "nodes" : {
 *           $nodeId : {
  *              "name": $name,
- *              "verson": $verson,
+ *              "version": $version,
  *              "startTime" : $startTime
  *          }
  *      }
@@ -74,7 +74,7 @@ public class ClusterInfoHandler implements IgniteProfilingHandler {
         ObjectNode node = MAPPER.createObjectNode();
 
         node.put("name", igniteInstanceName);
-        node.put("verson", igniteVersion);
+        node.put("version", igniteVersion);
         node.put("startTime", startTime);
 
         nodes.set(nodeId.toString(), node);

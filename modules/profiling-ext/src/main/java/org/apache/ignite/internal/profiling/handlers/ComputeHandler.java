@@ -189,7 +189,7 @@ public class ComputeHandler implements IgniteProfilingHandler {
     }
 
     /** Task. */
-    public class Task {
+    public static class Task {
         /** Node id. */
         private final UUID nodeId;
 
@@ -227,7 +227,7 @@ public class ComputeHandler implements IgniteProfilingHandler {
     }
 
     /** Job. */
-    public class Job {
+    public static class Job {
         /** Node id. */
         private final UUID nodeId;
 
