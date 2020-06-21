@@ -50,6 +50,7 @@
         <module>modules/zeromq-ext</module>
         <module>modules/twitter-ext</module>
         <module>modules/rocketmq-ext</module>
+        <module>modules/mqtt-ext</module>
     </modules>
 
     <profiles>
