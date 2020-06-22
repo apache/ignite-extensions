@@ -200,3 +200,29 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+
+
+==============================================================================
+Apache Ignite Extensions Subcomponents:
+
+The Apache Ignite Extensions project contains subcomponents with separate copyright
+notices and license terms. Your use of the source code for the these
+subcomponents is subject to the terms and conditions of the following
+licenses.
+
+
+========================================================================
+MIT licenses
+========================================================================
+
+The following components are provided under the MIT License.
+
+    (MIT License) jquery (For details, see https://jquery.org/license/)
+    (MIT License) bootstrap (For details, see https://github.com/twbs/bootstrap/)
+    (MIT License) Bootstrap-select (For details, see https://developer.snapappointments.com/bootstrap-select)
+    (MIT License) Chart.js (For details, see https://github.com/chartjs/Chart.js)
+    (MIT License) Font Awesome Free (For details, see https://fontawesome.com/license/free)
+    (MIT License) Feather (For details, see https://github.com/feathericons/feather)
+    (MIT License) Moment (For details, see https://github.com/moment/moment)
+    (MIT License) Popper (For details, see https://github.com/popperjs/popper-core)
