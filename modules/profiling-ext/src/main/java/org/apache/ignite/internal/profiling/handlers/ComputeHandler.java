@@ -85,7 +85,7 @@ public class ComputeHandler implements IgniteProfilingHandler {
 
         topSlowTask.put(duration, task);
 
-        AggregatedTaskInfo info = taskRes.computeIfAbsent(taskName, k -> new AggregatedTaskInfo());
+        AggregatedTaskInfo info = taskRes.computeIfAbsent(taskName, name -> new AggregatedTaskInfo());
 
         info.mergeTask(sesId, duration);
     }

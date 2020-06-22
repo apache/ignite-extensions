@@ -20,6 +20,7 @@ package org.apache.ignite.internal.profiling.handlers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -49,7 +50,7 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
     private static final String TOTAL = "total";
 
     /** Cache operations statistics: nodeId -> cacheId -> opType -> aggregatedResults. */
-    private final Map<UUID, Map<Integer, Map<String, Map<Long, Integer>>>> res = new HashMap<>();
+    private final Map<UUID, Map<Integer, Map<CacheOperationType, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
@@ -64,9 +65,9 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
 
         for (UUID nodeId : nodesId) {
             for (int cache : cacheIds) {
-                res.computeIfAbsent(nodeId, k -> new HashMap<>())
-                    .computeIfAbsent(cache, k -> new HashMap<>())
-                    .computeIfAbsent(type.name(), k -> new HashMap<>())
+                res.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+                    .computeIfAbsent(cache, id -> new EnumMap<>(CacheOperationType.class))
+                    .computeIfAbsent(type, op -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
             }
         }
@@ -83,7 +84,7 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
                 ObjectNode cache = createObjectIfAbsent(cacheId == 0 ? TOTAL : String.valueOf(cacheId), node);
 
                 opsMap.forEach((opType, timingMap) -> {
-                    ArrayNode op = createArrayIfAbsent(opType, cache);
+                    ArrayNode op = createArrayIfAbsent(opType.toString(), cache);
 
                     timingMap.forEach((time, count) -> {
                         ArrayNode arr = MAPPER.createArrayNode();

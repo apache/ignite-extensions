@@ -32,6 +32,8 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
+import static org.apache.ignite.internal.profiling.handlers.TransactionsHandler.TransactionState.COMMIT;
+import static org.apache.ignite.internal.profiling.handlers.TransactionsHandler.TransactionState.ROLLBACK;
 import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
 import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
 import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
@@ -82,13 +84,13 @@ public class TransactionsHandler implements IgniteProfilingHandler {
 
         for (UUID nodeId : nodesId) {
             for (Integer cacheId : cacheIdsArr) {
-                res.computeIfAbsent(nodeId, s -> new HashMap<>())
-                    .computeIfAbsent(cacheId, s -> new EnumMap<>(TransactionState.class))
-                    .computeIfAbsent(commit ? TransactionState.COMMIT : TransactionState.ROLLBACK, s -> new HashMap<>())
+                res.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+                    .computeIfAbsent(cacheId, id -> new EnumMap<>(TransactionState.class))
+                    .computeIfAbsent(commit ? COMMIT : ROLLBACK, state -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
 
-                histogram.computeIfAbsent(nodeId, s -> new HashMap<>())
-                    .computeIfAbsent(cacheId, s -> new HistogramMetricImpl("", null, HISTOGRAM_BUCKETS))
+                histogram.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+                    .computeIfAbsent(cacheId, id -> new HistogramMetricImpl("", null, HISTOGRAM_BUCKETS))
                     .value(U.nanosToMillis(duration));
             }
         }
@@ -152,7 +154,7 @@ public class TransactionsHandler implements IgniteProfilingHandler {
     }
 
     /** */
-    private enum TransactionState {
+    enum TransactionState {
         /** */
         COMMIT,
 

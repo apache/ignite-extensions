@@ -85,12 +85,12 @@ public class QueryHandler implements IgniteProfilingHandler {
         Query query = new Query(type, text, queryNodeId, id, startTime, duration, success);
 
         OrderedFixedSizeStructure<Long, Query> tree = topSlow.computeIfAbsent(type,
-            t -> new OrderedFixedSizeStructure<>());
+            queryType -> new OrderedFixedSizeStructure<>());
 
         tree.put(duration, query);
 
-        AggregatedQueryInfo info = aggrQuery.computeIfAbsent(type, t -> new HashMap<>())
-            .computeIfAbsent(text, k -> new AggregatedQueryInfo());
+        AggregatedQueryInfo info = aggrQuery.computeIfAbsent(type, queryType -> new HashMap<>())
+            .computeIfAbsent(text, queryText -> new AggregatedQueryInfo());
 
         info.merge(queryNodeId, id, duration, success);
     }
@@ -99,10 +99,10 @@ public class QueryHandler implements IgniteProfilingHandler {
     @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
 
-        Map<Long, long[]> ids = readsById.computeIfAbsent(type, t -> new HashMap<>())
-            .computeIfAbsent(queryNodeId, k -> new HashMap<>());
+        Map<Long, long[]> ids = readsById.computeIfAbsent(type, queryType -> new HashMap<>())
+            .computeIfAbsent(queryNodeId, nodeId -> new HashMap<>());
 
-        long[] readsArr = ids.computeIfAbsent(id, k -> new long[] {0, 0});
+        long[] readsArr = ids.computeIfAbsent(id, queryId -> new long[] {0, 0});
 
         readsArr[0] += logicalReads;
         readsArr[1] += physicalReads;

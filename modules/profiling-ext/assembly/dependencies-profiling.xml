@@ -23,8 +23,6 @@
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <id>profiling-report-sources</id>
 
-    <includeBaseDirectory>false</includeBaseDirectory>
-
     <formats>
         <format>zip</format>
     </formats>
