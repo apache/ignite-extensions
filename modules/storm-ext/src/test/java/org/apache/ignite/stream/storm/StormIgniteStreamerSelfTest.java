@@ -54,7 +54,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
     private static final String TEST_CACHE = "testCache";
 
     /** Ignite test configuration file. */
-    private static final String GRID_CONF_FILE = "modules/storm/src/test/resources/example-ignite.xml";
+    private static final String GRID_CONF_FILE = "example-ignite.xml";
 
     /** Ignite instance. */
     private Ignite ignite;
