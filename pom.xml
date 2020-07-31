@@ -51,6 +51,7 @@
         <module>modules/twitter-ext</module>
         <module>modules/rocketmq-ext</module>
         <module>modules/mqtt-ext</module>
+        <module>modules/storm-ext</module>
     </modules>
 
     <profiles>
