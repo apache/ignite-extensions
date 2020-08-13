@@ -52,6 +52,7 @@
         <module>modules/rocketmq-ext</module>
         <module>modules/mqtt-ext</module>
         <module>modules/storm-ext</module>
+        <module>modules/camel-ext</module>
     </modules>
 
     <profiles>
