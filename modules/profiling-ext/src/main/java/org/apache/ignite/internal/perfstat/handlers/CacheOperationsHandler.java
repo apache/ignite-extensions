@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -24,12 +24,12 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
-import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
-import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.createArrayIfAbsent;
+import static org.apache.ignite.internal.perfstat.util.Utils.createObjectIfAbsent;
 
 /**
  * Builds JSON with aggregated cache operations statistics.
@@ -50,12 +50,12 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
     private static final String TOTAL = "total";
 
     /** Cache operations statistics: nodeId -> cacheId -> opType -> aggregatedResults. */
-    private final Map<UUID, Map<Integer, Map<CacheOperationType, Map<Long, Integer>>>> res = new HashMap<>();
+    private final Map<UUID, Map<Integer, Map<OperationType, Map<Long, Integer>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
         // nodeId=null means aggregate by all nodes.
-        UUID[] nodesId = new UUID[] {null, currentNodeId()};
+        UUID[] nodesId = new UUID[] {null, nodeId};
 
         // cacheId=0 means aggregate by all caches.
         int[] cacheIds = new int[] {0, cacheId};
@@ -63,10 +63,10 @@ public class CacheOperationsHandler implements IgniteProfilingHandler {
         // Aggregate by seconds.
         long aggrTime = startTime / 1000 * 1000;
 
-        for (UUID nodeId : nodesId) {
+        for (UUID node : nodesId) {
             for (int cache : cacheIds) {
-                res.computeIfAbsent(nodeId, uuid -> new HashMap<>())
-                    .computeIfAbsent(cache, id -> new EnumMap<>(CacheOperationType.class))
+                res.computeIfAbsent(node, uuid -> new HashMap<>())
+                    .computeIfAbsent(cache, id -> new EnumMap<>(OperationType.class))
                     .computeIfAbsent(type, op -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
             }

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
 
 /**
  * Builds JSON with nodes and started caches information.
@@ -67,30 +66,30 @@ public class ClusterInfoHandler implements IgniteProfilingHandler {
         res.set("caches", caches);
     }
 
-    /** {@inheritDoc} */
-    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
-        res.put("profilingStartTime", Math.min(startTime, res.get("profilingStartTime").longValue()));
-
-        ObjectNode node = MAPPER.createObjectNode();
-
-        node.put("name", igniteInstanceName);
-        node.put("version", igniteVersion);
-        node.put("startTime", startTime);
-
-        nodes.set(nodeId.toString(), node);
-    }
-
-    @Override public void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
-        boolean userCache) {
-        ObjectNode node = MAPPER.createObjectNode();
-
-        node.put("startTime", startTime);
-        node.put("cacheName", cacheName);
-        node.put("groupName", groupName);
-        node.put("userCache", userCache);
-
-        caches.set(String.valueOf(cacheId), node);
-    }
+//    /** {@inheritDoc} */
+//    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
+//        res.put("profilingStartTime", Math.min(startTime, res.get("profilingStartTime").longValue()));
+//
+//        ObjectNode node = MAPPER.createObjectNode();
+//
+//        node.put("name", igniteInstanceName);
+//        node.put("version", igniteVersion);
+//        node.put("startTime", startTime);
+//
+//        nodes.set(nodeId.toString(), node);
+//    }
+//
+//    @Override public void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
+//        boolean userCache) {
+//        ObjectNode node = MAPPER.createObjectNode();
+//
+//        node.put("startTime", startTime);
+//        node.put("cacheName", cacheName);
+//        node.put("groupName", groupName);
+//        node.put("userCache", userCache);
+//
+//        caches.set(String.valueOf(cacheId), node);
+//    }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {

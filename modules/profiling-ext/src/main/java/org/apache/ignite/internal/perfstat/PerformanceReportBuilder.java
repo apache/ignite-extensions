@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.perfstat;
 
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,65 +31,46 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.ignite.internal.profiling.handlers.CacheOperationsHandler;
-import org.apache.ignite.internal.profiling.handlers.ClusterInfoHandler;
-import org.apache.ignite.internal.profiling.handlers.ComputeHandler;
-import org.apache.ignite.internal.profiling.handlers.IgniteProfilingHandler;
-import org.apache.ignite.internal.profiling.handlers.QueryHandler;
-import org.apache.ignite.internal.profiling.handlers.TransactionsHandler;
+import org.apache.ignite.internal.perfstat.handlers.CacheOperationsHandler;
+import org.apache.ignite.internal.perfstat.handlers.ClusterInfoHandler;
+import org.apache.ignite.internal.perfstat.handlers.ComputeHandler;
+import org.apache.ignite.internal.perfstat.handlers.IgniteProfilingHandler;
+import org.apache.ignite.internal.perfstat.handlers.QueryHandler;
+import org.apache.ignite.internal.perfstat.handlers.TransactionsHandler;
+import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.regex.Pattern.compile;
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
 
 /**
- * Profiling files parser. Parses profiling files and creates JSONs for UI interface. Builds the report.
+ * Performance statistics report builder. Parses files and creates JSONs for UI interface. Builds the report.
  */
-public class ProfilingFilesParser {
-    /** Profiling file name pattern. */
-    private static final Pattern PROFILING_FILE_PATTERN = compile(".*node-(.+).prf$");
-
+public class PerformanceReportBuilder {
     /** Maven-generated archive of UI report resources. */
     private static final String REPORT_RESOURCE_NAME = "report.zip";
 
-    /** Node id of current parsed file. */
-    private static UUID curNodeId;
-
     /**
-     * @param args Only one argument: profiling files directory to parse or '-h' to get usage help.
+     * @param args Only one argument: Performance statistics files directory to parse or '-h' to get usage help.
      */
     public static void main(String... args) throws Exception {
         String filesDir = parseArguments(args);
 
-        HashMap<UUID, Path> files = findFiles(filesDir);
-
-        if (files.isEmpty())
-            throw new Exception("Unable to find profiling files [dir=" + filesDir + ']');
-
         String resDir = createResultDir(filesDir);
 
-        parseFiles(files, resDir);
+        parseFiles(filesDir, resDir);
 
         copyReportSources(resDir);
 
-        System.out.println(U.nl() + "Profiling files parsed successfully." + U.nl() + U.nl() +
-            "Report created [dir=" + resDir + "]" + U.nl() +
+        System.out.println("Report created [dir=" + resDir + "]" + U.nl() +
             "Open '" + resDir + "/index.html' in browser to see the report.");
     }
 
@@ -97,17 +78,19 @@ public class ProfilingFilesParser {
      * Parses arguments and print help or extracts files directory from arguments and checks it existing.
      *
      * @param args Arguments to parse.
-     * @return Profiling files directory.
+     * @return Performance statistics files directory.
      */
     private static String parseArguments(String[] args) {
         if (args == null || args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
             System.out.println(
-                "The script is used to create a performance report from profiling files." + U.nl() + U.nl() +
-                    "Usage: build-report.sh path_to_profiling_files" + U.nl() + U.nl() +
-                    "The path should contain profiling files collected from the cluster." + U.nl() +
-                    "Profiling file name mask: node-${sys:nodeId}.prf" + U.nl() +
+                "The script is used to create a performance report from performance statistics files." +
+                    U.nl() + U.nl() +
+                    "Usage: build-report.sh path_to_files" +
+                    U.nl() + U.nl() +
+                    "The path should contain performance statistics files collected from the cluster." + U.nl() +
+                    "Performance statistics file name mask: node-${sys:nodeId}.prf" + U.nl() +
                     "The report will be created at files path with new directory: " +
-                    "path_to_profiling_files/report_yyyy-MM-dd_HH-mm-ss/" + U.nl() +
+                    "path_to_files/report_yyyy-MM-dd_HH-mm-ss/" + U.nl() +
                     "Open 'report_yyyy-MM-dd_HH-mm-ss/index.html' in browser to see the report.");
 
             System.exit(0);
@@ -119,39 +102,10 @@ public class ProfilingFilesParser {
 
         File dir = new File(filesDir);
 
-        A.ensure(dir.exists(), "Profiling files directory does not exists.");
-        A.ensure(dir.isDirectory(), "Profiling files directory is not a directory.");
+        A.ensure(dir.exists(), "Performance statistics files directory does not exists.");
+        A.ensure(dir.isDirectory(), "Performance statistics files directory is not a directory.");
 
         return filesDir;
-    }
-
-    /**
-     * Finds profiling files to parse.
-     *
-     * @param filesPath Profiling files directory.
-     * @return Map of found files: nodeId -> profiling file path.
-     */
-    private static HashMap<UUID, Path> findFiles(String filesPath) throws IOException {
-        HashMap<UUID, Path> res = new HashMap<>();
-
-        File filesDir = new File(filesPath);
-
-        DirectoryStream<Path> files = Files.newDirectoryStream(filesDir.toPath());
-
-        for (Path file : files) {
-            Matcher matcher = PROFILING_FILE_PATTERN.matcher(file.toString());
-
-            if (!matcher.matches())
-                continue;
-
-            UUID nodeId = UUID.fromString(matcher.group(1));
-
-            res.put(nodeId, file);
-
-            System.out.println("Found file to parse [path=" + file.toAbsolutePath() + ", nodeId=" + nodeId + ']');
-        }
-
-        return res;
     }
 
     /**
@@ -171,12 +125,12 @@ public class ProfilingFilesParser {
     }
 
     /**
-     * Parses profiling files.
+     * Parses performance statistics files.
      *
-     * @param files Profiling files.
+     * @param filesDir Performance statistics files.
      * @param resDir Results directory.
      */
-    private static void parseFiles(HashMap<UUID, Path> files, String resDir) throws Exception {
+    private static void parseFiles(String filesDir, String resDir) throws Exception {
         IgniteProfilingHandler[] handlers = new IgniteProfilingHandler[] {
             new QueryHandler(),
             new CacheOperationsHandler(),
@@ -185,21 +139,14 @@ public class ProfilingFilesParser {
             new ClusterInfoHandler()
         };
 
-        for (Map.Entry<UUID, Path> entry : files.entrySet()) {
-            UUID nodeId = entry.getKey();
-            Path currFile = entry.getValue();
-
-            curNodeId = nodeId;
-
-            parseFile(handlers, nodeId, currFile);
-
-            curNodeId = null;
-        }
+        FilePerformanceStatisticsReader.read(Collections.singletonList(new File(filesDir)), handlers);
 
         ObjectNode dataJson = MAPPER.createObjectNode();
 
         for (IgniteProfilingHandler handler : handlers)
             handler.results().forEach(dataJson::set);
+
+        collectClusterInfo(dataJson);
 
         writeJsonToFile(resDir + "/data/data.json", dataJson);
 
@@ -207,24 +154,12 @@ public class ProfilingFilesParser {
     }
 
     /**
-     * Parses node's profiling file.
-     *
-     * @param handlers Parsers.
-     * @param nodeId Node id.
-     * @param file File to parse.
+     * Collects nodes, caches info.
      */
-    private static void parseFile(IgniteProfilingHandler[] handlers, UUID nodeId, Path file) throws Exception {
-        System.out.println("Starting parse profiling file [file=" + file.toAbsolutePath() +
-            ", size=" + FileUtils.byteCountToDisplaySize(file.toFile().length()) + ", nodeId=" + nodeId + ']');
+    private static void collectClusterInfo(ObjectNode dataJson) {
+        // TODO parse nodes logs.
 
-        FileProfilingWalker.walkFile(file, handlers);
-
-        System.out.println("File parsed successfully [nodeId=" + nodeId + ']');
-    }
-
-    /** @return Node id of current parsed file. */
-    public static UUID currentNodeId() {
-        return curNodeId;
+        ObjectNode ops = (ObjectNode)dataJson.get("cacheOps");
     }
 
     /**
@@ -273,7 +208,7 @@ public class ProfilingFilesParser {
      * @param resDir Directory to copy sources to.
      */
     private static void copyReportSources(String resDir) throws Exception {
-        try (InputStream in = ProfilingFilesParser.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
+        try (InputStream in = PerformanceReportBuilder.class.getClassLoader().getResourceAsStream(REPORT_RESOURCE_NAME)) {
             if (in == null) {
                 System.err.println("Run from IDE require custom maven assembly to create UI resources (try to " +
                     "package 'ignite-profiling-ext' module or set up executing 'package' phase before build). " +

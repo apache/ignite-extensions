@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.profiling.IgniteProfiling;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * The interface represents profiling operations handler to build JSON for UI views.
  */
-public interface IgniteProfilingHandler extends IgniteProfiling {
+public interface IgniteProfilingHandler extends PerformanceStatisticsHandler {
     /**
      * Map of named JSON results.
      *
@@ -37,46 +38,37 @@ public interface IgniteProfilingHandler extends IgniteProfiling {
     Map<String, JsonNode> results();
 
     /** {@inheritDoc} */
-    @Override default void cacheOperation(CacheOperationType type, int cacheId, long startTime, long duration) {
+    @Override default void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override default void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+    @Override default void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+        boolean commited) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override default void query(GridCacheQueryType type, String text, long id, long startTime, long duration,
-        boolean success) {
+    @Override default void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+        long duration, boolean success) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override default void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
-        long physicalReads) {
+    @Override default void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+        long logicalReads, long physicalReads) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override default void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
+    @Override default void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+        int affPartId) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override default void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override default void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
-        boolean userCache) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override default void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion,
-        long startTime) {
+    @Override default void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+        boolean timedOut) {
         // No-op.
     }
 }

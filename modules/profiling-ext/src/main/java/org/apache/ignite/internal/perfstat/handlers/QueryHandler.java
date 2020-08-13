@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -28,11 +28,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
+import org.apache.ignite.internal.perfstat.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
 
 /**
  * Builds JSON with aggregated query statistics.
@@ -78,11 +77,9 @@ public class QueryHandler implements IgniteProfilingHandler {
         new EnumMap<>(GridCacheQueryType.class);
 
     /** {@inheritDoc} */
-    @Override public void query(GridCacheQueryType type, String text, long id, long startTime,
+    @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
         long duration, boolean success) {
-        UUID queryNodeId = currentNodeId();
-
-        Query query = new Query(type, text, queryNodeId, id, startTime, duration, success);
+        Query query = new Query(type, text, nodeId, id, startTime, duration, success);
 
         OrderedFixedSizeStructure<Long, Query> tree = topSlow.computeIfAbsent(type,
             queryType -> new OrderedFixedSizeStructure<>());
@@ -92,15 +89,15 @@ public class QueryHandler implements IgniteProfilingHandler {
         AggregatedQueryInfo info = aggrQuery.computeIfAbsent(type, queryType -> new HashMap<>())
             .computeIfAbsent(text, queryText -> new AggregatedQueryInfo());
 
-        info.merge(queryNodeId, id, duration, success);
+        info.merge(nodeId, id, duration, success);
     }
 
     /** {@inheritDoc} */
-    @Override public void queryReads(GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
+    @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id, long logicalReads,
         long physicalReads) {
 
         Map<Long, long[]> ids = readsById.computeIfAbsent(type, queryType -> new HashMap<>())
-            .computeIfAbsent(queryNodeId, nodeId -> new HashMap<>());
+            .computeIfAbsent(queryNodeId, node -> new HashMap<>());
 
         long[] readsArr = ids.computeIfAbsent(id, queryId -> new long[] {0, 0});
 

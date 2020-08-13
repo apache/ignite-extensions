@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.util;
+package org.apache.ignite.internal.perfstat.util;
 
 import java.util.Collection;
 import java.util.NavigableMap;

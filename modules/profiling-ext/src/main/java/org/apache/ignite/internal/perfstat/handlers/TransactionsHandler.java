@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -31,12 +31,11 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
-import static org.apache.ignite.internal.profiling.handlers.TransactionsHandler.TransactionState.COMMIT;
-import static org.apache.ignite.internal.profiling.handlers.TransactionsHandler.TransactionState.ROLLBACK;
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
-import static org.apache.ignite.internal.profiling.util.Utils.createArrayIfAbsent;
-import static org.apache.ignite.internal.profiling.util.Utils.createObjectIfAbsent;
+import static org.apache.ignite.internal.perfstat.handlers.TransactionsHandler.TransactionState.COMMIT;
+import static org.apache.ignite.internal.perfstat.handlers.TransactionsHandler.TransactionState.ROLLBACK;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.createArrayIfAbsent;
+import static org.apache.ignite.internal.perfstat.util.Utils.createObjectIfAbsent;
 
 /**
  * Builds JSON with aggregated transaction statistics and durations histogram.
@@ -66,7 +65,8 @@ public class TransactionsHandler implements IgniteProfilingHandler {
     private final Map<UUID, Map<Integer, HistogramMetricImpl>> histogram = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void transaction(GridIntList cacheIds, long startTime, long duration, boolean commit) {
+    @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+        boolean commited) {
         ArrayList<Integer> cacheIdsArr = new ArrayList<>(cacheIds.size() + 1);
 
         // cacheId=0 means aggregate by all caches.
@@ -78,18 +78,18 @@ public class TransactionsHandler implements IgniteProfilingHandler {
             cacheIdsArr.add(iter.next());
 
         // nodeId=null means aggregate by all nodes.
-        UUID[] nodesId = new UUID[] {null, currentNodeId()};
+        UUID[] nodesId = new UUID[] {null, nodeId};
 
         long aggrTime = startTime / 1000 * 1000;
 
-        for (UUID nodeId : nodesId) {
+        for (UUID node : nodesId) {
             for (Integer cacheId : cacheIdsArr) {
-                res.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+                res.computeIfAbsent(node, uuid -> new HashMap<>())
                     .computeIfAbsent(cacheId, id -> new EnumMap<>(TransactionState.class))
-                    .computeIfAbsent(commit ? COMMIT : ROLLBACK, state -> new HashMap<>())
+                    .computeIfAbsent(commited ? COMMIT : ROLLBACK, state -> new HashMap<>())
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
 
-                histogram.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+                histogram.computeIfAbsent(node, uuid -> new HashMap<>())
                     .computeIfAbsent(cacheId, id -> new HistogramMetricImpl("", null, HISTOGRAM_BUCKETS))
                     .value(U.nanosToMillis(duration));
             }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling.handlers;
+package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -27,12 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.profiling.util.OrderedFixedSizeStructure;
+import org.apache.ignite.internal.perfstat.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
-import static org.apache.ignite.internal.profiling.ProfilingFilesParser.currentNodeId;
-import static org.apache.ignite.internal.profiling.util.Utils.MAPPER;
+import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
 
 /**
  * Builds JSON with aggregated tasks and jobs statistics.
@@ -80,8 +79,9 @@ public class ComputeHandler implements IgniteProfilingHandler {
     private final OrderedFixedSizeStructure<Long, Task> topSlowTask = new OrderedFixedSizeStructure<>();
 
     /** {@inheritDoc} */
-    @Override public void task(IgniteUuid sesId, String taskName, long startTime, long duration, int affPartId) {
-        Task task = new Task(currentNodeId(), sesId, taskName, startTime, duration, affPartId);
+    @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+        int affPartId) {
+        Task task = new Task(nodeId, sesId, taskName, startTime, duration, affPartId);
 
         topSlowTask.put(duration, task);
 
@@ -91,8 +91,9 @@ public class ComputeHandler implements IgniteProfilingHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
-        Job job = new Job(currentNodeId(), queuedTime, startTime, duration, timedOut);
+    @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+        boolean timedOut) {
+        Job job = new Job(nodeId, queuedTime, startTime, duration, timedOut);
 
         jobs.computeIfAbsent(sesId, uuid -> new LinkedList<>()).add(job);
     }

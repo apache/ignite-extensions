@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.perfstat;
 
 import java.io.File;
 import org.apache.ignite.Ignite;
@@ -26,10 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_BUFFER_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FILE_MAX_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.DFLT_FLUSH_SIZE;
-import static org.apache.ignite.internal.profiling.FileProfiling.PROFILING_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -47,20 +44,22 @@ public class ProfilingReportSelfTest {
                 .setIgniteInstanceName("client")
                 .setClientMode(true))
         ) {
-            client.context().metric().startProfiling(DFLT_FILE_MAX_SIZE, DFLT_BUFFER_SIZE, DFLT_FLUSH_SIZE);
+            client.context().performanceStatistics().startCollectStatistics();
 
             IgniteCache<Object, Object> cache = client.createCache("cache");
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
 
-            client.context().metric().stopProfiling().get();
+            client.context().performanceStatistics().stopCollectStatistics();
 
-            File prfDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PROFILING_DIR, false);
+            U.sleep(1000);
+
+            File prfDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false);
 
             assertTrue(prfDir.exists());
 
-            ProfilingFilesParser.main(prfDir.getAbsolutePath());
+            PerformanceReportBuilder.main(prfDir.getAbsolutePath());
 
             File[] reportDir = prfDir.listFiles((dir, name) -> name.startsWith("report"));
 
@@ -76,7 +75,7 @@ public class ProfilingReportSelfTest {
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
         } finally {
-            U.delete(new File(U.defaultWorkDirectory()));
+//            U.delete(new File(U.defaultWorkDirectory()));
         }
     }
 }

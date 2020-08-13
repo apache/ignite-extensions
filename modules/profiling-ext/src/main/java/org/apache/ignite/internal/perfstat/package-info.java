@@ -20,4 +20,4 @@
  * Profiling files parser.
  */
 
-package org.apache.ignite.internal.profiling;
+package org.apache.ignite.internal.perfstat;

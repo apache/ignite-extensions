@@ -79,7 +79,7 @@ fi
 # Set main class to run script.
 #
 if [ "${MAIN_CLASS:-}" = "" ]; then
-    MAIN_CLASS=org.apache.ignite.internal.profiling.ProfilingFilesParser
+    MAIN_CLASS=org.apache.ignite.internal.profiling.PerformanceReportBuilder
 fi
 
 #
