@@ -53,6 +53,7 @@
         <module>modules/mqtt-ext</module>
         <module>modules/storm-ext</module>
         <module>modules/camel-ext</module>
+        <module>modules/jms11-ext</module>
     </modules>
 
     <profiles>
