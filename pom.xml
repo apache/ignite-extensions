@@ -54,6 +54,7 @@
         <module>modules/storm-ext</module>
         <module>modules/camel-ext</module>
         <module>modules/jms11-ext</module>
+        <module>modules/kafka-ext</module>
     </modules>
 
     <profiles>
