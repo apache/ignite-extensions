@@ -17,24 +17,8 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
@@ -42,6 +26,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.impl.engine.DefaultProducerTemplate;
 import org.apache.camel.support.LifecycleStrategySupport;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -60,17 +45,28 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Test class for {@link CamelStreamer}.
  */
 public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
-    /** text/plain media type. */
-    private static final MediaType TEXT_PLAIN = MediaType.parse("text/plain;charset=utf-8");
-
     /** The test data. */
     private static final Map<Integer, String> TEST_DATA = new HashMap<>();
+
+    /** The producer template used to publish data to the endpoint. */
+    private DefaultProducerTemplate producerTemplate;
 
     /** The Camel streamer currently under test. */
     private CamelStreamer<Integer, String> streamer;
@@ -83,9 +79,6 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
     /** The UUID of the currently active remote listener. */
     private UUID remoteLsnr;
-
-    /** The OkHttpClient. */
-    private OkHttpClient httpClient = new OkHttpClient();
 
     // Initialize the test data.
     static {
@@ -114,9 +107,13 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             url = "http://localhost:" + port + "/ignite";
         }
 
+        DefaultCamelContext context = new DefaultCamelContext();
         // create Camel streamer
         dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME);
         streamer = createCamelStreamer(dataStreamer);
+        streamer.setCamelContext(context);
+        producerTemplate = new DefaultProducerTemplate(context);
+        producerTemplate.start();
     }
 
     @Override public void afterTest() throws Exception {
@@ -208,10 +205,10 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUserSpecifiedCamelContext() throws Exception {
-        final AtomicInteger cnt = new AtomicInteger();
 
-        // Create a CamelContext with a probe that'll help us know if it has been used.
-        CamelContext context = new DefaultCamelContext();
+        CamelContext context = streamer.getCamelContext();
+
+        final AtomicInteger cnt = new AtomicInteger();
         context.setTracing(true);
         context.addLifecycleStrategy(new LifecycleStrategySupport() {
             @Override public void onEndpointAdd(Endpoint endpoint) {
@@ -220,7 +217,6 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         });
 
         streamer.setSingleTupleExtractor(singleTupleExtractor());
-        streamer.setCamelContext(context);
 
         // Subscribe to cache PUT events.
         CountDownLatch latch = subscribeToPutEvents(50);
@@ -232,7 +228,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         sendMessages(0, 50, false);
 
         // Assertions.
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(latch.await(100, TimeUnit.SECONDS));
         assertCacheEntriesLoaded(50);
         assertTrue(cnt.get() > 0);
     }
@@ -247,7 +243,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
         PropertiesComponent pc = new PropertiesComponent("camel.test.properties");
 
-        context.addComponent("properties", pc);
+        context.setPropertiesComponent(pc);
 
         // Replace the context path in the test URL with the property placeholder.
         url = url.replaceAll("/ignite", "{{test.contextPath}}");
@@ -257,6 +253,9 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
 
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setCamelContext(context);
+
+        producerTemplate = new DefaultProducerTemplate(context);
+        producerTemplate.start();
 
         // Subscribe to cache PUT events.
         CountDownLatch latch = subscribeToPutEvents(50);
@@ -290,8 +289,11 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             fail("Streamer started; should have failed.");
         }
         catch (IgniteException ignored) {
-            assertTrue(streamer.getCamelContext().getStatus() == ServiceStatus.Stopped);
-            assertTrue(streamer.getCamelContext().getEndpointRegistry().size() == 0);
+            CamelContext context = streamer.getCamelContext();
+            ServiceStatus status = context.getStatus();
+            assertEquals("streamer should be in a stopped state, instead is " + status, status, ServiceStatus.Stopped);
+            assertEquals("endpoint registry has > 0 elements, size: " + context.getEndpointRegistry().size(),
+                context.getEndpointRegistry().size(), 0);
         }
     }
 
@@ -312,10 +314,10 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws IOException
+     * @throws Exception
      * @return HTTP response payloads.
      */
-    private List<String> sendMessages(int fromIdx, int cnt, boolean singleMessage) throws IOException {
+    private List<String> sendMessages(int fromIdx, int cnt, boolean singleMessage) throws Exception {
         List<String> responses = Lists.newArrayList();
 
         if (singleMessage) {
@@ -324,27 +326,23 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
             for (int i = fromIdx; i < fromIdx + cnt; i++)
                 sb.append(i).append(",").append(TEST_DATA.get(i)).append("\n");
 
-            Request request = new Request.Builder()
-                .url(url)
-                .post(RequestBody.create(TEXT_PLAIN, sb.toString()))
-                .build();
+            Exchange out = producerTemplate.send(url, exchange -> exchange.getIn().setBody(sb));
 
-            Response response = httpClient.newCall(request).execute();
+            if (out.getException() != null)
+                throw out.getException();
 
-            responses.add(response.body().string());
+            responses.add(out.getMessage().toString());
         }
         else {
             for (int i = fromIdx; i < fromIdx + cnt; i++) {
                 String payload = i + "," + TEST_DATA.get(i);
 
-                Request request = new Request.Builder()
-                    .url(url)
-                    .post(RequestBody.create(TEXT_PLAIN, payload))
-                    .build();
+                Exchange out = producerTemplate.send(url, exchange -> exchange.getIn().setBody(payload));
 
-                Response response = httpClient.newCall(request).execute();
+                if (out.getException() != null)
+                    throw out.getException();
 
-                responses.add(response.body().string());
+                responses.add(out.getMessage().getBody(String.class));
             }
         }
 
