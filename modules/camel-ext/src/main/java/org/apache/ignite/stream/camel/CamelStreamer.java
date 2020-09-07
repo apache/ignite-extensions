@@ -17,8 +17,6 @@
 
 package org.apache.ignite.stream.camel;
 
-import java.util.Map;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
@@ -26,8 +24,9 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.util.CamelContextHelper;
-import org.apache.camel.util.ServiceHelper;
+import org.apache.camel.support.CamelContextHelper;
+import org.apache.camel.support.service.BaseService;
+import org.apache.camel.support.service.ServiceHelper;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -35,6 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
+
+import java.util.Map;
 
 /**
  * This streamer consumes messages from an Apache Camel consumer endpoint and feeds them into an Ignite data streamer.
@@ -84,9 +85,12 @@ public class CamelStreamer<K, V> extends StreamAdapter<Exchange, K, V> implement
         if (camelCtx == null)
             camelCtx = new DefaultCamelContext();
 
-        // If the Camel Context is starting or started, reject this call to start.
-        if (camelCtx.getStatus() == ServiceStatus.Started || camelCtx.getStatus() == ServiceStatus.Starting)
-            throw new IgniteException("Failed to start Camel streamer (CamelContext already started or starting).");
+        // If the camel context is not started then simply start it up
+        if (!camelCtx.isStarted())
+            camelCtx.start();
+
+        if (!camelCtx.isRunAllowed())
+            throw new IgniteException("Failed to start Camel streamer (CamelContext not in a runnable state).");
 
         log = getIgnite().log();
 
@@ -97,6 +101,7 @@ public class CamelStreamer<K, V> extends StreamAdapter<Exchange, K, V> implement
         catch (Exception e) {
             U.error(log, e);
 
+            camelCtx.stop();
             throw new IgniteException("Failed to start Camel streamer [errMsg=" + e.getMessage() + ']');
         }
 
@@ -107,16 +112,18 @@ public class CamelStreamer<K, V> extends StreamAdapter<Exchange, K, V> implement
         catch (Exception e) {
             U.error(log, e);
 
+            camelCtx.stop();
             throw new IgniteException("Failed to start Camel streamer [errMsg=" + e.getMessage() + ']');
         }
 
         // Start the Camel services.
         try {
-            ServiceHelper.startServices(camelCtx, endpoint, consumer);
+            ServiceHelper.startService(camelCtx, endpoint, consumer);
         }
         catch (Exception e) {
             U.error(log, e);
 
+            camelCtx.stop();
             try {
                 ServiceHelper.stopAndShutdownServices(camelCtx, endpoint, consumer);
 
