@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-const CACHE_OPERATIONS = ["GET", "PUT", "REMOVE", "GET_AND_PUT", "GET_AND_REMOVE",
-    "GET_ALL", "PUT_ALL", "REMOVE_ALL", "INVOKE", "INVOKE_ALL", "LOCK"];
+const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_AND_PUT", "CACHE_GET_AND_REMOVE",
+    "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
     "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
-    GET: "#007bff",
-    PUT: "#4661EE",
-    REMOVE: "#EC5657",
-    GET_AND_PUT: "#c02332",
-    GET_AND_REMOVE: "#9d71e4",
-    GET_ALL: "#8357c7",
-    PUT_ALL: "#1BCDD1",
-    REMOVE_ALL: "#23BFAA",
-    INVOKE: "#F5A52A",
-    INVOKE_ALL: "#fd7e14",
-    LOCK: "#FAA586"
+    CACHE_GET: "#007bff",
+    CACHE_PUT: "#4661EE",
+    CACHE_REMOVE: "#EC5657",
+    CACHE_GET_AND_PUT: "#c02332",
+    CACHE_GET_AND_REMOVE: "#9d71e4",
+    CACHE_GET_ALL: "#8357c7",
+    CACHE_PUT_ALL: "#1BCDD1",
+    CACHE_REMOVE_ALL: "#23BFAA",
+    CACHE_INVOKE: "#F5A52A",
+    CACHE_INVOKE_ALL: "#fd7e14",
+    CACHE_LOCK: "#FAA586"
 };
 
 const searchCachesSelect = $('#searchCaches');
@@ -114,7 +114,7 @@ function prepareCacheDatasets(opName) {
     var datasetData = [];
 
     $.each(cacheOps[opName], function (k, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
+        datasetData.push({t: parseInt(arr[0]), y: arr[1]});
 
         opsCountPerType[opName] += arr[1];
     });
@@ -189,4 +189,4 @@ function drawCacheBar() {
 buildSelectCaches(searchCachesSelect, drawCacheCharts);
 buildSelectNodes(searchNodesSelect, drawCacheCharts);
 
-drawCacheCharts()
+drawCacheCharts();

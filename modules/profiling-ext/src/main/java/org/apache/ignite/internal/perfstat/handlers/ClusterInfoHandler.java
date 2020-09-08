@@ -18,9 +18,18 @@
 package org.apache.ignite.internal.perfstat.handlers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.performancestatistics.OperationType;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
 
@@ -30,22 +39,16 @@ import static org.apache.ignite.internal.perfstat.util.Utils.MAPPER;
  * Example:
  * <pre>
  * {
- *      "profilingStartTime" : $startTime,
- *      "nodes" : {
-*           $nodeId : {
- *              "name": $name,
- *              "version": $version,
- *              "startTime" : $startTime
+ *      "nodes" : [
+ *          {
+ *              "id" : $nodeId
  *          }
- *      }
- *      "caches": {
- *          $cacheId : {
- *              "startTime" : $startTime,
- *              "cacheName" : $cacheName,
- *              "groupName" : $groupName,
- *              "userCache" : $userCacheFlag
+ *      ],
+ *      "caches": [
+ *          {
+ *              "id" : $cacheId
  *          }
- *      }
+ *      ]
  * }
  * </pre>
  */
@@ -53,46 +56,79 @@ public class ClusterInfoHandler implements IgniteProfilingHandler {
     /** Result JSON. */
     private final ObjectNode res = MAPPER.createObjectNode();
 
-    /** Nodes JSON object. */
-    private final ObjectNode nodes = MAPPER.createObjectNode();
-
-    /** Caches JSON object. */
-    private final ObjectNode caches = MAPPER.createObjectNode();
+    /** */
+    private final Set<UUID> nodesIds = new HashSet<>();
 
     /** */
-    public ClusterInfoHandler() {
-        res.put("profilingStartTime", Long.MAX_VALUE);
-        res.set("nodes", nodes);
-        res.set("caches", caches);
+    private final Set<Integer> cachesIds = new HashSet<>();
+
+    /** {@inheritDoc} */
+    @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
+        nodesIds.add(nodeId);
+
+        cachesIds.add(cacheId);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public void profilingStart(UUID nodeId, String igniteInstanceName, String igniteVersion, long startTime) {
-//        res.put("profilingStartTime", Math.min(startTime, res.get("profilingStartTime").longValue()));
-//
-//        ObjectNode node = MAPPER.createObjectNode();
-//
-//        node.put("name", igniteInstanceName);
-//        node.put("version", igniteVersion);
-//        node.put("startTime", startTime);
-//
-//        nodes.set(nodeId.toString(), node);
-//    }
-//
-//    @Override public void cacheStart(int cacheId, long startTime, String cacheName, String groupName,
-//        boolean userCache) {
-//        ObjectNode node = MAPPER.createObjectNode();
-//
-//        node.put("startTime", startTime);
-//        node.put("cacheName", cacheName);
-//        node.put("groupName", groupName);
-//        node.put("userCache", userCache);
-//
-//        caches.set(String.valueOf(cacheId), node);
-//    }
+    /** {@inheritDoc} */
+    @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
+        boolean commited) {
+        nodesIds.add(nodeId);
+
+        GridIntIterator iter = cacheIds.iterator();
+
+        while (iter.hasNext())
+            cachesIds.add(iter.next());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
+        long duration, boolean success) {
+        nodesIds.add(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
+        long logicalReads, long physicalReads) {
+        nodesIds.add(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
+        int affPartId) {
+        nodesIds.add(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
+        boolean timedOut) {
+        nodesIds.add(nodeId);
+    }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
+        ArrayNode nodes = MAPPER.createArrayNode();
+
+        nodesIds.forEach(uuid -> {
+            ObjectNode node = MAPPER.createObjectNode();
+
+            node.put("id", uuid.toString());
+
+            nodes.add(node);
+        });
+
+        ArrayNode caches = MAPPER.createArrayNode();
+
+        cachesIds.forEach(id -> {
+            ObjectNode cache = MAPPER.createObjectNode();
+
+            cache.put("id", id);
+
+            caches.add(cache);
+        });
+
+        res.set("nodes", nodes);
+        res.set("caches", caches);
+
         return U.map("clusterInfo", res);
     }
 }

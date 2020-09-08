@@ -90,7 +90,7 @@ public class TransactionsHandler implements IgniteProfilingHandler {
                     .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
 
                 histogram.computeIfAbsent(node, uuid -> new HashMap<>())
-                    .computeIfAbsent(cacheId, id -> new HistogramMetricImpl("", null, HISTOGRAM_BUCKETS))
+                    .computeIfAbsent(cacheId, id -> new HistogramMetricImpl(id.toString(), null, HISTOGRAM_BUCKETS))
                     .value(U.nanosToMillis(duration));
             }
         }

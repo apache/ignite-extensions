@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-$("#reportTiming").html("Profiling started at " + moment(REPORT_DATA.clusterInfo.profilingStartTime).format());
-
 /** Plugin for Charts JS to print 'No data to display' if there is no data for chart. */
 Chart.plugins.register({
     afterDraw: function (chart) {
@@ -24,7 +22,7 @@ Chart.plugins.register({
             // No data is present
             var ctx = chart.chart.ctx;
             var width = chart.chart.width;
-            var height = chart.chart.height
+            var height = chart.chart.height;
 
             ctx.save();
             ctx.textAlign = 'center';
@@ -67,20 +65,11 @@ function buildSelectCaches(el, onSelect) {
 
     var caches = REPORT_DATA.clusterInfo.caches;
 
-    Object.keys(caches).forEach(cacheId => caches[cacheId].cacheId = cacheId);
-
-    caches = sortByKeyAsc(Object.values(caches), "cacheName");
-
     if (caches.length === 0)
         return;
 
     $.each(caches, function (idx, cache) {
-        var system = '';
-
-        if (!cache.userCache)
-            system = "<span class='badge badge-warning align-middle ml-2'>System</span>";
-
-        el.append('<option data-content="' + cache.cacheName + system + '" value="' + cache.cacheId + '"/>');
+        el.append('<option data-content="' + cache.id + '" value="' + cache.id + '"/>');
     });
 
     el.on('changed.bs.select', onSelect);
@@ -93,7 +82,7 @@ function buildSelectNodes(el, onSelect) {
     var nodes = REPORT_DATA.clusterInfo.nodes;
 
     $.each(nodes, (nodeId, node) => {
-        el.append('<option data-content="' + node.name + '" value="' + nodeId + '"/>');
+        el.append('<option data-content="' + node.id + '" value="' + node.id + '"/>');
     });
 
     el.on('changed.bs.select', onSelect);

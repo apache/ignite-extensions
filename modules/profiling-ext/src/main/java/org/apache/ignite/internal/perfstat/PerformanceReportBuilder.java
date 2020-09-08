@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.perfstat;
 
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,9 +67,7 @@ public class PerformanceReportBuilder {
 
         String resDir = createResultDir(filesDir);
 
-        parseFiles(filesDir, resDir);
-
-        copyReportSources(resDir);
+        createReport(filesDir, resDir);
 
         System.out.println("Report created [dir=" + resDir + "]" + U.nl() +
             "Open '" + resDir + "/index.html' in browser to see the report.");
@@ -109,28 +108,12 @@ public class PerformanceReportBuilder {
     }
 
     /**
-     * @param filesDir Parent directory of report results.
-     * @return Created result directory.
-     */
-    private static String createResultDir(String filesDir) throws IOException {
-        String postfix = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
-
-        String dir = Files.createDirectory(new File(filesDir + "/report_" + postfix).toPath())
-            .toAbsolutePath().toString();
-
-        // Data directory.
-        Files.createDirectory(new File(dir + "/data").toPath());
-
-        return dir;
-    }
-
-    /**
-     * Parses performance statistics files.
+     * Creates performance report.
      *
      * @param filesDir Performance statistics files.
      * @param resDir Results directory.
      */
-    private static void parseFiles(String filesDir, String resDir) throws Exception {
+    private static void createReport(String filesDir, String resDir) throws Exception {
         IgniteProfilingHandler[] handlers = new IgniteProfilingHandler[] {
             new QueryHandler(),
             new CacheOperationsHandler(),
@@ -139,27 +122,34 @@ public class PerformanceReportBuilder {
             new ClusterInfoHandler()
         };
 
-        FilePerformanceStatisticsReader.read(Collections.singletonList(new File(filesDir)), handlers);
+        new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(filesDir)));
 
         ObjectNode dataJson = MAPPER.createObjectNode();
 
         for (IgniteProfilingHandler handler : handlers)
             handler.results().forEach(dataJson::set);
 
-        collectClusterInfo(dataJson);
-
         writeJsonToFile(resDir + "/data/data.json", dataJson);
 
         jsonToJsVar(resDir + "/data/data.json", "REPORT_DATA");
+
+        copyReportSources(resDir);
     }
 
     /**
-     * Collects nodes, caches info.
+     * @param filesDir Parent directory of report results.
+     * @return Created result directory.
      */
-    private static void collectClusterInfo(ObjectNode dataJson) {
-        // TODO parse nodes logs.
+    private static String createResultDir(String filesDir) throws IOException {
+        String postfix = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
 
-        ObjectNode ops = (ObjectNode)dataJson.get("cacheOps");
+        String resDir = Files.createDirectory(new File(filesDir, "report_" + postfix).toPath())
+            .toAbsolutePath().toString();
+
+        // Data directory.
+        Files.createDirectory(new File(resDir, "data").toPath());
+
+        return resDir;
     }
 
     /**
@@ -169,7 +159,7 @@ public class PerformanceReportBuilder {
      * @param json JSON to write.
      */
     public static void writeJsonToFile(String fileName, JsonNode json) throws IOException {
-        ObjectWriter writer = new ObjectMapper().writer(new MinimalPrettyPrinter());
+        ObjectWriter writer = new ObjectMapper().writer(new DefaultPrettyPrinter());
 
         File file = new File(fileName);
 

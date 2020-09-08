@@ -26,7 +26,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERFORMANCE_STAT_DIR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,7 +55,7 @@ public class ProfilingReportSelfTest {
 
             U.sleep(1000);
 
-            File prfDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERFORMANCE_STAT_DIR, false);
+            File prfDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
             assertTrue(prfDir.exists());
 
@@ -75,7 +75,7 @@ public class ProfilingReportSelfTest {
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
         } finally {
-//            U.delete(new File(U.defaultWorkDirectory()));
+            U.delete(new File(U.defaultWorkDirectory()));
         }
     }
 }
