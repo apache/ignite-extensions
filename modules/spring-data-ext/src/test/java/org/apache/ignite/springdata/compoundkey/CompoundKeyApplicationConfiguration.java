@@ -19,6 +19,8 @@ package org.apache.ignite.springdata.compoundkey;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,11 +31,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableIgniteRepositories
 public class CompoundKeyApplicationConfiguration {
+    /** */
+    public static final int CLI_CONN_PORT = 10810;
+
     /**
      * Ignite instance bean
      * */
     @Bean
     public Ignite igniteInstance() {
-        return Ignition.start();
+        return Ignition.start(new IgniteConfiguration()
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT)));
     }
 }

@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import static org.apache.ignite.springdata20.compoundkey.CompoundKeyApplicationConfiguration.CLI_CONN_PORT;
+
 /**
  * Test with using conpoud key in spring-data
  * */
@@ -101,7 +103,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         if (ignite.cacheNames().contains(CACHE_NAME))
             ignite.destroyCache(CACHE_NAME);
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + CLI_CONN_PORT + '/')) {
             Statement st = conn.createStatement();
 
             st.execute("DROP TABLE IF EXISTS City");
