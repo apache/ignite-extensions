@@ -140,7 +140,7 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
                             <includeScope>compile</includeScope>
-                            <excludeArtifactIds>ignite-core,tools,ignite-shmem,cache-api,annotations</excludeArtifactIds>
+                            <!--excludeArtifactIds>ignite-core,tools,ignite-shmem,cache-api,annotations</excludeArtifactIds-->
                         </configuration>
                     </execution>
                 </executions>

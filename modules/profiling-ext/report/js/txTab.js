@@ -193,4 +193,4 @@ function buildTxHistogramBuckets() {
 buildSelectCaches(txSearchCachesSelect, drawTxCharts);
 buildSelectNodes(txSearchNodesSelect, drawTxCharts);
 
-drawTxCharts()
+drawTxCharts();
