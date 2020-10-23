@@ -142,3 +142,7 @@ fabric.properties
 .history
 .vscode
 .classpath
+
+# Ignite work folder
+**/ignite/work/
+**/ignite/README.txt
