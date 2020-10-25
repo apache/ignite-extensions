@@ -39,12 +39,14 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -79,6 +81,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

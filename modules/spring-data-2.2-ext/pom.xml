@@ -39,12 +39,14 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -71,6 +73,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
             <!--Remove exclusion while upgrading ignite-spring version to 5.2-->
             <exclusions>
                 <exclusion>
