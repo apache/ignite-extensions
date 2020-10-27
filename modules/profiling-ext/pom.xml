@@ -161,13 +161,13 @@
                         <configuration>
                             <target>
                                 <copy todir="${project.build.directory}/${profiling.release.package}/profiling">
-                                    <fileset dir="${project.build.directory}">
-                                        <include name="${build.finalName}.jar"/>
-                                    </fileset>
                                     <fileset dir="${basedir}/bin"/>
                                 </copy>
                                 <copy todir="${project.build.directory}/${profiling.release.package}/profiling/libs">
                                     <fileset dir="${project.build.directory}/libs"/>
+                                    <fileset dir="${project.build.directory}">
+                                        <include name="${build.finalName}.jar"/>
+                                    </fileset>
                                 </copy>
                                 <copy todir="${project.build.directory}/${profiling.release.package}">
                                     <fileset file="${basedir}/README.txt"/>
