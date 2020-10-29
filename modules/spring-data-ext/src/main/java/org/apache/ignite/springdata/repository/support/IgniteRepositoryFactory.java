@@ -47,7 +47,7 @@ import org.springframework.util.StringUtils;
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite instance */
-    private Ignite ignite;
+    private IgniteProxy ignite;
 
     /** Mapping of a repository to a cache. */
     private final Map<Class<?>, String> repoToCache = new HashMap<>();
@@ -57,7 +57,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param ignite
      */
-    public IgniteRepositoryFactory(Ignite ignite) {
+    public IgniteRepositoryFactory(IgniteProxy ignite) {
         this.ignite = ignite;
     }
 
@@ -68,7 +68,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @param cfg Ignite configuration.
      */
     public IgniteRepositoryFactory(IgniteConfiguration cfg) {
-        this.ignite = Ignition.start(cfg);
+        this.ignite = new IgniteProxyImpl(Ignition.start(cfg));
     }
 
     /**
@@ -78,7 +78,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @param springCfgPath A path to Ignite configuration.
      */
     public IgniteRepositoryFactory(String springCfgPath) {
-        this.ignite = Ignition.start(springCfgPath);
+        this.ignite = new IgniteProxyImpl(Ignition.start(springCfgPath));
     }
 
     /** {@inheritDoc} */

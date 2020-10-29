@@ -44,15 +44,19 @@ import org.springframework.context.annotation.Conditional;
  */
 @Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRepository<V, K> {
+    /** Error message indicating that operation is spported only if {@link Ignite} instance is used to access the cluster. */
+    private static final String UNSUPPORTED_ERR_MSG = "Current operation is supported only if Ignte node is used to " +
+        "access the Ignite cluster. See org.apache.ignite.springdata22.repository.config.RepositoryConfig#igniteInstance.";
+
     /**
      * Ignite Cache bound to the repository
      */
-    private final IgniteCache<K, V> cache;
+    private final IgniteCacheProxy<K, V> cache;
 
     /**
      * Ignite instance bound to the repository
      */
-    private final Ignite ignite;
+    private final IgniteProxy ignite;
 
     /**
      * Repository constructor.
@@ -60,19 +64,25 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
      * @param ignite the ignite
      * @param cache  Initialized cache instance.
      */
-    public IgniteRepositoryImpl(Ignite ignite, IgniteCache<K, V> cache) {
+    public IgniteRepositoryImpl(IgniteProxy ignite, IgniteCacheProxy<K, V> cache) {
         this.cache = cache;
         this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> cache() {
-        return cache;
+        if (cache instanceof IgniteCacheProxyImpl)
+            return ((IgniteCacheProxyImpl<K, V>)cache).delegate();
+
+        throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }
 
     /** {@inheritDoc} */
     @Override public Ignite ignite() {
-        return ignite;
+        if (ignite instanceof IgniteProxyImpl)
+            return ((IgniteProxyImpl)ignite).delegate();
+
+        throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }
 
     /** {@inheritDoc} */

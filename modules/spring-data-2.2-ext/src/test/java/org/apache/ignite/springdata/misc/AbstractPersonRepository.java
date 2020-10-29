@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,23 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
 import java.util.List;
+
 import javax.cache.Cache;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
-import org.apache.ignite.springdata20.repository.config.Query;
-import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
+import org.apache.ignite.springdata22.repository.IgniteRepository;
+import org.apache.ignite.springdata22.repository.config.Query;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.query.Param;
 
-/**
- * Test repository.
- */
-@RepositoryConfig(cacheName = "PersonCache")
-public interface PersonRepository extends IgniteRepository<Person, Integer> {
+/** Represents common operations for repository testing. */
+@NoRepositoryBean
+public interface AbstractPersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
 
@@ -55,12 +56,10 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
 
     /** */
-    @Query(textQuery = true, value = "#{#firstname}", limit = 2)
-    public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
-
     @Query(value = "select * from (sElecT * from #{#entityName} where firstName = :firstname)", forceFieldsQuery = true)
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable(@Param("firstname") String val);
 
+    /** */
     @Query(value = "firstName = ?#{sampleExtension.transformParam(#firstname)}")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterWithSpELExtension(@Param("firstname") String val);
 
@@ -145,4 +144,12 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** Update using @Query but with errors on the query */
     @Query("UPDATE Person SET secondName = ? WHERE firstName = ? AND ERRORS = 'ERRORS'")
     public int setWrongFixedSecondName(String secondName, String firstName);
+
+    /** Produces a list of domain entity classes whose fields are obtained from the query result row. */
+    @Query(value = "SELECT firstName, secondName, birthday, _key, _val, NULL as one FROM Person", forceFieldsQuery = true)
+    public List<Person> queryWithRowToEntityConversion();
+
+    /** Produces a list of domain entity classes whose fields are obtained from the query result row. */
+    @Query(value = "SELECT firstName, birthday FROM Person", forceFieldsQuery = true)
+    public List<Person> queryWithIncompleteRowToEntityConversion();
 }

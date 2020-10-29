@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 
@@ -34,14 +33,14 @@ import static java.util.Collections.emptySet;
  */
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
     /** Ignite Cache bound to the repository */
-    private final IgniteCache<ID, T> cache;
+    private final IgniteCacheProxy<ID, T> cache;
 
     /**
      * Repository constructor.
      *
      * @param cache Initialized cache instance.
      */
-    public IgniteRepositoryImpl(IgniteCache<ID, T> cache) {
+    public IgniteRepositoryImpl(IgniteCacheProxy<ID, T> cache) {
         this.cache = cache;
     }
 
