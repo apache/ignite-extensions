@@ -21,7 +21,7 @@ import org.apache.ignite.springdata.compoundkey.CityRepository;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-/** Tests Sping Data operation with compound key when thin client is used for accessing the Ignite cluster. */
+/** Tests Spring Data operation with compound key when thin client is used for accessing the Ignite cluster. */
 public class IgniteClientSpringDataCompoundKeyTest extends IgniteSpringDataCompoundKeyTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

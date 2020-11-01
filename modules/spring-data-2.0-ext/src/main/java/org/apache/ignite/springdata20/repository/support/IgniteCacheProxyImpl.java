@@ -100,8 +100,7 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
         return cache.<Cache.Entry<K, V>>query(new ScanQuery<>()).getAll().iterator();
     }
 
-
-    /** @return {@link IgniteCache} instance to which operations are delegated.*/
+    /** @return {@link IgniteCache} instance to which operations are delegated. */
     public IgniteCache<K, V> delegate() {
         return cache;
     }

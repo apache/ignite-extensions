@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.springdata20.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata20.repository.query.StringQuery.ParameterBinding;
 import org.apache.ignite.springdata20.repository.support.IgniteCacheProxy;
+import org.apache.ignite.springdata20.repository.support.client.IgniteCacheClientProxy;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -339,7 +340,21 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
         Query iQry = prepareQuery(qry, config, returnStgy, parameters);
 
-        QueryCursor qryCursor = cache.query(iQry);
+        QueryCursor qryCursor;
+
+        try {
+            qryCursor = cache.query(iQry);
+        }
+        catch (IllegalArgumentException e) {
+            if (cache instanceof IgniteCacheClientProxy) {
+                throw new IllegalStateException(String.format("Query of type %s is not supported by thin client." +
+                    " Check %s#%s method configuration or use Ignite node instance to connect to the Ignite cluster.",
+                    iQry.getClass().getSimpleName(), mtd.getDeclaringClass().getName(), mtd.getName()), e);
+            }
+
+            throw e;
+        }
+
 
         return transformQueryCursor(qry, returnStgy, parameters, qryCursor);
     }

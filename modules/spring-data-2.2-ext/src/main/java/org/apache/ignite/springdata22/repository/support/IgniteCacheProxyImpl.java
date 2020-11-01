@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
@@ -100,7 +99,6 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
     @Override public @NotNull Iterator<Cache.Entry<K, V>> iterator() {
         return cache.<Cache.Entry<K, V>>query(new ScanQuery<>()).getAll().iterator();
     }
-
 
     /** @return {@link IgniteCache} instance to which operations are delegated. */
     public IgniteCache<K, V> delegate() {

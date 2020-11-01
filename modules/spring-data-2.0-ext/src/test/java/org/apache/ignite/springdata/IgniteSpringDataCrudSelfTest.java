@@ -23,12 +23,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
-import org.apache.ignite.springdata.misc.AbstractPersonRepository;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.FullNameProjection;
-import org.apache.ignite.springdata.misc.IgnitePersonRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonProjection;
+import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -38,7 +37,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** Repository. */
-    protected static AbstractPersonRepository repo;
+    protected static PersonRepository repo;
 
     /** Context. */
     protected static AnnotationConfigApplicationContext ctx;
@@ -56,7 +55,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         ctx.refresh();
 
-        repo = ctx.getBean(IgnitePersonRepository.class);
+        repo = ctx.getBean(PersonRepository.class);
     }
 
     /** {@inheritDoc} */
@@ -396,9 +395,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cnt);
 
-        List<PersonProjection> person = ((IgnitePersonRepository)repo)
-            .textQueryByFirstNameWithProjectionNamedParameter("uniquePerson");
-
+        List<PersonProjection> person = repo.textQueryByFirstNameWithProjectionNamedParameter("uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName4");
     }
 

@@ -47,8 +47,6 @@ import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import static java.lang.String.format;
-
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
  * <p>
@@ -60,10 +58,6 @@ import static java.lang.String.format;
  * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
-    /** Error message indicating that text queries are not supported. */
-    static final String TEXT_QRY_UNSUPPORTED_ERR_MSG = "Invalid Spring Data query configuration for method" +
-        " %s#%s. Text queries are not suppported when a thin client is used to access the Ignite cluster.";
-
     /** Spring application context */
     private final ApplicationContext ctx;
 
@@ -224,9 +218,6 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         EvaluationContextProvider evaluationContextProvider) {
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
             final Query annotation = mtd.getAnnotation(Query.class);
-
-            boolean isThinClient = repoToIgnite.get(metadata.getRepositoryInterface()) instanceof IgniteClientProxy;
-
             if (annotation != null && (StringUtils.hasText(annotation.value()) || annotation.textQuery() || annotation
                 .dynamicQuery())) {
 
@@ -235,16 +226,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
                     .textQuery());
 
-                boolean isTextQry = annotation.textQuery();
-
-                if (isTextQry && isThinClient) {
-                    throw new IllegalStateException(
-                        format(TEXT_QRY_UNSUPPORTED_ERR_MSG, mtd.getDeclaringClass().getName(), mtd.getName()));
-                }
-
                 IgniteQuery query = annotatedIgniteQuery ? new IgniteQuery(qryStr,
                     !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
-                    isTextQry, false, IgniteQueryGenerator.getOptions(mtd)) : null;
+                    annotation.textQuery(), false, IgniteQueryGenerator.getOptions(mtd)) : null;
 
                 if (key != QueryLookupStrategy.Key.CREATE) {
                     return new IgniteRepositoryQuery(metadata, query, mtd, factory,
@@ -260,14 +244,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                     + ".config.Query annotation.");
             }
 
-            IgniteQuery qry = IgniteQueryGenerator.generateSql(mtd, metadata);
-
-            if (qry.isTextQuery() && isThinClient) {
-                throw new IllegalStateException(
-                    format(TEXT_QRY_UNSUPPORTED_ERR_MSG, mtd.getDeclaringClass().getName(), mtd.getName()));
-            }
-
-            return new IgniteRepositoryQuery(metadata, qry, mtd,
+            return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
                 factory, getRepositoryCache(metadata.getRepositoryInterface()),
                 DynamicQueryConfig.fromQueryAnnotation(annotation), evaluationContextProvider);
         });

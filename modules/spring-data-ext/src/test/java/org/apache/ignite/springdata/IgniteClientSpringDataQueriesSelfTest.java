@@ -23,7 +23,7 @@ import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-/** Tests Sping Data query operations when thin client is used for accessing the Ignite cluster. */
+/** Tests Spring Data query operations when thin client is used for accessing the Ignite cluster. */
 public class IgniteClientSpringDataQueriesSelfTest extends IgniteSpringDataQueriesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

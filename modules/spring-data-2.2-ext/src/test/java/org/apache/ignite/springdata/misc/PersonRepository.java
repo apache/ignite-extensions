@@ -1,3 +1,4 @@
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,21 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
 import java.util.List;
+
 import javax.cache.Cache;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
-import org.apache.ignite.springdata20.repository.config.Query;
+import org.apache.ignite.springdata22.repository.IgniteRepository;
+import org.apache.ignite.springdata22.repository.config.Query;
+import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.query.Param;
 
-/** Represents common operations for repository testing. */
-@NoRepositoryBean
-public interface AbstractPersonRepository extends IgniteRepository<Person, Integer> {
+/**
+ * Test repository.
+ */
+@RepositoryConfig(cacheName = "PersonCache")
+public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
 
@@ -53,10 +58,12 @@ public interface AbstractPersonRepository extends IgniteRepository<Person, Integ
     public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
 
     /** */
+    @Query(textQuery = true, value = "#{#firstname}", limit = 2)
+    public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
     @Query(value = "select * from (sElecT * from #{#entityName} where firstName = :firstname)", forceFieldsQuery = true)
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable(@Param("firstname") String val);
 
-    /** */
     @Query(value = "firstName = ?#{sampleExtension.transformParam(#firstname)}")
     public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterWithSpELExtension(@Param("firstname") String val);
 

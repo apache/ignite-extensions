@@ -39,7 +39,7 @@ public class IgniteProxyImpl implements IgniteProxy {
         return new IgniteCacheProxyImpl<>(ignite.cache(name));
     }
 
-    /** @return {@link Ignite} instance to which operations are delegated.*/
+    /** @return {@link Ignite} instance to which operations are delegated. */
     public Ignite delegate() {
         return ignite;
     }

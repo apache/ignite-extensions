@@ -30,20 +30,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.misc.SampleEvaluationContextExtension.SamplePassParamExtension;
 import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.spel.spi.EvaluationContextExtension;
 
 import static org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationConfiguration.CLI_CONN_PORT;
 import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_ONE;
 import static org.apache.ignite.springdata.misc.ApplicationConfiguration.IGNITE_INSTANCE_TWO;
-import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Spring Application configuration for repository testing in case thin client is used for accessing the cluster. */
 @Configuration
-@EnableIgniteRepositories(
-    value = {"org.apache.ignite.springdata.compoundkey", "org.apache.ignite.springdata.misc"},
-    excludeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = {IgnitePersonRepository.class}))
+@EnableIgniteRepositories({"org.apache.ignite.springdata.compoundkey", "org.apache.ignite.springdata.misc"})
 public class IgniteClientApplicationConfiguration {
     /** Test cache name. */
     public static final String CACHE_NAME = "PersonCache";

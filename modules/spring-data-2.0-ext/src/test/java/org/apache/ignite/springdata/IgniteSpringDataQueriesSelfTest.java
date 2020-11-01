@@ -22,11 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import javax.cache.Cache;
-import org.apache.ignite.springdata.misc.AbstractPersonRepository;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
-import org.apache.ignite.springdata.misc.IgnitePersonRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonProjection;
+import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.PersonRepositoryOtherIgniteInstance;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,7 +40,7 @@ import org.springframework.data.domain.Sort;
  */
 public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Repository. */
-    protected static AbstractPersonRepository repo;
+    protected static PersonRepository repo;
 
     /** Repository 2. */
     protected static PersonSecondRepository repo2;
@@ -71,7 +70,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
 
         ctx.refresh();
 
-        repo = ctx.getBean(IgnitePersonRepository.class);
+        repo = ctx.getBean(PersonRepository.class);
         repo2 = ctx.getBean(PersonSecondRepository.class);
         // repository on another ignite instance (and another cluster)
         repoTWO = ctx.getBean(PersonRepositoryOtherIgniteInstance.class);

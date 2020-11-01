@@ -23,7 +23,7 @@ import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-/** Tests Sping Data CRUD operation when thin client is used for accessing the Ignite cluster. */
+/** Tests Spring Data CRUD operation when thin client is used for accessing the Ignite cluster. */
 public class IgniteClientSpringDataCrudSelfTest extends IgniteSpringDataCrudSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
