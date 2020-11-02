@@ -58,7 +58,7 @@
         <module>modules/spring-data-ext</module>
         <module>modules/spring-data-2.0-ext</module>
         <module>modules/spring-data-2.2-ext</module>
-        <module>modules/spring-data-connector</module>
+        <module>modules/spring-data-proxy</module>
     </modules>
 
     <profiles>

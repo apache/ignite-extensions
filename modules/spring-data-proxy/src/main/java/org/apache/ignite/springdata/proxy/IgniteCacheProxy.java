@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.proxy;
 
 import java.util.Map;
 import java.util.Set;

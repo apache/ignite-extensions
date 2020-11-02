@@ -29,11 +29,12 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.springdata.IgniteCacheProxy;
-import org.apache.ignite.springdata.IgniteCacheProxyImpl;
-import org.apache.ignite.springdata.IgniteProxy;
-import org.apache.ignite.springdata.IgniteProxyImpl;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxyImpl;
+import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
 import org.apache.ignite.springdata22.repository.IgniteRepository;
+import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.context.annotation.Conditional;
 
@@ -49,8 +50,8 @@ import org.springframework.context.annotation.Conditional;
 @Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRepository<V, K> {
     /** Error message indicating that operation is spported only if {@link Ignite} instance is used to access the cluster. */
-    private static final String UNSUPPORTED_ERR_MSG = "Current operation is supported only if Ignte node instance is" +
-        " used to access the Ignite cluster. See org.apache.ignite.springdata22.repository.config.RepositoryConfig#igniteInstance.";
+    private static final String UNSUPPORTED_ERR_MSG = "Current operation is supported only if Ignite node instance is" +
+        " used to access the Ignite cluster. See " + RepositoryConfig.class.getName() + "#igniteInstance.";
 
     /**
      * Ignite Cache bound to the repository

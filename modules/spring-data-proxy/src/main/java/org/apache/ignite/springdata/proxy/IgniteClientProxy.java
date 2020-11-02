@@ -15,32 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.proxy;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 
-/** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link Ignite} instance. */
-public class IgniteProxyImpl implements IgniteProxy {
-    /** {@link Ignite} instance to which operations are delegated. */
-    private final Ignite ignite;
+/** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link IgniteClient} instance. */
+public class IgniteClientProxy implements IgniteProxy {
+    /** {@link IgniteClient} instance to which operations are delegated.  */
+    private final IgniteClient cli;
 
     /** */
-    public IgniteProxyImpl(Ignite ignite) {
-        this.ignite = ignite;
+    public IgniteClientProxy(IgniteClient cli) {
+        this.cli = cli;
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name) {
-        return new IgniteCacheProxyImpl<>(ignite.getOrCreateCache(name));
+        return new IgniteCacheClientProxy<>(cli.getOrCreateCache(name));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
-        return new IgniteCacheProxyImpl<>(ignite.cache(name));
-    }
-
-    /** @return {@link Ignite} instance to which operations are delegated. */
-    public Ignite delegate() {
-        return ignite;
+        return new IgniteCacheClientProxy<>(cli.cache(name));
     }
 }

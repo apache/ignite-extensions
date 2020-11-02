@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.springdata.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 
 import static java.util.Collections.emptySet;

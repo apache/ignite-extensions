@@ -86,7 +86,8 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
                 }
                 catch (BeansException ex3) {
                     throw new IgniteException("Failed to initialize Ignite repository factory. One of the following" +
-                        " beans are required: \"igniteInstance\", \"igniteCfg\", \"igniteSpringCfgPath\".");
+                        " beans must be defined in application configuration: \"igniteInstance\", \"igniteCfg\"," +
+                        " \"igniteSpringCfgPath\".");
                 }
             }
         }

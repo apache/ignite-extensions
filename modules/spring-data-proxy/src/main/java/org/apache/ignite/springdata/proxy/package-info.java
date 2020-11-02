@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
-
-/** Reperesents Ignite cluster operations required by Spring Data. */
-public interface IgniteProxy {
-    /**
-     * Gets existing cache with the given name or creates new one.
-     *
-     * @param name Cache name.
-     * @return Cache proxy that provides access to cache with given name.
-     */
-    public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name);
-
-    /**
-     * Gets cache with the given name.
-     *
-     * @param name Cache name.
-     * @return Cache proxy that provides access to cache with specified name or {@code null} if it doesn't exist.
-     */
-    public <K, V> IgniteCacheProxy<K, V> cache(String name);
-}
+/**
+ * <!-- Package description. -->
+ * Contains classes that provide client-independent access to the Ignite operations required by Spring Data.
+ */
+package org.apache.ignite.springdata.proxy;
