@@ -22,7 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.springdata.IgniteProxy;
+import org.apache.ignite.springdata.IgniteProxyImpl;
+import org.apache.ignite.springdata.client.IgniteClientProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
@@ -57,8 +62,13 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      *
      * @param ignite
      */
-    public IgniteRepositoryFactory(IgniteProxy ignite) {
-        this.ignite = ignite;
+    public IgniteRepositoryFactory(Ignite ignite) {
+        this.ignite = new IgniteProxyImpl(ignite);
+    }
+
+    /** Creates the factory with initialized {@link IgniteClient} instance. */
+    public IgniteRepositoryFactory(IgniteClient cli) {
+        ignite = new IgniteClientProxy(cli);
     }
 
     /**
@@ -69,6 +79,14 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      */
     public IgniteRepositoryFactory(IgniteConfiguration cfg) {
         this.ignite = new IgniteProxyImpl(Ignition.start(cfg));
+    }
+
+    /**
+     * Initializes the factory with provided {@link ClientConfiguration} that is used to start up an underlying
+     * {@link IgniteClient} instance.
+     */
+    public IgniteRepositoryFactory(ClientConfiguration cfg) {
+        this.ignite = new IgniteClientProxy(Ignition.startClient(cfg));
     }
 
     /**

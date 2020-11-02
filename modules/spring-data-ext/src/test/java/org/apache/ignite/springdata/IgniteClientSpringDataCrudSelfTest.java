@@ -17,16 +17,23 @@
 
 package org.apache.ignite.springdata;
 
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
 import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
+import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
+import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import static org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationConfiguration.CLI_CONN_PORT;
 
 /** Tests Spring Data CRUD operation when thin client is used for accessing the Ignite cluster. */
 public class IgniteClientSpringDataCrudSelfTest extends IgniteSpringDataCrudSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTestsStarted() {
         ctx = new AnnotationConfigApplicationContext();
 
         ctx.register(IgniteClientApplicationConfiguration.class);
@@ -35,5 +42,29 @@ public class IgniteClientSpringDataCrudSelfTest extends IgniteSpringDataCrudSelf
         repo = ctx.getBean(PersonRepository.class);
         repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
         ignite = ctx.getBean(IgniteEx.class);
+    }
+
+    /**
+     * Tests repository configuration in case {@link ClientConfiguration} is used to provide access to Ignite cluster.
+     */
+    @Test
+    public void testRepositoryWithClientConfiguration() {
+        ctx = new AnnotationConfigApplicationContext();
+
+        ctx.register(TestApplicationConfiguration.class);
+        ctx.refresh();
+
+        assertTrue(ctx.getBean(PersonRepository.class).count() > 0);
+    }
+
+    /** */
+    @Configuration
+    @EnableIgniteRepositories("org.apache.ignite.springdata.misc")
+    static class TestApplicationConfiguration {
+        /** Ignite client configuration bean. */
+        @Bean
+        public ClientConfiguration igniteCfg() {
+           return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
+        }
     }
 }

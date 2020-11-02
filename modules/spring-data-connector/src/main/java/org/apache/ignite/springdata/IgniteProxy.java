@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata22.repository.support;
+package org.apache.ignite.springdata;
 
 /** Reperesents Ignite cluster operations required by Spring Data. */
 public interface IgniteProxy {

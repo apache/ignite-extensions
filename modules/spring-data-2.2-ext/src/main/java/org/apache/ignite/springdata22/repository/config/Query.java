@@ -39,7 +39,7 @@ public @interface Query {
 
     /**
      * Whether annotated repository method must use TextQuery search. Note that text queries are not supported if
-     * {@link IgniteClient} is used for accessing the Ignite cluster, use {@link Ignite} node instead.
+     * {@link IgniteClient} is used for accessing the Ignite cluster, use {@link Ignite} node instance instead.
      *
      * @see RepositoryConfig#igniteInstance()
      */

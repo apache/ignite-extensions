@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata20.repository.support;
+package org.apache.ignite.springdata;
 
 import org.apache.ignite.Ignite;
 

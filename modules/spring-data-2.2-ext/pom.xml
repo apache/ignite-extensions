@@ -149,6 +149,12 @@
             <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data-connector</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

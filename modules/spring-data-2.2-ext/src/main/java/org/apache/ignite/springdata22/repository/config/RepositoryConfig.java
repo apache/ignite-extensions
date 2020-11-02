@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
@@ -53,9 +54,8 @@ public @interface RepositoryConfig {
     String igniteInstance() default "igniteInstance";
 
     /**
-     * Ignite cfg string. Default "igniteCfg".
-     *
-     * @return {@link IgniteConfiguration} spring bean name
+     * Name of the Spring Bean that must provide {@link IgniteConfiguration} or {@link ClientConfiguration} that is used
+     * for instantination of Ignite node or Ignite thin client respectively for accessing the Ignite cluster.
      */
     String igniteCfg() default "igniteCfg";
 

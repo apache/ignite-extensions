@@ -15,23 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata20.repository.support;
+package org.apache.ignite.springdata.misc;
 
-/** Reperesents Ignite cluster operations required by Spring Data. */
-public interface IgniteProxy {
-    /**
-     * Gets existing cache with the given name or creates new one.
-     *
-     * @param name Cache name.
-     * @return Cache proxy that provides access to cache with given name.
-     */
-    public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name);
+import java.io.Serializable;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 
-    /**
-     * Gets cache with the given name.
-     *
-     * @param name Cache name.
-     * @return Cache proxy that provides access to cache with specified name or {@code null} if it doesn't exist.
-     */
-    public <K, V> IgniteCacheProxy<K, V> cache(String name);
+/** Repository for testing repository configurion approach through {@link ClientConfiguration}. */
+@RepositoryConfig(cacheName = "PersonCache", igniteCfg = "clientConfiguration")
+public interface IgniteClientConfigRepository extends IgniteRepository<Object, Serializable> {
+    // No-op.
 }

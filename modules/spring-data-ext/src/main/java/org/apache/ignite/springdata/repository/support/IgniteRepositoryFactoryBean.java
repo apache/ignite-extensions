@@ -18,18 +18,23 @@
 package org.apache.ignite.springdata.repository.support;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.repository.support.client.IgniteClientProxy;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
+import org.springframework.data.util.ReflectionUtils;
 
 /**
  * Apache Ignite repository factory bean.
@@ -37,8 +42,8 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  * The repository requires to define one of the parameters below in your Spring application configuration in order
  * to get an access to Apache Ignite cluster:
  * <ul>
- * <li>{@link Ignite} instance bean named "igniteInstance"</li>
- * <li>{@link IgniteConfiguration} bean named "igniteCfg"</li>
+ * <li>{@link Ignite} or {@link IgniteClient} instance bean named "igniteInstance"</li>
+ * <li>{@link IgniteConfiguration} or {@link ClientConfiguration} bean named "igniteCfg"</li>
  * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
  * <li>{@link IgniteClient} instance bean named "igniteInstance"</li>
  * <ul/>
@@ -67,22 +72,11 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
         try {
-            Object igniteInstanceBean = ctx.getBean("igniteInstance");
-
-            if (igniteInstanceBean instanceof Ignite)
-                return new IgniteRepositoryFactory(new IgniteProxyImpl((Ignite)igniteInstanceBean));
-            else if (igniteInstanceBean instanceof IgniteClient)
-                return new IgniteRepositoryFactory(new IgniteClientProxy((IgniteClient)igniteInstanceBean));
-
-            throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to the" +
-                " \"igniteInstance\" property of repository configuration must be one of the following types:" +
-                " \"org.apache.ignite.Ignite\", \"org.apache.ignite.client.IgniteClient\"");
+            return createRepositoryFactory(ctx.getBean("igniteInstance"));
         }
         catch (BeansException ex) {
             try {
-                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean("igniteCfg");
-
-                return new IgniteRepositoryFactory(cfg);
+                return createRepositoryFactory(ctx.getBean("igniteCfg"));
             }
             catch (BeansException ex2) {
                 try {
@@ -91,12 +85,28 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
                     return new IgniteRepositoryFactory(path);
                 }
                 catch (BeansException ex3) {
-                    throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or" +
-                        " IgniteConfiguration or a path to Ignite's spring XML configuration must be defined in the" +
-                        " application configuration");
+                    throw new IgniteException("Failed to initialize Ignite repository factory. One of the following" +
+                        " beans are required: \"igniteInstance\", \"igniteCfg\", \"igniteSpringCfgPath\".");
                 }
             }
         }
+    }
+
+    /**
+     * Creates instance of {@link IgniteRepositoryFactory} via reflection.
+     *
+     * @param args Arguments to be used when creating the {@link IgniteRepositoryFactory} instance.
+     * @return {@link IgniteRepositoryFactory} instance.
+     */
+    private IgniteRepositoryFactory createRepositoryFactory(Object... args) {
+        Constructor<?> ctor = ReflectionUtils.findConstructor(IgniteRepositoryFactory.class, args);
+
+        if (ctor == null)
+            throw new IgniteException("Failed to instantinate " + IgniteRepositoryFactory.class.getName() +
+                ": No suitable constructor found to match the given arguments: " +
+                Arrays.stream(args).map(Object::getClass).collect(Collectors.toList()));
+
+        return (IgniteRepositoryFactory)BeanUtils.instantiateClass(ctor, args);
     }
 }
 

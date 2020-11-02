@@ -18,9 +18,13 @@
 package org.apache.ignite.springdata;
 
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
+import org.apache.ignite.springdata.misc.IgniteClientConfigRepository;
 import org.apache.ignite.springdata.misc.PersonRepository;
+import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /** Tests Spring Data CRUD operation when thin client is used for accessing the Ignite cluster. */
@@ -42,5 +46,17 @@ public class IgniteClientSpringDataCrudSelfTest extends IgniteSpringDataCrudSelf
             "Query of type TextQuery is not supported by thin client. Check" +
                 " org.apache.ignite.springdata.misc.PersonRepository#textQueryByFirstNameWithProjectionNamedParameter" +
                 " method configuration or use Ignite node instance to connect to the Ignite cluster.");
+    }
+
+    /**
+     * Tests repository configuration in case {@link ClientConfiguration} is used to provide access to Ignite cluster.
+     */
+    @Test
+    public void testRepositoryWithClientConfiguration() {
+        IgniteRepositoryFactory factory = new IgniteRepositoryFactory(ctx);
+
+        IgniteClientConfigRepository repo = factory.getRepository(IgniteClientConfigRepository.class);
+
+        assertTrue(repo.count() > 0);
     }
 }

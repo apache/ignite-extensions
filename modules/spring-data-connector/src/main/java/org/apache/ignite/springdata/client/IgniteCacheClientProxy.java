@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata20.repository.support.client;
+package org.apache.ignite.springdata.client;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
-import org.apache.ignite.springdata20.repository.support.IgniteCacheProxy;
+import org.apache.ignite.springdata.IgniteCacheProxy;
 import org.jetbrains.annotations.NotNull;
 
 /** Implementation of {@link IgniteCacheProxy} that provides access to Ignite cache through {@link ClientCache} instance. */

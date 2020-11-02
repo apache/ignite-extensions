@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata22.repository.support;
+package org.apache.ignite.springdata;
 
 import java.util.Map;
 import java.util.Set;

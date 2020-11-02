@@ -23,7 +23,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.springdata.IgniteCacheProxy;
+import org.apache.ignite.springdata.IgniteProxy;
+import org.apache.ignite.springdata.IgniteProxyImpl;
+import org.apache.ignite.springdata.client.IgniteClientProxy;
 import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.apache.ignite.springdata22.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata22.repository.config.Query;
@@ -31,7 +36,6 @@ import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata22.repository.query.IgniteQuery;
 import org.apache.ignite.springdata22.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata22.repository.query.IgniteRepositoryQuery;
-import org.apache.ignite.springdata22.repository.support.client.IgniteClientProxy;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -100,21 +104,30 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 return new IgniteClientProxy((IgniteClient)igniteInstanceBean);
 
             throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to the" +
-                " \"igniteInstance\" property of repository configuration must be one of the following types:" +
-                " \"org.apache.ignite.Ignite\", \"org.apache.ignite.client.IgniteClient\"");
+                " \"igniteInstance\" property of repository configuration must be one of the following types: " +
+                Ignite.class.getName() + ", " + IgniteClient.class.getName());
         }
         catch (BeansException ex) {
             try {
-                String igniteConfigName = evaluateExpression(config.igniteCfg());
-                IgniteConfiguration cfg = (IgniteConfiguration)ctx.getBean(igniteConfigName);
-                try {
-                    // first try to attach to existing ignite instance
-                    return new IgniteProxyImpl(Ignition.ignite(cfg.getIgniteInstanceName()));
+                Object igniteCfgBean = ctx.getBean(evaluateExpression(config.igniteCfg()));
+
+                if (igniteCfgBean instanceof IgniteConfiguration) {
+                    try {
+                        // first try to attach to existing ignite instance
+                        return new IgniteProxyImpl(Ignition.ignite(((IgniteConfiguration)igniteCfgBean).getIgniteInstanceName()));
+                    }
+                    catch (Exception ignored) {
+                        // nop
+                    }
+                    return new IgniteProxyImpl(Ignition.start((IgniteConfiguration)igniteCfgBean));
                 }
-                catch (Exception ignored) {
-                    // nop
-                }
-                return new IgniteProxyImpl(Ignition.start(cfg));
+                else if (igniteCfgBean instanceof ClientConfiguration)
+                    return new IgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
+
+                throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to" +
+                    " the \"igniteCfg\" property of repository configuration must be one of the following types: [" +
+                    IgniteConfiguration.class.getName() + ", " + ClientConfiguration.class.getName() + ']');
+
             }
             catch (BeansException ex2) {
                 try {
@@ -123,10 +136,9 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                     return new IgniteProxyImpl(Ignition.start(path));
                 }
                 catch (BeansException ex3) {
-                    throw new IgniteException("Failed to initialize Ignite repository factory. Ignite instance or"
-                        + " IgniteConfiguration or a path to Ignite's spring XML "
-                        + "configuration must be defined in the"
-                        + " application configuration");
+                    throw new IgniteException("Failed to initialize Ignite repository factory. No beans required for" +
+                        " repository configuration were found. Check \"igniteInstance\", \"igniteCfg\"," +
+                        " \"igniteSpringCfgPath\" parameters of " + RepositoryConfig.class.getName() + "class.");
                 }
             }
         }

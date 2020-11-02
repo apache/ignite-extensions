@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository.support.client;
+package org.apache.ignite.springdata.client;
 
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.springdata.repository.support.IgniteCacheProxy;
-import org.apache.ignite.springdata.repository.support.IgniteProxy;
+import org.apache.ignite.springdata.IgniteCacheProxy;
+import org.apache.ignite.springdata.IgniteProxy;
 
 /** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link IgniteClient} instance. */
 public class IgniteClientProxy implements IgniteProxy {
