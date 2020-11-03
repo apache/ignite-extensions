@@ -45,7 +45,6 @@ import org.springframework.data.util.ReflectionUtils;
  * <li>{@link Ignite} or {@link IgniteClient} instance bean named "igniteInstance"</li>
  * <li>{@link IgniteConfiguration} or {@link ClientConfiguration} bean named "igniteCfg"</li>
  * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
- * <li>{@link IgniteClient} instance bean named "igniteInstance"</li>
  * <ul/>
  *
  * @param <T> Repository type, {@link IgniteRepository}
@@ -102,10 +101,11 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     private IgniteRepositoryFactory createRepositoryFactory(Object... args) {
         Constructor<?> ctor = ReflectionUtils.findConstructor(IgniteRepositoryFactory.class, args);
 
-        if (ctor == null)
+        if (ctor == null) {
             throw new IgniteException("Failed to instantinate " + IgniteRepositoryFactory.class.getName() +
                 ": No suitable constructor found to match the given arguments: " +
-                Arrays.stream(args).map(Object::getClass).collect(Collectors.toList()));
+                Arrays.stream(args).map(arg -> arg.getClass().getName()).collect(Collectors.joining(", ")));
+        }
 
         return (IgniteRepositoryFactory)BeanUtils.instantiateClass(ctor, args);
     }
