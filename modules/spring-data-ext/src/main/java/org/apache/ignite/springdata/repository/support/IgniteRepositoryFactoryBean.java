@@ -71,11 +71,29 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
         try {
-            return createRepositoryFactory(ctx.getBean("igniteInstance"));
+            Object igniteInstanceBean = ctx.getBean("igniteInstance");
+
+            if (igniteInstanceBean instanceof Ignite)
+                return new IgniteRepositoryFactory((Ignite)igniteInstanceBean);
+            else if (igniteInstanceBean instanceof IgniteClient)
+                return new IgniteRepositoryFactory((IgniteClient)igniteInstanceBean);
+
+            throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to the" +
+                " \"igniteInstance\" property of repository configuration must be one of the following types: " +
+                Ignite.class.getName() + ", " + IgniteClient.class.getName());
         }
         catch (BeansException ex) {
             try {
-                return createRepositoryFactory(ctx.getBean("igniteCfg"));
+                Object igniteCfgBean = ctx.getBean("igniteCfg");
+
+                if (igniteCfgBean instanceof IgniteConfiguration)
+                    return new IgniteRepositoryFactory((IgniteConfiguration)igniteCfgBean);
+                else if (igniteCfgBean instanceof ClientConfiguration)
+                    return new IgniteRepositoryFactory((ClientConfiguration)igniteCfgBean);
+
+                throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to" +
+                    " the \"igniteCfg\" property of repository configuration must be one of the following types: [" +
+                    IgniteConfiguration.class.getName() + ", " + ClientConfiguration.class.getName() + ']');
             }
             catch (BeansException ex2) {
                 try {
@@ -90,24 +108,6 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
                 }
             }
         }
-    }
-
-    /**
-     * Creates instance of {@link IgniteRepositoryFactory} via reflection.
-     *
-     * @param args Arguments to be used when creating the {@link IgniteRepositoryFactory} instance.
-     * @return {@link IgniteRepositoryFactory} instance.
-     */
-    private IgniteRepositoryFactory createRepositoryFactory(Object... args) {
-        Constructor<?> ctor = ReflectionUtils.findConstructor(IgniteRepositoryFactory.class, args);
-
-        if (ctor == null) {
-            throw new IgniteException("Failed to instantinate " + IgniteRepositoryFactory.class.getName() +
-                ": No suitable constructor found to match the given arguments: " +
-                Arrays.stream(args).map(arg -> arg.getClass().getName()).collect(Collectors.joining(", ")));
-        }
-
-        return (IgniteRepositoryFactory)BeanUtils.instantiateClass(ctor, args);
     }
 }
 

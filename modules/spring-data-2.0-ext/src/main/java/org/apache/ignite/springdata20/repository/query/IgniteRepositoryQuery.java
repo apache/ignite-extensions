@@ -355,7 +355,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             throw e;
         }
 
-
         return transformQueryCursor(qry, returnStgy, parameters, qryCursor);
     }
 

@@ -98,7 +98,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-proxy</artifactId>
+            <artifactId>ignite-spring-data-commons</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
