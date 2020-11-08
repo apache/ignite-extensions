@@ -61,7 +61,7 @@ import static org.easymock.EasyMock.mock;
  */
 public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
-    private static final int EVENT_CNT = 10;
+    private static final int EVENT_CNT = 10000;
 
     /** Cache name. */
     private static final String CACHE_NAME = "testCache";
@@ -70,7 +70,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private static final String[] TOPICS = {"sink-test1", "sink-test2"};
 
     /** Kafka partition. */
-    private static final int PARTITIONS = 1;
+    private static final int PARTITIONS = 3;
 
     /** Kafka replication factor. */
     private static final int REPLICATION_FACTOR = 1;
@@ -193,8 +193,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).localListen(putLsnr, EVT_CACHE_OBJECT_PUT);
 
         IgniteCache<String, String> cache = grid.cache(CACHE_NAME);
-
-        cache.removeAll();
 
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 

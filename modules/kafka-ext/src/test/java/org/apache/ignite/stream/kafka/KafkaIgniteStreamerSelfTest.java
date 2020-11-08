@@ -93,7 +93,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().cache(DEFAULT_CACHE_NAME).removeAll();
+        grid().cache(DEFAULT_CACHE_NAME).clear();
 
         embeddedBroker.shutdown();
     }
@@ -183,7 +183,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setTopic(Arrays.asList(topic));
 
             // Set the number of threads.
-            kafkaStmr.setThreads(1);
+            kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
             kafkaStmr.setConsumerConfig(
@@ -240,7 +240,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             // Checks all events successfully processed in 10 seconds.
             assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
-                latch.await(25, TimeUnit.SECONDS));
+                latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
