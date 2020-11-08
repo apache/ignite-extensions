@@ -205,7 +205,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
             keyValMap.putAll(produceStream(topic, keyless));
 
         // Checks all events successfully processed in 10 seconds.
-        assertTrue(latch.await(25, TimeUnit.SECONDS));
+        assertTrue(latch.await(60, TimeUnit.SECONDS));
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(putLsnr);
 
