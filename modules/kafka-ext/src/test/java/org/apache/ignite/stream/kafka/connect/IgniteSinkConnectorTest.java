@@ -194,6 +194,8 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
         IgniteCache<String, String> cache = grid.cache(CACHE_NAME);
 
+        cache.removeAll();
+
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
         Map<String, String> keyValMap = new HashMap<>(EVENT_CNT * TOPICS.length);
