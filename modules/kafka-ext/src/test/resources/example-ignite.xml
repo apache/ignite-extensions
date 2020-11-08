@@ -31,7 +31,7 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Enable peer class loading for remote events. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
+        <property name="peerClassLoadingEnabled" value="false"/>
         <!-- Enable client mode. -->
         <property name="clientMode" value="true"/>
 
