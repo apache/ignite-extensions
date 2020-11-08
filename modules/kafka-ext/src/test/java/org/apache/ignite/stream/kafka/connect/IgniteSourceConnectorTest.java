@@ -121,7 +121,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         kafkaBroker.shutdown();
 
-        grid.cache(CACHE_NAME).clear();
+        grid.cache(CACHE_NAME).removeAll();
 
         // reset cache name to overwrite task configurations.
         Field field = IgniteSourceTask.class.getDeclaredField("cacheName");
@@ -202,7 +202,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         keyValMap.putAll(sendData());
 
         // Checks all events are processed.
-        assertTrue(latch.await(20, TimeUnit.SECONDS));
+        assertTrue(latch.await(25, TimeUnit.SECONDS));
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(locLsnr);
 
@@ -280,7 +280,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
                     }
                     return evtCnt.get() >= expectedEventsCnt;
                 }
-            }, 20_000);
+            }, 30_000);
 
             info("Waiting for unexpected records for 5 secs.");
 
