@@ -28,7 +28,11 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     // Kafka streamer.
-    KafkaIgniteStreamerSelfTest.class
+    KafkaIgniteStreamerSelfTest.class,
+
+    // Kafka streamers via Connect API.
+    IgniteSinkConnectorTest.class,
+    IgniteSourceConnectorTest.class
 })
 public class IgniteKafkaStreamerSelfTestSuite {
 }
