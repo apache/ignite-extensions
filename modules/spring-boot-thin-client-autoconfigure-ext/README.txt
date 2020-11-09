@@ -33,7 +33,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>spring-boot-ignite-client-autoconfigure</artifactId>
+            <artifactId>spring-boot-ignite-client-autoconfigure-ext</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

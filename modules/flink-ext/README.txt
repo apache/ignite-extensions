@@ -20,7 +20,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-flink</artifactId>
+            <artifactId>ignite-flink-ext</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
