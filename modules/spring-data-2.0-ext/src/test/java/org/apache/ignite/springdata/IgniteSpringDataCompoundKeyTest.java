@@ -36,10 +36,10 @@ import static org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationCon
  * */
 public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     /** Application context */
-    private static AnnotationConfigApplicationContext ctx;
+    protected static AnnotationConfigApplicationContext ctx;
 
     /** City repository */
-    private static CityRepository repo;
+    protected static CityRepository repo;
 
     /** Cache name */
     private static final String CACHE_NAME = "City";
