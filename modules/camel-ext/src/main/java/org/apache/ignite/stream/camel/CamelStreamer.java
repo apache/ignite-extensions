@@ -17,6 +17,7 @@
 
 package org.apache.ignite.stream.camel;
 
+import java.util.Map;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Consumer;
 import org.apache.camel.Endpoint;
@@ -25,7 +26,6 @@ import org.apache.camel.Processor;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.support.CamelContextHelper;
-import org.apache.camel.support.service.BaseService;
 import org.apache.camel.support.service.ServiceHelper;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,8 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-
-import java.util.Map;
 
 /**
  * This streamer consumes messages from an Apache Camel consumer endpoint and feeds them into an Ignite data streamer.
