@@ -26,7 +26,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-camel-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-camel-ext.version}</version>
         </dependency>
         ...
     </dependencies>

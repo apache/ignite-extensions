@@ -25,7 +25,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-kafka-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-kafka-ext.version}</version>
         </dependency>
         ...
     </dependencies>
