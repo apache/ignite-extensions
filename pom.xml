@@ -59,7 +59,7 @@
         <module>modules/spring-data-2.0-ext</module>
         <module>modules/spring-data-2.2-ext</module>
         <module>modules/spring-data-commons</module>
-        <module>modules/profiling-ext</module>
+        <module>modules/performance-statistics-ext</module>
     </modules>
 
     <profiles>
