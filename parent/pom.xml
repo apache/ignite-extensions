@@ -36,7 +36,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <ignite.version>2.9.0-SNAPSHOT</ignite.version>
+        <ignite.version>2.10.0-SNAPSHOT</ignite.version>
 
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -55,7 +55,7 @@
         <aspectj.version>1.8.13</aspectj.version>
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
         <aws.sdk.version>1.11.75</aws.sdk.version>
-        <camel.version>2.22.0</camel.version>
+        <camel.version>3.4.3</camel.version>
         <aws.encryption.sdk.version>1.3.2</aws.encryption.sdk.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.3</commons.beanutils.version>
@@ -126,10 +126,12 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
-        <spring.data.version>1.13.14.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.18.RELEASE</spring.version><!-- don't forget to update spring-data version -->
-        <spring.data-2.0.version>2.0.9.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
-        <spring-5.0.version>5.0.8.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
+        <spring.data.version>1.13.23.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
+        <spring.version>4.3.26.RELEASE</spring.version><!-- don't forget to update spring-data version -->
+        <spring.data-2.0.version>2.0.13.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
+        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
+        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
+        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <spring-boot.version>2.2.2.RELEASE</spring-boot.version>
         <storm.version>1.1.1</storm.version>
@@ -234,7 +236,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
 
@@ -344,6 +346,10 @@
                             <group>
                                 <title>SpringData 2.0 integration</title>
                                 <packages>org.apache.ignite.springdata20.repository*</packages>
+                            </group>
+                            <group>
+                                <title>SpringData 2.2 integration</title>
+                                <packages>org.apache.ignite.springdata22.repository*</packages>
                             </group>
                             <group>
                             <title>RocketMQ integration</title>
@@ -722,6 +728,14 @@
                                         <exclude>**/keystore/ca/*.txt.attr</exclude><!--auto generated files-->
                                         <exclude>**/keystore/ca/*serial</exclude><!--auto generated files-->
                                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
+                                        <!-- spring data 2.X modules, borrowed code from spring-jpa 5.2.0, Apache 2.0 licenses -->
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/QueryUtils.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/EmptyDeclaredQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/ExpressionBasedStringQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelEvaluator.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/spel/SpelQueryContext.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/DeclaredQuery.java</exclude>
+                                        <exclude>src/main/java/org/apache/ignite/springdata2*/repository/query/StringQuery.java</exclude>
                                         <!--special excludes-->
                                         <exclude>idea/ignite_codeStyle.xml</exclude>
                                         <exclude>**/DEVNOTES*.txt</exclude>
