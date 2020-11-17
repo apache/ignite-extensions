@@ -15,7 +15,7 @@ To use Ignite RocketMQ Streamer module, first import it to your Maven project.
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-rocketmq-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-rocketmq-ext.version}</version>
         </dependency>
         ...
     </dependencies>
