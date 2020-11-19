@@ -19,6 +19,7 @@ package org.apache.ignite.springdata;
 import java.util.Collection;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonExpressionRepository;
@@ -91,6 +92,8 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
         ctx.close();
+
+        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /**

@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata;
+package org.apache.ignite.springdata.proxy;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.springdata.compoundkey.CityRepository;
-import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-/** Tests Spring Data operation with compound key when thin client is used for accessing the Ignite cluster. */
-public class IgniteClientSpringDataCompoundKeyTest extends IgniteSpringDataCompoundKeyTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        ctx = new AnnotationConfigApplicationContext();
-
-        ctx.register(IgniteClientApplicationConfiguration.class);
-        ctx.refresh();
-
-        repo = ctx.getBean(CityRepository.class);
+/** Extends {@link IgniteProxyImpl} with the ability to close underlying Ignite instance. */
+public class ClosableIgniteProxy extends IgniteProxyImpl implements AutoCloseable {
+    /**
+     * @param ignite Ignite instance.
+     */
+    public ClosableIgniteProxy(Ignite ignite) {
+        super(ignite);
     }
 
     /** {@inheritDoc} */
-    @Override protected Ignite ignite() {
-        return ctx.getBean("igniteServerNode", Ignite.class);
+    @Override public void close() throws Exception {
+        ignite.close();
     }
 }

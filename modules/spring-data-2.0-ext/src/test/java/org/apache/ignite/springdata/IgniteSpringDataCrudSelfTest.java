@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.FullNameProjection;
 import org.apache.ignite.springdata.misc.Person;
@@ -93,6 +94,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
+
+        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /** */

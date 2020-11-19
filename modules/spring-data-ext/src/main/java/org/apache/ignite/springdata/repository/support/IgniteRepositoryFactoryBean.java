@@ -25,6 +25,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.repository.Repository;
@@ -47,9 +49,10 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  * @param <ID> Domain object key, super expects {@link Serializable}.
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
-    extends RepositoryFactoryBeanSupport<T, S, ID> implements ApplicationContextAware {
-    /** Application context. */
-    private ApplicationContext ctx;
+    extends RepositoryFactoryBeanSupport<T, S, ID> {
+    /** Repository factory. */
+    @Autowired
+    private IgniteResourceProvider pvd;
 
     /**
      * @param repositoryInterface Repository interface.
@@ -59,50 +62,8 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationContext(ApplicationContext context) throws BeansException {
-        this.ctx = context;
-    }
-
-    /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        try {
-            Object igniteInstanceBean = ctx.getBean("igniteInstance");
-
-            if (igniteInstanceBean instanceof Ignite)
-                return new IgniteRepositoryFactory((Ignite)igniteInstanceBean);
-            else if (igniteInstanceBean instanceof IgniteClient)
-                return new IgniteRepositoryFactory((IgniteClient)igniteInstanceBean);
-
-            throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to the" +
-                " \"igniteInstance\" property of repository configuration must be one of the following types: " +
-                Ignite.class.getName() + ", " + IgniteClient.class.getName());
-        }
-        catch (BeansException ex) {
-            try {
-                Object igniteCfgBean = ctx.getBean("igniteCfg");
-
-                if (igniteCfgBean instanceof IgniteConfiguration)
-                    return new IgniteRepositoryFactory((IgniteConfiguration)igniteCfgBean);
-                else if (igniteCfgBean instanceof ClientConfiguration)
-                    return new IgniteRepositoryFactory((ClientConfiguration)igniteCfgBean);
-
-                throw new IllegalStateException("Invalid repository configuration. The Spring Bean corresponding to" +
-                    " the \"igniteCfg\" property of repository configuration must be one of the following types: [" +
-                    IgniteConfiguration.class.getName() + ", " + ClientConfiguration.class.getName() + ']');
-            }
-            catch (BeansException ex2) {
-                try {
-                    String path = (String)ctx.getBean("igniteSpringCfgPath");
-
-                    return new IgniteRepositoryFactory(path);
-                }
-                catch (BeansException ex3) {
-                    throw new IgniteException("Failed to initialize Ignite repository factory. One of the following" +
-                        " beans must be defined in application configuration: \"igniteInstance\", \"igniteCfg\"," +
-                        " \"igniteSpringCfgPath\".");
-                }
-            }
-        }
+        return new IgniteRepositoryFactory(pvd.igniteProxy(), getObjectType());
     }
 }
 

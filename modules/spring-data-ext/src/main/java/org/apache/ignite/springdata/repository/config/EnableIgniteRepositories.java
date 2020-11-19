@@ -24,6 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryImpl;
+import org.apache.ignite.springdata.repository.support.IgniteResourceProvider;
+import org.apache.ignite.springdata.repository.support.IgniteResourceProviderImpl;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Import;
@@ -116,4 +118,10 @@ public @interface EnableIgniteRepositories {
      * repositories infrastructure.
      */
     boolean considerNestedRepositories() default false;
+
+    /**
+     * @return Implementation of {@link IgniteResourceProvider} interface which provides resources to access the
+     *      Ignite cluster for each repository.
+     */
+    Class<?> igniteResourceProvider() default IgniteResourceProviderImpl.class;
 }

@@ -21,6 +21,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Optional;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.springdata.compoundkey.City;
 import org.apache.ignite.springdata.compoundkey.CityKey;
 import org.apache.ignite.springdata.compoundkey.CityRepository;
@@ -94,11 +95,13 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
      */
     @Override protected void afterTestsStopped() {
         ctx.close();
+
+        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /** load data*/
     public void loadData() throws Exception {
-        Ignite ignite = ctx.getBean(Ignite.class);
+        Ignite ignite = ignite();
 
         if (ignite.cacheNames().contains(CACHE_NAME))
             ignite.destroyCache(CACHE_NAME);
@@ -123,5 +126,10 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         assertEquals(Optional.of(KABUL), repo.findById(new CityKey(KABUL_ID, AFG)));
         assertEquals(AFG_COUNT, repo.findByCountryCode(AFG).size());
         assertEquals(QUANDAHAR, repo.findById(QUANDAHAR_ID));
+    }
+
+    /** */
+    protected Ignite ignite() {
+        return ctx.getBean(Ignite.class);
     }
 }

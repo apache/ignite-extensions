@@ -20,13 +20,21 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.support.IgniteRepositoryFactoryBean;
+import org.apache.ignite.springdata20.repository.support.IgniteResourceProvider;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
+import org.springframework.data.repository.config.RepositoryConfigurationSource;
 
 /**
  * Apache Ignite specific implementation of {@link RepositoryConfigurationExtension}.
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
+    /** Name of the auto-registered {@link IgniteResourceProvider} implementation bean. */
+    private static final String IGNITE_RESOURCE_PROVIDER_BEAN_NAME = "igniteResourceProvider";
+
     /** {@inheritDoc} */
     @Override public String getModuleName() {
         return "Apache Ignite";
@@ -45,5 +53,17 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
     /** {@inheritDoc} */
     @Override protected Collection<Class<?>> getIdentifyingTypes() {
         return Collections.singleton(IgniteRepository.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerBeansForRoot(BeanDefinitionRegistry registry, RepositoryConfigurationSource cfg) {
+        Class<?> rsrcPrvCls = ((AnnotationRepositoryConfigurationSource)cfg).getAttributes()
+            .getClass("igniteResourceProvider");
+
+        registerIfNotAlreadyRegistered(
+            BeanDefinitionBuilder.genericBeanDefinition(rsrcPrvCls).getBeanDefinition(),
+            registry,
+            IGNITE_RESOURCE_PROVIDER_BEAN_NAME,
+            cfg);
     }
 }

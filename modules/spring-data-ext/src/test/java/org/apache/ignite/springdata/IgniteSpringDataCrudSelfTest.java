@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.TreeSet;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -93,6 +94,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() {
         ctx.destroy();
+
+        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /** */
