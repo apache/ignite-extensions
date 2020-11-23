@@ -1,6 +1,22 @@
 Apache Ignite Extensions Release Notes
 ===========================
 
+Apache Ignite Streamer Extension Modules 1.0
+-------------------------------------
+The following integrations were migrated the Apache Ignite Extensions repository:
+* Camel integration extension
+* Flink integration extension
+* Flume integration extension
+* JMS integration extension
+* Kafka integration extension
+* MQTT integration extension
+* Pub/Sub integration extension
+* RocketMQ integration extension
+* Storm integration extension
+* Twitter integration extension
+* ZeroMQ integration extension
+
+
 Apache Ignite Spring Boot Modules 1.0
 -------------------------------------
 
