@@ -21,8 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.misc.InvalidCacheRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
@@ -39,6 +42,9 @@ import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Tests Sprign Data cluster access configurations. */
 public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
@@ -120,7 +126,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
             return new IgniteConfiguration()
                 .setIgniteInstanceName(name)
                 .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER))
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
                 .setCacheConfiguration(new CacheConfiguration<>("PersonCache"));
         }
     }
@@ -151,7 +157,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
             return new IgniteConfiguration()
                 .setIgniteInstanceName(name)
                 .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
         }
     }
 
@@ -169,7 +175,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
                 .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER)));
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true))));
         }
 
         /** Ignite Spring configuration path bean. */
@@ -189,17 +195,21 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
     public static class ClientConfigurationApplication {
         /** */
+        private static final int CLI_CONN_PORT = 10810;
+
+        /** */
         @Bean
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER))
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
+                .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
                 .setCacheConfiguration(new CacheConfiguration<>("PersonCache")));
         }
 
         /** Ignite client configuraition bean. */
         @Bean
         public ClientConfiguration igniteCfg() {
-            return new ClientConfiguration().setAddresses("127.0.0.1:10800");
+            return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
         }
     }
 }
