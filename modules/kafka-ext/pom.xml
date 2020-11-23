@@ -32,7 +32,7 @@
     </parent>
 
     <artifactId>ignite-kafka-ext</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
