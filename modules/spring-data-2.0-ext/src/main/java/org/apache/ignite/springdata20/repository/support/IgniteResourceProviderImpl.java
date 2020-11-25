@@ -47,7 +47,7 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
     /** Spring application expression resolver. */
     private final BeanExpressionResolver expressionResolver = new StandardBeanExpressionResolver();
 
-    /** Ignite proxies mapped to the repository. */
+    /** Ignite proxies associated with repositories. */
     private final Map<Class<?>, IgniteProxy> igniteProxies = new ConcurrentHashMap<>();
 
     /** Spring application context. */
