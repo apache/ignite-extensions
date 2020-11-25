@@ -91,7 +91,7 @@ public class IgniteClientApplicationConfiguration {
         return Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10801"));
     }
 
-    /** Ingite configuration for server node. */
+    /**  */
     private static IgniteConfiguration igniteConfiguration(String igniteInstanceName, int cliConnPort) {
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)

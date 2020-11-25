@@ -47,7 +47,7 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
     /** Spring application expression resolver. */
     private final BeanExpressionResolver expressionResolver = new StandardBeanExpressionResolver();
 
-    /** Ingite proxies mapped to the repository. */
+    /** Ignite proxies mapped to the repository. */
     private final Map<Class<?>, IgniteProxy> igniteProxies = new ConcurrentHashMap<>();
 
     /** Spring application context. */
@@ -65,7 +65,9 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
     @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
         this.ctx = ctx;
 
-        beanExpressionCtx = new BeanExpressionContext(new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()), null);
+        beanExpressionCtx = new BeanExpressionContext(
+            new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),
+            null);
     }
 
     /** {@inheritDoc} */
@@ -99,7 +101,8 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
 
             throw new IllegalArgumentException("Invalid repository configuration [name=" + repoInterface.getName() +
                 "]. The Spring Bean corresponding to the \"igniteInstance\" property of repository configuration must" +
-                " be one of the following types: [" + Ignite.class.getName() + ", " + IgniteClient.class.getName() + ']');
+                " be one of the following types: [" + Ignite.class.getName() + ", " + IgniteClient.class.getName() +
+                ']');
         }
         catch (BeansException ex) {
             try {

@@ -36,9 +36,10 @@ import org.springframework.context.ApplicationContextAware;
 /** Represents default implementation of {@link IgniteResourceProvider} */
 public class IgniteResourceProviderImpl implements IgniteResourceProvider, ApplicationContextAware, DisposableBean {
     /** Spring application context. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ApplicationContext ctx;
 
-    /** Ingite proxy. */
+    /** Ignite proxy. */
     private volatile IgniteProxy igniteProxy;
 
     /** {@inheritDoc} */
@@ -67,8 +68,10 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        if (igniteProxy instanceof AutoCloseable)
-            ((AutoCloseable)igniteProxy).close();
+        IgniteProxy proxy = igniteProxy;
+
+        if (proxy instanceof AutoCloseable)
+            ((AutoCloseable)proxy).close();
     }
 
     /**
