@@ -21,9 +21,7 @@ import org.apache.ignite.client.IgniteClient;
 
 /** Extends {@link IgniteClientProxy} with the ability to close underlying thin client instance. */
 public class ClosableIgniteClientProxy extends IgniteClientProxy implements AutoCloseable {
-    /**
-     * @param cli Ignite client instance.
-     */
+    /** @param cli Ignite client instance. */
     public ClosableIgniteClientProxy(IgniteClient cli) {
         super(cli);
     }

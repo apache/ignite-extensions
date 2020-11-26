@@ -43,9 +43,6 @@ import org.springframework.util.StringUtils;
  * Crucial for spring-data functionality class. Create proxies for repositories.
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
-    /** Ignite instance */
-    private final IgniteProxy ignite;
-
     /** Ignite cache proxy instance associated with the current repository. */
     private final IgniteCacheProxy<?, ?> cache;
 
@@ -56,12 +53,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @param repoInterface Repository interface.
      */
     public IgniteRepositoryFactory(IgniteProxy ignite, Class<?> repoInterface) {
-        this.ignite = ignite;
-
         RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
 
         Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
-            RepositoryConfig.class.getName() + " annotation must be specified for each repository interaface.");
+            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
 
         String cacheName = cfg.cacheName();
 

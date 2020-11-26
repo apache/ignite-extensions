@@ -21,9 +21,7 @@ import org.apache.ignite.Ignite;
 
 /** Extends {@link IgniteProxyImpl} with the ability to close underlying Ignite instance. */
 public class ClosableIgniteProxy extends IgniteProxyImpl implements AutoCloseable {
-    /**
-     * @param ignite Ignite instance.
-     */
+    /** @param ignite Ignite instance. */
     public ClosableIgniteProxy(Ignite ignite) {
         super(ignite);
     }

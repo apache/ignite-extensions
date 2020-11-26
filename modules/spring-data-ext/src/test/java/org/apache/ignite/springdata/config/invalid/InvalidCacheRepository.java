@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.misc;
+package org.apache.ignite.springdata.config.invalid;
 
+import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 

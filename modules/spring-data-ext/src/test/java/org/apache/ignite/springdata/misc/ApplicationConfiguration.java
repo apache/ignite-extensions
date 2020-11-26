@@ -25,17 +25,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
-
-import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /**
  *
  */
 @Configuration
-@EnableIgniteRepositories(excludeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
+@EnableIgniteRepositories
 public class ApplicationConfiguration {
     /**
      * @return Ignite instance.

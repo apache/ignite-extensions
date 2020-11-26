@@ -21,7 +21,6 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Optional;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.springdata.compoundkey.City;
 import org.apache.ignite.springdata.compoundkey.CityKey;
 import org.apache.ignite.springdata.compoundkey.CityRepository;
@@ -95,8 +94,6 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
      */
     @Override protected void afterTestsStopped() {
         ctx.close();
-
-        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /** load data*/

@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import javax.cache.Cache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
@@ -69,8 +68,6 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
-
-        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /** */

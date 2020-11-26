@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.springdata.misc.InvalidCacheRepository;
+import org.apache.ignite.springdata.config.invalid.InvalidCacheRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Configuration;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
-/** Tests Sprign Data cluster access configurations. */
+/** Tests Spring Data cluster access configurations. */
 public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -105,9 +105,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(
-        value = "org.apache.ignite.springdata.misc",
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
     public static class IgniteConfigurationApplication {
         /** */
         @Bean
@@ -136,9 +134,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(
-        value = "org.apache.ignite.springdata.misc",
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
     public static class InvalidCacheNameApplication {
         /** */
         @Bean
@@ -166,16 +162,14 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(
-        value = "org.apache.ignite.springdata.misc",
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
     public static class SpringConfigurationApplication {
         /** */
         @Bean
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
                 .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true))));
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER)));
         }
 
         /** Ignite Spring configuration path bean. */
@@ -190,9 +184,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(
-        value = "org.apache.ignite.springdata.misc",
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
     public static class ClientConfigurationApplication {
         /** */
         private static final int CLI_CONN_PORT = 10810;
@@ -201,12 +193,12 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         @Bean
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
                 .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
                 .setCacheConfiguration(new CacheConfiguration<>("PersonCache")));
         }
 
-        /** Ignite client configuraition bean. */
+        /** Ignite client configuration bean. */
         @Bean
         public ClientConfiguration igniteCfg() {
             return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);

@@ -154,7 +154,7 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
         RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
 
         Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
-            RepositoryConfig.class.getName() + " annotation must be specified for each repository interaface.");
+            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
 
         return cfg;
     }

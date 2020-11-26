@@ -27,17 +27,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 import static org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationConfiguration.CLI_CONN_PORT;
-import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Spring Application configuration for repository testing in case thin client is used for accessing the cluster. */
 @Configuration
-@EnableIgniteRepositories(
-    value = {"org.apache.ignite.springdata.compoundkey", "org.apache.ignite.springdata.misc"},
-    excludeFilters = @ComponentScan.Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
+@EnableIgniteRepositories({"org.apache.ignite.springdata.compoundkey", "org.apache.ignite.springdata.misc"})
 public class IgniteClientApplicationConfiguration {
     /** @return {@link Ignite} node instance. */
     @Bean

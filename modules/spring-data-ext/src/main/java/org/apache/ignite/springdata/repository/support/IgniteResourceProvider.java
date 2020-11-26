@@ -20,7 +20,7 @@ package org.apache.ignite.springdata.repository.support;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 
-/** Represents interdace for providing the resources required to access the Ignite cluster for each repository. */
+/** Represents interface for providing the resources required to access the Ignite cluster for each repository. */
 public interface IgniteResourceProvider {
     /**
      * @return {@link IgniteProxy} instance which is used to access the Ignite cluster.

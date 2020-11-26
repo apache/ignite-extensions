@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 
-/** Repository for testing configurion approach through {@link IgniteConfiguration}. */
+/** Repository for testing configuration approach through {@link IgniteConfiguration}. */
 @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "igniteConfiguration")
 public interface IgniteConfigRepository extends IgniteRepository<Object, Serializable> {
     // No-op.

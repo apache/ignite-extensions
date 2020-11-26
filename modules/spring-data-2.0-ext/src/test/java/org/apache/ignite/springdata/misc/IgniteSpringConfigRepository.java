@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 
-/** Repository for testing configurion approach through Spring configuration path. */
+/** Repository for testing configuration approach through Spring configuration path. */
 @RepositoryConfig(cacheName = "PersonCache", igniteSpringCfgPath = "igniteConfiguration")
 public interface IgniteSpringConfigRepository extends IgniteRepository<Object, Serializable> {
     // No-op.
