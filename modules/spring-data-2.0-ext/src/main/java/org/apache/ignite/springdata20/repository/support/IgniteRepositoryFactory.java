@@ -39,8 +39,6 @@ import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import static org.apache.ignite.springdata20.repository.support.IgniteResourceProviderImpl.getRepositoryConfiguration;
-
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
  * <p>
@@ -191,5 +189,19 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             qryUpperCase.matches("^\\s*MERGE\\b.*") ||
             // insert
             qryUpperCase.matches("^\\s*INSERT\\b.*");
+    }
+
+    /**
+     * @return Configuration of the specified repository.
+     * @throws IllegalArgumentException If no configuration is specified.
+     * @see RepositoryConfig
+     */
+    public static RepositoryConfig getRepositoryConfiguration(Class<?> repoInterface) {
+        RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
+
+        Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
+            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
+
+        return cfg;
     }
 }

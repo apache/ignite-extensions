@@ -46,7 +46,7 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extends Serializable>
     extends RepositoryFactoryBeanSupport<T, V, K> implements ApplicationContextAware {
-    /** Ignite provider. */
+    /** Ignite resource provider. */
     @Autowired
     private IgniteResourceProvider pvd;
 

@@ -40,7 +40,8 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
-import org.springframework.util.Assert;
+
+import static org.apache.ignite.springdata20.repository.support.IgniteRepositoryFactory.getRepositoryConfiguration;
 
 /** Represents default implementation of {@link IgniteResourceProvider} */
 public class IgniteResourceProviderImpl implements IgniteResourceProvider, ApplicationContextAware, DisposableBean {
@@ -74,10 +75,22 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
     @Override public void destroy() throws Exception {
         Set<IgniteProxy> proxies = new HashSet<>(igniteProxies.values());
 
+        Exception destroyE = null;
+
         for (IgniteProxy proxy : proxies) {
-            if (proxy instanceof AutoCloseable)
+            try {
                 ((AutoCloseable)proxy).close();
+            }
+            catch (Exception e) {
+                if (destroyE == null)
+                    destroyE = e;
+                else
+                    destroyE.addSuppressed(e);
+            }
         }
+
+        if (destroyE != null)
+            throw destroyE;
     }
 
     /**
@@ -143,20 +156,6 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
                 }
             }
         }
-    }
-
-    /**
-     * @return Configuration of the specified repository.
-     * @throws IllegalArgumentException If no configuration is specified.
-     * @see RepositoryConfig
-     */
-    public static RepositoryConfig getRepositoryConfiguration(Class<?> repoInterface) {
-        RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
-
-        Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
-            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
-
-        return cfg;
     }
 
     /**

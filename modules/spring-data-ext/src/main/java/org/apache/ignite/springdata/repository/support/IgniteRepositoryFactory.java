@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
@@ -49,10 +48,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /**
      * Creates the factory with initialized {@link Ignite} instance.
      *
-     * @param ignite Proxy for accessing the Ignite cluster.
+     * @param pvd Provider of Ignite resources for cluster access.
      * @param repoInterface Repository interface.
      */
-    public IgniteRepositoryFactory(IgniteProxy ignite, Class<?> repoInterface) {
+    public IgniteRepositoryFactory(IgniteResourceProvider pvd, Class<?> repoInterface) {
         RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
 
         Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
@@ -64,7 +63,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             " Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
             " annotation to map this repository to the underlying cache.");
 
-        cache = ignite.getOrCreateCache(cacheName);
+        cache = pvd.igniteProxy().getOrCreateCache(cacheName);
     }
 
     /** {@inheritDoc} */
