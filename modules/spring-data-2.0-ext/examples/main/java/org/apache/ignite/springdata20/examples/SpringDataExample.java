@@ -22,6 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
 import javax.cache.Cache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata20.examples.model.Person;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +37,9 @@ import org.springframework.data.domain.PageRequest;
  * enables P2P class loading: {@code 'ignite.{sh|bat} modules/spring-data-2.0/examples/config/example-spring-data.xml'}.
  */
 public class SpringDataExample {
+    /** Thin client connection port. */
+    public static final int CLI_CONN_PORT = 10810;
+
     /** Spring Application Context. */
     private static AnnotationConfigApplicationContext ctx;
 
@@ -40,12 +47,48 @@ public class SpringDataExample {
     private static PersonRepository repo;
 
     /**
-     * Executes the example.
+     * Execute examples involving both approaches to configure Spring Data repository access to an Ignite cluster:
+     *      through Ignite thin client and through Ignite node.
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        // Initializing Spring Data context and Ignite repository.
-        igniteSpringDataInit();
+        startIgniteCluster();
+
+        // Ignite node instance is used to configure access to the Ignite cluster.
+        executeSpringDataExample(SpringApplicationConfiguration.class);
+
+        // Ignite thin client instance is used to configure access to the Ignite cluster.
+        executeSpringDataExample(IgniteClientSpringApplicationConfiguration.class);
+
+        // Ignite thin client configuration is used to configure access to the Ignite cluster.
+        executeSpringDataExample(IgniteClientConfigSpringApplicationConfiguration.class);
+
+        stopIgniteCluster();
+    }
+
+    /** Starts an Ignite node that simulates an Ignite cluster to which Spring Data repository will perform access. */
+    private static void startIgniteCluster() {
+        IgniteConfiguration cfg = new IgniteConfiguration()
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
+            .setPeerClassLoadingEnabled(true)
+            .setCacheConfiguration(new CacheConfiguration<Long, Person>("PersonCache")
+                .setIndexedTypes(Long.class, Person.class));
+
+       Ignition.start(cfg);
+    }
+
+    /** Stops Ignite cluster. */
+    private static void stopIgniteCluster() {
+        Ignition.stopAll(true);
+    }
+
+    /**
+     * Performs basic Spring Data repository operation.
+     *
+     * @param springAppCfg Class of Spring application configuration that will be used for Spring context initialization.
+     */
+    private static void executeSpringDataExample(Class<?> springAppCfg) {
+        igniteSpringDataInit(springAppCfg);
 
         populateRepository();
 
@@ -65,12 +108,14 @@ public class SpringDataExample {
 
     /**
      * Initializes Spring Data and Ignite repositories.
+     *
+     * @param springAppCfg Class of Spring application configuration that will be used for Spring context initialization.
      */
-    private static void igniteSpringDataInit() {
+    private static void igniteSpringDataInit(Class<?> springAppCfg) {
         ctx = new AnnotationConfigApplicationContext();
 
         // Explicitly registering Spring configuration.
-        ctx.register(SpringApplicationConfiguration.class);
+        ctx.register(springAppCfg);
 
         ctx.refresh();
 
