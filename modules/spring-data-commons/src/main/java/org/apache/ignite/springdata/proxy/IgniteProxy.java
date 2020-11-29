@@ -17,7 +17,7 @@
 
 package org.apache.ignite.springdata.proxy;
 
-/** Reperesents Ignite cluster operations required by Spring Data. */
+/** Represents Ignite cluster operations required by Spring Data. */
 public interface IgniteProxy {
     /**
      * Gets existing cache with the given name or creates new one.

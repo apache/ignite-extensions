@@ -22,10 +22,10 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryImpl;
-import org.apache.ignite.springdata.repository.support.IgniteResourceProvider;
-import org.apache.ignite.springdata.repository.support.IgniteResourceProviderImpl;
+import org.apache.ignite.springdata.repository.support.IgniteProxyFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Import;
@@ -120,8 +120,8 @@ public @interface EnableIgniteRepositories {
     boolean considerNestedRepositories() default false;
 
     /**
-     * @return Implementation of {@link IgniteResourceProvider} interface which provides resources to access the
-     *      Ignite cluster for each repository.
-     */
-    Class<?> igniteResourceProvider() default IgniteResourceProviderImpl.class;
+     * @return Implementation of the Ignite proxy factory to be used to create {@link IgniteProxy} instances
+     *      that provide access to the Ignite cluster for Spring Data repositories.
+     **/
+    Class<?> igniteProxyFactoryClass() default IgniteProxyFactory.class;
 }

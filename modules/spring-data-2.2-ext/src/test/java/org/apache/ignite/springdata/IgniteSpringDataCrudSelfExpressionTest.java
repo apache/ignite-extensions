@@ -17,6 +17,7 @@
 package org.apache.ignite.springdata;
 
 import java.util.Collection;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;

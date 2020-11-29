@@ -63,12 +63,11 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     private final IgniteProxy ignite;
 
     /**
-     * @param ctx Spring Appllication context.
-     * @param ignitePvd Provider for obraining {@link IgniteProxy} associated with repository.
+     * @param ctx Spring Application context.
      * @param repoInterface Repository interface.
      */
-    public IgniteRepositoryFactory(ApplicationContext ctx, IgniteResourceProvider ignitePvd, Class<?> repoInterface) {
-        ignite = ignitePvd.igniteProxy(repoInterface);
+    public IgniteRepositoryFactory(ApplicationContext ctx, Class<?> repoInterface) {
+        ignite = ctx.getBean(IgniteProxy.class, repoInterface);
 
         beanExpressionContext = new BeanExpressionContext(
             new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),
@@ -78,8 +77,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
         String cacheName = evaluateExpression(cfg.cacheName());
 
-        Assert.hasText(cacheName, "Invalid repository configuration [name=" + repoInterface.getName() + "]." +
-            " Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
+        Assert.hasText(cacheName, "Invalid configuration for repository " + repoInterface.getName() +
+            ". Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
             " annotation to map this repository to the underlying cache.");
 
        cache = cfg.autoCreateCache() ? ignite.getOrCreateCache(cacheName) : ignite.cache(cacheName);
@@ -196,10 +195,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
      * @throws IllegalArgumentException If no configuration is specified.
      * @see RepositoryConfig
      */
-    public static RepositoryConfig getRepositoryConfiguration(Class<?> repoInterface) {
+    static RepositoryConfig getRepositoryConfiguration(Class<?> repoInterface) {
         RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
 
-        Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
+        Assert.notNull(cfg, "Invalid configuration for repository " + repoInterface.getName() + ". " +
             RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
 
         return cfg;

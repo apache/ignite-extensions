@@ -22,7 +22,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.repository.Repository;
@@ -46,10 +45,6 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extends Serializable>
     extends RepositoryFactoryBeanSupport<T, V, K> implements ApplicationContextAware {
-    /** Ignite provider. */
-    @Autowired
-    private IgniteResourceProvider pvd;
-
     /** */
     private ApplicationContext ctx;
 
@@ -67,6 +62,6 @@ public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extend
 
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        return new IgniteRepositoryFactory(ctx, pvd, getObjectType());
+        return new IgniteRepositoryFactory(ctx, getObjectType());
     }
 }

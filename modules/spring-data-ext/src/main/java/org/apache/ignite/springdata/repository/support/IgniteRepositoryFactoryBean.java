@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.Repository;
@@ -45,9 +46,9 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  */
 public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
     extends RepositoryFactoryBeanSupport<T, S, ID> {
-    /** Ignite resource provider. */
+    /** Ignite proxy. */
     @Autowired
-    private IgniteResourceProvider pvd;
+    private IgniteProxy ignite;
 
     /**
      * @param repositoryInterface Repository interface.
@@ -58,7 +59,7 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
 
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        return new IgniteRepositoryFactory(pvd, getObjectType());
+        return new IgniteRepositoryFactory(ignite, getObjectType());
     }
 }
 

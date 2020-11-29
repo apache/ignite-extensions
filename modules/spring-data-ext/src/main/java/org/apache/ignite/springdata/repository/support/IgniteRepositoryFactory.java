@@ -18,8 +18,8 @@ package org.apache.ignite.springdata.repository.support;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
@@ -46,12 +46,12 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     private final IgniteCacheProxy<?, ?> cache;
 
     /**
-     * Creates the factory with initialized {@link Ignite} instance.
+     * Creates the factory with initialized {@link IgniteProxy} instance.
      *
-     * @param pvd Provider of Ignite resources for cluster access.
+     * @param ignite Ignite proxy instance.
      * @param repoInterface Repository interface.
      */
-    public IgniteRepositoryFactory(IgniteResourceProvider pvd, Class<?> repoInterface) {
+    public IgniteRepositoryFactory(IgniteProxy ignite, Class<?> repoInterface) {
         RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
 
         Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
@@ -63,7 +63,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             " Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
             " annotation to map this repository to the underlying cache.");
 
-        cache = pvd.igniteProxy().getOrCreateCache(cacheName);
+        cache = ignite.getOrCreateCache(cacheName);
     }
 
     /** {@inheritDoc} */

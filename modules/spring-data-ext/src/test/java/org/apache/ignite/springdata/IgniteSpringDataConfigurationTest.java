@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Configuration;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
-/** Tests Spring Data cluster access configurations. */
+/** Tests Spring Data repository cluster connection configurations. */
 public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -84,7 +84,10 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         assertTrue(Ignition.allGrids().isEmpty());
     }
 
-    /** */
+    /**
+     * Checks that repository created based on specified Spring application configuration is properly initialized and
+     * got access to the Ignite cluster.
+     */
     private void checkRepositoryConfiguration(Class<?> cfgCls) {
         try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
             ctx.register(cfgCls);

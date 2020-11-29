@@ -18,9 +18,9 @@ package org.apache.ignite.springdata.repository.config;
 
 import java.util.Collection;
 import java.util.Collections;
+import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
-import org.apache.ignite.springdata.repository.support.IgniteResourceProvider;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
@@ -32,8 +32,11 @@ import org.springframework.data.repository.config.RepositoryConfigurationSource;
  * Apache Ignite specific implementation of {@link RepositoryConfigurationExtension}.
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
-    /** Name of the auto-registered {@link IgniteResourceProvider} implementation bean. */
-    private static final String IGNITE_RESOURCE_PROVIDER_BEAN_NAME = "igniteResourceProvider";
+    /** Name of the auto-registered Ignite proxy factory bean. */
+    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteResourceProvider";
+
+    /** Name of the auto-registered Ignite proxy bean. */
+    private static final String IGNITE_PROXY_BEAN_NAME = "igniteProxy";
 
     /** {@inheritDoc} */
     @Override public String getModuleName() {
@@ -57,13 +60,21 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
 
     /** {@inheritDoc} */
     @Override public void registerBeansForRoot(BeanDefinitionRegistry registry, RepositoryConfigurationSource cfg) {
-        Class<?> rsrcPrvCls = ((AnnotationRepositoryConfigurationSource)cfg).getAttributes()
-            .getClass("igniteResourceProvider");
+        Class<?> igniteProxyFactoryCls = ((AnnotationRepositoryConfigurationSource)cfg).getAttributes()
+            .getClass("igniteProxyFactoryClass");
 
         registerIfNotAlreadyRegistered(
-            BeanDefinitionBuilder.genericBeanDefinition(rsrcPrvCls).getBeanDefinition(),
+            BeanDefinitionBuilder.genericBeanDefinition(igniteProxyFactoryCls).getBeanDefinition(),
             registry,
-            IGNITE_RESOURCE_PROVIDER_BEAN_NAME,
+            IGNITE_PROXY_FACTORY_BEAN_NAME,
+            cfg);
+
+        registerIfNotAlreadyRegistered(
+            BeanDefinitionBuilder.genericBeanDefinition(IgniteProxy.class)
+                .setFactoryMethodOnBean("igniteProxy", IGNITE_PROXY_FACTORY_BEAN_NAME)
+                .getBeanDefinition(),
+            registry,
+            IGNITE_PROXY_BEAN_NAME,
             cfg);
     }
 }

@@ -27,61 +27,20 @@ import org.apache.ignite.springdata.proxy.ClosableIgniteProxy;
 import org.apache.ignite.springdata.proxy.IgniteClientProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
-import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-/** Represents default implementation of {@link IgniteResourceProvider} */
-public class IgniteResourceProviderImpl implements IgniteResourceProvider, ApplicationContextAware, DisposableBean {
+/**
+ * Represents factory for obtaining instances of {@link IgniteProxy} that provide client-independent connection to the
+ * Ignite cluster.
+ */
+public class IgniteProxyFactory implements ApplicationContextAware {
     /** Spring application context. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private ApplicationContext ctx;
 
-    /** Ignite proxy. */
-    private volatile IgniteProxy igniteProxy;
-
-    /** {@inheritDoc} */
-    @Override public IgniteProxy igniteProxy() {
-        IgniteProxy res = igniteProxy;
-
-        if (res == null) {
-            synchronized (this) {
-                res = igniteProxy;
-
-                if (res == null) {
-                    res = createIgniteProxy();
-
-                    igniteProxy = res;
-                }
-            }
-        }
-
-        return igniteProxy;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
-        this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy() throws Exception {
-        IgniteProxy proxy = igniteProxy;
-
-        if (proxy instanceof AutoCloseable)
-            ((AutoCloseable)proxy).close();
-    }
-
-    /**
-     * Creates {@link IgniteProxy} to be used for providing access to the Ignite cluster for all repositories.
-     *
-     * @return Instance of {@link IgniteProxy}.
-     *
-     * @see RepositoryConfig
-     */
-    private IgniteProxy createIgniteProxy() {
+    /** @return {@link IgniteProxy} instance. */
+    public IgniteProxy igniteProxy() {
         try {
             Object igniteInstanceBean = ctx.getBean("igniteInstance");
 
@@ -90,9 +49,8 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
             else if (igniteInstanceBean instanceof IgniteClient)
                 return new IgniteClientProxy((IgniteClient)igniteInstanceBean);
 
-            throw new IllegalArgumentException("Invalid repository configuration. The Spring Bean corresponding to" +
-                " the \"igniteInstance\" property of repository configuration must be one of the following types: [" +
-                Ignite.class.getName() + ", " + IgniteClient.class.getName() + ']');
+            throw new IllegalArgumentException("The Spring Bean with name \"igniteInstance\" must be one of the" +
+                " following types: [" + Ignite.class.getName() + ", " + IgniteClient.class.getName() + ']');
         }
         catch (BeansException ex) {
             try {
@@ -112,24 +70,27 @@ public class IgniteResourceProviderImpl implements IgniteResourceProvider, Appli
                 else if (igniteCfgBean instanceof ClientConfiguration)
                     return new ClosableIgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
 
-                throw new IllegalArgumentException("Invalid repository configuration. The Spring Bean corresponding" +
-                    " to the \"igniteCfg\" property of repository configuration must be one of the following types: [" +
-                    IgniteConfiguration.class.getName() + ", " + ClientConfiguration.class.getName() + ']');
-
+                throw new IllegalArgumentException("The Spring Bean with name \"igniteCfg\" must be one of the" +
+                    " following types: [" + IgniteConfiguration.class.getName() + ", " +
+                    ClientConfiguration.class.getName() + ']');
             }
             catch (BeansException ex2) {
                 try {
-                    String igniteCfgPath = (String)ctx.getBean("igniteSpringCfgPath");
+                    String igniteCfgPath = ctx.getBean("igniteSpringCfgPath", String.class);
 
                     return new ClosableIgniteProxy(Ignition.start(igniteCfgPath));
                 }
                 catch (BeansException ex3) {
-                    throw new IllegalArgumentException("Failed to initialize proxy for accessing the Ignite cluster." +
-                        " No beans required for repository configuration were found. Check \"igniteInstance\"," +
-                        " \"igniteCfg\", \"igniteSpringCfgPath\" parameters of " + RepositoryConfig.class.getName() +
-                        " class.");
+                    throw new IllegalArgumentException("No beans were found that provide connection configuration to" +
+                        " the Ignite cluster. One of the following beans are required : \"igniteInstance\"," +
+                        " \"igniteCfg\" or \"igniteSpringCfgPath\".");
                 }
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        this.ctx = ctx;
     }
 }
