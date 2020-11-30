@@ -18,7 +18,6 @@ package org.apache.ignite.springdata.repository.config;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -33,10 +32,7 @@ import org.springframework.data.repository.config.RepositoryConfigurationSource;
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
     /** Name of the auto-registered Ignite proxy factory bean. */
-    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteResourceProvider";
-
-    /** Name of the auto-registered Ignite proxy bean. */
-    private static final String IGNITE_PROXY_BEAN_NAME = "igniteProxy";
+    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteProxyFactory";
 
     /** {@inheritDoc} */
     @Override public String getModuleName() {
@@ -67,14 +63,6 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
             BeanDefinitionBuilder.genericBeanDefinition(igniteProxyFactoryCls).getBeanDefinition(),
             registry,
             IGNITE_PROXY_FACTORY_BEAN_NAME,
-            cfg);
-
-        registerIfNotAlreadyRegistered(
-            BeanDefinitionBuilder.genericBeanDefinition(IgniteProxy.class)
-                .setFactoryMethodOnBean("igniteProxy", IGNITE_PROXY_FACTORY_BEAN_NAME)
-                .getBeanDefinition(),
-            registry,
-            IGNITE_PROXY_BEAN_NAME,
             cfg);
     }
 }

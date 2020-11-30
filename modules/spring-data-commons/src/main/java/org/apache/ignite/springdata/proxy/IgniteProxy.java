@@ -18,7 +18,7 @@
 package org.apache.ignite.springdata.proxy;
 
 /** Represents Ignite cluster operations required by Spring Data. */
-public interface IgniteProxy {
+public interface IgniteProxy extends AutoCloseable {
     /**
      * Gets existing cache with the given name or creates new one.
      *

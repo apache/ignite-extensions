@@ -23,7 +23,7 @@ import org.apache.ignite.client.IgniteClient;
 /** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link IgniteClient} instance. */
 public class IgniteClientProxy implements IgniteProxy {
     /** {@link IgniteClient} instance to which operations are delegated.  */
-    protected final IgniteClient cli;
+    private final IgniteClient cli;
 
     /** */
     public IgniteClientProxy(IgniteClient cli) {
@@ -54,5 +54,10 @@ public class IgniteClientProxy implements IgniteProxy {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return cli.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cli.close();
     }
 }

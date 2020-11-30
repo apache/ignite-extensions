@@ -22,39 +22,63 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.ClosableIgniteClientProxy;
-import org.apache.ignite.springdata.proxy.ClosableIgniteProxy;
 import org.apache.ignite.springdata.proxy.IgniteClientProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 /**
- * Represents factory for obtaining instances of {@link IgniteProxy} that provide client-independent connection to the
+ * Represents factory for obtaining instance of {@link IgniteProxy} that provide client-independent connection to the
  * Ignite cluster.
  */
-public class IgniteProxyFactory implements ApplicationContextAware {
+public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> implements ApplicationContextAware {
+    /** Name of the bean that stores Ignite client instance to access the Ignite cluster. */
+    private static final String IGNITE_INSTANCE_BEAN_NAME = "igniteInstance";
+
+    /** Name of the bean that stores the configuration to instantiate the Ignite client. */
+    private static final String IGNITE_CONFIG_BEAN_NAME = "igniteCfg";
+
+    /** Name of the bean that stores the Spring configuration path to instantiate the Ignite client. */
+    private static final String IGNITE_SPRING_CONFIG_PATH_BEAN_NAME= "igniteSpringCfgPath";
+
     /** Spring application context. */
     private ApplicationContext ctx;
 
-    /** @return {@link IgniteProxy} instance. */
-    public IgniteProxy igniteProxy() {
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() throws Exception {
+        getObject().close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> getObjectType() {
+        return IgniteProxy.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteProxy createInstance() {
         try {
-            Object igniteInstanceBean = ctx.getBean("igniteInstance");
+            Object igniteInstanceBean = ctx.getBean(IGNITE_INSTANCE_BEAN_NAME);
 
             if (igniteInstanceBean instanceof Ignite)
                 return new IgniteProxyImpl((Ignite)igniteInstanceBean);
             else if (igniteInstanceBean instanceof IgniteClient)
                 return new IgniteClientProxy((IgniteClient)igniteInstanceBean);
 
-            throw new IllegalArgumentException("The Spring Bean with name \"igniteInstance\" must be one of the" +
-                " following types: [" + Ignite.class.getName() + ", " + IgniteClient.class.getName() + ']');
+            throw new IllegalArgumentException("The Spring Bean with name \"" + IGNITE_INSTANCE_BEAN_NAME +
+                "\" must be one of the following types: [" + Ignite.class.getName() + ", " +
+                IgniteClient.class.getName() + ']');
         }
         catch (BeansException ex) {
             try {
-                Object igniteCfgBean = ctx.getBean("igniteCfg");
+                Object igniteCfgBean = ctx.getBean(IGNITE_CONFIG_BEAN_NAME);
 
                 if (igniteCfgBean instanceof IgniteConfiguration) {
                     try {
@@ -65,32 +89,28 @@ public class IgniteProxyFactory implements ApplicationContextAware {
                         // No-op.
                     }
 
-                    return new ClosableIgniteProxy(Ignition.start((IgniteConfiguration)igniteCfgBean));
+                    return new IgniteProxyImpl(Ignition.start((IgniteConfiguration)igniteCfgBean));
                 }
                 else if (igniteCfgBean instanceof ClientConfiguration)
-                    return new ClosableIgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
+                    return new IgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
 
-                throw new IllegalArgumentException("The Spring Bean with name \"igniteCfg\" must be one of the" +
-                    " following types: [" + IgniteConfiguration.class.getName() + ", " +
+                throw new IllegalArgumentException("The Spring Bean with name \"" + IGNITE_CONFIG_BEAN_NAME +
+                    "\" must be one of the following types: [" + IgniteConfiguration.class.getName() + ", " +
                     ClientConfiguration.class.getName() + ']');
             }
             catch (BeansException ex2) {
                 try {
-                    String igniteCfgPath = ctx.getBean("igniteSpringCfgPath", String.class);
+                    String igniteCfgPath = ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class);
 
-                    return new ClosableIgniteProxy(Ignition.start(igniteCfgPath));
+                    return new IgniteProxyImpl(Ignition.start(igniteCfgPath));
                 }
                 catch (BeansException ex3) {
                     throw new IllegalArgumentException("No beans were found that provide connection configuration to" +
-                        " the Ignite cluster. One of the following beans are required : \"igniteInstance\"," +
-                        " \"igniteCfg\" or \"igniteSpringCfgPath\".");
+                        " the Ignite cluster. One of the following beans are required : \"" +
+                        IGNITE_INSTANCE_BEAN_NAME + "\", \"" + IGNITE_CONFIG_BEAN_NAME + "\" or \"" +
+                        IGNITE_SPRING_CONFIG_PATH_BEAN_NAME + "\".");
                 }
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
-        this.ctx = ctx;
     }
 }

@@ -34,7 +34,7 @@ import static org.springframework.beans.factory.config.ConfigurableBeanFactory.S
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
     /** Name of the auto-registered Ignite proxy factory bean. */
-    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteResourceProvider";
+    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteProxyFactory";
 
     /** Name of the auto-registered Ignite proxy bean prototype. */
     private static final String IGNITE_PROXY_BEAN_NAME = "igniteProxy";
