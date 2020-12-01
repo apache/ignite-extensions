@@ -136,7 +136,7 @@ function prepareTxHistogramDatasets(nodeId, cacheId) {
         label: 'Count of transactions',
         data: datasetData,
         backgroundColor: '#FAA586',
-    }
+    };
 
     datasets.push(dataset);
 

@@ -160,7 +160,7 @@ public class ComputeHandler implements IgnitePerformanceStatisticsHandler {
             topSlowJson.add(node);
         });
 
-        return U.map("totalCompute", taskJson, "topSlowCompute", topSlowJson);
+        return U.map("compute", taskJson, "topSlowCompute", topSlowJson);
     }
 
     /** */

@@ -43,13 +43,13 @@ $('#computeStatisticsTable').bootstrapTable({
     data: prepareComputeTableData(),
     sortName: 'duration',
     sortOrder: 'desc'
-})
+});
 
 /** Tasks statistics table data. */
 function prepareComputeTableData() {
     var data = [];
 
-    $.each(REPORT_DATA.totalCompute, function (taskName, taskData) {
+    $.each(REPORT_DATA.compute, function (taskName, taskData) {
         data.push({
             "taskName": taskName,
             "count": taskData["count"],

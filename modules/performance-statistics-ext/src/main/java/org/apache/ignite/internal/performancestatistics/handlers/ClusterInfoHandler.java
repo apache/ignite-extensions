@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +48,7 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  *      "caches": [
  *          {
  *              "id" : $cacheId
+ *              "name" : $name
  *          }
  *      ]
  * }
@@ -60,13 +62,20 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
     private final Set<UUID> nodesIds = new HashSet<>();
 
     /** */
-    private final Set<Integer> cachesIds = new HashSet<>();
+    private final Map<Integer, String> cachesIds = new HashMap<>();
+
+    /** {@inheritDoc} */
+    @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
+        nodesIds.add(nodeId);
+
+        cachesIds.putIfAbsent(cacheId, name);
+    }
 
     /** {@inheritDoc} */
     @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
         nodesIds.add(nodeId);
 
-        cachesIds.add(cacheId);
+        cachesIds.putIfAbsent(cacheId, null);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +86,7 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
         GridIntIterator iter = cacheIds.iterator();
 
         while (iter.hasNext())
-            cachesIds.add(iter.next());
+            cachesIds.putIfAbsent(iter.next(), null);
     }
 
     /** {@inheritDoc} */
@@ -118,10 +127,11 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
 
         ArrayNode caches = MAPPER.createArrayNode();
 
-        cachesIds.forEach(id -> {
+        cachesIds.forEach((id, name) -> {
             ObjectNode cache = MAPPER.createObjectNode();
 
             cache.put("id", id);
+            cache.put("name", name);
 
             caches.add(cache);
         });

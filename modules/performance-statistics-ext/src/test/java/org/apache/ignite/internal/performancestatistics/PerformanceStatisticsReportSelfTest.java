@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
+import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
@@ -48,8 +52,36 @@ public class PerformanceStatisticsReportSelfTest {
 
             IgniteCache<Object, Object> cache = client.createCache("cache");
 
-            for (int i = 0; i < 100; i++)
-                cache.put(i, i);
+            cache.put(1, 1);
+            cache.get(1);
+            cache.remove(1);
+            cache.putAll(Collections.singletonMap(2, 2));
+            cache.getAll(Collections.singleton(2));
+            cache.removeAll(Collections.singleton(2));
+            cache.getAndPut(3, 3);
+            cache.getAndRemove(3);
+
+            client.compute().run(() -> {
+                // No-op.
+            });
+
+            IgniteCache<Object, Object> txCache = client.createCache("txCache");
+
+            try (Transaction tx = client.transactions().txStart()) {
+                txCache.put(1, 1);
+
+                tx.commit();
+            }
+
+            try (Transaction tx = client.transactions().txStart()) {
+                txCache.put(2, 2);
+
+                tx.rollback();
+            }
+
+            cache.query(new ScanQuery<>((key, val) -> true)).getAll();
+
+            cache.query(new SqlFieldsQuery("select * from sys.tables")).getAll();
 
             client.context().performanceStatistics().stopCollectStatistics();
 

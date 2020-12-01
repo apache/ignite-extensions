@@ -19,31 +19,21 @@ $('#nodesTable').bootstrapTable({
     pagination: true,
     search: true,
     columns: [{
-        field: 'name',
-        title: 'Node name',
-        sortable: true
-    }, {
-        field: 'version',
-        title: 'Node verson',
-        sortable: true
-    }, {
-        field: 'nodeId',
+        field: 'id',
         title: 'Node ID',
         sortable: true
     }],
     data: prepareNodesTableData(),
-    sortName: 'name',
+    sortName: 'id',
     sortOrder: 'desc'
-})
+});
 
 function prepareNodesTableData() {
     var data = [];
 
-    $.each(REPORT_DATA.clusterInfo.nodes, function (nodeId, node) {
+    $.each(REPORT_DATA.clusterInfo.nodes, function (idx, node) {
         data.push({
-            "nodeId": nodeId,
-            "name": node.name,
-            "version": node.version
+            "id": node.id,
         });
     });
 
@@ -54,41 +44,26 @@ $('#cachesTable').bootstrapTable({
     pagination: true,
     search: true,
     columns: [{
-        field: 'cacheName',
+        field: 'name',
         title: 'Cache name',
         sortable: true
     }, {
-        field: 'groupName',
-        title: 'Group name',
-        sortable: true
-    }, {
-        field: 'startTime',
-        title: 'Start time',
-        sortable: true
-    }, {
-        field: 'userCache',
-        title: 'User cache',
-        sortable: true
-    }, {
-        field: 'cacheId',
+        field: 'id',
         title: 'Cache ID',
         sortable: true
     }],
     data: prepareCachesTableData(),
-    sortName: 'cacheName',
+    sortName: 'name',
     sortOrder: 'desc'
-})
+});
 
 function prepareCachesTableData() {
     var data = [];
 
-    $.each(REPORT_DATA.clusterInfo.caches, function (cacheId, cache) {
+    $.each(REPORT_DATA.clusterInfo.caches, function (idx, cache) {
         data.push({
-            "cacheId": cacheId,
-            "startTime": new Date(cache.startTime),
-            "cacheName": cache.cacheName,
-            "groupName": cache.groupName,
-            "userCache": cache.userCache
+            "id": cache.id,
+            "name": cache.name
         });
     });
 

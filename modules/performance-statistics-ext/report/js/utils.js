@@ -69,7 +69,7 @@ function buildSelectCaches(el, onSelect) {
         return;
 
     $.each(caches, function (idx, cache) {
-        el.append('<option data-content="' + cache.id + '" value="' + cache.id + '"/>');
+        el.append('<option data-content="' + cache.name + '" value="' + cache.id + '"/>');
     });
 
     el.on('changed.bs.select', onSelect);

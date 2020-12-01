@@ -38,6 +38,11 @@ public interface IgnitePerformanceStatisticsHandler extends PerformanceStatistic
     Map<String, JsonNode> results();
 
     /** {@inheritDoc} */
+    @Override default void cacheStart(UUID nodeId, int cacheId, String name) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override default void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
         // No-op.
     }

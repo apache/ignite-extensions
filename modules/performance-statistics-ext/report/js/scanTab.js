@@ -70,7 +70,7 @@ $('#topSlowScanTable').bootstrapTable({
     search: true,
     columns: [{
         field: 'text',
-        title: 'Query text',
+        title: 'Cache name',
         sortable: true
     }, {
         field: 'duration',
