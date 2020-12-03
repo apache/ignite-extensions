@@ -46,7 +46,7 @@ $('#scanStatisticsTable').bootstrapTable({
     data: prepareScanTableData(),
     sortName: 'duration',
     sortOrder: 'desc'
-})
+});
 
 function prepareScanTableData() {
     var data = [];
@@ -54,11 +54,11 @@ function prepareScanTableData() {
     $.each(REPORT_DATA.scan, function (cacheName, sqlData) {
         data.push({
             "cacheName": cacheName,
-            "count": numberWithCommas(sqlData["count"]),
-            "duration": numberWithCommas(sqlData["duration"]),
-            "logicalReads": numberWithCommas(sqlData["logicalReads"]),
-            "physicalReads": numberWithCommas(sqlData["physicalReads"]),
-            "failures": numberWithCommas(sqlData["failures"])
+            "count": sqlData["count"],
+            "duration": sqlData["duration"],
+            "logicalReads": sqlData["logicalReads"],
+            "physicalReads": sqlData["physicalReads"],
+            "failures": sqlData["failures"]
         });
     });
 
@@ -101,7 +101,7 @@ $('#topSlowScanTable').bootstrapTable({
     data: prepareSlowScanTableData(),
     sortName: 'duration',
     sortOrder: 'desc'
-})
+});
 
 function prepareSlowScanTableData() {
     var data = [];
@@ -109,11 +109,11 @@ function prepareSlowScanTableData() {
     $.each(REPORT_DATA.topSlowScan, function (key, sqlData) {
         data.push({
             text: sqlData["text"],
-            duration: numberWithCommas(sqlData["duration"]),
+            duration: sqlData["duration"],
             startTime: new Date(sqlData["startTime"]),
             nodeId: sqlData["nodeId"],
-            logicalReads: numberWithCommas(sqlData["logicalReads"]),
-            physicalReads: numberWithCommas(sqlData["physicalReads"]),
+            logicalReads: sqlData["logicalReads"],
+            physicalReads: sqlData["physicalReads"],
             success: sqlData["success"]
         });
     });

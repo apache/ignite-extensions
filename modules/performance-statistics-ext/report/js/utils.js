@@ -54,11 +54,6 @@ function sortByKeyAsc(array, key) {
     });
 }
 
-/** Number with commas as thousands separators. */
-function numberWithCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 /** Builds bootstrap-select for caches. */
 function buildSelectCaches(el, onSelect) {
     el.append('<option data-content="<b>All caches</b>" value="total"/>');
@@ -69,7 +64,9 @@ function buildSelectCaches(el, onSelect) {
         return;
 
     $.each(caches, function (idx, cache) {
-        el.append('<option data-content="' + cache.name + '" value="' + cache.id + '"/>');
+        var name = cache.name === undefined || cache.name == null ? cache.id : cache.name;
+
+        el.append('<option data-content="' + name + '" value="' + cache.id + '"/>');
     });
 
     el.on('changed.bs.select', onSelect);

@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -85,7 +86,7 @@ public class PerformanceStatisticsReportSelfTest {
 
             client.context().performanceStatistics().stopCollectStatistics();
 
-            U.sleep(1000);
+            waitForStatisticsEnabled(false);
 
             File prfDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 

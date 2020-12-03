@@ -68,7 +68,7 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
     @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
         nodesIds.add(nodeId);
 
-        cachesIds.putIfAbsent(cacheId, name);
+        cachesIds.put(cacheId, name);
     }
 
     /** {@inheritDoc} */

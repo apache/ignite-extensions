@@ -46,7 +46,7 @@ $('#sqlStatisticsTable').bootstrapTable({
     data: prepareSqlTableData(),
     sortName: 'duration',
     sortOrder: 'desc'
-})
+});
 
 function prepareSqlTableData() {
     var data = [];
@@ -101,7 +101,7 @@ $('#topSlowSqlTable').bootstrapTable({
     data: prepareSlowSqlTableData(),
     sortName: 'duration',
     sortOrder: 'desc'
-})
+});
 
 function prepareSlowSqlTableData() {
     var data = [];

@@ -101,7 +101,7 @@ $('#topSlowComputeTable').bootstrapTable({
     onExpandRow: function (index, row, $detail) {
         buildJobsSubTable($detail.html("<h5>Jobs</h5><table></table>").find('table'), row.index)
     }
-})
+});
 
 /** Top of slow tasks table data. */
 function prepareSlowTasksTableData() {
