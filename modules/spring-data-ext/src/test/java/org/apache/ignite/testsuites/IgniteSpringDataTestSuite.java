@@ -21,7 +21,7 @@ import org.apache.ignite.springdata.IgniteClientSpringDataCompoundKeyTest;
 import org.apache.ignite.springdata.IgniteClientSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteClientSpringDataQueriesSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataCompoundKeyTest;
-import org.apache.ignite.springdata.IgniteSpringDataConfigurationTest;
+import org.apache.ignite.springdata.IgniteSpringDataConnectionConfigurationTest;
 import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
 import org.junit.runner.RunWith;
@@ -35,7 +35,7 @@ import org.junit.runners.Suite;
     IgniteSpringDataCrudSelfTest.class,
     IgniteSpringDataQueriesSelfTest.class,
     IgniteSpringDataCompoundKeyTest.class,
-    IgniteSpringDataConfigurationTest.class,
+    IgniteSpringDataConnectionConfigurationTest.class,
     IgniteClientSpringDataCrudSelfTest.class,
     IgniteClientSpringDataQueriesSelfTest.class,
     IgniteClientSpringDataCompoundKeyTest.class

@@ -18,6 +18,7 @@
 package org.apache.ignite.springdata;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -26,10 +27,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.springdata.config.invalid.InvalidCacheRepository;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
+import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -41,9 +43,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Tests Spring Data repository cluster connection configurations. */
-public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
+public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String CACHE_NAME = "PersonCache";
 
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
@@ -76,9 +81,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
                     return null;
                 },
                 IllegalArgumentException.class,
-                "Set a name of an Apache Ignite cache using" +
-                    " org.apache.ignite.springdata.repository.config.RepositoryConfig annotation to map this" +
-                    " repository to the underlying cache.");
+                "Invalid repository configuration [name=" + InvalidCacheRepository.class.getName() + "]. Set a" +
+                    " name of an Apache Ignite cache using org.apache.ignite.springdata.repository.config.RepositoryConfig" +
+                    " annotation to map this repository to the underlying cache.");
         }
 
         assertTrue(Ignition.allGrids().isEmpty());
@@ -95,9 +100,17 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
 
             PersonRepository repo = ctx.getBean(PersonRepository.class);
 
-            repo.save(1, new Person("Domenico", "Scarlatti"));
+            IgniteCache<Integer, Person> cache = ctx.getBean(Ignite.class).cache(CACHE_NAME);
 
-            assertTrue(repo.count() > 0);
+            assertEquals(0, repo.count());
+            assertEquals(0, cache.size());
+
+            int key = 0;
+
+            repo.save(key, new Person("Domenico", "Scarlatti"));
+
+            assertEquals(1, repo.count());
+            assertNotNull(cache.get(key));
         }
 
         assertTrue(Ignition.allGrids().isEmpty());
@@ -128,7 +141,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
                 .setIgniteInstanceName(name)
                 .setClientMode(clientMode)
                 .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>("PersonCache"));
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
         }
     }
 
@@ -137,7 +150,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
     public static class InvalidCacheNameApplication {
         /** */
         @Bean
@@ -172,7 +187,8 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
                 .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER)));
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
         }
 
         /** Ignite Spring configuration path bean. */
@@ -198,7 +214,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
             return Ignition.start(new IgniteConfiguration()
                 .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
                 .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
-                .setCacheConfiguration(new CacheConfiguration<>("PersonCache")));
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
         }
 
         /** Ignite client configuration bean. */
@@ -207,4 +223,11 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
             return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
         }
     }
+
+    /** Repository for testing application behavior in case the cache name is not specified in the repository configuration. */
+    @RepositoryConfig
+    interface InvalidCacheRepository extends IgniteRepository<Person, Integer> {
+        // No-op.
+    }
+
 }

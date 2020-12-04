@@ -19,6 +19,7 @@ package org.apache.ignite.springdata;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -27,11 +28,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.springdata.misc.IgniteClientConfigRepository;
-import org.apache.ignite.springdata.misc.IgniteConfigRepository;
-import org.apache.ignite.springdata.misc.IgniteSpringConfigRepository;
-import org.apache.ignite.springdata20.repository.IgniteRepository;
-import org.apache.ignite.springdata20.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata22.repository.IgniteRepository;
+import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata22.repository.config.RepositoryConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -43,9 +42,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Tests Spring Data repository cluster connection configurations. */
-public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
+public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static final String CACHE_NAME = "PersonCache";
 
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
@@ -79,9 +81,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
                 },
                 IllegalArgumentException.class,
                 "Cache 'PersonCache' not found for repository interface" +
-                    " org.apache.ignite.springdata.misc.IgniteConfigRepository. Please, add a cache configuration to" +
-                    " ignite configuration or pass autoCreateCache=true to" +
-                    " org.apache.ignite.springdata20.repository.config.RepositoryConfig annotation.");
+                    " org.apache.ignite.springdata.IgniteSpringDataConnectionConfigurationTest$IgniteConfigRepository." +
+                    " Please, add a cache configuration to ignite configuration or pass autoCreateCache=true to" +
+                    " org.apache.ignite.springdata22.repository.config.RepositoryConfig annotation.");
         }
 
         assertTrue(Ignition.allGrids().isEmpty());
@@ -101,9 +103,17 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
 
             IgniteRepository<Object, Serializable> repo = ctx.getBean(repoCls);
 
-            repo.save(1, "1");
+            IgniteCache<Object, Serializable> cache = ctx.getBean(Ignite.class).cache(CACHE_NAME);
 
-            assertTrue(repo.count() > 0);
+            assertEquals(0, repo.count());
+            assertEquals(0, cache.size());
+
+            int key = 0;
+
+            repo.save(key, "1");
+
+            assertEquals(1, repo.count());
+            assertNotNull(cache.get(key));
         }
 
         assertTrue(Ignition.allGrids().isEmpty());
@@ -114,7 +124,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
     public static class InvalidCacheNameApplication {
         /** */
         @Bean
@@ -142,14 +154,17 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteSpringConfigRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteSpringConfigRepository.class))
     public static class SpringConfigurationApplication {
         /** */
         @Bean
         public Ignite igniteServerNode() {
             return Ignition.start(new IgniteConfiguration()
                 .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER)));
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
         }
 
         /** Ignite Spring configuration path bean. */
@@ -164,7 +179,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
     public static class IgniteConfigurationApplication {
         /** */
         @Bean
@@ -184,7 +201,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
                 .setIgniteInstanceName(name)
                 .setClientMode(clientMode)
                 .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>("PersonCache"));
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
         }
     }
 
@@ -193,7 +210,9 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteClientConfigRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteClientConfigRepository.class))
     public static class ClientConfigurationApplication {
         /** */
         private static final int CLI_CONN_PORT = 10810;
@@ -204,7 +223,7 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
             return Ignition.start(new IgniteConfiguration()
                 .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
                 .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
-                .setCacheConfiguration(new CacheConfiguration<>("PersonCache")));
+                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
         }
 
         /** Ignite client configuration bean. */
@@ -212,5 +231,23 @@ public class IgniteSpringDataConfigurationTest extends GridCommonAbstractTest {
         public ClientConfiguration clientConfiguration() {
             return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
         }
+    }
+
+    /** Repository for testing configuration approach through Spring configuration path. */
+    @RepositoryConfig(cacheName = "PersonCache", igniteSpringCfgPath = "igniteConfiguration")
+    interface IgniteSpringConfigRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** Repository for testing configuration approach through {@link IgniteConfiguration}. */
+    @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "igniteConfiguration")
+    public interface IgniteConfigRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** Repository for testing repository configuration approach through {@link ClientConfiguration}. */
+    @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "clientConfiguration")
+    public interface IgniteClientConfigRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
     }
 }
