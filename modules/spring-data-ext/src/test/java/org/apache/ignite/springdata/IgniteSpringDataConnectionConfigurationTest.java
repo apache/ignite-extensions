@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
@@ -44,6 +45,9 @@ import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 /** Tests Spring Data repository cluster connection configurations. */
 public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final String CACHE_NAME = "PersonCache";
 
     /** */
@@ -53,12 +57,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @Test
     public void testRepositoryWithIgniteConfiguration() {
         checkRepositoryConfiguration(IgniteConfigurationApplication.class);
-    }
-
-    /** Tests repository configuration in case Spring configuration path is used to access the Ignite cluster. */
-    @Test
-    public void testRepositoryWithIgniteSpringConfiguration() {
-        checkRepositoryConfiguration(SpringConfigurationApplication.class);
     }
 
     /** Tests repository configuration in case {@link ClientConfiguration} is used to access the Ignite cluster.*/
@@ -158,26 +156,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     }
 
     /**
-     * Spring Application configuration for repository testing in case Spring configuration  is used
-     * for accessing the cluster.
-     */
-    @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class SpringConfigurationApplication {
-        /** */
-        @Bean
-        public Ignite igniteServerNode() {
-            return Ignition.start(getIgniteConfiguration("srv-node", false));
-        }
-
-        /** Ignite Spring configuration path bean. */
-        @Bean
-        public String igniteSpringCfgPath() {
-            return "repository-ignite-config.xml";
-        }
-    }
-
-    /**
      * Spring Application configuration for repository testing in case {@link ClientConfiguration} is used
      * for accessing the cluster.
      */
@@ -208,7 +186,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         return new IgniteConfiguration()
             .setIgniteInstanceName(name)
             .setClientMode(clientMode)
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
             .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
     }

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
@@ -43,6 +44,9 @@ import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 /** Tests Spring Data repository cluster connection configurations. */
 public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private static final String CACHE_NAME = "PersonCache";
 
     /** */
@@ -52,12 +56,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @Test
     public void testRepositoryWithIgniteConfiguration() {
         checkRepositoryConfiguration(IgniteConfigurationApplication.class, IgniteConfigRepository.class);
-    }
-
-    /** Tests repository configuration in case Spring configuration path is used to access the Ignite cluster. */
-    @Test
-    public void testRepositoryWithIgniteSpringConfiguration() {
-        checkRepositoryConfiguration(SpringConfigurationApplication.class, IgniteSpringConfigRepository.class);
     }
 
     /** Tests repository configuration in case {@link ClientConfiguration} is used to access the Ignite cluster.*/
@@ -102,10 +100,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
 
             IgniteRepository<Object, Serializable> repo = ctx.getBean(repoCls);
 
-            log.info("---->");
-            log.info(repo.ignite().toString());
-            log.info(Ignition.allGrids().toString());
-
             IgniteCache<Object, Serializable> cache = ctx.getBean(Ignite.class).cache(CACHE_NAME);
 
             assertEquals(0, repo.count());
@@ -141,28 +135,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         @Bean
         public IgniteConfiguration igniteConfiguration() {
             return getIgniteConfiguration("cli-node", true);
-        }
-    }
-
-    /**
-     * Spring Application configuration for repository testing in case Spring configuration  is used
-     * for accessing the cluster.
-     */
-    @Configuration
-    @EnableIgniteRepositories(
-        considerNestedRepositories = true,
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteSpringConfigRepository.class))
-    public static class SpringConfigurationApplication {
-        /** */
-        @Bean
-        public Ignite igniteServerNode() {
-            return Ignition.start(getIgniteConfiguration("srv-node", false));
-        }
-
-        /** Ignite Spring configuration path bean. */
-        @Bean
-        public String igniteSpringConfigurationPath() {
-            return "repository-ignite-config.xml";
         }
     }
 
@@ -213,12 +185,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         }
     }
 
-    /** Repository for testing configuration approach through Spring configuration path. */
-    @RepositoryConfig(cacheName = "PersonCache", igniteSpringCfgPath = "igniteSpringConfigurationPath")
-    interface IgniteSpringConfigRepository extends IgniteRepository<Object, Serializable> {
-        // No-op.
-    }
-
     /** Repository for testing configuration approach through {@link IgniteConfiguration}. */
     @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "igniteConfiguration")
     public interface IgniteConfigRepository extends IgniteRepository<Object, Serializable> {
@@ -242,7 +208,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         return new IgniteConfiguration()
             .setIgniteInstanceName(name)
             .setClientMode(clientMode)
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
             .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
     }
