@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
@@ -44,9 +43,6 @@ import static org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE;
 
 /** Tests Spring Data repository cluster connection configurations. */
 public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String CACHE_NAME = "PersonCache";
 
@@ -212,7 +208,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         return new IgniteConfiguration()
             .setIgniteInstanceName(name)
             .setClientMode(clientMode)
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
             .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
     }
