@@ -50,6 +50,9 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** */
     private static final String CACHE_NAME = "PersonCache";
 
+    /** */
+    private static final int CLI_CONN_PORT = 10810;
+
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
@@ -134,15 +137,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         public IgniteConfiguration igniteCfg() {
             return getIgniteConfiguration("cli-node", true);
         }
-
-        /** */
-        private IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
-            return new IgniteConfiguration()
-                .setIgniteInstanceName(name)
-                .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
-        }
     }
 
     /**
@@ -165,14 +159,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         public IgniteConfiguration igniteCfg() {
             return getIgniteConfiguration("cli-node", true);
         }
-
-        /** */
-        private IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
-            return new IgniteConfiguration()
-                .setIgniteInstanceName(name)
-                .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
-        }
     }
 
     /**
@@ -185,10 +171,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         /** */
         @Bean
         public Ignite igniteServerNode() {
-            return Ignition.start(new IgniteConfiguration()
-                .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
+            return Ignition.start(getIgniteConfiguration("srv-node", false));
         }
 
         /** Ignite Spring configuration path bean. */
@@ -206,15 +189,9 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
     public static class ClientConfigurationApplication {
         /** */
-        private static final int CLI_CONN_PORT = 10810;
-
-        /** */
         @Bean
         public Ignite igniteServerNode() {
-            return Ignition.start(new IgniteConfiguration()
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
+            return Ignition.start(getIgniteConfiguration("srv-node", false));
         }
 
         /** Ignite client configuration bean. */
@@ -228,6 +205,16 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @RepositoryConfig
     interface InvalidCacheRepository extends IgniteRepository<Person, Integer> {
         // No-op.
+    }
+
+    /** */
+    private static IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
+        return new IgniteConfiguration()
+            .setIgniteInstanceName(name)
+            .setClientMode(clientMode)
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
+            .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
     }
 
 }

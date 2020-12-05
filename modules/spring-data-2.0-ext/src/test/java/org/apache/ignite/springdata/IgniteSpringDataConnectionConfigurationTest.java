@@ -49,6 +49,9 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** */
     private static final String CACHE_NAME = "PersonCache";
 
+    /** */
+    private static final int CLI_CONN_PORT = 10810;
+
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
@@ -80,8 +83,8 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
                     return null;
                 },
                 IllegalArgumentException.class,
-                "Cache 'PersonCache' not found for repository interface" +
-                    " org.apache.ignite.springdata.IgniteSpringDataConnectionConfigurationTest$IgniteConfigRepository." +
+                "Cache 'invalidCache' not found for repository interface" +
+                    " org.apache.ignite.springdata.IgniteSpringDataConnectionConfigurationTest$InvalidCacheNameRepository." +
                     " Please, add a cache configuration to ignite configuration or pass autoCreateCache=true to" +
                     " org.apache.ignite.springdata20.repository.config.RepositoryConfig annotation.");
         }
@@ -126,7 +129,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @Configuration
     @EnableIgniteRepositories(
         considerNestedRepositories = true,
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheNameRepository.class))
     public static class InvalidCacheNameApplication {
         /** */
         @Bean
@@ -138,14 +141,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         @Bean
         public IgniteConfiguration igniteConfiguration() {
             return getIgniteConfiguration("cli-node", true);
-        }
-
-        /** */
-        private IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
-            return new IgniteConfiguration()
-                .setIgniteInstanceName(name)
-                .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
         }
     }
 
@@ -161,15 +156,12 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         /** */
         @Bean
         public Ignite igniteServerNode() {
-            return Ignition.start(new IgniteConfiguration()
-                .setIgniteInstanceName("srv-node")
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
+            return Ignition.start(getIgniteConfiguration("srv-node", false));
         }
 
         /** Ignite Spring configuration path bean. */
         @Bean
-        public String igniteConfiguration() {
+        public String igniteSpringConfigurationPath() {
             return "repository-ignite-config.xml";
         }
     }
@@ -194,15 +186,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         public IgniteConfiguration igniteConfiguration() {
             return getIgniteConfiguration("cli-node", true);
         }
-
-        /** */
-        private IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
-            return new IgniteConfiguration()
-                .setIgniteInstanceName(name)
-                .setClientMode(clientMode)
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
-        }
     }
 
     /**
@@ -215,15 +198,9 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteClientConfigRepository.class))
     public static class ClientConfigurationApplication {
         /** */
-        private static final int CLI_CONN_PORT = 10810;
-
-        /** */
         @Bean
         public Ignite igniteServerNode() {
-            return Ignition.start(new IgniteConfiguration()
-                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
-                .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
-                .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)));
+            return Ignition.start(getIgniteConfiguration("srv-node", false));
         }
 
         /** Ignite client configuration bean. */
@@ -234,7 +211,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     }
 
     /** Repository for testing configuration approach through Spring configuration path. */
-    @RepositoryConfig(cacheName = "PersonCache", igniteSpringCfgPath = "igniteConfiguration")
+    @RepositoryConfig(cacheName = "PersonCache", igniteSpringCfgPath = "igniteSpringConfigurationPath")
     interface IgniteSpringConfigRepository extends IgniteRepository<Object, Serializable> {
         // No-op.
     }
@@ -249,5 +226,21 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "clientConfiguration")
     public interface IgniteClientConfigRepository extends IgniteRepository<Object, Serializable> {
         // No-op.
+    }
+
+    /** Repository for testing configuration in case invalid cache name is specified. */
+    @RepositoryConfig(cacheName = "invalidCache", igniteCfg = "igniteConfiguration")
+    public interface InvalidCacheNameRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** */
+    private static IgniteConfiguration getIgniteConfiguration(String name, boolean clientMode) {
+        return new IgniteConfiguration()
+            .setIgniteInstanceName(name)
+            .setClientMode(clientMode)
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
+            .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
     }
 }
