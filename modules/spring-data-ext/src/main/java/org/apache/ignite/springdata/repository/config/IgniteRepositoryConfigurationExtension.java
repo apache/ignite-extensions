@@ -19,10 +19,10 @@ package org.apache.ignite.springdata.repository.config;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata.repository.support.IgniteProxyFactory;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
 import org.springframework.data.repository.config.RepositoryConfigurationSource;
@@ -56,11 +56,8 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
 
     /** {@inheritDoc} */
     @Override public void registerBeansForRoot(BeanDefinitionRegistry registry, RepositoryConfigurationSource cfg) {
-        Class<?> igniteProxyFactoryCls = ((AnnotationRepositoryConfigurationSource)cfg).getAttributes()
-            .getClass("igniteProxyFactoryClass");
-
         registerIfNotAlreadyRegistered(
-            BeanDefinitionBuilder.genericBeanDefinition(igniteProxyFactoryCls).getBeanDefinition(),
+            BeanDefinitionBuilder.genericBeanDefinition(IgniteProxyFactory.class).getBeanDefinition(),
             registry,
             IGNITE_PROXY_FACTORY_BEAN_NAME,
             cfg);
