@@ -17,8 +17,14 @@
 
 package org.apache.ignite.springdata.proxy;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /** Represents Ignite cluster operations required by Spring Data. */
-public interface IgniteProxy extends AutoCloseable {
+public interface IgniteProxy {
     /**
      * Gets existing cache with the given name or creates new one.
      *
@@ -34,4 +40,32 @@ public interface IgniteProxy extends AutoCloseable {
      * @return Cache proxy that provides access to cache with specified name or {@code null} if it doesn't exist.
      */
     public <K, V> IgniteCacheProxy<K, V> cache(String name);
+
+    /**
+     * @param connObj Object that will be used to obtain underlying Ignite client instance to access the Ignite cluster.
+     * @return Ignite proxy instance.
+     */
+    public static IgniteProxy of(Object connObj) {
+        if (connObj instanceof Ignite)
+            return new IgniteProxyImpl((Ignite)connObj);
+        else if (connObj instanceof IgniteConfiguration) {
+            try {
+                return new IgniteProxyImpl(Ignition.ignite(((IgniteConfiguration)connObj).getIgniteInstanceName()));
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+
+            return new ClosableIgniteProxyImpl(Ignition.start((IgniteConfiguration)connObj));
+        }
+        else if (connObj instanceof String)
+            return new ClosableIgniteProxyImpl(Ignition.start((String)connObj));
+        else if (connObj instanceof IgniteClient)
+            return new IgniteClientProxy((IgniteClient)connObj);
+        else if (connObj instanceof ClientConfiguration)
+            return new ClosableIgniteClientProxy(Ignition.startClient((ClientConfiguration)connObj));
+
+        throw new IllegalArgumentException(
+            "Object of type " + connObj.getClass().getName() + " can not be used to connect to the Ignite cluster.");
+    }
 }

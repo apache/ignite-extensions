@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCache;
 /** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link Ignite} instance. */
 public class IgniteProxyImpl implements IgniteProxy {
     /** {@link Ignite} instance to which operations are delegated. */
-    private final Ignite ignite;
+    protected final Ignite ignite;
 
     /** */
     public IgniteProxyImpl(Ignite ignite) {
@@ -62,10 +62,5 @@ public class IgniteProxyImpl implements IgniteProxy {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return ignite.hashCode();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        ignite.close();
     }
 }

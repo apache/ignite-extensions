@@ -21,14 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.IgniteClientProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
@@ -82,14 +75,16 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
         Exception destroyE = null;
 
         for (IgniteProxy proxy : proxies) {
-            try {
-                proxy.close();
-            }
-            catch (Exception e) {
-                if (destroyE == null)
-                    destroyE = e;
-                else
-                    destroyE.addSuppressed(e);
+            if (proxy instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable)proxy).close();
+                }
+                catch (Exception e) {
+                    if (destroyE == null)
+                        destroyE = e;
+                    else
+                        destroyE.addSuppressed(e);
+                }
             }
         }
 
@@ -108,47 +103,18 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
     private IgniteProxy createIgniteProxy(Class<?> repoInterface) {
         RepositoryConfig repoCfg = getRepositoryConfiguration(repoInterface);
 
+        Object connCfg;
+
         try {
-            Object igniteInstanceBean = ctx.getBean(evaluateExpression(repoCfg.igniteInstance()));
-
-            if (igniteInstanceBean instanceof Ignite)
-                return new IgniteProxyImpl((Ignite)igniteInstanceBean);
-            else if (igniteInstanceBean instanceof IgniteClient)
-                return new IgniteClientProxy((IgniteClient)igniteInstanceBean);
-
-            throw new IllegalArgumentException("Invalid configuration for repository " + repoInterface.getName() +
-                ". The Spring Bean corresponding to the \"igniteInstance\" property of repository configuration must" +
-                " be one of the following types: [" + Ignite.class.getName() + ", " + IgniteClient.class.getName() +
-                ']');
+            connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteInstance()));
         }
         catch (BeansException ex) {
             try {
-                Object igniteCfgBean = ctx.getBean(evaluateExpression(repoCfg.igniteCfg()));
-
-                if (igniteCfgBean instanceof IgniteConfiguration) {
-                    try {
-                        return new IgniteProxyImpl(Ignition.ignite(
-                            ((IgniteConfiguration)igniteCfgBean).getIgniteInstanceName()));
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-
-                    return new IgniteProxyImpl(Ignition.start((IgniteConfiguration)igniteCfgBean));
-                }
-                else if (igniteCfgBean instanceof ClientConfiguration)
-                    return new IgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
-
-                throw new IllegalArgumentException("Invalid configuration for repository " + repoInterface.getName() +
-                    ". The Spring Bean corresponding to the \"igniteCfg\" property of repository configuration must" +
-                    " be one of the following types: [" + IgniteConfiguration.class.getName() + ", " +
-                    ClientConfiguration.class.getName() + ']');
+                connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteCfg()));
             }
             catch (BeansException ex2) {
                 try {
-                    String igniteCfgPath = ctx.getBean(evaluateExpression(repoCfg.igniteSpringCfgPath()), String.class);
-
-                    return new IgniteProxyImpl(Ignition.start(igniteCfgPath));
+                    connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteSpringCfgPath()), String.class);
                 }
                 catch (BeansException ex3) {
                     throw new IllegalArgumentException("Invalid configuration for repository " +
@@ -158,6 +124,8 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
                 }
             }
         }
+
+        return IgniteProxy.of(connCfg);
     }
 
     /**

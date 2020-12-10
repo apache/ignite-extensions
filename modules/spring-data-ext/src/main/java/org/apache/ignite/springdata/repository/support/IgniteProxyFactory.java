@@ -17,14 +17,7 @@
 
 package org.apache.ignite.springdata.repository.support;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.IgniteClientProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.context.ApplicationContext;
@@ -54,7 +47,10 @@ public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> impleme
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        getObject().close();
+        Object igniteProxy = getObject();
+
+        if (igniteProxy instanceof AutoCloseable)
+            ((AutoCloseable)igniteProxy).close();
     }
 
     /** {@inheritDoc} */
@@ -64,53 +60,28 @@ public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> impleme
 
     /** {@inheritDoc} */
     @Override protected IgniteProxy createInstance() {
+        Object connCfg;
+
         try {
-            Object igniteInstanceBean = ctx.getBean(IGNITE_INSTANCE_BEAN_NAME);
-
-            if (igniteInstanceBean instanceof Ignite)
-                return new IgniteProxyImpl((Ignite)igniteInstanceBean);
-            else if (igniteInstanceBean instanceof IgniteClient)
-                return new IgniteClientProxy((IgniteClient)igniteInstanceBean);
-
-            throw new IllegalArgumentException("The Spring Bean with name \"" + IGNITE_INSTANCE_BEAN_NAME +
-                "\" must be one of the following types: [" + Ignite.class.getName() + ", " +
-                IgniteClient.class.getName() + ']');
+            connCfg = ctx.getBean(IGNITE_INSTANCE_BEAN_NAME);
         }
         catch (BeansException ex) {
             try {
-                Object igniteCfgBean = ctx.getBean(IGNITE_CONFIG_BEAN_NAME);
-
-                if (igniteCfgBean instanceof IgniteConfiguration) {
-                    try {
-                        return new IgniteProxyImpl(Ignition.ignite(
-                            ((IgniteConfiguration)igniteCfgBean).getIgniteInstanceName()));
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-
-                    return new IgniteProxyImpl(Ignition.start((IgniteConfiguration)igniteCfgBean));
-                }
-                else if (igniteCfgBean instanceof ClientConfiguration)
-                    return new IgniteClientProxy(Ignition.startClient((ClientConfiguration)igniteCfgBean));
-
-                throw new IllegalArgumentException("The Spring Bean with name \"" + IGNITE_CONFIG_BEAN_NAME +
-                    "\" must be one of the following types: [" + IgniteConfiguration.class.getName() + ", " +
-                    ClientConfiguration.class.getName() + ']');
+                connCfg = ctx.getBean(IGNITE_CONFIG_BEAN_NAME);
             }
             catch (BeansException ex2) {
                 try {
-                    String igniteCfgPath = ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class);
-
-                    return new IgniteProxyImpl(Ignition.start(igniteCfgPath));
+                    connCfg = ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class);
                 }
                 catch (BeansException ex3) {
                     throw new IllegalArgumentException("No beans were found that provide connection configuration to" +
-                        " the Ignite cluster. One of the following beans are required : \"" +
+                        " the Ignite cluster. One of the beans with the following names is required : \"" +
                         IGNITE_INSTANCE_BEAN_NAME + "\", \"" + IGNITE_CONFIG_BEAN_NAME + "\" or \"" +
                         IGNITE_SPRING_CONFIG_PATH_BEAN_NAME + "\".");
                 }
             }
         }
+
+        return IgniteProxy.of(connCfg);
     }
 }

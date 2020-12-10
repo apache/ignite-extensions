@@ -52,16 +52,37 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** */
     private static final int CLI_CONN_PORT = 10810;
 
+    /** */
+    private static final String CLI_NAME = "cli-node";
+
+    /** */
+    private static final String SRV_NAME = "srv-node";
+
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
         checkRepositoryConfiguration(IgniteConfigurationApplication.class, IgniteConfigRepository.class);
+
+        assertClientNodeIsStopped();
     }
 
-    /** Tests repository configuration in case {@link ClientConfiguration} is used to access the Ignite cluster.*/
+    /** Tests repository configuration in case {@link ClientConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithClientConfiguration() {
         checkRepositoryConfiguration(ClientConfigurationApplication.class, IgniteClientConfigRepository.class);
+    }
+
+    /**
+     * Tests repository configuration in case {@link IgniteConfiguration} that refers to existing Ignite node instance
+     * used to access the Ignite cluster.
+     */
+    @Test
+    public void testRepositoryWithExistingIgniteInstance() throws Exception {
+        try (Ignite ignored = startGrid(getIgniteConfiguration(CLI_NAME, true))) {
+            checkRepositoryConfiguration(IgniteConfigurationApplication.class, IgniteConfigRepository.class);
+
+            assertNotNull(Ignition.ignite(CLI_NAME));
+        }
     }
 
     /** Tests repository configuration in case specified cache name is invalid. */
@@ -83,7 +104,26 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
                     " org.apache.ignite.springdata22.repository.config.RepositoryConfig annotation.");
         }
 
-        assertTrue(Ignition.allGrids().isEmpty());
+        assertClientNodeIsStopped();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        grid(SRV_NAME).cache(CACHE_NAME).clear();
+    }
+
+    /** */
+    private void assertClientNodeIsStopped() {
+        assertFalse(Ignition.allGrids().stream().map(Ignite::name).anyMatch(CLI_NAME::equals));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid(getIgniteConfiguration(SRV_NAME, false));
     }
 
     /**
@@ -100,7 +140,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
 
             IgniteRepository<Object, Serializable> repo = ctx.getBean(repoCls);
 
-            IgniteCache<Object, Serializable> cache = ctx.getBean(Ignite.class).cache(CACHE_NAME);
+            IgniteCache<Object, Serializable> cache = grid(SRV_NAME).cache(CACHE_NAME);
 
             assertEquals(0, repo.count());
             assertEquals(0, cache.size());
@@ -112,8 +152,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
             assertEquals(1, repo.count());
             assertNotNull(cache.get(key));
         }
-
-        assertTrue(Ignition.allGrids().isEmpty());
     }
 
     /**
@@ -125,12 +163,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         considerNestedRepositories = true,
         includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheNameRepository.class))
     public static class InvalidCacheNameApplication {
-        /** */
-        @Bean
-        public Ignite igniteServerNode() {
-            return Ignition.start(getIgniteConfiguration("srv-node", false));
-        }
-
         /** Ignite configuration bean. */
         @Bean
         public IgniteConfiguration igniteConfiguration() {
@@ -147,12 +179,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         considerNestedRepositories = true,
         includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
     public static class IgniteConfigurationApplication {
-        /** */
-        @Bean
-        public Ignite igniteServerNode() {
-            return Ignition.start(getIgniteConfiguration("srv-node", false));
-        }
-
         /** Ignite configuration bean. */
         @Bean
         public IgniteConfiguration igniteConfiguration() {
@@ -169,15 +195,6 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         considerNestedRepositories = true,
         includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteClientConfigRepository.class))
     public static class ClientConfigurationApplication {
-        /** */
-        private static final int CLI_CONN_PORT = 10810;
-
-        /** */
-        @Bean
-        public Ignite igniteServerNode() {
-            return Ignition.start(getIgniteConfiguration("srv-node", false));
-        }
-
         /** Ignite client configuration bean. */
         @Bean
         public ClientConfiguration clientConfiguration() {
