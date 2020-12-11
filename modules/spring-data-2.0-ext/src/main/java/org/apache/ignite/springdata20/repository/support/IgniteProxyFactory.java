@@ -55,7 +55,7 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
      * @param repoInterface The repository interface class for which {@link IgniteProxy} will be created.
      * @return {@link IgniteProxy} instance.
      */
-   public IgniteProxy igniteProxy(Class<?> repoInterface) {
+    public IgniteProxy igniteProxy(Class<?> repoInterface) {
         return igniteProxies.computeIfAbsent(repoInterface, k -> createIgniteProxy(repoInterface));
     }
 

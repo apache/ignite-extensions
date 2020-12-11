@@ -166,7 +166,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         /** Ignite configuration bean. */
         @Bean
         public IgniteConfiguration igniteConfiguration() {
-            return getIgniteConfiguration("cli-node", true);
+            return getIgniteConfiguration(CLI_NAME, true);
         }
     }
 
@@ -182,7 +182,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         /** Ignite configuration bean. */
         @Bean
         public IgniteConfiguration igniteConfiguration() {
-            return getIgniteConfiguration("cli-node", true);
+            return getIgniteConfiguration(CLI_NAME, true);
         }
     }
 
