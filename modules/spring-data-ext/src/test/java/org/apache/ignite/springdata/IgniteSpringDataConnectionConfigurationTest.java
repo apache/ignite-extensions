@@ -59,6 +59,9 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** */
     private static final String SRV_NAME = "srv-node";
 
+    /** */
+    private static final String LOCAL_HOST = "127.0.0.1";
+
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
@@ -191,7 +194,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         /** Ignite client configuration bean. */
         @Bean
         public ClientConfiguration igniteCfg() {
-            return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
+            return new ClientConfiguration().setAddresses(LOCAL_HOST + ':' + CLI_CONN_PORT);
         }
     }
 
@@ -206,6 +209,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         return new IgniteConfiguration()
             .setIgniteInstanceName(name)
             .setClientMode(clientMode)
+            .setLocalHost(LOCAL_HOST)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(CLI_CONN_PORT))
             .setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME));
