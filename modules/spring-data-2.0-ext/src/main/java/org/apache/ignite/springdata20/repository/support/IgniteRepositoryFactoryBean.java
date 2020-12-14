@@ -62,6 +62,6 @@ public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extend
 
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        return new IgniteRepositoryFactory(ctx);
+        return new IgniteRepositoryFactory(ctx, getObjectType());
     }
 }

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.springdata.proxy;
 
+import java.util.Objects;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 
 /** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link Ignite} instance. */
 public class IgniteProxyImpl implements IgniteProxy {
     /** {@link Ignite} instance to which operations are delegated. */
-    private final Ignite ignite;
+    protected final Ignite ignite;
 
     /** */
     public IgniteProxyImpl(Ignite ignite) {
@@ -36,11 +38,29 @@ public class IgniteProxyImpl implements IgniteProxy {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
-        return new IgniteCacheProxyImpl<>(ignite.cache(name));
+        IgniteCache<K, V> cache = ignite.cache(name);
+
+        return cache == null ? null : new IgniteCacheProxyImpl<>(cache);
     }
 
     /** @return {@link Ignite} instance to which operations are delegated. */
     public Ignite delegate() {
         return ignite;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object other) {
+        if (this == other)
+            return true;
+
+        if (other == null || getClass() != other.getClass())
+            return false;
+
+        return Objects.equals(ignite, ((IgniteProxyImpl)other).ignite);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return ignite.hashCode();
     }
 }

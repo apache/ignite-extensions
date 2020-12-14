@@ -72,6 +72,12 @@ public class IgniteClientApplicationConfiguration {
         return Ignition.start(igniteConfiguration(IGNITE_INSTANCE_ONE, CLI_CONN_PORT));
     }
 
+    /** */
+    @Bean
+    public Ignite igniteSecondServerNode() {
+        return Ignition.start(igniteConfiguration(IGNITE_INSTANCE_TWO, 10801));
+    }
+
     /** Ignite client instance bean with default name. */
     @Bean
     public IgniteClient igniteInstance() {
@@ -82,18 +88,10 @@ public class IgniteClientApplicationConfiguration {
     /** Ignite client instance bean with non-default name. */
     @Bean
     public IgniteClient igniteInstanceTWO() {
-        Ignition.start(igniteConfiguration(IGNITE_INSTANCE_TWO, 10801));
-
         return Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10801"));
     }
 
-    /** Ignite client configuraition bean. */
-    @Bean
-    public ClientConfiguration clientConfiguration() {
-        return new ClientConfiguration().setAddresses("127.0.0.1:" + CLI_CONN_PORT);
-    }
-
-    /** Ingite configuration for server node. */
+    /**  */
     private static IgniteConfiguration igniteConfiguration(String igniteInstanceName, int cliConnPort) {
         return new IgniteConfiguration()
             .setIgniteInstanceName(igniteInstanceName)
