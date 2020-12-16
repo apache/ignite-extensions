@@ -22,8 +22,10 @@ import java.util.Collections;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,7 +68,8 @@ public class PerformanceStatisticsReportSelfTest {
                 // No-op.
             });
 
-            IgniteCache<Object, Object> txCache = client.createCache("txCache");
+            IgniteCache<Object, Object> txCache = client.createCache(new CacheConfiguration<>("txCache")
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
             try (Transaction tx = client.transactions().txStart()) {
                 txCache.put(1, 1);
