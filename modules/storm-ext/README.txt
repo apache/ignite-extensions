@@ -21,7 +21,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-storm-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-storm-ext.version}</version>
         </dependency>
         ...
     </dependencies>

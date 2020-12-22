@@ -17,6 +17,7 @@
 
 package org.apache.ignite.springdata;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.compoundkey.CityRepository;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -31,5 +32,10 @@ public class IgniteClientSpringDataCompoundKeyTest extends IgniteSpringDataCompo
         ctx.refresh();
 
         repo = ctx.getBean(CityRepository.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Ignite ignite() {
+        return ctx.getBean("igniteServerNode", Ignite.class);
     }
 }

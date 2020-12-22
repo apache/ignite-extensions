@@ -4,7 +4,7 @@ Apache Ignite Flume Sink Module
 IgniteSink is a Flume sink that extracts Events from an associated Flume channel and injects into an Ignite cache.
 Flume 1.7.0 is supported.
 
-IgniteSink, which can be found in 'optional/ignite-flume', and its dependencies have to be included in the agent's classpath,
+IgniteSink, which can be found in 'ignite-flume-ext', and its dependencies have to be included in the agent's classpath,
 as described in the following subsection, before starting the Flume agent.
 
 ## Setting up and running

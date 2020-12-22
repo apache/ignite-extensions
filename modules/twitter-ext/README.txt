@@ -24,7 +24,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-twitter-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-twitter-ext.version}</version>
         </dependency>
         ...
     </dependencies>

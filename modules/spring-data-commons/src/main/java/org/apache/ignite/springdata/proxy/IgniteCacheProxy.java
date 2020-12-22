@@ -26,7 +26,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.client.ClientCache;
 
-/** Reperesents Ignite cache operations required by Spring Data. */
+/** Represents Ignite cache operations required by Spring Data. */
 public interface IgniteCacheProxy<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Gets an entry from the cache.

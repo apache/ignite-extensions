@@ -49,7 +49,7 @@ import org.springframework.context.annotation.Conditional;
  */
 @Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRepository<V, K> {
-    /** Error message indicating that operation is spported only if {@link Ignite} instance is used to access the cluster. */
+    /** Error message indicating that operation is supported only if {@link Ignite} instance is used to access the cluster. */
     private static final String UNSUPPORTED_ERR_MSG = "Current operation is supported only if Ignite node instance is" +
         " used to access the Ignite cluster. See " + RepositoryConfig.class.getName() + "#igniteInstance.";
 
