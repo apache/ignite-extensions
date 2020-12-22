@@ -50,4 +50,4 @@ JVM_OPTS="\
 #
 # Run tool.
 #
-Java ${JVM_OPTS} -cp "${CP}" ${MAIN_CLASS} $@
+java ${JVM_OPTS} -cp "${CP}" ${MAIN_CLASS} $@
