@@ -26,6 +26,7 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.ignite.internal.performancestatistics.handlers.CacheOperationsHandler.IntWrapper;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
@@ -59,7 +60,7 @@ public class TransactionsHandler implements IgnitePerformanceStatisticsHandler {
     public static final long[] HISTOGRAM_BUCKETS = new long[] {1, 10, 100, 250, 1000};
 
     /** Aggregated results: nodeId -> cacheId -> txState -> aggregatedResults. */
-    private final Map<UUID, Map<Integer, Map<TransactionState, Map<Long, Integer>>>> res = new HashMap<>();
+    private final Map<UUID, Map<Integer, Map<TransactionState, Map<Long, IntWrapper>>>> res = new HashMap<>();
 
     /** Transaction durations histogram data: nodeId -> cacheId -> histogram. */
     private final Map<UUID, Map<Integer, HistogramMetricImpl>> histogram = new HashMap<>();
@@ -87,7 +88,8 @@ public class TransactionsHandler implements IgnitePerformanceStatisticsHandler {
                 res.computeIfAbsent(node, uuid -> new HashMap<>())
                     .computeIfAbsent(cacheId, id -> new EnumMap<>(TransactionState.class))
                     .computeIfAbsent(commited ? COMMIT : ROLLBACK, state -> new HashMap<>())
-                    .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
+                    .computeIfAbsent(aggrTime, time -> new IntWrapper())
+                    .count++;
 
                 histogram.computeIfAbsent(node, uuid -> new HashMap<>())
                     .computeIfAbsent(cacheId, id -> new HistogramMetricImpl(id.toString(), null, HISTOGRAM_BUCKETS))
@@ -125,7 +127,7 @@ public class TransactionsHandler implements IgnitePerformanceStatisticsHandler {
                         ArrayNode arr = MAPPER.createArrayNode();
 
                         arr.add(time);
-                        arr.add(count);
+                        arr.add(count.count);
 
                         op.add(arr);
                     });
