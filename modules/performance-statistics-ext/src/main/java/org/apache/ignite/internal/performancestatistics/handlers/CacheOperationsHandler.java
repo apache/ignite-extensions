@@ -50,7 +50,7 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
     private static final String TOTAL = "total";
 
     /** Cache operations statistics: nodeId -> cacheId -> opType -> aggregatedResults. */
-    private final Map<UUID, Map<Integer, Map<OperationType, Map<Long, Integer>>>> res = new HashMap<>();
+    private final Map<UUID, Map<Integer, Map<OperationType, Map<Long, IntWrapper>>>> res = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
@@ -68,7 +68,8 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
                 res.computeIfAbsent(node, uuid -> new HashMap<>())
                     .computeIfAbsent(cache, id -> new EnumMap<>(OperationType.class))
                     .computeIfAbsent(type, op -> new HashMap<>())
-                    .compute(aggrTime, (time, count) -> count == null ? 1 : count + 1);
+                    .computeIfAbsent(aggrTime, time -> new IntWrapper())
+                    .count++;
             }
         }
     }
@@ -90,7 +91,7 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
                         ArrayNode arr = MAPPER.createArrayNode();
 
                         arr.add(time);
-                        arr.add(count);
+                        arr.add(count.count);
 
                         op.add(arr);
                     });
@@ -99,5 +100,9 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
         });
 
         return U.map("cacheOps", jsonRes);
+    }
+
+    public static class IntWrapper {
+        public int count;
     }
 }
