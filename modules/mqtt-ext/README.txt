@@ -21,7 +21,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-mqtt-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-mqtt-ext.version}</version>
         </dependency>
         ...
     </dependencies>

@@ -21,7 +21,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-pub-sub-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-pub-sub-ext.version}</version>
         </dependency>
         ...
     </dependencies>

@@ -20,6 +20,7 @@ package org.apache.ignite.springdata;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
@@ -39,23 +40,23 @@ import org.springframework.data.domain.Sort;
  */
 public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Repository. */
-    private static PersonRepository repo;
+    protected static PersonRepository repo;
 
     /** Repository 2. */
-    private static PersonSecondRepository repo2;
+    protected static PersonSecondRepository repo2;
 
     /**
      * Repository Ignite Instance cluster TWO.
      */
-    private static PersonRepositoryOtherIgniteInstance repoTWO;
+    protected static PersonRepositoryOtherIgniteInstance repoTWO;
 
     /** Context. */
-    private static AnnotationConfigApplicationContext ctx;
+    protected static AnnotationConfigApplicationContext ctx;
 
     /**
      * Number of entries to store
      */
-    private static int CACHE_SIZE = 1000;
+    protected static int CACHE_SIZE = 1000;
 
     /**
      * Performs context initialization before tests.
@@ -405,5 +406,36 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
 
             assertTrue(list.get(0) instanceof Integer);
         }
+    }
+
+    /** Tests conversion of SQL select query result to domain entity objects. */
+    @Test
+    public void testRowToEntityConversion() {
+        Set<Person> res = new HashSet<>(repo.queryWithRowToEntityConversion());
+
+        Set<Person> exp = new HashSet<>();
+
+        repo.findAll().forEach(exp::add);
+
+        assertEquals(exp, res);
+    }
+
+    /**
+     * Tests conversion of SQL select query result to domain entity objects if result rows don't contain all fields
+     * of domain entity class.
+     */
+    @Test
+    public void testIncompleteRowToEntityConversion() {
+        Set<Person> res = new HashSet<>(repo.queryWithIncompleteRowToEntityConversion());
+
+        Set<Person> exp = new HashSet<>();
+
+        repo.findAll().forEach(p -> {
+            p.setSecondName(null);
+
+            exp.add(p);
+        });
+
+        assertEquals(exp, res);
     }
 }

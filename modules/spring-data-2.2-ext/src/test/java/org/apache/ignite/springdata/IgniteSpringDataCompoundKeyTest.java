@@ -29,15 +29,17 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import static org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationConfiguration.CLI_CONN_PORT;
+
 /**
  * Test with using conpoud key in spring-data
  * */
 public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     /** Application context */
-    private static AnnotationConfigApplicationContext ctx;
+    protected static AnnotationConfigApplicationContext ctx;
 
     /** City repository */
-    private static CityRepository repo;
+    protected static CityRepository repo;
 
     /** Cache name */
     private static final String CACHE_NAME = "City";
@@ -96,12 +98,12 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
 
     /** load data*/
     public void loadData() throws Exception {
-        Ignite ignite = ctx.getBean(Ignite.class);
+        Ignite ignite = ignite();
 
         if (ignite.cacheNames().contains(CACHE_NAME))
             ignite.destroyCache(CACHE_NAME);
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + CompoundKeyApplicationConfiguration.CLI_CONN_PORT + '/')) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + CLI_CONN_PORT + '/')) {
             Statement st = conn.createStatement();
 
             st.execute("DROP TABLE IF EXISTS City");
@@ -121,5 +123,10 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         assertEquals(Optional.of(KABUL), repo.findById(new CityKey(KABUL_ID, AFG)));
         assertEquals(AFG_COUNT, repo.findByCountryCode(AFG).size());
         assertEquals(QUANDAHAR, repo.findById(QUANDAHAR_ID));
+    }
+
+    /** */
+    protected Ignite ignite() {
+        return ctx.getBean(Ignite.class);
     }
 }

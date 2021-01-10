@@ -39,12 +39,14 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -58,6 +60,7 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
             <version>${spring.data-2.2.version}</version>
+            <scope>provided</scope>
             <!-- Exclude slf4j logging in favor of log4j -->
             <exclusions>
                 <exclusion>
@@ -71,6 +74,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
+            <scope>provided</scope>
             <!--Remove exclusion while upgrading ignite-spring version to 5.2-->
             <exclusions>
                 <exclusion>
@@ -148,6 +152,12 @@
             <artifactId>ignite-tools</artifactId>
             <version>${ignite.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring-data-commons</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
