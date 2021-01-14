@@ -60,6 +60,7 @@
         <module>modules/spring-data-2.2-ext</module>
         <module>modules/spring-data-commons</module>
         <module>modules/performance-statistics-ext</module>
+        <module>modules/spring-tx-ext</module>
     </modules>
 
     <profiles>
