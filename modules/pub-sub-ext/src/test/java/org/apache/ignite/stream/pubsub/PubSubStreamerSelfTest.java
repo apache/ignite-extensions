@@ -180,9 +180,6 @@ public class PubSubStreamerSelfTest {
 
             pubSubStmr.setSingleTupleExtractor(singleTupleExtractor());
 
-            // Start Pub/Sub streamer.
-            pubSubStmr.start();
-
             final CountDownLatch latch = new CountDownLatch(CNT);
 
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
@@ -209,6 +206,9 @@ public class PubSubStreamerSelfTest {
             };
 
             ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
+
+            // Start Pub/Sub streamer.
+            pubSubStmr.start();
 
             // Checks all events successfully processed in 10 seconds.
             assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
