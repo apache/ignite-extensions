@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.ignite.Ignition;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -82,5 +84,11 @@ public class FlinkIgniteSinkSelfTest {
             e.printStackTrace();
             fail("Stream execution process failed.");
         }
+    }
+
+    /** */
+    @AfterClass
+    public static void afterTests() {
+        Ignition.stopAll(true);
     }
 }
