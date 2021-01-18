@@ -44,6 +44,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -51,7 +53,14 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Tests {@link KafkaStreamer}.
  */
+@RunWith(Parameterized.class)
 public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameters
+    public static Object[][] data() {
+        return new Object[100][0];
+    }
+
     /** Embedded Kafka. */
     private TestKafkaBroker embeddedBroker;
 
@@ -73,11 +82,6 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Topic message value URL. */
     private static final String VALUE_URL = ",www.example.com,";
 
-    /** Constructor. */
-    public KafkaIgniteStreamerSelfTest() {
-        super(true);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
@@ -86,6 +90,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
+        startGrid();
+
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
         embeddedBroker = new TestKafkaBroker();
@@ -96,6 +102,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
         grid().cache(DEFAULT_CACHE_NAME).clear();
 
         embeddedBroker.shutdown();
+
+        stopAllGrids();
     }
 
     /**

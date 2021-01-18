@@ -57,6 +57,8 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -70,7 +72,13 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link PubSubStreamer}.
  */
+@RunWith(Parameterized.class)
 public class PubSubStreamerSelfTest {
+    /** */
+    @Parameterized.Parameters
+    public static Object[][] data() {
+        return new Object[100][0];
+    }
     /** Cache name. */
     private static final String DEFAULT_CACHE_NAME = "testCache";
 
