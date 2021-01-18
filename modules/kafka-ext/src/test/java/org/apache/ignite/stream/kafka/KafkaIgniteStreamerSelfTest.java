@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -46,6 +45,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
@@ -208,9 +208,6 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
                     return entries;
                 });
 
-            // Start kafka streamer.
-            kafkaStmr.start();
-
             final CountDownLatch latch = new CountDownLatch(CNT);
 
             IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
@@ -238,9 +235,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
-            // Checks all events successfully processed in 10 seconds.
+            // Start kafka streamer.
+            kafkaStmr.start();
+
+            // Checks all events successfully processed in test timeout.
             assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
-                latch.await(10, TimeUnit.SECONDS));
+                latch.await(getTestTimeout(), MILLISECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
