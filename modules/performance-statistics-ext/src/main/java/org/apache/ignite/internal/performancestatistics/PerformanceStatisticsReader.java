@@ -24,24 +24,12 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.performancestatistics.handlers.PrintHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
-import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
-import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 
 /**
  * Performance statistics reader.
@@ -55,10 +43,27 @@ public class PerformanceStatisticsReader {
 
         validateParameters(params);
 
-        try (PrintHandler handler = new PrintHandler(params)) {
-            PerformanceStatisticsHandler[] handlers = new PerformanceStatisticsHandler[] {handler};
+        PrintStream ps;
+
+        if (params.outFile != null) {
+            try {
+                ps = new PrintStream(Files.newOutputStream(new File(params.outFile).toPath()));
+            }
+            catch (IOException e) {
+                throw new IllegalArgumentException("Cannot write to output file.", e);
+            }
+        }
+        else
+            ps = System.out;
+
+        try {
+            PerformanceStatisticsHandler[] handlers = new PerformanceStatisticsHandler[] {new PrintHandler(ps)};
 
             new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(params.statFiles)));
+        }
+        finally {
+            if (params.outFile != null)
+                ps.close();
         }
     }
 
@@ -131,105 +136,5 @@ public class PerformanceStatisticsReader {
 
         /** Output file. */
         @Nullable private String outFile;
-    }
-
-    /** Handler to print performance statistics operations. */
-    private static class PrintHandler implements PerformanceStatisticsHandler, AutoCloseable {
-        /** Print stream. */
-        private final PrintStream ps;
-
-        /** String builder. */
-        private final StringBuilder sb = new StringBuilder();
-
-        /** @param params Reader parameters. */
-        public PrintHandler(ReaderParameters params) {
-            if (params.outFile != null) {
-                try {
-                    ps = new PrintStream(Files.newOutputStream(new File(params.outFile).toPath()));
-                }
-                catch (IOException e) {
-                    throw new IllegalArgumentException("Cannot write to output file.", e);
-                }
-            }
-            else
-                ps = System.out;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
-            print(CACHE_START, "nodeId", nodeId, "cacheId", cacheId, "name", name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
-        long duration) {
-            print(type, "nodeId", nodeId, "cacheId", cacheId, "startTime", startTime, "duration", duration);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
-        boolean commited) {
-            print(commited ? TX_COMMIT : TX_ROLLBACK, "nodeId", nodeId, "cacheIds", cacheIds,
-                "startTime", startTime, "duration", duration);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
-        long duration, boolean success) {
-            print(QUERY, "nodeId", nodeId, "type", type, "text", text, "id", id,
-                "startTime", startTime, "duration", duration, "success", success);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
-        long logicalReads, long physicalReads) {
-            print(QUERY_READS, "nodeId", nodeId, "type", type, "queryNodeId", queryNodeId, "id", id,
-                "logicalReads", logicalReads, "physicalReads", physicalReads);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
-        int affPartId) {
-            print(TASK, "nodeId", nodeId, "sesId", sesId, "taskName", taskName, "startTime", startTime,
-                "duration", duration, "affPartId", affPartId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
-        boolean timedOut) {
-            print(JOB, "nodeId", nodeId, "sesId", sesId, "queuedTime", queuedTime, "startTime", startTime,
-                "duration", duration, "timedOut", timedOut);
-        }
-
-        /**
-         * Prints operation.
-         *
-         * @param op Operation.
-         * @param tuples Tuples to print (key, value).
-         */
-        private void print(OperationType op, Object... tuples) {
-            assert tuples.length % 2 == 0;
-
-            sb.setLength(0);
-
-            sb.append(op).append(" [");
-
-            for (int i = 0; i < tuples.length; i += 2) {
-                sb.append(tuples[i]).append("=").append(tuples[i + 1]);
-
-                if (i < tuples.length - 2)
-                    sb.append(", ");
-            }
-
-            sb.append(']');
-
-            ps.println(sb.toString());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            if (ps != System.out)
-                ps.close();
-        }
     }
 }
