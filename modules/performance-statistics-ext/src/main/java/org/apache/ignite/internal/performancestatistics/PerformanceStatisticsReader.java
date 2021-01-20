@@ -22,14 +22,14 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import org.apache.ignite.internal.performancestatistics.handlers.PrintHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
-import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Performance statistics reader.
@@ -57,9 +57,7 @@ public class PerformanceStatisticsReader {
             ps = System.out;
 
         try {
-            PerformanceStatisticsHandler[] handlers = new PerformanceStatisticsHandler[] {new PrintHandler(ps)};
-
-            new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(params.statFiles)));
+            new FilePerformanceStatisticsReader(new PrintHandler(ps)).read(singletonList(new File(params.statFiles)));
         }
         finally {
             if (params.outFile != null)
