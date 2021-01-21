@@ -38,7 +38,7 @@ CP="${SCRIPT_DIR}/libs/*"
 #
 # Set main class to run the tool.
 #
-MAIN_CLASS=org.apache.ignite.internal.performancestatistics.PerformanceStatisticsReader
+MAIN_CLASS=org.apache.ignite.internal.performancestatistics.PerformanceStatisticsPrinter
 
 #
 # Garbage Collection options.
