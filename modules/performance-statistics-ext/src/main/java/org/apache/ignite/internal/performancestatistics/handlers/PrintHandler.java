@@ -19,6 +19,8 @@ package org.apache.ignite.internal.performancestatistics.handlers;
 
 import java.io.PrintStream;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -40,8 +42,8 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     /** Print stream. */
     private final PrintStream ps;
 
-    /** String builder. */
-    private final StringBuilder sb = new StringBuilder();
+    /** Json mapper. */
+    public static final ObjectMapper MAPPER = new ObjectMapper();
 
     /** @param ps Print stream. */
     public PrintHandler(PrintStream ps) {
@@ -103,19 +105,13 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     private void print(OperationType op, Object... tuples) {
         assert tuples.length % 2 == 0;
 
-        sb.setLength(0);
+        ObjectNode json = MAPPER.createObjectNode();
 
-        sb.append(op).append(" [");
+        json.put("op", String.valueOf(op));
 
-        for (int i = 0; i < tuples.length; i += 2) {
-            sb.append(tuples[i]).append("=").append(tuples[i + 1]);
+        for (int i = 0; i < tuples.length; i += 2)
+            json.put(String.valueOf(tuples[i]), String.valueOf(tuples[i + 1]));
 
-            if (i < tuples.length - 2)
-                sb.append(", ");
-        }
-
-        sb.append(']');
-
-        ps.println(sb.toString());
+        ps.println(json.toString());
     }
 }

@@ -23,8 +23,9 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -55,9 +57,6 @@ import static org.junit.Assert.assertTrue;
  * Tests the performance statistics reader.
  */
 public class PerformanceStatisticsReaderTest {
-    /** Operations pattern. */
-    private static final Pattern OP_PTRN = Pattern.compile("^(\\w+) \\[nodeId=.+]$");
-
     /** @throws Exception If failed. */
     @Test
     public void testReadToFile() throws Exception {
@@ -90,7 +89,7 @@ public class PerformanceStatisticsReaderTest {
             });
 
             cache.query(new ScanQuery<>((key, val) -> true)).getAll();
-            cache.query(new SqlFieldsQuery("select * from sys.tables")).getAll();
+            cache.query(new SqlFieldsQuery("select * \nfrom sys.tables")).getAll();
 
             client.context().performanceStatistics().stopCollectStatistics();
 
@@ -110,17 +109,23 @@ public class PerformanceStatisticsReaderTest {
             Set<OperationType> expOp = new HashSet<>(Arrays.asList(CACHE_START, CACHE_PUT, TASK, JOB,
                 TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS));
 
+            ObjectMapper mapper = new ObjectMapper();
+
             try (BufferedReader reader = new BufferedReader(new FileReader(out))) {
                 String line;
 
                 while ((line = reader.readLine()) != null) {
-                    Matcher matcher = OP_PTRN.matcher(line);
+                    JsonNode json = mapper.readTree(line);
 
-                    assertTrue(matcher.matches());
+                    assertTrue(json.isObject());
 
-                    OperationType op = OperationType.valueOf(matcher.group(1));
+                    OperationType op = OperationType.valueOf(json.get("op").asText());
 
                     expOp.remove(op);
+
+                    UUID nodeId = UUID.fromString(json.get("nodeId").asText());
+
+                    assertTrue(F.nodeIds(srv.cluster().nodes()).contains(nodeId));
                 }
             }
 
