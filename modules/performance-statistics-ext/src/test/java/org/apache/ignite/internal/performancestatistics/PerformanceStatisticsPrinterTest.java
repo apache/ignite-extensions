@@ -23,11 +23,9 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -83,9 +81,6 @@ public class PerformanceStatisticsPrinterTest {
     /** @throws Exception If failed. */
     @Test
     public void testOperationsFilter() throws Exception {
-        List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK,
-            QUERY, QUERY_READS, TASK, JOB);
-
         createStatistics(writer -> {
             writer.cacheStart(0, "cache");
             writer.cacheOperation(CACHE_GET, 0, 0, 0);
@@ -97,6 +92,9 @@ public class PerformanceStatisticsPrinterTest {
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
         });
 
+        List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
+            TASK, JOB);
+
         checkOperationFilter(null, expOps);
         checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START));
         checkOperationFilter(F.asList(TASK, JOB), F.asList(TASK, JOB));
@@ -104,13 +102,13 @@ public class PerformanceStatisticsPrinterTest {
     }
 
     /** */
-    private void checkOperationFilter(List<OperationType> opsParam, List<OperationType> expOps) throws Exception {
+    private void checkOperationFilter(List<OperationType> opsArg, List<OperationType> expOps) throws Exception {
         List<String> args = new LinkedList<>();
 
-        if (opsParam != null) {
+        if (opsArg != null) {
             args.add("--ops");
 
-            args.add(opsParam.stream().map(Enum::toString).collect(joining(",")));
+            args.add(opsArg.stream().map(Enum::toString).collect(joining(",")));
         }
 
         List<OperationType> ops = new LinkedList<>(expOps);
@@ -149,24 +147,26 @@ public class PerformanceStatisticsPrinterTest {
         checkStartTimeFilter(null, startTime1, F.asList(startTime1));
         checkStartTimeFilter(startTime2, null, F.asList(startTime2));
         checkStartTimeFilter(startTime1, startTime2, F.asList(startTime1, startTime2));
+        checkStartTimeFilter(startTime2 + 1, null, Collections.emptyList());
+        checkStartTimeFilter(null, startTime1 - 1, Collections.emptyList());
     }
 
     /** */
-    private void checkStartTimeFilter(Long from, Long to, List<Long> expTimes) throws Exception {
+    private void checkStartTimeFilter(Long fromArg, Long toArg, List<Long> expTimes) throws Exception {
         List<OperationType> opsWithStartTime = F.asList(CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, TASK, JOB);
 
         List<String> args = new LinkedList<>();
 
-        if (from != null) {
+        if (fromArg != null) {
             args.add("--from");
 
-            args.add(from.toString());
+            args.add(fromArg.toString());
         }
 
-        if (to != null) {
+        if (toArg != null) {
             args.add("--to");
 
-            args.add(to.toString());
+            args.add(toArg.toString());
         }
 
         Map<Long, List<OperationType>> opsByTime = new HashMap<>();
@@ -211,15 +211,15 @@ public class PerformanceStatisticsPrinterTest {
     }
 
     /** */
-    private void checkCacheIdsFilter(int[] cacheIds, int[] expCacheIds) throws Exception {
-        Set<OperationType> cacheIdOps = new HashSet<>(F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK));
+    private void checkCacheIdsFilter(int[] cacheIdsArg, int[] expCacheIds) throws Exception {
+        List<OperationType> cacheIdOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK);
 
         List<String> args = new LinkedList<>();
 
-        if (cacheIds != null) {
+        if (cacheIdsArg != null) {
             args.add("--cache-ids");
 
-            args.add(Arrays.stream(cacheIds).mapToObj(String::valueOf).collect(joining(",")));
+            args.add(Arrays.stream(cacheIdsArg).mapToObj(String::valueOf).collect(joining(",")));
         }
 
         Map<Integer, List<OperationType>> opsById = new HashMap<>();

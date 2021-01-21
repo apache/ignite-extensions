@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.performancestatistics;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
@@ -52,7 +53,7 @@ public class PerformanceStatisticsPrinter {
 
         if (params.outFile != null) {
             try {
-                ps = new PrintStream(Files.newOutputStream(new File(params.outFile).toPath()));
+                ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(params.outFile))));
             }
             catch (IOException e) {
                 throw new IllegalArgumentException("Cannot write to output file", e);
