@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -309,7 +309,7 @@ public class PerformanceStatisticsPrinterTest {
 
         /** @param nodeId Node ID. */
         public TestKernalContext(UUID nodeId) {
-            super(new GridTestLog4jLogger());
+            super(new JavaLogger());
 
             this.nodeId = nodeId;
         }
