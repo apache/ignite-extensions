@@ -43,7 +43,7 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     private final PrintStream ps;
 
     /** Json mapper. */
-    public static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /** @param ps Print stream. */
     public PrintHandler(PrintStream ps) {
