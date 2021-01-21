@@ -52,65 +52,105 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void cacheStart(UUID nodeId, int cacheId, String name) {
-        print(CACHE_START, "nodeId", nodeId, "cacheId", cacheId, "name", name);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", CACHE_START.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("cacheId", cacheId);
+        json.put("name", name);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime,
         long duration) {
-        print(type, "nodeId", nodeId, "cacheId", cacheId, "startTime", startTime, "duration", duration);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", String.valueOf(type));
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("cacheId", cacheId);
+        json.put("startTime", startTime);
+        json.put("duration", duration);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void transaction(UUID nodeId, GridIntList cacheIds, long startTime, long duration,
         boolean commited) {
-        print(commited ? TX_COMMIT : TX_ROLLBACK, "nodeId", nodeId, "cacheIds", cacheIds,
-            "startTime", startTime, "duration", duration);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", commited ? TX_COMMIT.toString() : TX_ROLLBACK.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("cacheIds", String.valueOf(cacheIds));
+        json.put("startTime", startTime);
+        json.put("duration", duration);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long startTime,
         long duration, boolean success) {
-        print(QUERY, "nodeId", nodeId, "type", type, "text", text, "id", id,
-            "startTime", startTime, "duration", duration, "success", success);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", QUERY.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("type", String.valueOf(type));
+        json.put("text", text);
+        json.put("id", id);
+        json.put("startTime", startTime);
+        json.put("duration", duration);
+        json.put("success", success);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void queryReads(UUID nodeId, GridCacheQueryType type, UUID queryNodeId, long id,
         long logicalReads, long physicalReads) {
-        print(QUERY_READS, "nodeId", nodeId, "type", type, "queryNodeId", queryNodeId, "id", id,
-            "logicalReads", logicalReads, "physicalReads", physicalReads);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", QUERY_READS.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("type", String.valueOf(type));
+        json.put("queryNodeId", String.valueOf(queryNodeId));
+        json.put("id", id);
+        json.put("logicalReads", logicalReads);
+        json.put("physicalReads", physicalReads);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void task(UUID nodeId, IgniteUuid sesId, String taskName, long startTime, long duration,
         int affPartId) {
-        print(TASK, "nodeId", nodeId, "sesId", sesId, "taskName", taskName, "startTime", startTime,
-            "duration", duration, "affPartId", affPartId);
+        ObjectNode json = MAPPER.createObjectNode();
+
+        json.put("op", TASK.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("sesId", String.valueOf(sesId));
+        json.put("taskName", taskName);
+        json.put("startTime", startTime);
+        json.put("duration", duration);
+        json.put("affPartId", affPartId);
+
+        ps.println(json.toString());
     }
 
     /** {@inheritDoc} */
     @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
         boolean timedOut) {
-        print(JOB, "nodeId", nodeId, "sesId", sesId, "queuedTime", queuedTime, "startTime", startTime,
-            "duration", duration, "timedOut", timedOut);
-    }
-
-    /**
-     * Prints operation.
-     *
-     * @param op Operation.
-     * @param tuples Tuples to print (key, value).
-     */
-    private void print(OperationType op, Object... tuples) {
-        assert tuples.length % 2 == 0;
-
         ObjectNode json = MAPPER.createObjectNode();
 
-        json.put("op", String.valueOf(op));
-
-        for (int i = 0; i < tuples.length; i += 2)
-            json.put(String.valueOf(tuples[i]), String.valueOf(tuples[i + 1]));
+        json.put("op", JOB.toString());
+        json.put("nodeId", String.valueOf(nodeId));
+        json.put("sesId", String.valueOf(sesId));
+        json.put("queuedTime", queuedTime);
+        json.put("startTime", startTime);
+        json.put("duration", duration);
+        json.put("timedOut", timedOut);
 
         ps.println(json.toString());
     }
