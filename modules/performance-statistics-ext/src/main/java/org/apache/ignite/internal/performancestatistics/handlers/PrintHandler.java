@@ -215,12 +215,12 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** @return {@code True} if the operation should be skipped. */
     private boolean skip(OperationType op, int cacheId) {
-        return skip(op) || (cacheIds != null && cacheIds.contains(cacheId));
+        return skip(op) || !(cacheIds == null || cacheIds.contains(cacheId));
     }
 
     /** @return {@code True} if the operation should be skipped. */
     private boolean skip(OperationType op, long startTime, int cacheId) {
-        return skip(op, startTime) || (cacheIds != null && cacheIds.contains(cacheId));
+        return skip(op, startTime) || !(cacheIds == null || cacheIds.contains(cacheId));
     }
 
     /** @return {@code True} if the operation should be skipped. */
@@ -228,13 +228,13 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(op, startTime))
             return true;
 
-        if (cacheIds == null)
+        if (this.cacheIds == null)
             return false;
 
         GridIntIterator iter = cacheIds.iterator();
 
         while (iter.hasNext()) {
-            if (cacheIds.contains(iter.next()))
+            if (this.cacheIds.contains(iter.next()))
                 return false;
         }
 
