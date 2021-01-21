@@ -24,7 +24,8 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.performancestatistics.handlers.PrintHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
@@ -32,9 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.join;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toCollection;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Performance statistics printer.
@@ -62,7 +62,7 @@ public class PerformanceStatisticsPrinter {
             ps = System.out;
 
         try {
-            PrintHandler hnd = new PrintHandler(ps, params.ops, params.from, params.to);
+            PrintHandler hnd = new PrintHandler(ps, params.ops, params.from, params.to, params.cacheIds);
 
             new FilePerformanceStatisticsReader(hnd).read(singletonList(new File(params.statFiles)));
         }
@@ -79,24 +79,8 @@ public class PerformanceStatisticsPrinter {
      * @return Program arguments.
      */
     private static Parameters parseArguments(String[] args) {
-        if (args == null || args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0])) {
-            String ops = join(", ",
-                Arrays.stream(OperationType.values()).map(Enum::toString).collect(toCollection(LinkedList::new)));
-
-            System.out.println("The script is used to print performance statistics files to the console or file." +
-                    U.nl() + U.nl() +
-                    "Usage: print-statistics.sh path_to_files [--out out_file] [--ops op_types] " +
-                    "[--from startTimeFrom] [--to startTimeTo]" + U.nl() + U.nl() +
-                    "  path_to_files - Performance statistics file or files directory." + U.nl() +
-                    "  out_file      - Output file." + U.nl() +
-                    "  op_types      - Comma separated list of operation types to filter the output." + U.nl() +
-                    "  from          - The minimum operation start time to filter the output." + U.nl() +
-                    "  to            - The maximum operation start time to filter the output." + U.nl() + U.nl() +
-                    "Times must be specified in the Unix time format in milliseconds." + U.nl() +
-                    "List of operation types: " + ops + '.');
-
-            System.exit(0);
-        }
+        if (args == null || args.length == 0 || "--help".equalsIgnoreCase(args[0]) || "-h".equalsIgnoreCase(args[0]))
+            printHelp();
 
         Parameters params = new Parameters();
 
@@ -139,11 +123,42 @@ public class PerformanceStatisticsPrinter {
 
                 params.to = Long.parseLong(iter.next());
             }
+            else if ("--cache-ids".equalsIgnoreCase(arg)) {
+                A.ensure(iter.hasNext(), "Expected cache identifiers.");
+
+                String[] cacheIds = iter.next().split(",");
+
+                A.ensure(cacheIds.length > 0, "Expected at least one cache identifier");
+
+                params.cacheIds = Arrays.stream(cacheIds).map(Integer::parseInt).collect(Collectors.toSet());
+            }
             else
                 throw new IllegalArgumentException("Unknown command: " + arg);
         }
 
         return params;
+    }
+
+    /** Prints help. */
+    private static void printHelp() {
+        String ops = Arrays.stream(OperationType.values()).map(Enum::toString).collect(joining(", "));
+
+        System.out.println("The script is used to print performance statistics files to the console or file." +
+            U.nl() + U.nl() +
+            "Usage: print-statistics.sh path_to_files [--out out_file] [--ops op_types] " +
+            "[--from startTimeFrom] [--to startTimeTo] [--cache-ids cache_ids]" + U.nl() +
+            U.nl() +
+            "  path_to_files - Performance statistics file or files directory." + U.nl() +
+            "  out_file      - Output file." + U.nl() +
+            "  op_types      - Comma separated list of operation types to filter the output." + U.nl() +
+            "  from          - The minimum operation start time to filter the output." + U.nl() +
+            "  to            - The maximum operation start time to filter the output." + U.nl() +
+            "  cache_ids     - Comma separated list of cache identifiers to filter the output." + U.nl() +
+            U.nl() +
+            "Times must be specified in the Unix time format in milliseconds." + U.nl() +
+            "List of operation types: " + ops + '.');
+
+        System.exit(0);
     }
 
     /** @param params Validates parameters. */
@@ -201,5 +216,8 @@ public class PerformanceStatisticsPrinter {
 
         /** The maximum operation start time to filter the output. */
         private long to = Long.MAX_VALUE;
+
+        /** Cache identifiers to filter the output. */
+        @Nullable private Set<Integer> cacheIds;
     }
 }

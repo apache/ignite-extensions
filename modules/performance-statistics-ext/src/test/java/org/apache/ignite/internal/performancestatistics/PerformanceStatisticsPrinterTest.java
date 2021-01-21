@@ -20,11 +20,11 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -40,8 +40,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
@@ -53,19 +55,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests the performance statistics reader.
+ * Tests the performance statistics printer.
  */
 public class PerformanceStatisticsPrinterTest {
     /** Test output file name. */
     private final static String OUTPUT_FILE_NAME = "report.txt";
 
     /** */
-    private final static List<OperationType> EXP_OPS = F.asList(CACHE_START, CACHE_GET,
+    private final static List<OperationType> EXP_OPS = F.asList(CACHE_START, CACHE_GET, CACHE_PUT,
         TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS, TASK, JOB);
 
     /** Operations with start time. */
-    private final static List<OperationType> OPS_WITH_START_TIME = F.asList(CACHE_GET, TX_COMMIT, TX_ROLLBACK,
-        QUERY, TASK, JOB);
+    private final static List<OperationType> OPS_WITH_START_TIME = F.asList(CACHE_GET, CACHE_PUT,
+        TX_COMMIT, TX_ROLLBACK, QUERY, TASK, JOB);
 
     /** Test node ID. */
     private final static UUID NODE_ID = UUID.randomUUID();
@@ -75,6 +77,19 @@ public class PerformanceStatisticsPrinterTest {
 
     /** */
     private final static long START_TIME_2 = 20;
+
+    /** */
+    private final static int CACHE_ID_1 = 1;
+
+    /** */
+    private final static int CACHE_ID_2 = 2;
+
+    /** Cache 1 operations. */
+    private final static List<OperationType> CACHE_1_OPS = F.asList(CACHE_GET, TX_ROLLBACK);
+
+    /** Cache 2 operations. */
+    private final static List<OperationType> CACHE_2_OPS = F.asList(CACHE_PUT, TX_COMMIT);
+
 
     /** Performance statistics files directory. */
     private static File perfStatDir;
@@ -86,11 +101,17 @@ public class PerformanceStatisticsPrinterTest {
 
         writer.start();
 
+        for (int cacheId : new int[] {CACHE_ID_1, CACHE_ID_2})
+            writer.cacheStart(cacheId, "cache-" + cacheId);
+
         for (long startTime : new long[] {START_TIME_1, START_TIME_2}) {
-            writer.cacheStart(0, "cache");
-            writer.cacheOperation(CACHE_GET, 0, startTime, 0);
-            writer.transaction(new GridIntList(), startTime, 0, true);
-            writer.transaction(new GridIntList(), startTime, 0, false);
+            for (int cacheId : new int[] {CACHE_ID_1, CACHE_ID_2}) {
+                writer.cacheOperation(CACHE_GET, cacheId, startTime, 0);
+                writer.cacheOperation(CACHE_PUT, cacheId, startTime, 0);
+                writer.transaction(GridIntList.asList(cacheId), startTime, 0, true);
+                writer.transaction(GridIntList.asList(cacheId), startTime, 0, false);
+            }
+
             writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, startTime, 0, true);
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
             writer.task(new IgniteUuid(NODE_ID, 0), "", startTime, 0, 0);
@@ -130,8 +151,7 @@ public class PerformanceStatisticsPrinterTest {
 
         if (opsParam != null) {
             args.add("--ops");
-            args.add(String.join(",",
-                opsParam.stream().map(Enum::toString).collect(Collectors.toCollection(LinkedList::new))));
+            args.add(opsParam.stream().map(Enum::toString).collect(joining(",")));
         }
 
         List<OperationType> ops = new LinkedList<>();
@@ -202,6 +222,59 @@ public class PerformanceStatisticsPrinterTest {
 
         assertTrue("Expected operations:" + ops, ops.isEmpty());
         assertTrue("Expected times:" + ops, times.isEmpty());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCacheIdsFilter() throws Exception {
+        checkCacheIdsFilter(null, new int[] {CACHE_ID_1, CACHE_ID_2});
+
+        checkCacheIdsFilter(new int[] {CACHE_ID_1}, new int[] {CACHE_ID_1});
+
+        checkCacheIdsFilter(new int[] {CACHE_ID_2}, new int[] {CACHE_ID_2});
+
+        checkCacheIdsFilter(new int[] {CACHE_ID_1, CACHE_ID_2}, new int[] {CACHE_ID_1, CACHE_ID_2});
+    }
+
+    /** */
+    private void checkCacheIdsFilter(int[] cacheIds, int[] expCacheIds) throws Exception  {
+        List<String> args = new LinkedList<>();
+
+        if (cacheIds != null) {
+            args.add("--cache-ids");
+            args.add(Arrays.stream(cacheIds).mapToObj(String::valueOf).collect(joining(",")));
+        }
+
+        List<OperationType> ops = new LinkedList<>();
+        List<Integer> ids = new LinkedList<>();
+
+        for (Integer id : expCacheIds) {
+            ops.addAll(OPS_WITH_CACHE_ID);
+
+            ids.add(id);
+        }
+
+        readStatistics(args, json -> {
+            OperationType op = OperationType.valueOf(json.get("op").asText());
+
+            if (OperationType.cacheOperation(op)) {
+                assertTrue("Unexpected operation: " + op, ops.remove(op));
+
+                Integer id = json.get("cacheId").asInt();
+
+                assertTrue("Unexpected cache id: " + id, ids.remove(id));
+            }
+            else if (OperationType.transactionOperation(op)) {
+                assertTrue("Unexpected operation: " + op, ops.remove(op));
+
+                Integer id = Integer.valueOf(json.get("cacheIds").asText().replace("[", "").replace("]", ""));
+
+                assertTrue("Unexpected cache id: " + id, ids.remove(id));
+            }
+        });
+
+        assertTrue("Expected operations:" + ops, ops.isEmpty());
+        assertTrue("Expected cache ids:" + ops, ids.isEmpty());
     }
 
     /**
