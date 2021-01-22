@@ -50,23 +50,12 @@ public class PerformanceStatisticsPrinter {
 
         validateParameters(params);
 
-        PrintStream ps;
-
-        if (params.outFile != null) {
-            try {
-                ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(params.outFile))));
-            }
-            catch (IOException e) {
-                throw new IllegalArgumentException("Cannot write to output file", e);
-            }
-        }
-        else
-            ps = System.out;
+        PrintStream ps = printStream(params.outFile);
 
         try {
-            PrintHandler hnd = new PrintHandler(ps, params.ops, params.from, params.to, params.cacheIds);
-
-            new FilePerformanceStatisticsReader(hnd).read(singletonList(new File(params.statFiles)));
+            new FilePerformanceStatisticsReader(
+                new PrintHandler(ps, params.ops, params.from, params.to,params.cacheIds))
+                .read(singletonList(new File(params.statFileOrDir)));
         }
         finally {
             if (params.outFile != null)
@@ -88,7 +77,7 @@ public class PerformanceStatisticsPrinter {
 
         Iterator<String> iter = Arrays.asList(args).iterator();
 
-        params.statFiles = iter.next();
+        params.statFileOrDir = iter.next();
 
         while (iter.hasNext()) {
             String arg = iter.next();
@@ -165,7 +154,7 @@ public class PerformanceStatisticsPrinter {
 
     /** @param params Validates parameters. */
     private static void validateParameters(Parameters params) {
-        File statFiles = new File(params.statFiles);
+        File statFiles = new File(params.statFileOrDir);
 
         A.ensure(statFiles.exists(), "Performance statistics file or files directory does not exists");
 
@@ -186,6 +175,24 @@ public class PerformanceStatisticsPrinter {
         }
     }
 
+    /** @return Print stream to the console or file. */
+    private static PrintStream printStream(@Nullable String outFile) {
+        PrintStream ps;
+
+        if (outFile != null) {
+            try {
+                ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(outFile))));
+            }
+            catch (IOException e) {
+                throw new IllegalArgumentException("Cannot write to output file", e);
+            }
+        }
+        else
+            ps = System.out;
+
+        return ps;
+    }
+
     /**
      * Gets the enum for the given name ignore case.
      *
@@ -204,8 +211,8 @@ public class PerformanceStatisticsPrinter {
 
     /** Printer parameters. */
     private static class Parameters {
-        /** Performance statistics file or files path. */
-        private String statFiles;
+        /** Performance statistics file or files directory. */
+        private String statFileOrDir;
 
         /** Output file. */
         @Nullable private String outFile;
