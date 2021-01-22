@@ -31,6 +31,7 @@ import org.apache.ignite.internal.performancestatistics.handlers.PrintHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,14 +125,14 @@ public class PerformanceStatisticsPrinter {
 
                 params.to = Long.parseLong(iter.next());
             }
-            else if ("--cache-ids".equalsIgnoreCase(arg)) {
-                A.ensure(iter.hasNext(), "Expected cache identifiers.");
+            else if ("--caches".equalsIgnoreCase(arg)) {
+                A.ensure(iter.hasNext(), "Expected cache names");
 
-                String[] cacheIds = iter.next().split(",");
+                String[] caches = iter.next().split(",");
 
-                A.ensure(cacheIds.length > 0, "Expected at least one cache identifier");
+                A.ensure(caches.length > 0, "Expected at least one cache name");
 
-                params.cacheIds = Arrays.stream(cacheIds).map(Integer::parseInt).collect(Collectors.toSet());
+                params.cacheIds = Arrays.stream(caches).map(CU::cacheId).collect(Collectors.toSet());
             }
             else
                 throw new IllegalArgumentException("Unknown command: " + arg);
@@ -147,14 +148,14 @@ public class PerformanceStatisticsPrinter {
         System.out.println("The script is used to print performance statistics files to the console or file." +
             U.nl() + U.nl() +
             "Usage: print-statistics.sh path_to_files [--out out_file] [--ops op_types] " +
-            "[--from startTimeFrom] [--to startTimeTo] [--cache-ids cache_ids]" + U.nl() +
+            "[--from startTimeFrom] [--to startTimeTo] [--caches cache_names]" + U.nl() +
             U.nl() +
             "  path_to_files - Performance statistics file or files directory." + U.nl() +
             "  out_file      - Output file." + U.nl() +
             "  op_types      - Comma separated list of operation types to filter the output." + U.nl() +
             "  from          - The minimum operation start time to filter the output." + U.nl() +
             "  to            - The maximum operation start time to filter the output." + U.nl() +
-            "  cache_ids     - Comma separated list of cache identifiers to filter the output." + U.nl() +
+            "  cache_names   - Comma separated list of cache names to filter the output." + U.nl() +
             U.nl() +
             "Times must be specified in the Unix time format in milliseconds." + U.nl() +
             "List of operation types: " + ops + '.');

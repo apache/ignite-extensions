@@ -20,7 +20,6 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -190,42 +190,42 @@ public class PerformanceStatisticsPrinterTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testCacheIdsFilter() throws Exception {
-        int cacheId1 = 1;
-        int cacheId2 = 2;
+    public void testCachesFilter() throws Exception {
+        String cache1 = "cache1";
+        String cache2 = "cache2";
 
         createStatistics(writer -> {
-            for (int cacheId : new int[] {cacheId1, cacheId2}) {
-                writer.cacheStart(cacheId, "cache-" + cacheId);
-                writer.cacheOperation(CACHE_GET, cacheId, 0, 0);
-                writer.transaction(GridIntList.asList(cacheId), 0, 0, true);
-                writer.transaction(GridIntList.asList(cacheId), 0, 0, false);
+            for (String cache : new String[] {cache1, cache2}) {
+                writer.cacheStart(CU.cacheId(cache), cache);
+                writer.cacheOperation(CACHE_GET, CU.cacheId(cache), 0, 0);
+                writer.transaction(GridIntList.asList(CU.cacheId(cache)), 0, 0, true);
+                writer.transaction(GridIntList.asList(CU.cacheId(cache)), 0, 0, false);
             }
         });
 
-        checkCacheIdsFilter(null, new int[] {cacheId1, cacheId2});
-        checkCacheIdsFilter(new int[] {cacheId1}, new int[] {cacheId1});
-        checkCacheIdsFilter(new int[] {cacheId2}, new int[] {cacheId2});
-        checkCacheIdsFilter(new int[] {cacheId1, cacheId2}, new int[] {cacheId1, cacheId2});
-        checkCacheIdsFilter(new int[] {-1}, new int[0]);
+        checkCachesFilter(null, new String[] {cache1, cache2});
+        checkCachesFilter(new String[] {cache1}, new String[] {cache1});
+        checkCachesFilter(new String[] {cache2}, new String[] {cache2});
+        checkCachesFilter(new String[] {cache1, cache2}, new String[] {cache1, cache2});
+        checkCachesFilter(new String[] {"unknown_cache"}, new String[0]);
     }
 
     /** */
-    private void checkCacheIdsFilter(int[] cacheIdsArg, int[] expCacheIds) throws Exception {
+    private void checkCachesFilter(String[] cachesArg, String[] expCaches) throws Exception {
         List<OperationType> cacheIdOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK);
 
         List<String> args = new LinkedList<>();
 
-        if (cacheIdsArg != null) {
-            args.add("--cache-ids");
+        if (cachesArg != null) {
+            args.add("--caches");
 
-            args.add(Arrays.stream(cacheIdsArg).mapToObj(String::valueOf).collect(joining(",")));
+            args.add(String.join(",", cachesArg));
         }
 
         Map<Integer, List<OperationType>> opsById = new HashMap<>();
 
-        for (Integer id : expCacheIds)
-            opsById.put(id, new LinkedList<>(cacheIdOps));
+        for (String cache : expCaches)
+            opsById.put(CU.cacheId(cache), new LinkedList<>(cacheIdOps));
 
         readStatistics(args, json -> {
             OperationType op = OperationType.valueOf(json.get("op").asText());
