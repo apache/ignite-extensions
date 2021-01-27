@@ -22,7 +22,6 @@ import java.util.BitSet;
 import java.util.Set;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static com.fasterxml.jackson.core.io.CharTypes.appendQuoted;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
@@ -48,6 +48,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** Print stream. */
     private final PrintStream ps;
+
+    /** */
+    StringBuilder sb = new StringBuilder();
 
     /** Operation types. */
     @Nullable private final BitSet ops;
@@ -81,14 +84,16 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(CACHE_START, cacheId))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", CACHE_START.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("cacheId", cacheId);
-        json.put("name", name);
+        sb.append("{\"op\":\"").append(CACHE_START).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"cacheId\":").append(cacheId).append(",");
+        sb.append("\"name\":\"");
+        appendQuoted(sb, name);
+        sb.append("\"}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -96,15 +101,15 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(type, startTime, cacheId))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", String.valueOf(type));
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("cacheId", cacheId);
-        json.put("startTime", startTime);
-        json.put("duration", duration);
+        sb.append("{\"op\":\"").append(type).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"cacheId\":").append(cacheId).append(",");
+        sb.append("\"startTime\":").append(startTime).append(",");
+        sb.append("\"duration\":").append(duration).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -115,15 +120,15 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(op, startTime, cacheIds))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", op.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("cacheIds", String.valueOf(cacheIds));
-        json.put("startTime", startTime);
-        json.put("duration", duration);
+        sb.append("{\"op\":\"").append(op).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"cacheIds\":").append(cacheIds).append(",");
+        sb.append("\"startTime\":").append(startTime).append(",");
+        sb.append("\"duration\":").append(duration).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -132,18 +137,19 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(QUERY, startTime))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", QUERY.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("type", String.valueOf(type));
-        json.put("text", text);
-        json.put("id", id);
-        json.put("startTime", startTime);
-        json.put("duration", duration);
-        json.put("success", success);
+        sb.append("{\"op\":\"").append(QUERY).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"type\":\"").append(type).append("\",");
+        sb.append("\"text\":\"");
+        appendQuoted(sb, text);
+        sb.append("\",\"id\":").append(id).append(",");
+        sb.append("\"startTime\":").append(startTime).append(",");
+        sb.append("\"duration\":").append(duration).append(",");
+        sb.append("\"success\":").append(success).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -152,17 +158,17 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(QUERY_READS))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", QUERY_READS.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("type", String.valueOf(type));
-        json.put("queryNodeId", String.valueOf(queryNodeId));
-        json.put("id", id);
-        json.put("logicalReads", logicalReads);
-        json.put("physicalReads", physicalReads);
+        sb.append("{\"op\":\"").append(QUERY_READS).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"type\":\"").append(type).append("\",");
+        sb.append("\"queryNodeId\":\"").append(queryNodeId).append("\",");
+        sb.append("\"id\":").append(id).append(",");
+        sb.append("\"logicalReads\":").append(logicalReads).append(",");
+        sb.append("\"physicalReads\":").append(physicalReads).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -171,17 +177,18 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(TASK, startTime))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", TASK.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("sesId", String.valueOf(sesId));
-        json.put("taskName", taskName);
-        json.put("startTime", startTime);
-        json.put("duration", duration);
-        json.put("affPartId", affPartId);
+        sb.append("{\"op\":\"").append(TASK).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"sesId\":\"").append(sesId).append("\",");
+        sb.append("\"taskName\":\"");
+        appendQuoted(sb, taskName);
+        sb.append("\",\"startTime\":").append(startTime).append(",");
+        sb.append("\"duration\":").append(duration).append(",");
+        sb.append("\"affPartId\":").append(affPartId).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** {@inheritDoc} */
@@ -190,17 +197,17 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(JOB, startTime))
             return;
 
-        ObjectNode json = MAPPER.createObjectNode();
+        sb.setLength(0);
 
-        json.put("op", JOB.toString());
-        json.put("nodeId", String.valueOf(nodeId));
-        json.put("sesId", String.valueOf(sesId));
-        json.put("queuedTime", queuedTime);
-        json.put("startTime", startTime);
-        json.put("duration", duration);
-        json.put("timedOut", timedOut);
+        sb.append("{\"op\":\"").append(JOB).append("\",");
+        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
+        sb.append("\"sesId\":\"").append(sesId).append("\",");
+        sb.append("\"queuedTime\":").append(queuedTime).append(",");
+        sb.append("\"startTime\":").append(startTime).append(",");
+        sb.append("\"duration\":").append(duration).append(",");
+        sb.append("\"timedOut\":").append(timedOut).append("}");
 
-        ps.println(json.toString());
+        ps.println(sb.toString());
     }
 
     /** @return {@code True} if the operation should be skipped. */

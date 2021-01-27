@@ -43,7 +43,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
@@ -55,6 +54,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -88,7 +88,7 @@ public class PerformanceStatisticsPrinterTest {
             writer.transaction(GridIntList.asList(0), 0, 0, false);
             writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, 0, 0, true);
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
-            writer.task(new IgniteUuid(NODE_ID, 0), "", 0, 0, 0);
+            writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
         });
 
@@ -234,8 +234,12 @@ public class PerformanceStatisticsPrinterTest {
 
             if (OperationType.cacheOperation(op) || op == CACHE_START)
                 id = json.get("cacheId").asInt();
-            else if (OperationType.transactionOperation(op))
-                id = parseInt(json.get("cacheIds").asText().replace("[", "").replace("]", ""));
+            else if (OperationType.transactionOperation(op)) {
+                assertTrue(json.get("cacheIds").isArray());
+                assertEquals(1, json.get("cacheIds").size());
+
+                id = json.get("cacheIds").get(0).asInt();
+            }
             else
                 fail("Unexpected operation: " + op);
 
@@ -251,6 +255,8 @@ public class PerformanceStatisticsPrinterTest {
         FilePerformanceStatisticsWriter writer = new FilePerformanceStatisticsWriter(new TestKernalContext(NODE_ID));
 
         writer.start();
+
+        waitForCondition(() -> U.field((Object)U.field(writer, "fileWriter"), "runner") != null, 30_000);
 
         c.accept(writer);
 
