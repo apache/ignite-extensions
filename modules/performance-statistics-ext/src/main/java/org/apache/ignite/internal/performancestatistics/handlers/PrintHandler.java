@@ -21,7 +21,7 @@ import java.io.PrintStream;
 import java.util.BitSet;
 import java.util.Set;
 import java.util.UUID;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static com.fasterxml.jackson.core.io.CharTypes.appendQuoted;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
@@ -43,14 +42,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * Handler to print performance statistics operations.
  */
 public class PrintHandler implements PerformanceStatisticsHandler {
-    /** Json mapper. */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     /** Print stream. */
     private final PrintStream ps;
-
-    /** */
-    StringBuilder sb = new StringBuilder();
 
     /** Operation types. */
     @Nullable private final BitSet ops;
@@ -84,16 +77,14 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(CACHE_START, cacheId))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(CACHE_START).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"cacheId\":").append(cacheId).append(",");
-        sb.append("\"name\":\"");
-        appendQuoted(sb, name);
-        sb.append("\"}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"" + CACHE_START);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"cacheId\":");
+        ps.print(cacheId);
+        ps.print(",\"name\":");
+        ps.print(new TextNode(name));
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -101,15 +92,17 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(type, startTime, cacheId))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(type).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"cacheId\":").append(cacheId).append(",");
-        sb.append("\"startTime\":").append(startTime).append(",");
-        sb.append("\"duration\":").append(duration).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"");
+        ps.print(type);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"cacheId\":");
+        ps.print(cacheId);
+        ps.print(",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
+        ps.print(duration);
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -120,15 +113,17 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(op, startTime, cacheIds))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(op).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"cacheIds\":").append(cacheIds).append(",");
-        sb.append("\"startTime\":").append(startTime).append(",");
-        sb.append("\"duration\":").append(duration).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"");
+        ps.print(op);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"cacheIds\":");
+        ps.print(cacheIds);
+        ps.print(",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
+        ps.print(duration);
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -137,19 +132,22 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(QUERY, startTime))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(QUERY).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"type\":\"").append(type).append("\",");
-        sb.append("\"text\":\"");
-        appendQuoted(sb, text);
-        sb.append("\",\"id\":").append(id).append(",");
-        sb.append("\"startTime\":").append(startTime).append(",");
-        sb.append("\"duration\":").append(duration).append(",");
-        sb.append("\"success\":").append(success).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"" + QUERY);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"type\":\"");
+        ps.print(type);
+        ps.print("\",\"text\":");
+        ps.print(new TextNode(text));
+        ps.print(",\"id\":");
+        ps.print(id);
+        ps.print(",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
+        ps.print(duration);
+        ps.print(",\"success\":");
+        ps.print(success);
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -158,17 +156,20 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(QUERY_READS))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(QUERY_READS).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"type\":\"").append(type).append("\",");
-        sb.append("\"queryNodeId\":\"").append(queryNodeId).append("\",");
-        sb.append("\"id\":").append(id).append(",");
-        sb.append("\"logicalReads\":").append(logicalReads).append(",");
-        sb.append("\"physicalReads\":").append(physicalReads).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"" + QUERY_READS);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"type\":\"");
+        ps.print(type);
+        ps.print("\",\"queryNodeId\":\"");
+        ps.print(queryNodeId);
+        ps.print("\",\"id\":");
+        ps.print(id);
+        ps.print(",\"logicalReads\":");
+        ps.print(logicalReads);
+        ps.print(",\"physicalReads\":");
+        ps.print(physicalReads);
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -177,18 +178,20 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(TASK, startTime))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(TASK).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"sesId\":\"").append(sesId).append("\",");
-        sb.append("\"taskName\":\"");
-        appendQuoted(sb, taskName);
-        sb.append("\",\"startTime\":").append(startTime).append(",");
-        sb.append("\"duration\":").append(duration).append(",");
-        sb.append("\"affPartId\":").append(affPartId).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"" + TASK);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"sesId\":\"");
+        ps.print(sesId);
+        ps.print("\",\"taskName\":");
+        ps.print(new TextNode(taskName));
+        ps.print(",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
+        ps.print(duration);
+        ps.print(",\"affPartId\":");
+        ps.print(affPartId);
+        ps.println("}");
     }
 
     /** {@inheritDoc} */
@@ -197,17 +200,20 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         if (skip(JOB, startTime))
             return;
 
-        sb.setLength(0);
-
-        sb.append("{\"op\":\"").append(JOB).append("\",");
-        sb.append("\"nodeId\":\"").append(nodeId).append("\",");
-        sb.append("\"sesId\":\"").append(sesId).append("\",");
-        sb.append("\"queuedTime\":").append(queuedTime).append(",");
-        sb.append("\"startTime\":").append(startTime).append(",");
-        sb.append("\"duration\":").append(duration).append(",");
-        sb.append("\"timedOut\":").append(timedOut).append("}");
-
-        ps.println(sb.toString());
+        ps.print("{\"op\":\"" + JOB);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"sesId\":\"");
+        ps.print(sesId);
+        ps.print("\",\"queuedTime\":");
+        ps.print(queuedTime);
+        ps.print(",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
+        ps.print(duration);
+        ps.print(",\"timedOut\":");
+        ps.print(timedOut);
+        ps.println("}");
     }
 
     /** @return {@code True} if the operation should be skipped. */
