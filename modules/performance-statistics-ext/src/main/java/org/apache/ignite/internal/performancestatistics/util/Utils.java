@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.performancestatistics.util;
 
+import java.io.PrintStream;
+import com.fasterxml.jackson.core.io.CharTypes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -25,6 +27,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 public class Utils {
     /** Json mapper. */
     public static final ObjectMapper MAPPER = new ObjectMapper();
+
+    /** */
+    private final static char[] HC = "0123456789ABCDEF".toCharArray();
 
     /** Creates empty object for given value if absent. */
     public static ObjectNode createObjectIfAbsent(String val, ObjectNode json) {
@@ -50,5 +55,45 @@ public class Utils {
         }
 
         return node;
+    }
+
+    /**
+     * Prints JSON-escaped string to the stream.
+     *
+     * @param ps Print stream to write to.
+     * @param str String to print.
+     * @see CharTypes#appendQuoted(StringBuilder, String)
+     */
+    public static void printEscaped(PrintStream ps, String str) {
+        int[] escCodes = CharTypes.get7BitOutputEscapes();
+
+        int escLen = escCodes.length;
+
+        for (int i = 0, len = str.length(); i < len; ++i) {
+            char c = str.charAt(i);
+
+            if (c >= escLen || escCodes[c] == 0) {
+                ps.print(c);
+
+                continue;
+            }
+
+            ps.print('\\');
+
+            int escCode = escCodes[c];
+
+            if (escCode < 0) {
+                ps.print('u');
+                ps.print('0');
+                ps.print('0');
+
+                int val = c;
+
+                ps.print(HC[val >> 4]);
+                ps.print(HC[val & 0xF]);
+            }
+            else
+                ps.print((char)escCode);
+        }
     }
 }
