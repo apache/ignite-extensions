@@ -21,7 +21,6 @@ import java.io.PrintStream;
 import java.util.BitSet;
 import java.util.Set;
 import java.util.UUID;
-import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -30,6 +29,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.performancestatistics.util.Utils.printEscaped;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
@@ -82,9 +82,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(nodeId);
         ps.print("\",\"cacheId\":");
         ps.print(cacheId);
-        ps.print(",\"name\":");
-        ps.print(new TextNode(name));
-        ps.println("}");
+        ps.print(",\"name\":\"");
+        printEscaped(ps, name);
+        ps.println("\"}");
     }
 
     /** {@inheritDoc} */
@@ -137,9 +137,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(nodeId);
         ps.print("\",\"type\":\"");
         ps.print(type);
-        ps.print("\",\"text\":");
-        ps.print(new TextNode(text));
-        ps.print(",\"id\":");
+        ps.print("\",\"text\":\"");
+        printEscaped(ps, text);
+        ps.print("\",\"id\":");
         ps.print(id);
         ps.print(",\"startTime\":");
         ps.print(startTime);
@@ -183,9 +183,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(nodeId);
         ps.print("\",\"sesId\":\"");
         ps.print(sesId);
-        ps.print("\",\"taskName\":");
-        ps.print(new TextNode(taskName));
-        ps.print(",\"startTime\":");
+        ps.print("\",\"taskName\":\"");
+        printEscaped(ps, taskName);
+        ps.print("\",\"startTime\":");
         ps.print(startTime);
         ps.print(",\"duration\":");
         ps.print(duration);
