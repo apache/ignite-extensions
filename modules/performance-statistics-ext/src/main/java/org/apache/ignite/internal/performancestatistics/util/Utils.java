@@ -62,6 +62,7 @@ public class Utils {
      *
      * @param ps Print stream to write to.
      * @param str String to print.
+     * @see CharTypes#appendQuoted(StringBuilder, String)
      */
     public static void printEscaped(PrintStream ps, String str) {
         int[] escCodes = CharTypes.get7BitOutputEscapes();
