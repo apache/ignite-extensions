@@ -154,25 +154,9 @@ public class PerformanceStatisticsPrinter {
 
     /** @param params Validates parameters. */
     private static void validateParameters(Parameters params) {
-        File statFiles = new File(params.statFileOrDir);
+        File statFileOrDir = new File(params.statFileOrDir);
 
-        A.ensure(statFiles.exists(), "Performance statistics file or files directory does not exists");
-
-        if (params.outFile != null) {
-            File out = new File(params.outFile);
-
-            try {
-                boolean created = out.createNewFile();
-
-                if (!created) {
-                    throw new IllegalArgumentException("Failed to create output file: file with the given name " +
-                        "already exists");
-                }
-            }
-            catch (IOException e) {
-                throw new IllegalArgumentException("Failed to create the output file", e);
-            }
-        }
+        A.ensure(statFileOrDir.exists(), "Performance statistics file or files directory does not exists");
     }
 
     /** @return Print stream to the console or file. */
@@ -181,7 +165,7 @@ public class PerformanceStatisticsPrinter {
 
         if (outFile != null) {
             try {
-                ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(outFile))));
+                ps = new PrintStream(new BufferedOutputStream(new FileOutputStream(new File(outFile), true)));
             }
             catch (IOException e) {
                 throw new IllegalArgumentException("Cannot write to output file", e);
