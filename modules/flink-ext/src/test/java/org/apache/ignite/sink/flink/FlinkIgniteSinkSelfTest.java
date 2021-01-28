@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.ignite.Ignition;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -36,6 +38,12 @@ public class FlinkIgniteSinkSelfTest {
 
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "config/example-ignite.xml";
+
+    /** */
+    @AfterClass
+    public static void afterTests() {
+        Ignition.stopAll(true);
+    }
 
     @Test
     public void testIgniteSink() throws Exception {
