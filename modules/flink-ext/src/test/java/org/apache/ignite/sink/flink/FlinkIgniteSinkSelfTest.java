@@ -39,6 +39,12 @@ public class FlinkIgniteSinkSelfTest {
     /** Ignite test configuration file. */
     private static final String GRID_CONF_FILE = "config/example-ignite.xml";
 
+    /** */
+    @AfterClass
+    public static void afterTests() {
+        Ignition.stopAll(true);
+    }
+
     @Test
     public void testIgniteSink() throws Exception {
         Configuration configuration = new Configuration();
@@ -84,11 +90,5 @@ public class FlinkIgniteSinkSelfTest {
             e.printStackTrace();
             fail("Stream execution process failed.");
         }
-    }
-
-    /** */
-    @AfterClass
-    public static void afterTests() {
-        Ignition.stopAll(true);
     }
 }
