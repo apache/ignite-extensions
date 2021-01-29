@@ -100,8 +100,28 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
         return cache.<Cache.Entry<K, V>>query(new ScanQuery<>()).getAll().iterator();
     }
 
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        return cache.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCacheProxy<K, V> withSkipStore() {
+        return new IgniteCacheProxyImpl<>(cache.withSkipStore());
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndPutIfAbsent(K key, V val) {
+        return cache.getAndPutIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeAll() {
+        cache.removeAll();
+    }
+
     /** @return {@link IgniteCache} instance to which operations are delegated. */
-    public IgniteCache<K, V> delegate() {
+    @Override public IgniteCache<K, V> delegate() {
         return cache;
     }
 }

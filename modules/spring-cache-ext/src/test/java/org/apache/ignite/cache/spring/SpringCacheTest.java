@@ -20,6 +20,7 @@ package org.apache.ignite.cache.spring;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxyImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -58,7 +59,7 @@ public class SpringCacheTest extends GridCommonAbstractTest {
 
         cacheName = String.valueOf(System.currentTimeMillis());
         nativeCache = ignite.getOrCreateCache(cacheName);
-        springCache = new SpringCache(nativeCache, null);
+        springCache = new SpringCache(new IgniteCacheProxyImpl<>(nativeCache), null);
     }
 
     /** {@inheritDoc} */
