@@ -34,9 +34,10 @@ import com.google.pubsub.v1.ReceivedMessage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 import org.jetbrains.annotations.NotNull;
 import org.mockito.Mockito;
@@ -71,11 +72,14 @@ class MockPubSubServer {
     /** */
     public static final int MESSAGES_PER_REQUEST = 10;
 
+    /** Time to wait for the message in milliseconds. */
+    private static final long MSG_WAIT_TIMEOUT = 1_000L;
+
     /** */
     private final Map<String, Publisher> publishers = new HashMap<>();
 
     /** */
-    private final Queue<PubsubMessage> blockingQueue = new LinkedBlockingDeque<>();
+    private final BlockingDeque<PubsubMessage> blockingQueue = new LinkedBlockingDeque<>();
 
     public SubscriberStubSettings createSubscriberStub() throws IOException {
         CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
@@ -136,8 +140,18 @@ class MockPubSubServer {
     private void pullMessages(ClientCall.Listener<PullResponse> listener, Metadata metadata) {
         PullResponse.Builder pullResponse = PullResponse.newBuilder();
 
-        for(int i = 0; i < MESSAGES_PER_REQUEST; i++) {
-            pullResponse.addReceivedMessages(ReceivedMessage.newBuilder().mergeMessage(blockingQueue.remove()).build());
+        try {
+            for (int i = 0; i < MESSAGES_PER_REQUEST; i++) {
+                PubsubMessage msg = blockingQueue.poll(MSG_WAIT_TIMEOUT, TimeUnit.MILLISECONDS);
+
+                if (msg == null)
+                    break;
+
+                pullResponse.addReceivedMessages(ReceivedMessage.newBuilder().mergeMessage(msg).build());
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         listener.onMessage(pullResponse.build());
