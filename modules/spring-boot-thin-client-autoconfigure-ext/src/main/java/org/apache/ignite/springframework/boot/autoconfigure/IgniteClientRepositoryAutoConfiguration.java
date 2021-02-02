@@ -49,5 +49,5 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnMissingBean({IgniteRepositoryFactoryBean.class, IgniteRepositoryConfigurationExtension.class})
 @Import(IgniteRepositoriesAutoConfigurationRegistar.class)
 @AutoConfigureAfter({IgniteClientAutoConfiguration.class})
-public class IgniteRepositoryAutoConfiguration {
+public class IgniteClientRepositoryAutoConfiguration {
 }

@@ -15,4 +15,4 @@
 
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 org.apache.ignite.springframework.boot.autoconfigure.IgniteClientAutoConfiguration,\
-org.apache.ignite.springframework.boot.autoconfigure.IgniteRepositoryAutoConfiguration
+org.apache.ignite.springframework.boot.autoconfigure.IgniteClientRepositoryAutoConfiguration

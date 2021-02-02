@@ -34,14 +34,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Tests {@link IgniteRepositoryAutoConfiguration} feature. */
+/** Tests {@link IgniteClientRepositoryAutoConfiguration} feature. */
 @ExtendWith(SpringExtension.class)
-public class IgniteRepositoriesAutoconfigureTest {
+public class IgniteClientRepositoriesAutoconfigureTest {
 
     /** Spring test application context. */
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
         .withPropertyValues("ignite-client.addresses=127.0.0.1:10801")
-        .withConfiguration(AutoConfigurations.of(IgniteClientAutoConfiguration.class, IgniteRepositoryAutoConfiguration.class));
+        .withConfiguration(AutoConfigurations.of(IgniteClientAutoConfiguration.class, IgniteClientRepositoryAutoConfiguration.class));
 
     /** Server node. */
     private static Ignite node;
