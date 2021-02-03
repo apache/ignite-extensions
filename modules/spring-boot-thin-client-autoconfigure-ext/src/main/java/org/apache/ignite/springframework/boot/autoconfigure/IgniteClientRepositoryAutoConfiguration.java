@@ -35,13 +35,13 @@ import org.springframework.context.annotation.Import;
  * {@link EnableAutoConfiguration Auto-configuration} for Ignite Spring Data's Repositories.
  * <p>
  * Activates when there is a bean of type {@link IgniteClient} configured in the
- * context, the Spring Data JPA {@link IgniteRepository} type is on the classpath,
+ * context, the Ignite Spring Data {@link IgniteRepository} type is on the classpath,
  * and there is no other, existing {@link IgniteRepository} configured.
  * <p>
- * Once in effect, the auto-configuration is the equivalent of enabling JPA repositories
+ * Once in effect, the auto-configuration is the equivalent of enabling Ignite repositories
  * using the {@link EnableIgniteRepositories @EnableIgniteRepositories} annotation.
  * <p>
- * This configuration class will activate <em>after</em> the Ignite node auto-configuration.
+ * This configuration class will activate <em>after</em> the Ignite client auto-configuration.
  */
 @Configuration
 @ConditionalOnBean(IgniteClient.class)
