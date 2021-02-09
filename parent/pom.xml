@@ -367,6 +367,10 @@
                                 <title>Ignite Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
                             </group>
+                            <group>
+                                <title>Spring Transactions Integration</title>
+                                <packages>org.apache.ignite.transactions.spring*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
