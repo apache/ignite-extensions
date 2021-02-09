@@ -64,7 +64,7 @@ import static org.junit.Assert.fail;
  */
 public class PerformanceStatisticsPrinterTest {
     /** Test node ID. */
-    private final static UUID NODE_ID = UUID.randomUUID();
+    private static final UUID NODE_ID = UUID.randomUUID();
 
     /** */
     @Before
