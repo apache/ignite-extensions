@@ -20,11 +20,13 @@ package org.apache.ignite.springframework.boot.autoconfigure;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.springframework.boot.autoconfigure.caches.IgniteClientSpringCacheManager;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -96,5 +98,17 @@ public class IgniteClientAutoConfiguration {
     @Bean
     public IgniteClient igniteClient(ClientConfiguration cfg) {
         return Ignition.startClient(cfg);
+    }
+
+    /**
+     * Provides {@link CacheManager} with name "igniteCacheManager".
+     *
+     * @param igniteClient - configured early bean.
+     * @return IgniteThinSpringCacheManager instance.
+     */
+    @ConditionalOnBean(IgniteClient.class)
+    @Bean(name = "igniteCacheManager")
+    public CacheManager springCacheManager(IgniteClient igniteClient) {
+        return new IgniteClientSpringCacheManager(igniteClient);
     }
 }

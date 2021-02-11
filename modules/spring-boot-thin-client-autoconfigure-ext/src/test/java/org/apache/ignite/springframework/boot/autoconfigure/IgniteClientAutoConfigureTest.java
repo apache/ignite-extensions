@@ -25,6 +25,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.springframework.boot.autoconfigure.caches.IgniteClientSpringCacheManager;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,10 +35,13 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests {@link IgniteClientAutoConfiguration} feature. */
@@ -131,5 +135,18 @@ public class IgniteClientAutoConfigureTest {
         IgniteClient cli = context.getBean(IgniteClient.class);
 
         assertTrue(CACHES.containsAll(cli.cacheNames()));
+
+        checkCacheManager(context);
+    }
+
+    private void checkCacheManager(AssertableApplicationContext context) {
+        CacheManager cacheManager = context.getBean(CacheManager.class);
+        assertEquals(cacheManager.getCacheNames().size(), CACHES.size());
+        cacheManager.getCacheNames().forEach(it -> assertTrue(CACHES.contains(it)));
+
+        Cache cache = cacheManager.getCache("my-cache");
+        assertNotNull(cache);
+        cache.put("key", "value");
+        assertEquals(cache.get("key", String.class), "value");
     }
 }
