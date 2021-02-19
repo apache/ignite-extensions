@@ -61,6 +61,7 @@
         <module>modules/spring-data-commons</module>
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
+        <module>modules/spring-cache-ext</module>
     </modules>
 
     <profiles>
