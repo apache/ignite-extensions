@@ -22,7 +22,7 @@ import org.apache.ignite.springdata22.repository.IgniteRepository;
 import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springdata22.repository.config.IgniteRepositoryConfigurationExtension;
 import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactoryBean;
-import org.apache.ignite.springframework.boot.autoconfigure.data.IgniteRepositoriesAutoConfigurationRegistar;
+import org.apache.ignite.springframework.boot.autoconfigure.data.IgniteRepositoriesAutoConfigurationRegistrar;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -47,7 +47,7 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnBean(IgniteClient.class)
 @ConditionalOnClass(IgniteRepository.class)
 @ConditionalOnMissingBean({IgniteRepositoryFactoryBean.class, IgniteRepositoryConfigurationExtension.class})
-@Import(IgniteRepositoriesAutoConfigurationRegistar.class)
+@Import(IgniteRepositoriesAutoConfigurationRegistrar.class)
 @AutoConfigureAfter({IgniteClientAutoConfiguration.class})
 public class IgniteClientRepositoryAutoConfiguration {
 }

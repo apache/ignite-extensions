@@ -57,7 +57,7 @@ public class IgniteRepositoriesAutoconfigureTest {
 
     /** Test configuration with @EnableIgniteRepositories and invalid base package */
     @Test
-    public void testIvalidBasePackage() {
+    public void testInvalidBasePackage() {
         contextRunner.withUserConfiguration(InvalidConfiguration.class).run((context) -> {
             assertThat(context).doesNotHaveBean(ObjectRepository.class);
         });

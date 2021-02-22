@@ -27,7 +27,7 @@ import org.springframework.data.repository.config.RepositoryConfigurationExtensi
 /**
  * {@link ImportBeanDefinitionRegistrar} used to auto-configure Ignite Spring Data Repositories.
  */
-public class IgniteRepositoriesAutoConfigurationRegistar extends AbstractRepositoryConfigurationSourceSupport {
+public class IgniteRepositoriesAutoConfigurationRegistrar extends AbstractRepositoryConfigurationSourceSupport {
 
     /** {@inheritDoc} */
     @Override protected Class<? extends Annotation> getAnnotation() {
