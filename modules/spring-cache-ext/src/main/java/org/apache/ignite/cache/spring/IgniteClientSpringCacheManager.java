@@ -53,6 +53,11 @@ import org.springframework.context.event.ContextRefreshedEvent;
  *        xsi:schemaLocation="
  *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *            http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
+ *     &lt;!--
+ *              Note that org.apache.ignite.IgniteClientSpringBean is available since Ignite 2.11.0 version.
+ *              For Ignite versions earlier than 2.11.0 org.apache.ignite.client.IgniteClient bean should be created
+ *              manually with concern of its connection to the Ignite cluster.
+ *     --&gt;
  *     &lt;bean id="igniteClient" class="org.apache.ignite.IgniteClientSpringBean"&gt;
  *         &lt;property name="clientConfiguration"&gt;
  *             &lt;bean class="org.apache.ignite.configuration.ClientConfiguration"&gt;
