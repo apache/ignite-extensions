@@ -30,9 +30,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxyImpl;
+import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxyImpl;
+import org.apache.ignite.springdata.proxy.IgniteNodeProxy;
 import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.jetbrains.annotations.Nullable;
@@ -76,16 +76,16 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> cache() {
-        if (cache instanceof IgniteCacheProxyImpl)
-            return ((IgniteCacheProxyImpl<K, V>)cache).delegate();
+        if (cache instanceof IgniteNodeCacheProxy)
+            return ((IgniteNodeCacheProxy<K, V>)cache).delegate();
 
         throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }
 
     /** {@inheritDoc} */
     @Override public Ignite ignite() {
-        if (ignite instanceof IgniteProxyImpl)
-            return ((IgniteProxyImpl)ignite).delegate();
+        if (ignite instanceof IgniteNodeProxy)
+            return ((IgniteNodeProxy)ignite).delegate();
 
         throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }

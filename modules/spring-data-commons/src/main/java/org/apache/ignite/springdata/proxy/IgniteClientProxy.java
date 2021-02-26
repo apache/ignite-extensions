@@ -32,12 +32,12 @@ public class IgniteClientProxy implements IgniteProxy {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name) {
-        return new IgniteCacheClientProxy<>(cli.getOrCreateCache(name));
+        return new IgniteClientCacheProxy<>(cli.getOrCreateCache(name));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
-        return new IgniteCacheClientProxy<>(cli.cache(name));
+        return new IgniteClientCacheProxy<>(cli.cache(name));
     }
 
     /** {@inheritDoc} */

@@ -47,19 +47,19 @@ public interface IgniteProxy {
      */
     public static IgniteProxy of(Object connObj) {
         if (connObj instanceof Ignite)
-            return new IgniteProxyImpl((Ignite)connObj);
+            return new IgniteNodeProxy((Ignite)connObj);
         else if (connObj instanceof IgniteConfiguration) {
             try {
-                return new IgniteProxyImpl(Ignition.ignite(((IgniteConfiguration)connObj).getIgniteInstanceName()));
+                return new IgniteNodeProxy(Ignition.ignite(((IgniteConfiguration)connObj).getIgniteInstanceName()));
             }
             catch (Exception ignored) {
                 // No-op.
             }
 
-            return new ClosableIgniteProxyImpl(Ignition.start((IgniteConfiguration)connObj));
+            return new ClosableIgniteNodeProxy(Ignition.start((IgniteConfiguration)connObj));
         }
         else if (connObj instanceof String)
-            return new ClosableIgniteProxyImpl(Ignition.start((String)connObj));
+            return new ClosableIgniteNodeProxy(Ignition.start((String)connObj));
         else if (connObj instanceof IgniteClient)
             return new IgniteClientProxy((IgniteClient)connObj);
         else if (connObj instanceof ClientConfiguration)

@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxyImpl;
+import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -355,7 +355,7 @@ public class SpringCacheManager extends AbstractCacheManager implements Applicat
             ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg)
             : ignite.getOrCreateCache(cacheCfg);
 
-        return new SpringCache(new IgniteCacheProxyImpl<>(cache), this);
+        return new SpringCache(new IgniteNodeCacheProxy<>(cache), this);
     }
 
     /** {@inheritDoc} */

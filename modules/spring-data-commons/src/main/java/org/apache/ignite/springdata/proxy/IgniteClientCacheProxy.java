@@ -22,21 +22,21 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.jetbrains.annotations.NotNull;
 
-/** Implementation of {@link IgniteCacheProxy} that provides access to Ignite cache through {@link IgniteCache} instance. */
-public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
-    /** {@link IgniteCache} instance to which operations are delegated. */
-    private final IgniteCache<K, V> cache;
+/** Implementation of {@link IgniteCacheProxy} that provides access to Ignite cache through {@link ClientCache} instance. */
+public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
+    /** {@link ClientCache} instance to which operations are delegated. */
+    private final ClientCache<K, V> cache;
 
     /** */
-    public IgniteCacheProxyImpl(IgniteCache<K, V> cache) {
+    public IgniteClientCacheProxy(ClientCache<K, V> cache) {
         this.cache = cache;
     }
 
@@ -82,7 +82,7 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> withExpiryPolicy(ExpiryPolicy expirePlc) {
-        return new IgniteCacheProxyImpl<>(cache.withExpiryPolicy(expirePlc));
+        return new IgniteClientCacheProxy<>(cache.withExpirePolicy(expirePlc));
     }
 
     /** {@inheritDoc} */
@@ -107,7 +107,7 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> withSkipStore() {
-        return new IgniteCacheProxyImpl<>(cache.withSkipStore());
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -120,8 +120,8 @@ public class IgniteCacheProxyImpl<K, V> implements IgniteCacheProxy<K, V> {
         cache.removeAll();
     }
 
-    /** @return {@link IgniteCache} instance to which operations are delegated. */
-    @Override public IgniteCache<K, V> delegate() {
+    /** {@inheritDoc} */
+    @Override public ClientCache<K, V> delegate() {
         return cache;
     }
 }
