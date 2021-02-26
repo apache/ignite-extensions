@@ -17,12 +17,10 @@
 
 package org.apache.ignite.cache.spring;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSpring;
@@ -31,8 +29,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxyImpl;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationListener;
@@ -142,15 +140,14 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * Ignite distribution, and all these nodes will participate
  * in caching the data.
  */
-public class SpringCacheManager implements CacheManager, ApplicationListener<ContextRefreshedEvent>, ApplicationContextAware {
+public class SpringCacheManager extends AbstractCacheManager implements ApplicationListener<ContextRefreshedEvent>,
+    ApplicationContextAware, DisposableBean
+{
     /** Default locks count. */
     private static final int DEFAULT_LOCKS_COUNT = 512;
 
     /** IgniteLock name prefix. */
     private static final String SPRING_LOCK_NAME_PREFIX = "springSync";
-
-    /** Caches map. */
-    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap<>();
 
     /** Grid configuration file path. */
     private String cfgPath;
@@ -178,6 +175,9 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
 
     /** Locks for value loading to support sync option. */
     private ConcurrentHashMap<Integer, IgniteLock> locks = new ConcurrentHashMap<>();
+
+    /** Flag that indicates whether external Ignite instance is configured. */
+    private boolean externalIgniteInstance;
 
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) {
@@ -329,8 +329,11 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
                 }
                 else if (cfg != null)
                     ignite = IgniteSpring.start(cfg, springCtx);
-                else
+                else {
                     ignite = Ignition.ignite(igniteInstanceName);
+
+                    externalIgniteInstance = true;
+                }
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
@@ -339,51 +342,34 @@ public class SpringCacheManager implements CacheManager, ApplicationListener<Con
     }
 
     /** {@inheritDoc} */
-    @Override public Cache getCache(String name) {
-        assert ignite != null;
+    @Override protected SpringCache createCache(String name) {
+        CacheConfiguration<Object, Object> cacheCfg = dynamicCacheCfg != null ?
+            new CacheConfiguration<>(dynamicCacheCfg) : new CacheConfiguration<>();
 
-        SpringCache cache = caches.get(name);
+        NearCacheConfiguration<Object, Object> nearCacheCfg = dynamicNearCacheCfg != null ?
+            new NearCacheConfiguration<>(dynamicNearCacheCfg) : null;
 
-        if (cache == null) {
-            CacheConfiguration<Object, Object> cacheCfg = dynamicCacheCfg != null ?
-                new CacheConfiguration<>(dynamicCacheCfg) : new CacheConfiguration<>();
+        cacheCfg.setName(name);
 
-            NearCacheConfiguration<Object, Object> nearCacheCfg = dynamicNearCacheCfg != null ?
-                new NearCacheConfiguration<>(dynamicNearCacheCfg) : null;
+        IgniteCache<Object, Object> cache = nearCacheCfg != null
+            ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg)
+            : ignite.getOrCreateCache(cacheCfg);
 
-            cacheCfg.setName(name);
-
-            cache = new SpringCache(nearCacheCfg != null ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg) :
-                ignite.getOrCreateCache(cacheCfg), this);
-
-            SpringCache old = caches.putIfAbsent(name, cache);
-
-            if (old != null)
-                cache = old;
-        }
-
-        return cache;
+        return new SpringCache(new IgniteCacheProxyImpl<>(cache), this);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> getCacheNames() {
-        assert ignite != null;
-
-        return new ArrayList<>(caches.keySet());
-    }
-
-    /**
-     * Provides {@link org.apache.ignite.IgniteLock} for specified cache name and key.
-     *
-     * @param name cache name
-     * @param key  key
-     * @return {@link org.apache.ignite.IgniteLock}
-     */
-    IgniteLock getSyncLock(String name, Object key) {
+    @Override protected IgniteLock getSyncLock(String name, Object key) {
         int hash = Objects.hash(name, key);
 
         final int idx = hash % getLocksCount();
 
         return locks.computeIfAbsent(idx, i -> ignite.reentrantLock(SPRING_LOCK_NAME_PREFIX + idx, true, false, true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        if (!externalIgniteInstance)
+            ignite.close();
     }
 }

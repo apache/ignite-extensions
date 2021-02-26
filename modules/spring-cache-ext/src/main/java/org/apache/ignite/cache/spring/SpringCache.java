@@ -19,8 +19,8 @@ package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLock;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -32,16 +32,16 @@ class SpringCache implements Cache {
     private static final Object NULL = new NullValue();
 
     /** */
-    private final IgniteCache<Object, Object> cache;
+    private final IgniteCacheProxy<Object, Object> cache;
 
     /** */
-    private final SpringCacheManager mgr;
+    private final AbstractCacheManager mgr;
 
     /**
      * @param cache Cache.
      * @param mgr Manager
      */
-    SpringCache(IgniteCache<Object, Object> cache, SpringCacheManager mgr) {
+    SpringCache(IgniteCacheProxy<Object, Object> cache, AbstractCacheManager mgr) {
         assert cache != null;
 
         this.cache = cache;
@@ -55,7 +55,7 @@ class SpringCache implements Cache {
 
     /** {@inheritDoc} */
     @Override public Object getNativeCache() {
-        return cache;
+        return cache.delegate();
     }
 
     /** {@inheritDoc} */
@@ -66,7 +66,6 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T get(Object key, Class<T> type) {
         Object val = cache.get(key);
 
@@ -81,12 +80,11 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T get(final Object key, final Callable<T> valLdr) {
         Object val = cache.get(key);
 
         if (val == null) {
-            IgniteLock lock = mgr.getSyncLock(cache.getName(), key);
+            Lock lock = mgr.getSyncLock(cache.getName(), key);
 
             lock.lock();
 
@@ -154,11 +152,13 @@ class SpringCache implements Cache {
         return new SimpleValueWrapper(unwrapNull(val));
     }
 
+    /** */
     private static Object unwrapNull(Object val) {
         return NULL.equals(val) ? null : val;
     }
 
-    private <T> Object wrapNull(T val) {
+    /** */
+    private static <T> Object wrapNull(T val) {
         return val == null ? NULL : val;
     }
 

@@ -108,4 +108,26 @@ public interface IgniteCacheProxy<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return <tt>true</tt> if this map contains a mapping for the specified key.
      */
     public boolean containsKey(K key);
+
+    /** @return The name of the cache. */
+    public String getName();
+
+    /** @return Cache with read-through write-through behavior disabled. */
+    public IgniteCacheProxy<K, V> withSkipStore();
+
+    /**
+     * Atomically associates the specified key with the given value if it is not already associated with a value.
+     *
+     * @param key Key with which the specified value is to be associated.
+     * @param val Value to be associated with the specified key.
+     * @return Value that is already associated with the specified key, or {@code null} if no value was associated
+     * with the specified key and a value was set.
+     */
+    public V getAndPutIfAbsent(K key, V val);
+
+    /** Removes all of the mappings from this cache. */
+    public void removeAll();
+
+    /** @return Cache instance to which the current proxy delegates operations. */
+    public Object delegate();
 }

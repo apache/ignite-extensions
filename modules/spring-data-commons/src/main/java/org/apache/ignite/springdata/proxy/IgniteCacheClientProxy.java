@@ -99,4 +99,29 @@ public class IgniteCacheClientProxy<K, V> implements IgniteCacheProxy<K, V> {
     @Override public @NotNull Iterator<Cache.Entry<K, V>> iterator() {
         return cache.<Cache.Entry<K, V>>query(new ScanQuery<>()).getAll().iterator();
     }
+
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        return cache.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCacheProxy<K, V> withSkipStore() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndPutIfAbsent(K key, V val) {
+        return cache.getAndPutIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeAll() {
+        cache.removeAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientCache<K, V> delegate() {
+        return cache;
+    }
 }
