@@ -164,7 +164,7 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected SpringCache createCache(String name) {
+    @Override protected synchronized SpringCache createCache(String name) {
         ClientCacheConfiguration ccfg = dynamicCacheCfg == null ? new ClientCacheConfiguration() : dynamicCacheCfg;
 
         ClientCache<Object, Object> cache = cli.getOrCreateCache(ccfg.setName(name));
