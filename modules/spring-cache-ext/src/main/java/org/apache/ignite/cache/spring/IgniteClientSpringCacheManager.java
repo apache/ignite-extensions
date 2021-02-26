@@ -148,7 +148,7 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
 
     /** Gets dynamic Ignite cache configuration template. */
     public ClientCacheConfiguration getDynamicCacheConfiguration() {
-        return dynamicCacheCfg.setName(null); // To avoid copying the dynamic cache configuration each time as we only change its name.
+        return dynamicCacheCfg == null ? null : dynamicCacheCfg.setName(null); // To avoid copying the dynamic cache configuration each time as we only change its name.
     }
 
     /**
