@@ -17,10 +17,6 @@
 
 package org.apache.ignite.cache.spring;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
@@ -116,8 +112,8 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
     /** Ignite client configuration. */
     private ClientConfiguration cliCfg;
 
-    /** Cache configurations mapped to cache name. */
-    private Map<String, ClientCacheConfiguration> ccfgs;
+    /** Dynamic Ignite cache configuration template. */
+    private ClientCacheConfiguration dynamicCacheCfg;
 
     /** Flag that indicates whether Ignite client instance was set explicitly. */
     private boolean externalCliInstance;
@@ -150,44 +146,27 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
         return this;
     }
 
-    /** Gets Ignite cache configurations. */
-    public Collection<ClientCacheConfiguration> getCacheConfigurations() {
-        return ccfgs == null ? Collections.emptyList() : ccfgs.values();
+    /** Gets dynamic Ignite cache configuration template. */
+    public ClientCacheConfiguration getDynamicCacheConfiguration() {
+        return dynamicCacheCfg.setName(null); // To avoid copying the dynamic cache configuration each time as we only change its name.
     }
 
     /**
-     * Sets the Ignite cache configurations that will be used to start the Ignite cache with the name requested by
-     * the Spring Cache Framework if one does not exist. If configuration with the requested name
-     * is not found among the configurations specified by this method, the default configuration with the requested
-     * name will be used.
+     * Sets the Ignite cache configurations template that will be used to start the Ignite cache with the name
+     * requested by the Spring Cache Framework if one does not exist. Note that provided cache name will be erased and
+     * replaced with requested one.
      */
-    public IgniteClientSpringCacheManager setCacheConfigurations(ClientCacheConfiguration... cfgs) {
-        ccfgs = new HashMap<>();
-
-        for (ClientCacheConfiguration cfg : cfgs) {
-            String name = cfg.getName();
-
-            if (name == null)
-                throw new IllegalArgumentException("Cache name must not be null.");
-
-            ClientCacheConfiguration prev = ccfgs.putIfAbsent(name, cfg);
-
-            if (prev != null) {
-                throw new IllegalArgumentException("Multiple cache configurations with the same name are specified " +
-                    "[name=" + name + "]. Each cache configuration must have a unique name.");
-            }
-        }
+    public IgniteClientSpringCacheManager setDynamicCacheConfiguration(ClientCacheConfiguration dynamicCacheCfg) {
+        this.dynamicCacheCfg = dynamicCacheCfg;
 
         return this;
     }
 
     /** {@inheritDoc} */
     @Override protected SpringCache createCache(String name) {
-        ClientCacheConfiguration ccfg = ccfgs == null ? null : ccfgs.get(name);
+        ClientCacheConfiguration ccfg = dynamicCacheCfg == null ? new ClientCacheConfiguration() : dynamicCacheCfg;
 
-        ClientCache<Object, Object> cache = cli.getOrCreateCache(ccfg == null
-            ? new ClientCacheConfiguration().setName(name)
-            : ccfg);
+        ClientCache<Object, Object> cache = cli.getOrCreateCache(ccfg.setName(name));
 
         return new SpringCache(new IgniteCacheClientProxy<>(cache), this);
     }

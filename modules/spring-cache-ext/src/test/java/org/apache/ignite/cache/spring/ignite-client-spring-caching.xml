@@ -34,13 +34,10 @@
             </bean>
         </property>
 
-        <property name="cacheConfigurations">
-            <list>
-                <bean class="org.apache.ignite.client.ClientCacheConfiguration">
-                    <property name="name" value="dynamicCache"/>
-                    <property name="backups" value="2"/>
-                </bean>
-            </list>
+        <property name="dynamicCacheConfiguration">
+            <bean class="org.apache.ignite.client.ClientCacheConfiguration">
+                <property name="backups" value="2"/>
+            </bean>
         </property>
     </bean>
 

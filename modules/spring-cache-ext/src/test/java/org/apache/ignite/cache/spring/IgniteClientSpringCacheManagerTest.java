@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.spring;
 
-import java.util.Collection;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
@@ -120,35 +119,6 @@ public class IgniteClientSpringCacheManagerTest extends GridSpringCacheManagerAb
             "Neither client instance nor client configuration is specified.");
     }
 
-    /** Tests {@link IgniteClientSpringCacheManager} behaviour in case invalid cache configurations are specified. */
-    @Test
-    public void testInvalidCacheConfiguration() {
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> {
-                new IgniteClientSpringCacheManager().setCacheConfigurations(
-                    new ClientCacheConfiguration().setName("cache-name"),
-                    new ClientCacheConfiguration().setName("duplicate-cache-name"),
-                    new ClientCacheConfiguration().setName("duplicate-cache-name"));
-
-                return null;
-            },
-            IllegalArgumentException.class,
-            "Multiple cache configurations with the same name are specified [name=duplicate-cache-name]");
-
-        GridTestUtils.assertThrowsAnyCause(
-            log,
-            () -> {
-                new IgniteClientSpringCacheManager().setCacheConfigurations(
-                    new ClientCacheConfiguration().setName("cache-name"),
-                    new ClientCacheConfiguration());
-
-                return null;
-            },
-            IllegalArgumentException.class,
-            "Cache name must not be null");
-    }
-
     /** Tests {@link IgniteClientSpringCacheManager} configuration approach through XML file. */
     @Test
     public void testCacheManagerXmlConfiguration() {
@@ -165,13 +135,8 @@ public class IgniteClientSpringCacheManagerTest extends GridSpringCacheManagerAb
             assertNotNull(cli);
             assertEquals(1, cli.cluster().nodes().size());
 
-            Collection<ClientCacheConfiguration> cfgs = mgr.getCacheConfigurations();
+            ClientCacheConfiguration cfg = mgr.getDynamicCacheConfiguration();
 
-            assertEquals(1, cfgs.size());
-
-            ClientCacheConfiguration cfg = cfgs.iterator().next();
-
-            assertEquals(DYNAMIC_CACHE_NAME, cfg.getName());
             assertEquals(2, cfg.getBackups());
         }
     }
@@ -221,9 +186,7 @@ public class IgniteClientSpringCacheManagerTest extends GridSpringCacheManagerAb
         public AbstractCacheManager cacheManager(IgniteClient cli) {
             return new IgniteClientSpringCacheManager()
                 .setClientInstance(cli)
-                .setCacheConfigurations(new ClientCacheConfiguration()
-                    .setName(DYNAMIC_CACHE_NAME)
-                    .setBackups(2));
+                .setDynamicCacheConfiguration(new ClientCacheConfiguration().setBackups(2));
         }
 
         /** {@inheritDoc} */
