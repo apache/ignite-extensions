@@ -18,8 +18,8 @@
 package org.apache.ignite.transactions.spring;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.transactions.spring.GridSpringTransactionService.CacheProxy;
-import org.apache.ignite.transactions.spring.GridSpringTransactionService.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
@@ -31,8 +31,8 @@ public class GridSpringTransactionManagerSpringBeanSelfTest extends GridSpringTr
     /** */
     private GridSpringTransactionService service;
 
-    @Override public CacheProxy<Integer, String> cache() {
-        return new IgniteCacheProxy<>(ignite.cache(CACHE_NAME));
+    @Override public IgniteCacheProxy<Integer, String> cache() {
+        return new IgniteNodeCacheProxy<>(ignite.cache(CACHE_NAME));
     }
 
     @Override public GridSpringTransactionService service() {

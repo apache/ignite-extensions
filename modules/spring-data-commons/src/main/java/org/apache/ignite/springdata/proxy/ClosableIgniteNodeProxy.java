@@ -19,12 +19,12 @@ package org.apache.ignite.springdata.proxy;
 
 import org.apache.ignite.Ignite;
 
-/** Extends {@link IgniteProxyImpl} with the ability to close underlying Ignite instance. */
-public class ClosableIgniteProxyImpl extends IgniteProxyImpl implements AutoCloseable {
+/** Extends {@link IgniteNodeProxy} with the ability to close underlying Ignite instance. */
+public class ClosableIgniteNodeProxy extends IgniteNodeProxy implements AutoCloseable {
     /**
      * @param ignite Ignite instance.
      */
-    public ClosableIgniteProxyImpl(Ignite ignite) {
+    public ClosableIgniteNodeProxy(Ignite ignite) {
         super(ignite);
     }
 

@@ -22,9 +22,9 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.spring.GridSpringTransactionService.CacheProxy;
-import org.apache.ignite.transactions.spring.GridSpringTransactionService.ClientCacheProxy;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,8 +65,8 @@ public class IgniteClientSpringTransactionManagerTest extends GridSpringTransact
     }
 
     /** {@inheritDoc} */
-    @Override public CacheProxy<Integer, String> cache() {
-        return new ClientCacheProxy<>(cli.cache(CACHE_NAME));
+    @Override public IgniteCacheProxy<Integer, String> cache() {
+        return new IgniteClientCacheProxy<>(cli.cache(CACHE_NAME));
     }
 
     /** {@inheritDoc} */

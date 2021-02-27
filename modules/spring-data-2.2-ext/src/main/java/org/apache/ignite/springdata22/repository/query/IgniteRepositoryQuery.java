@@ -48,7 +48,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteCacheClientProxy;
+import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.springdata22.repository.config.DynamicQueryConfig;
@@ -346,7 +346,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             qryCursor = cache.query(iQry);
         }
         catch (IllegalArgumentException e) {
-            if (cache instanceof IgniteCacheClientProxy) {
+            if (cache instanceof IgniteClientCacheProxy) {
                 throw new IllegalStateException(String.format("Query of type %s is not supported by thin client." +
                     " Check %s#%s method configuration or use Ignite node instance to connect to the Ignite cluster.",
                     iQry.getClass().getSimpleName(), mtd.getDeclaringClass().getName(), mtd.getName()), e);
