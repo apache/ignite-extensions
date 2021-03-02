@@ -36,6 +36,8 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * set before manager use (see {@link #setClientInstance(IgniteClient),
  * {@link #setClientConfiguration(ClientConfiguration)}}).
  *
+ * Note that current manager implementation can be used only with Ignite since 2.11.0 version.
+ * For Ignite versions earlier than 2.11.0 use an {@link SpringCacheManager}.
  *
  * Note that Spring Cache synchronous mode ({@link Cacheable#sync}) is not supported by the current manager
  * implementation. Instead, use an {@link SpringCacheManager} that uses an Ignite thick client to connect to Ignite cluster.
@@ -148,8 +150,7 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
 
     /** Gets dynamic Ignite cache configuration template. */
     public ClientCacheConfiguration getDynamicCacheConfiguration() {
-        // To avoid copying the dynamic cache configuration each time as we only change its name.
-        return dynamicCacheCfg == null ? null : dynamicCacheCfg.setName(null);
+        return dynamicCacheCfg;
     }
 
     /**
@@ -164,8 +165,10 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized SpringCache createCache(String name) {
-        ClientCacheConfiguration ccfg = dynamicCacheCfg == null ? new ClientCacheConfiguration() : dynamicCacheCfg;
+    @Override protected SpringCache createCache(String name) {
+        ClientCacheConfiguration ccfg = dynamicCacheCfg == null
+            ? new ClientCacheConfiguration()
+            : new ClientCacheConfiguration(dynamicCacheCfg);
 
         ClientCache<Object, Object> cache = cli.getOrCreateCache(ccfg.setName(name));
 
