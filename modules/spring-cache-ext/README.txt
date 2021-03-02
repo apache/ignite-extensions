@@ -3,6 +3,11 @@ Apache Ignite Spring Cache Module
 
 Apache Ignite Spring Cache extension provides an integration with Spring Cache framework.
 
+There are two implementations of Apache Ignite Spring Cache Manager - org.apache.ignite.cache.spring.SpringCacheManager and
+org.apache.ignite.cache.spring.IgniteClientSpringCacheManager, that provide ability to use the Ignite thick or thin client to
+connect to the Ignite cluster and manage Ignite caches, respectively. Note, that org.apache.ignite.cache.spring.IgniteClientSpringCacheManager
+can be used only with Ignite since 2.11.0 version.
+
 Importing Spring Cache extension In Maven Project
 ----------------------------------------
 
