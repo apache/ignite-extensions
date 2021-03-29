@@ -22,6 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata20.examples.model.Person;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
@@ -40,12 +44,37 @@ public class SpringDataExample {
     private static PersonRepository repo;
 
     /**
-     * Executes the example.
+     * Execute examples involving both approaches to configure Spring Data repository access to an Ignite cluster:
+     *      through Ignite thin client and through Ignite node.
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        // Initializing Spring Data context and Ignite repository.
-        igniteSpringDataInit();
+        try (Ignite ignored = startIgniteNode()) {
+            // Ignite node instance is used to configure access to the Ignite cluster.
+            doSpringDataExample(SpringApplicationConfiguration.class);
+
+            // Ignite thin client instance is used to configure access to the Ignite cluster.
+            doSpringDataExample(IgniteClientSpringApplicationConfiguration.class);
+        }
+    }
+
+    /** Starts an Ignite node that simulates an Ignite cluster to which Spring Data repository will perform access. */
+    private static Ignite startIgniteNode() {
+        IgniteConfiguration cfg = new IgniteConfiguration()
+            .setPeerClassLoadingEnabled(true)
+            .setCacheConfiguration(new CacheConfiguration<Long, Person>("PersonCache")
+                .setIndexedTypes(Long.class, Person.class));
+
+        return Ignition.start(cfg);
+    }
+
+    /**
+     * Performs basic Spring Data repository operation.
+     *
+     * @param springAppCfg Class of Spring application configuration that will be used for Spring context initialization.
+     */
+    private static void doSpringDataExample(Class<?> springAppCfg) {
+        igniteSpringDataInit(springAppCfg);
 
         populateRepository();
 
@@ -65,12 +94,14 @@ public class SpringDataExample {
 
     /**
      * Initializes Spring Data and Ignite repositories.
+     *
+     * @param springAppCfg Class of Spring application configuration that will be used for Spring context initialization.
      */
-    private static void igniteSpringDataInit() {
+    private static void igniteSpringDataInit(Class<?> springAppCfg) {
         ctx = new AnnotationConfigApplicationContext();
 
         // Explicitly registering Spring configuration.
-        ctx.register(SpringApplicationConfiguration.class);
+        ctx.register(springAppCfg);
 
         ctx.refresh();
 
