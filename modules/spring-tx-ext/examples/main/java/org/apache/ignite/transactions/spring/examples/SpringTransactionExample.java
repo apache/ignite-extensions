@@ -113,7 +113,7 @@ public class SpringTransactionExample {
             return mgr;
         }
 
-        /** Service instance that uses declarative transaction management. */
+        /** Service instance that uses declarative transaction management when working with the Ignite cache. */
         @Bean
         public IgniteClientTransactionalService transactionalService(IgniteClient cli) {
             IgniteClientTransactionalService svc = new IgniteClientTransactionalService();

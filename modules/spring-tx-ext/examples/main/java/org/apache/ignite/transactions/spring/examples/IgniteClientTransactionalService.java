@@ -41,7 +41,14 @@ public class IgniteClientTransactionalService {
      * operation, it is rolled back.
      */
     @Transactional(isolation = REPEATABLE_READ)
-    public void transferFundsWithBroker(String firstEmitter, String secondEmitter, String recipient, String broker, int funds, int fee) {
+    public void transferFundsWithBroker(
+        String firstEmitter,
+        String secondEmitter,
+        String recipient,
+        String broker,
+        int funds,
+        int fee
+    ) {
         transferFunds(firstEmitter, broker, funds);
 
         transferFunds(secondEmitter, broker, funds);
