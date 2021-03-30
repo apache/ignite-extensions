@@ -24,7 +24,7 @@ To collect statistics in runtime and to build the performance report follow:
 
         performance-statistics/build-report.sh path_to_files
 
-    to build the performance report. It will be created in the new directory under the performance statistics files path:
+    to build the performance report. It will be created in the new directory under the performance statistics files:
 
         path_to_files/report_yyyy-MM-dd_HH-mm-ss/
 
@@ -32,13 +32,13 @@ To collect statistics in runtime and to build the performance report follow:
 
 Print statistics
 ---------------------------
-Ignite provides a tool to print statistics to console or file in JSON format.
+Ignite provides a tool to print statistics to a console or to a file in JSON format.
 
 Run the script from the release package of the tool to print statistics:
 
     performance-statistics-tool/print-statistics.sh path_to_files
 
-where `path_to_files` is a path to performance statistics file or files directory.
+Note that `path_to_files` is a path to the performance statistics file or files directory.
 
 The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
 help command:
