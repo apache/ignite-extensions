@@ -5,13 +5,14 @@ Apache Ignite Performance Statistics Module 1.0
 -------------------------------------
 
 * Added the tool to build the cluster performance report
-* Added the utility to print performance statistics operations to a console or to a file in JSON format.
+* Added the utility to print performance statistics operations to a console or to a file in JSON format
 
 
 Apache Ignite Spring Data Modules 1.0
 -------------------------------------
 
-* Added the ability to connect to the Ignite cluster through the Ignite thin client for the Spring Data extensions.
+* Added the ability to connect to the Ignite cluster through the Ignite thin client for the Spring Data extensions
+* Fixed closing of Spring Data Ignite resources after destroying the Spring context if they were automatically started by the manager
 
 The following integrations were migrated to the Apache Ignite Extensions repository:
 * Spring Data 2.2 extension
@@ -22,7 +23,7 @@ The following integrations were migrated to the Apache Ignite Extensions reposit
 Apache Ignite Spring Transactions Module 1.0
 -------------------------------------
 
-* Added the ability to connect to the Ignite cluster through the Ignite thin client.
+* Added the ability to connect to the Ignite cluster through the Ignite thin client
 
 The following integration was migrated to the Apache Ignite Extensions repository:
 * Spring Transactions extension
