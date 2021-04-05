@@ -4,20 +4,19 @@ Apache Ignite Extensions Release Notes
 Apache Ignite Performance Statistics Module 1.0
 -------------------------------------
 
-* Provide the tool to build cluster performance report
-* Provide the utility to output performance statistics operations to the console
+* Added the tool to build the cluster performance report
+* Added the utility to output performance statistics operations to the console
 
 
 Apache Ignite Spring Data Modules 1.0
 -------------------------------------
 
+* Added the ability to connect to the Ignite cluster through the Ignite thin client for the Spring Data extensions.
+
 The following integrations were migrated to the Apache Ignite Extensions repository:
 * Spring Data 2.2 extension
 * Spring Data 2.0 extension
 * Spring Data extension
-
-Spring Data Commons extension:
-* Add thin client support to ignite-spring-data
 
 
 Apache Ignite Spring Transactions Module 1.0
