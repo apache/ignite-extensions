@@ -5,7 +5,7 @@ Apache Ignite Performance Statistics Module 1.0
 -------------------------------------
 
 * Added the tool to build the cluster performance report
-* Added the utility to output performance statistics operations to the console
+* Added the utility to output performance statistics operations to a console or to a file in JSON format.
 
 
 Apache Ignite Spring Data Modules 1.0
