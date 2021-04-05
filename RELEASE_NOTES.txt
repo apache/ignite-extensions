@@ -10,16 +10,18 @@ Apache Ignite Performance Statistics Module 1.0
 Apache Ignite Spring Data Modules 1.0
 -------------------------------------
 
-The following integrations were migrated the Apache Ignite Extensions repository:
+The following integrations were migrated to the Apache Ignite Extensions repository:
 * Spring Data 2.2 extension
 * Spring Data 2.0 extension
 * Spring Data extension
-* Spring Data Commons extension
+
+Spring Data Commons extension:
+* Add thin client support to ignite-spring-data
 
 Apache Ignite Spring Transactions Module 1.0
 -------------------------------------
 
-The following integrations were migrated the Apache Ignite Extensions repository:
+The following integration was migrated to the Apache Ignite Extensions repository:
 * Spring Transactions extension
 
 
