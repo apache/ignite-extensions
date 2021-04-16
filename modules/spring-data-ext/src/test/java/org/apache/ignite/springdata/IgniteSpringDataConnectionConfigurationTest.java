@@ -20,6 +20,7 @@ package org.apache.ignite.springdata;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -32,6 +33,7 @@ import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
+import org.apache.ignite.springdata.repository.support.IgniteProxyFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -74,6 +76,30 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @Test
     public void testRepositoryWithClientConfiguration() {
         checkRepositoryConfiguration(ClientConfigurationApplication.class);
+    }
+
+    /** Tests repository configuration in case {@link Ignite} with non default is used to access the Ignite cluster. */
+    @Test
+    public void testRepositoryWithNonDefaultIgniteBean() {
+        checkRepositoryConfiguration(NonDefaultIgniteBeanApplication.class);
+    }
+
+    /** Tests repository configuration in case {@link IgniteClient} with non default name is used to access the Ignite cluster. */
+    @Test
+    public void testRepositoryWithNonDefaultIgniteClientBean() {
+        checkRepositoryConfiguration(NonDefaultIgniteClientBeanApplication.class);
+    }
+
+    /** Tests repository configuration in case {@link ClientConfiguration} with non default name is used to access the Ignite cluster. */
+    @Test
+    public void testRepositoryWithNonDefaultIgniteClientConfigurationBean() {
+        checkRepositoryConfiguration(NonDefaultIgniteClientConfigurationBeanApplication.class);
+    }
+
+    /** Tests repository configuration in case {@link IgniteConfiguration} with non default name is used to access the Ignite cluster. */
+    @Test
+    public void testRepositoryWithNonDefaultIgniteConfigurationBean() {
+        checkRepositoryConfiguration(NonDefaultIgniteConfigurationBeanApplication.class);
     }
 
     /**
@@ -195,6 +221,62 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         @Bean
         public ClientConfiguration igniteCfg() {
             return new ClientConfiguration().setAddresses(LOCAL_HOST + ':' + CLI_CONN_PORT);
+        }
+    }
+
+    /**
+     * Spring Application configuration for repository testing in case {@link Ignite} bean with name different from
+     * {@link IgniteProxyFactory#IGNITE_INSTANCE_BEAN_NAME} is used for accessing the cluster.
+     */
+    @Configuration
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    public static class NonDefaultIgniteBeanApplication {
+        /** Ignite bean. */
+        @Bean
+        public Ignite someIgnite() {
+            return Ignition.start(getIgniteConfiguration("test", false));
+        }
+    }
+
+    /**
+     * Spring Application configuration for repository testing in case {@link IgniteClient} bean with name different from
+     * {@link IgniteProxyFactory#IGNITE_INSTANCE_BEAN_NAME} is used for accessing the cluster.
+     */
+    @Configuration
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    public static class NonDefaultIgniteClientBeanApplication {
+        /** Ignite client bean. */
+        @Bean
+        public IgniteClient someIgnite() {
+            return Ignition.startClient(new ClientConfiguration().setAddresses(LOCAL_HOST + ':' + CLI_CONN_PORT));
+        }
+    }
+
+    /**
+     * Spring Application configuration for repository testing in case {@link ClientConfiguration} bean with name different from
+     * {@link IgniteProxyFactory#IGNITE_CONFIG_BEAN_NAME} is used for accessing the cluster.
+     */
+    @Configuration
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    public static class NonDefaultIgniteClientConfigurationBeanApplication {
+        /** Ignite client configuration bean. */
+        @Bean
+        public ClientConfiguration someCfg() {
+            return new ClientConfiguration().setAddresses(LOCAL_HOST + ':' + CLI_CONN_PORT);
+        }
+    }
+
+    /**
+     * Spring Application configuration for repository testing in case {@link IgniteConfiguration} bean with name different from
+     * {@link IgniteProxyFactory#IGNITE_CONFIG_BEAN_NAME} is used for accessing the cluster.
+     */
+    @Configuration
+    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    public static class NonDefaultIgniteConfigurationBeanApplication {
+        /** Ignite client configuration bean. */
+        @Bean
+        public IgniteConfiguration someCfg() {
+            return getIgniteConfiguration("test", false);
         }
     }
 

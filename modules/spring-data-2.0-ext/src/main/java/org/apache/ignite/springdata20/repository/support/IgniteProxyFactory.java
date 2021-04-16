@@ -19,8 +19,14 @@ package org.apache.ignite.springdata20.repository.support;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
 import org.springframework.beans.BeansException;
@@ -103,29 +109,25 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
     private IgniteProxy createIgniteProxy(Class<?> repoInterface) {
         RepositoryConfig repoCfg = getRepositoryConfiguration(repoInterface);
 
-        Object connCfg;
-
-        try {
-            connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteInstance()));
-        }
-        catch (BeansException ex) {
-            try {
-                connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteCfg()));
-            }
-            catch (BeansException ex2) {
-                try {
-                    connCfg = ctx.getBean(evaluateExpression(repoCfg.igniteSpringCfgPath()), String.class);
-                }
-                catch (BeansException ex3) {
-                    throw new IllegalArgumentException("Invalid configuration for repository " +
-                        repoInterface.getName() + ". No beans were found that provide connection configuration to the" +
-                        " Ignite cluster. Check \"igniteInstance\", \"igniteCfg\", \"igniteSpringCfgPath\" parameters" +
-                        " of " + RepositoryConfig.class.getName() + " repository annotation.");
-                }
-            }
-        }
-
-        return IgniteProxy.of(connCfg);
+        return Stream.<BeanFinder>of(
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteInstance())),
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteCfg())),
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteSpringCfgPath()), String.class),
+            () -> ctx.getBean(Ignite.class),
+            () -> ctx.getBean(IgniteClient.class),
+            () -> ctx.getBean(IgniteConfiguration.class),
+            () -> ctx.getBean(ClientConfiguration.class)
+        ).map(BeanFinder::getBean)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(IgniteProxy::of)
+            .orElseThrow(() -> {
+                return new IllegalArgumentException("Invalid configuration for repository " +
+                    repoInterface.getName() + ". No beans were found that provide connection configuration to the" +
+                    " Ignite cluster. Check \"igniteInstance\", \"igniteCfg\", \"igniteSpringCfgPath\" parameters" +
+                    " of " + RepositoryConfig.class.getName() + " repository annotation or provide Ignite, IgniteClient, " +
+                    " ClientConfiguration or IgniteConfiguration bean to application context.");
+            });
     }
 
     /**
@@ -136,5 +138,30 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
      */
     private String evaluateExpression(String spelExpression) {
         return (String)expressionResolver.evaluate(spelExpression, beanExpressionCtx);
+    }
+
+    /**
+     * Helper interface that wraps getBean method.
+     */
+    @FunctionalInterface
+    private interface BeanFinder {
+        /**
+         * Get bean.
+         * @return Bean or null if {@link BeansException} was thrown.
+         */
+        default Object getBean() {
+            try {
+                return get();
+            } catch (BeansException ex) {
+                return null;
+            }
+        }
+
+        /**
+         * Get bean.
+         * @return Bean.
+         * @throws BeansException If bean was not found.
+         */
+        Object get() throws BeansException;
     }
 }

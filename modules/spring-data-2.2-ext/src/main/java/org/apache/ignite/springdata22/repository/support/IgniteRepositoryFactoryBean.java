@@ -34,8 +34,8 @@ import org.springframework.data.repository.core.support.RepositoryFactorySupport
  * The {@link org.apache.ignite.springdata22.repository.config.RepositoryConfig} requires to define one of the
  * parameters below in your Spring application configuration in order to get an access to Apache Ignite cluster:
  * <ul>
- * <li>{@link Ignite} instance bean named "igniteInstance" by default</li>
- * <li>{@link IgniteConfiguration} bean named "igniteCfg" by default</li>
+ * <li>{@link Ignite} instance bean</li>
+ * <li>{@link IgniteConfiguration} bean</li>
  * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath" by default</li>
  * <ul/>
  *
