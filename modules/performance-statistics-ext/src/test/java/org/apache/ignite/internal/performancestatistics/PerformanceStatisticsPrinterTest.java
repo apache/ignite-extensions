@@ -92,10 +92,12 @@ public class PerformanceStatisticsPrinterTest {
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
             writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
+            writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            writer.pagesWriteThrottle(0, 0);
         });
 
         List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
-            TASK, JOB);
+            TASK, JOB, CHECKPOINT, PAGES_WRITE_THROTTLE);
 
         checkOperationFilter(null, expOps);
         checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START));
