@@ -145,6 +145,8 @@
         <zookeeper.version>3.5.5</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
+        <surefire.version>3.0.0-M4</surefire.version>
+        <xstream.version>1.4.8</xstream.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
@@ -368,6 +370,14 @@
                                 <title>Ignite Development Utils</title>
                                 <packages>org.apache.ignite.development.utils*</packages>
                             </group>
+                            <group>
+                                <title>Spring Transactions Integration</title>
+                                <packages>org.apache.ignite.transactions.spring*</packages>
+                            </group>
+                            <group>
+                                <title>Spring Cache Integration</title>
+                                <packages>org.apache.ignite.cache.spring*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[
@@ -470,7 +480,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M3</version>
+                <version>${surefire.version}</version>
                 <configuration>
                     <forkCount>0</forkCount>
                 </configuration>
@@ -878,7 +888,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>3.0.0-M3</version>
+                        <version>${surefire.version}</version>
                         <configuration>
                             <forkCount>1</forkCount>
                         </configuration>

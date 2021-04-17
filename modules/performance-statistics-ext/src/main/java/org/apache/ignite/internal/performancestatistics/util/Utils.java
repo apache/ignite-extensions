@@ -29,7 +29,7 @@ public class Utils {
     public static final ObjectMapper MAPPER = new ObjectMapper();
 
     /** */
-    private final static char[] HC = "0123456789ABCDEF".toCharArray();
+    private static final char[] HC = "0123456789ABCDEF".toCharArray();
 
     /** Creates empty object for given value if absent. */
     public static ObjectNode createObjectIfAbsent(String val, ObjectNode json) {

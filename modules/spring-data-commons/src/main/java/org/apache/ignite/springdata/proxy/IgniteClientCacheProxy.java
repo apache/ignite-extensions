@@ -31,12 +31,12 @@ import org.apache.ignite.client.ClientException;
 import org.jetbrains.annotations.NotNull;
 
 /** Implementation of {@link IgniteCacheProxy} that provides access to Ignite cache through {@link ClientCache} instance. */
-public class IgniteCacheClientProxy<K, V> implements IgniteCacheProxy<K, V> {
+public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     /** {@link ClientCache} instance to which operations are delegated. */
     private final ClientCache<K, V> cache;
 
     /** */
-    public IgniteCacheClientProxy(ClientCache<K, V> cache) {
+    public IgniteClientCacheProxy(ClientCache<K, V> cache) {
         this.cache = cache;
     }
 
@@ -82,7 +82,7 @@ public class IgniteCacheClientProxy<K, V> implements IgniteCacheProxy<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteCacheProxy<K, V> withExpiryPolicy(ExpiryPolicy expirePlc) {
-        return new IgniteCacheClientProxy<>(cache.withExpirePolicy(expirePlc));
+        return new IgniteClientCacheProxy<>(cache.withExpirePolicy(expirePlc));
     }
 
     /** {@inheritDoc} */
@@ -98,5 +98,30 @@ public class IgniteCacheClientProxy<K, V> implements IgniteCacheProxy<K, V> {
     /** {@inheritDoc} */
     @Override public @NotNull Iterator<Cache.Entry<K, V>> iterator() {
         return cache.<Cache.Entry<K, V>>query(new ScanQuery<>()).getAll().iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getName() {
+        return cache.getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCacheProxy<K, V> withSkipStore() {
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndPutIfAbsent(K key, V val) {
+        return cache.getAndPutIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeAll() {
+        cache.removeAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientCache<K, V> delegate() {
+        return cache;
     }
 }

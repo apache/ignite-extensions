@@ -17,6 +17,12 @@
 
 package org.apache.ignite.springdata.repository.support;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
@@ -60,28 +66,49 @@ public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> impleme
 
     /** {@inheritDoc} */
     @Override protected IgniteProxy createInstance() {
-        Object connCfg;
+        return Stream.<BeanFinder>of(
+            () -> ctx.getBean(IGNITE_INSTANCE_BEAN_NAME),
+            () -> ctx.getBean(IGNITE_CONFIG_BEAN_NAME),
+            () -> ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class),
+            () -> ctx.getBean(Ignite.class),
+            () -> ctx.getBean(IgniteClient.class),
+            () -> ctx.getBean(IgniteConfiguration.class),
+            () -> ctx.getBean(ClientConfiguration.class)
+        ).map(BeanFinder::getBean)
+            .filter(Objects::nonNull)
+            .findFirst()
+            .map(IgniteProxy::of)
+            .orElseThrow(() -> {
+                return new IllegalArgumentException("No beans were found that provide connection configuration to" +
+                    " the Ignite cluster. One of the beans with the following names is required : \"" +
+                    IGNITE_INSTANCE_BEAN_NAME + "\", \"" + IGNITE_CONFIG_BEAN_NAME + "\" or \"" +
+                    IGNITE_SPRING_CONFIG_PATH_BEAN_NAME + "\". You can also provide Ignite, IgniteClient," +
+                    " IgniteConfiguration or ClientConfiguration bean to application context.");
+            });
+    }
 
-        try {
-            connCfg = ctx.getBean(IGNITE_INSTANCE_BEAN_NAME);
-        }
-        catch (BeansException ex) {
+    /**
+     * Helper interface that wraps getBean method.
+     */
+    @FunctionalInterface
+    private interface BeanFinder {
+        /**
+         * Get bean.
+         * @return Bean or null if {@link BeansException} was thrown.
+         */
+        default Object getBean() {
             try {
-                connCfg = ctx.getBean(IGNITE_CONFIG_BEAN_NAME);
-            }
-            catch (BeansException ex2) {
-                try {
-                    connCfg = ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class);
-                }
-                catch (BeansException ex3) {
-                    throw new IllegalArgumentException("No beans were found that provide connection configuration to" +
-                        " the Ignite cluster. One of the beans with the following names is required : \"" +
-                        IGNITE_INSTANCE_BEAN_NAME + "\", \"" + IGNITE_CONFIG_BEAN_NAME + "\" or \"" +
-                        IGNITE_SPRING_CONFIG_PATH_BEAN_NAME + "\".");
-                }
+                return get();
+            } catch (BeansException ex) {
+                return null;
             }
         }
 
-        return IgniteProxy.of(connCfg);
+        /**
+         * Get bean.
+         * @return Bean.
+         * @throws BeansException If bean was not found.
+         */
+        Object get() throws BeansException;
     }
 }

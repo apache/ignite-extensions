@@ -15,37 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.internal.transactions.proxy;
 
-import java.util.Objects;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.client.ClientTransactions;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-/** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link Ignite} instance. */
-public class IgniteProxyImpl implements IgniteProxy {
-    /** {@link Ignite} instance to which operations are delegated. */
-    protected final Ignite ignite;
+/**
+ *  Represents {@link TransactionProxyFactory} implementation that uses Ignite thin client transaction facade to start
+ *  new transaction.
+ */
+public class ClientTransactionProxyFactory implements TransactionProxyFactory {
+    /** */
+    private final ClientTransactions txs;
 
     /** */
-    public IgniteProxyImpl(Ignite ignite) {
-        this.ignite = ignite;
+    public ClientTransactionProxyFactory(ClientTransactions txs) {
+        this.txs = txs;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name) {
-        return new IgniteCacheProxyImpl<>(ignite.getOrCreateCache(name));
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
-        IgniteCache<K, V> cache = ignite.cache(name);
-
-        return cache == null ? null : new IgniteCacheProxyImpl<>(cache);
-    }
-
-    /** @return {@link Ignite} instance to which operations are delegated. */
-    public Ignite delegate() {
-        return ignite;
+    @Override public TransactionProxy txStart(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        long timeout
+    ) {
+        return new ClientTransactionProxy(txs.txStart(concurrency, isolation, timeout));
     }
 
     /** {@inheritDoc} */
@@ -56,11 +51,11 @@ public class IgniteProxyImpl implements IgniteProxy {
         if (other == null || getClass() != other.getClass())
             return false;
 
-        return Objects.equals(ignite, ((IgniteProxyImpl)other).ignite);
+        return txs.equals(((ClientTransactionProxyFactory)other).txs);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return ignite.hashCode();
+        return txs.hashCode();
     }
 }

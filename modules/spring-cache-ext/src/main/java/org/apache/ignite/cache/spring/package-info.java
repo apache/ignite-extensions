@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+/**
+ * <!-- Package description. -->
+ * Contains implementation of Spring cache abstraction and <code>@Cacheable</code> annotation.
+ */
 
-import org.apache.ignite.Ignite;
-
-/** Extends {@link IgniteProxyImpl} with the ability to close underlying Ignite instance. */
-public class ClosableIgniteProxyImpl extends IgniteProxyImpl implements AutoCloseable {
-    /**
-     * @param ignite Ignite instance.
-     */
-    public ClosableIgniteProxyImpl(Ignite ignite) {
-        super(ignite);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        ignite.close();
-    }
-}
+package org.apache.ignite.cache.spring;
