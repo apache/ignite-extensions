@@ -48,7 +48,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
@@ -90,10 +92,12 @@ public class PerformanceStatisticsPrinterTest {
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
             writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
+            writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            writer.pagesWriteThrottle(0, 0);
         });
 
         List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
-            TASK, JOB);
+            TASK, JOB, CHECKPOINT, PAGES_WRITE_THROTTLE);
 
         checkOperationFilter(null, expOps);
         checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START));
@@ -140,6 +144,8 @@ public class PerformanceStatisticsPrinterTest {
                 writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, startTime, 0, true);
                 writer.task(new IgniteUuid(NODE_ID, 0), "", startTime, 0, 0);
                 writer.job(new IgniteUuid(NODE_ID, 0), 0, startTime, 0, true);
+                writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, startTime, 0, 0, 0);
+                writer.pagesWriteThrottle(startTime, 0);
             }
         });
 
@@ -153,7 +159,8 @@ public class PerformanceStatisticsPrinterTest {
 
     /** */
     private void checkStartTimeFilter(Long fromArg, Long toArg, List<Long> expTimes) throws Exception {
-        List<OperationType> opsWithStartTime = F.asList(CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, TASK, JOB);
+        List<OperationType> opsWithStartTime = F.asList(CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, TASK, JOB, CHECKPOINT,
+            PAGES_WRITE_THROTTLE);
 
         List<String> args = new LinkedList<>();
 

@@ -78,7 +78,7 @@ public class IgniteClientAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean
     @ConfigurationProperties(prefix = IGNITE_CLIENT_PROPS_PREFIX)
-    public ClientConfiguration clientConfiguration(IgniteClientConfigurer configurer) {
+    public ClientConfiguration igniteCfg(IgniteClientConfigurer configurer) {
         ClientConfiguration cfg = new ClientConfiguration();
 
         configurer.accept(cfg);
