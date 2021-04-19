@@ -264,14 +264,16 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
-        if (skip(PAGES_WRITE_THROTTLE, endTime - duration))
+        long startTime = endTime - duration;
+
+        if (skip(PAGES_WRITE_THROTTLE, startTime))
             return;
 
         ps.print("{\"op\":\"" + PAGES_WRITE_THROTTLE);
         ps.print("\",\"nodeId\":\"");
         ps.print(nodeId);
-        ps.print("\",\"endTime\":");
-        ps.print(endTime);
+        ps.print("\",\"startTime\":");
+        ps.print(startTime);
         ps.print(",\"duration\":");
         ps.print(duration);
         ps.println("}");

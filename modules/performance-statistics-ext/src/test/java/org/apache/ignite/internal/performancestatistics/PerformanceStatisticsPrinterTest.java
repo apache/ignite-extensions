@@ -185,12 +185,7 @@ public class PerformanceStatisticsPrinterTest {
             OperationType op = OperationType.valueOf(json.get("op").asText());
 
             if (opsWithStartTime.contains(op)) {
-                long startTime;
-
-                if (op == PAGES_WRITE_THROTTLE)
-                    startTime = json.get("endTime").asLong() - json.get("duration").asLong();
-                else
-                    startTime = json.get("startTime").asLong();
+                long startTime = json.get("startTime").asLong();
 
                 assertTrue("Unexpected startTime: " + startTime, opsByTime.containsKey(startTime));
                 assertTrue("Unexpected operation: " + op, opsByTime.get(startTime).remove(op));
