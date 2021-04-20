@@ -193,6 +193,7 @@
                                 </copy>
                                 <copy todir="${project.build.directory}/${release.package}">
                                     <fileset file="${basedir}/README.txt"/>
+                                    <filelist dir="${basedir}/../../" files="LICENSE,NOTICE"/>
                                 </copy>
 
                                 <chmod dir="${project.build.directory}/${release.package}"
