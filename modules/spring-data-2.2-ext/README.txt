@@ -22,7 +22,7 @@ Importing Spring Data 2.2 extension In Maven Project
 ----------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Spring Data 2.2 extension
-dependency like this (replace '${ignite-spring-data_2.2-ext.version}' with actual version of Ignite Spring Data 2.2
+dependency like this (replace '${ignite-spring-data-2.2-ext.version}' with actual version of Ignite Spring Data 2.2
 extension you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -34,8 +34,8 @@ extension you are interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data_2.2-ext</artifactId>
-            <version>${ignite-spring-data_2.2-ext.version}</version>
+            <artifactId>ignite-spring-data-2.2-ext</artifactId>
+            <version>${ignite-spring-data-2.2-ext.version}</version>
         </dependency>
         ...
     </dependencies>
