@@ -219,33 +219,21 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void checkpoint(
-        UUID nodeid,
-        long beforeLockDuration,
-        long lockWaitDuration,
-        long listenersExecDuration,
-        long markDuration,
-        long lockHoldDuration,
-        long pagesWriteDuration,
-        long fsyncDuration,
-        long walCpRecordFsyncDuration,
-        long writeCpEntryDuration,
-        long splitAndSortCpPagesDuration,
-        long totalDuration,
-        long cpStartTime,
-        int pagesSize,
-        int dataPagesWritten,
-        int cowPagesWritten
-    ) {
+    @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
+        long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
+        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
+        long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
         if (skip(CHECKPOINT, cpStartTime))
             return;
 
         ps.print("{\"op\":\"" + CHECKPOINT);
-        ps.print("\",\"beforeLockDuration\":\"");
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"beforeLockDuration\":");
         ps.print(beforeLockDuration);
-        ps.print("\",\"lockWaitDuration\":\"");
+        ps.print(",\"lockWaitDuration\":");
         ps.print(lockWaitDuration);
-        ps.print("\",\"listenersExecDuration\":");
+        ps.print(",\"listenersExecDuration\":");
         ps.print(listenersExecDuration);
         ps.print(",\"markDuration\":");
         ps.print(markDuration);
@@ -263,7 +251,7 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(splitAndSortCpPagesDuration);
         ps.print(",\"totalDuration\":");
         ps.print(totalDuration);
-        ps.print(",\"cpStartTime\":");
+        ps.print(",\"startTime\":");
         ps.print(cpStartTime);
         ps.print(",\"pagesSize\":");
         ps.print(pagesSize);
@@ -276,15 +264,19 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
-        if (skip(PAGES_WRITE_THROTTLE, endTime))
+        long startTime = endTime - duration;
+
+        if (skip(PAGES_WRITE_THROTTLE, startTime))
             return;
 
         ps.print("{\"op\":\"" + PAGES_WRITE_THROTTLE);
-        ps.print("\",\"endTime\":\"");
-        ps.print(endTime);
-        ps.print("\",\"duration\":");
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"startTime\":");
+        ps.print(startTime);
+        ps.print(",\"duration\":");
         ps.print(duration);
-        ps.println("\"}");
+        ps.println("}");
     }
 
     /** @return {@code True} if the operation should be skipped. */

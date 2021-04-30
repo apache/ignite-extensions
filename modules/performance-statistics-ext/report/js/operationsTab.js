@@ -19,7 +19,7 @@ const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_A
     "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
-    "getAll", "putAll", "removeAll", "invoke", "invokeAll", "lock"];
+    "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
     CACHE_GET: "#007bff",
@@ -68,11 +68,11 @@ function drawCacheCharts() {
     let nodeId = searchNodesCPsSelect.val()
 
     $.each(CACHE_OPERATIONS, function (k, opName) {
-            opsCountPerType[opName] = 0;
+        opsCountPerType[opName] = 0;
 
         var chartId = opName + "OperationChart";
 
-            $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
+        $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
             let options = {
                 type: 'line',
@@ -249,7 +249,6 @@ function prepareCacheDatasets(opName) {
     sortByKeyAsc(datasetData, "x");
 
     var dataset = {
-        type: 'line',
         data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,
@@ -281,7 +280,7 @@ function drawCacheBar() {
         colors[k] = CACHE_OPERATIONS_COLORS[opName];
     });
 
-    let options = {
+    new Chart(document.getElementById("operationBarChart"), {
         type: 'bar',
         data: {
             datasets: [{
@@ -312,9 +311,7 @@ function drawCacheBar() {
             },
             animation: false,
         }
-    }
-
-    new Chart(document.getElementById("operationBarChart"), options);
+    });
 }
 
 function getThrottlingDataset(nodeId) {
@@ -334,7 +331,7 @@ function getThrottlingDataset(nodeId) {
 
     sortByKeyAsc(datasetData, "x");
 
-    throttlesDataset = {
+    let dataset = {
         type: 'bubble',
         data: datasetData,
         label: LABELS.throttling,
@@ -345,7 +342,7 @@ function getThrottlingDataset(nodeId) {
     };
 
 
-    return throttlesDataset
+    return dataset
 }
 
 
