@@ -74,7 +74,7 @@ function drawCacheCharts() {
 
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
-            let options = {
+        let chart = new Chart(document.getElementById(chartId), {
                 type: 'line',
                 data: {
                     datasets: prepareCacheDatasets(opName),
@@ -87,6 +87,24 @@ function drawCacheCharts() {
                     plugins: {
                         legend: {
                             display: true,
+                            onClick: (e, legendItem, legend) => {
+                                let index = legendItem.datasetIndex;
+
+                                if (legendItem.text === LABELS.checkpoints){
+                                    if(legendItem.hidden)
+                                        chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+                                    else
+                                        chart.options.annotations = []
+                                }
+
+                                let ci = legend.chart;
+
+                                let meta = ci.getDatasetMeta(index)
+
+                                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null
+
+                                ci.update();
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -143,9 +161,7 @@ function drawCacheCharts() {
                     },
                     animation: false
                 }
-            }
-
-            let chart = new Chart(document.getElementById(chartId), options)
+            })
 
             chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
         }
@@ -263,10 +279,23 @@ function prepareCacheDatasets(opName) {
 
     let nodeIdCP = searchNodesCPsSelect.val()
 
-    if (nodeIdCP)
+    if (nodeIdCP) {
+        datasets.push(getCheckpointDataset())
         datasets.push(getThrottlingDataset(nodeIdCP))
+    }
 
     return datasets;
+}
+
+function getCheckpointDataset() {
+    return {
+        type: 'bar',
+        data: [],
+        label: "Checkpoints",
+        backgroundColor: CHECKPOINT_COLORS["CHECKPOINT"],
+        borderColor: CHECKPOINT_COLORS["CHECKPOINT"],
+        pointBackgroundColor: CHECKPOINT_COLORS["CHECKPOINT"],
+    }
 }
 
 function drawCacheBar() {
@@ -344,7 +373,6 @@ function getThrottlingDataset(nodeId) {
 
     return dataset
 }
-
 
 buildSelectCaches(searchCachesSelect, drawCacheCharts, 'All nodes');
 buildSelectNodes(searchNodesSelect, drawCacheCharts, 'All nodes');

@@ -21,9 +21,9 @@ Chart.register({
     afterDraw: function (chart) {
         if (chart.data.datasets.length === 0 || chart.data.datasets.every(val => val.data.length === 0)) {
             // No data is present
-            var ctx = chart.chart.ctx;
-            var width = chart.chart.width;
-            var height = chart.chart.height;
+            var ctx = chart.ctx;
+            var width = chart.width;
+            var height = chart.height;
 
             ctx.save();
             ctx.textAlign = 'center';

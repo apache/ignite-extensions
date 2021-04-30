@@ -39,14 +39,34 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
-        new Chart(document.getElementById(txChartId), {
+        let chart = new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
                 datasets: prepareTxDatasets(nodeId, cacheId, opName)
             },
             options: {
-                annotations: getCheckointsBoxes(nodeIdCP),
                 plugins: {
+                    legend: {
+                        display: true,
+                        onClick: (e, legendItem, legend) => {
+                            let index = legendItem.datasetIndex;
+
+                            if (legendItem.text === LABELS.checkpoints){
+                                if(legendItem.hidden)
+                                    chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+                                else
+                                    chart.options.annotations = []
+                            }
+
+                            let ci = legend.chart;
+
+                            let meta = ci.getDatasetMeta(index)
+
+                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null
+
+                            ci.update();
+                        }
+                    },
                     tooltip: {
                         callbacks: {
                             label: (i) => getLabel(i),
@@ -103,6 +123,8 @@ function drawTxCharts() {
                 animation: false
             }
         })
+
+        chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');
@@ -192,7 +214,12 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
 
     datasets.push(dataset);
 
-    datasets.push(getThrottlingDataset(txSearchNodesCPSelect.val()))
+    let nodeIdCP = searchNodesCPsSelect.val()
+
+    if (nodeIdCP) {
+        datasets.push(getCheckpointDataset())
+        datasets.push(getThrottlingDataset(nodeIdCP))
+    }
 
     return datasets;
 }

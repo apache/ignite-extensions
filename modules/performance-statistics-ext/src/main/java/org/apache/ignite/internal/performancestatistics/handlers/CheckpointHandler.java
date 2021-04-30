@@ -74,7 +74,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     private final List<CheckpointInfo> checkpoints = new ArrayList<>();
 
     /** */
-    private final ArrayList<ThrottlesInfo> throttles = new ArrayList<>();
+    private final List<ThrottlesInfo> throttles = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void checkpoint(
@@ -216,66 +216,82 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
             this.cowPagesWritten = cowPagesWritten;
         }
 
+        /** */
         public UUID getNodeId() {
             return nodeId;
         }
 
+        /** */
         public long getBeforeLockDuration() {
             return beforeLockDuration;
         }
 
+        /** */
         public long getLockWaitDuration() {
             return lockWaitDuration;
         }
 
+        /** */
         public long getListenersExecDuration() {
             return listenersExecDuration;
         }
 
+        /** */
         public long getMarkDuration() {
             return markDuration;
         }
 
+        /** */
         public long getLockHoldDuration() {
             return lockHoldDuration;
         }
 
+        /** */
         public long getPagesWriteDuration() {
             return pagesWriteDuration;
         }
 
+        /** */
         public long getFsyncDuration() {
             return fsyncDuration;
         }
 
+        /** */
         public long getWalCpRecordFsyncDuration() {
             return walCpRecordFsyncDuration;
         }
 
+        /** */
         public long getWriteCheckpointEntryDuration() {
             return writeCheckpointEntryDuration;
         }
 
+        /** */
         public long getSplitAndSortCpPagesDuration() {
             return splitAndSortCpPagesDuration;
         }
 
+        /** */
         public long getTotalDuration() {
             return totalDuration;
         }
 
+        /** */
         public long getCpStartTime() {
             return cpStartTime;
         }
 
+        /** */
         public int getPagesSize() {
             return pagesSize;
         }
 
+        /** */
         public int getDataPagesWritten() {
             return dataPagesWritten;
         }
 
+        /** */
         public int getCowPagesWritten() {
             return cowPagesWritten;
         }
@@ -305,18 +321,22 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
             this.duration = duration;
         }
 
+        /** */
         public UUID getNodeId() {
             return nodeId;
         }
 
+        /** */
         public long getTime() {
             return time;
         }
 
+        /** */
         public long getCounter() {
             return counter;
         }
 
+        /** */
         public long getDuration() {
             return duration;
         }
