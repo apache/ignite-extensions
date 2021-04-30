@@ -80,14 +80,41 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     private final ArrayList<ThrottlesInfo> throttles = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
-        long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
-        long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
-        checkpoints.add(new CheckpointInfo(nodeId, beforeLockDuration, lockWaitDuration, listenersExecDuration,
-            markDuration, lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
-            writeCpEntryDuration, splitAndSortCpPagesDuration, totalDuration, cpStartTime, pagesSize, dataPagesWritten,
-            cowPagesWritten));
+    @Override public void checkpoint(
+        UUID nodeId,
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration, long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        checkpoints.add(new CheckpointInfo(
+            nodeId,
+            beforeLockDuration,
+            lockWaitDuration,
+            listenersExecDuration,
+            markDuration,
+            lockHoldDuration,
+            pagesWriteDuration,
+            fsyncDuration,
+            walCpRecordFsyncDuration,
+            writeCpEntryDuration,
+            splitAndSortCpPagesDuration,
+            totalDuration,
+            cpStartTime,
+            pagesSize,
+            dataPagesWritten,
+            cowPagesWritten)
+        );
     }
 
     /** {@inheritDoc} */

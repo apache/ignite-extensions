@@ -145,14 +145,14 @@ function drawTxCharts() {
 }
 
 function prepareTxHistogramDatasets(nodeId, cacheId) {
-    let datasets = [];
+    var datasets = [];
 
-    let datasetData = REPORT_DATA.txHistogram[nodeId] === undefined ? undefined : REPORT_DATA.txHistogram[nodeId][cacheId];
+    var datasetData = REPORT_DATA.txHistogram[nodeId] === undefined ? undefined : REPORT_DATA.txHistogram[nodeId][cacheId];
 
     if (datasetData === undefined)
         return datasets;
 
-    let dataset = {
+    var dataset = {
         label: 'Count of transactions',
         data: datasetData,
         backgroundColor: '#FAA586',
@@ -164,14 +164,14 @@ function prepareTxHistogramDatasets(nodeId, cacheId) {
 }
 
 function prepareTxDatasets(nodeId, cacheId, opName) {
-    let datasets = [];
+    var datasets = [];
 
-    let txData = REPORT_DATA.tx[nodeId] === undefined ? undefined : REPORT_DATA.tx[nodeId][cacheId];
+    var txData = REPORT_DATA.tx[nodeId] === undefined ? undefined : REPORT_DATA.tx[nodeId][cacheId];
 
     if (txData === undefined)
         return datasets;
 
-    let datasetData = [];
+    var datasetData = [];
 
     $.each(txData[opName], function (time, arr) {
         datasetData.push({x: parseInt(arr[0]), y: arr[1]})
@@ -179,7 +179,7 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
 
     sortByKeyAsc(datasetData, "x");
 
-    let dataset = {
+    var dataset = {
         data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,

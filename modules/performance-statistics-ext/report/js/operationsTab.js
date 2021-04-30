@@ -45,8 +45,6 @@ const LABELS = {
     checkpoints: 'Checkpoints'
 }
 
-const skipped = (ctx, value) => ctx.p0.skip || ctx.p1.skip ? value : undefined;
-
 const searchCachesSelect = $('#searchCaches');
 const searchNodesSelect = $('#searchNodes');
 const searchNodesCPsSelect = $('#searchNodesCPs');
@@ -72,7 +70,7 @@ function drawCacheCharts() {
     $.each(CACHE_OPERATIONS, function (k, opName) {
             opsCountPerType[opName] = 0;
 
-            let chartId = opName + "OperationChart";
+        var chartId = opName + "OperationChart";
 
             $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
