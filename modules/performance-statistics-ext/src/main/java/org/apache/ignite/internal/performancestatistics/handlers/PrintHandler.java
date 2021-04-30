@@ -31,7 +31,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.printEscaped;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
@@ -214,6 +216,75 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(",\"timedOut\":");
         ps.print(timedOut);
         ps.println("}");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkpoint(
+        UUID nodeid,
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        if (skip(CHECKPOINT, cpStartTime))
+            return;
+
+        ps.print("{\"op\":\"" + CHECKPOINT);
+        ps.print("\",\"beforeLockDuration\":\"");
+        ps.print(beforeLockDuration);
+        ps.print("\",\"lockWaitDuration\":\"");
+        ps.print(lockWaitDuration);
+        ps.print("\",\"listenersExecDuration\":");
+        ps.print(listenersExecDuration);
+        ps.print(",\"markDuration\":");
+        ps.print(markDuration);
+        ps.print(",\"lockHoldDuration\":");
+        ps.print(lockHoldDuration);
+        ps.print(",\"pagesWriteDuration\":");
+        ps.print(pagesWriteDuration);
+        ps.print(",\"fsyncDuration\":");
+        ps.print(fsyncDuration);
+        ps.print(",\"walCpRecordFsyncDuration\":");
+        ps.print(walCpRecordFsyncDuration);
+        ps.print(",\"writeCpEntryDuration\":");
+        ps.print(writeCpEntryDuration);
+        ps.print(",\"splitAndSortCpPagesDuration\":");
+        ps.print(splitAndSortCpPagesDuration);
+        ps.print(",\"totalDuration\":");
+        ps.print(totalDuration);
+        ps.print(",\"cpStartTime\":");
+        ps.print(cpStartTime);
+        ps.print(",\"pagesSize\":");
+        ps.print(pagesSize);
+        ps.print(",\"dataPagesWritten\":");
+        ps.print(dataPagesWritten);
+        ps.print(",\"cowPagesWritten\":");
+        ps.print(cowPagesWritten);
+        ps.println("}");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+        if (skip(PAGES_WRITE_THROTTLE, endTime))
+            return;
+
+        ps.print("{\"op\":\"" + PAGES_WRITE_THROTTLE);
+        ps.print("\",\"endTime\":\"");
+        ps.print(endTime);
+        ps.print("\",\"duration\":");
+        ps.print(duration);
+        ps.println("\"}");
     }
 
     /** @return {@code True} if the operation should be skipped. */

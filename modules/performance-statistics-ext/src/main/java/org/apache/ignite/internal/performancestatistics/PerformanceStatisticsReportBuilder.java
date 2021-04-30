@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.performancestatistics.handlers.CacheOperationsHandler;
+import org.apache.ignite.internal.performancestatistics.handlers.CheckpointHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.ClusterInfoHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.ComputeHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.IgnitePerformanceStatisticsHandler;
@@ -118,7 +119,8 @@ public class PerformanceStatisticsReportBuilder {
             new CacheOperationsHandler(),
             new TransactionsHandler(),
             new ComputeHandler(),
-            new ClusterInfoHandler()
+            new ClusterInfoHandler(),
+            new CheckpointHandler()
         };
 
         new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(filesDir)));

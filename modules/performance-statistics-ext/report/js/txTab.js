@@ -24,11 +24,13 @@ const TX_COLORS = {
 
 const txSearchCachesSelect = $('#txSearchCaches');
 const txSearchNodesSelect = $('#txSearchNodes');
+const txSearchNodesCPSelect = $('#txSearchNodesCPs');
 const txCharts = $("#txCharts");
 
 function drawTxCharts() {
     var cacheId = txSearchCachesSelect.val();
     var nodeId = txSearchNodesSelect.val();
+    var nodeIdCP = txSearchNodesCPSelect.val()
 
     txCharts.empty();
 
@@ -43,8 +45,22 @@ function drawTxCharts() {
                 datasets: prepareTxDatasets(nodeId, cacheId, opName)
             },
             options: {
+                annotations: getCheckointsBoxes(nodeIdCP),
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (i) => getLabel(i),
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
+                    }
+                },
                 scales: {
-                    xAxes: [{
+                    x: {
+                        display: true,
                         type: 'time',
                         time: {
                             displayFormats: {
@@ -54,30 +70,35 @@ function drawTxCharts() {
                                 'hour': 'HH:mm'
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
+                            text: 'Date'
                         },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
-                    }]
-                },
-                legend: {
-                    display: true
-                },
-                title: {
-                    display: true,
-                    text: "Count of [" + opName + "]",
-                    fontSize: 20
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount of operations'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    },
+                    y1: {
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Сount of pages write throttle'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
                 },
                 animation: false
             }
@@ -93,31 +114,30 @@ function drawTxCharts() {
             datasets: prepareTxHistogramDatasets(nodeId, cacheId)
         },
         options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Histogram of transaction durations",
+                    fontSize: 20
+                }
+            },
             scales: {
-                xAxes: [{
+                x:{
                     gridLines: {
                         offsetGridLines: true
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Duration of transaction'
+                        text: 'Duration of transaction'
                     }
-                }],
-                yAxes: [{
+                },
+                y:{
                     display: true,
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Count of transactions'
+                        text: 'Count of transactions'
                     }
-                }]
-            },
-            legend: {
-                display: false
-            },
-            title: {
-                display: true,
-                text: "Histogram of transaction durations",
-                fontSize: 20
+                }
             },
             animation: false
         }
@@ -125,14 +145,14 @@ function drawTxCharts() {
 }
 
 function prepareTxHistogramDatasets(nodeId, cacheId) {
-    var datasets = [];
+    let datasets = [];
 
-    var datasetData = REPORT_DATA.txHistogram[nodeId] === undefined ? undefined : REPORT_DATA.txHistogram[nodeId][cacheId];
+    let datasetData = REPORT_DATA.txHistogram[nodeId] === undefined ? undefined : REPORT_DATA.txHistogram[nodeId][cacheId];
 
     if (datasetData === undefined)
         return datasets;
 
-    var dataset = {
+    let dataset = {
         label: 'Count of transactions',
         data: datasetData,
         backgroundColor: '#FAA586',
@@ -144,22 +164,22 @@ function prepareTxHistogramDatasets(nodeId, cacheId) {
 }
 
 function prepareTxDatasets(nodeId, cacheId, opName) {
-    var datasets = [];
+    let datasets = [];
 
-    var txData = REPORT_DATA.tx[nodeId] === undefined ? undefined : REPORT_DATA.tx[nodeId][cacheId];
+    let txData = REPORT_DATA.tx[nodeId] === undefined ? undefined : REPORT_DATA.tx[nodeId][cacheId];
 
     if (txData === undefined)
         return datasets;
 
-    var datasetData = [];
+    let datasetData = [];
 
     $.each(txData[opName], function (time, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]})
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
-    var dataset = {
+    let dataset = {
         data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,
@@ -171,6 +191,8 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     };
 
     datasets.push(dataset);
+
+    datasets.push(getThrottlingDataset(txSearchNodesCPSelect.val()))
 
     return datasets;
 }
@@ -190,7 +212,9 @@ function buildTxHistogramBuckets() {
     return buckets;
 }
 
-buildSelectCaches(txSearchCachesSelect, drawTxCharts);
-buildSelectNodes(txSearchNodesSelect, drawTxCharts);
+buildSelectCaches(txSearchCachesSelect, drawTxCharts, 'All nodes');
+buildSelectNodes(txSearchNodesSelect, drawTxCharts, 'All nodes');
+buildSelectNodes(txSearchNodesCPSelect, drawTxCharts, 'All checkpoint nodes');
+txSearchNodesCPSelect.append('<option data-content="<b>'+'NONE'+'</b>"/>');
 
 drawTxCharts();

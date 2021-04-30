@@ -16,7 +16,8 @@
  */
 
 /** Plugin for Charts JS to print 'No data to display' if there is no data for chart. */
-Chart.plugins.register({
+Chart.register({
+    id: 'plugin',
     afterDraw: function (chart) {
         if (chart.data.datasets.length === 0 || chart.data.datasets.every(val => val.data.length === 0)) {
             // No data is present
@@ -73,8 +74,8 @@ function buildSelectCaches(el, onSelect) {
 }
 
 /** Builds bootstrap-select for nodes. */
-function buildSelectNodes(el, onSelect) {
-    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+function buildSelectNodes(el, onSelect, info) {
+    el.append('<option data-content="<b>'+info+'</b>" value="total"/>');
 
     var nodes = REPORT_DATA.clusterInfo.nodes;
 

@@ -19,7 +19,7 @@ const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_A
     "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
-    "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
+    "getAll", "putAll", "removeAll", "invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
     CACHE_GET: "#007bff",
@@ -35,69 +35,198 @@ const CACHE_OPERATIONS_COLORS = {
     CACHE_LOCK: "#FAA586"
 };
 
+const CHECKPOINT_COLORS = {
+    CHECKPOINT: "#008000",
+    THROTTLING: "#c02332",
+}
+
+const LABELS = {
+    throttling: 'Pages write throttle',
+    checkpoints: 'Checkpoints'
+}
+
+const skipped = (ctx, value) => ctx.p0.skip || ctx.p1.skip ? value : undefined;
+
 const searchCachesSelect = $('#searchCaches');
 const searchNodesSelect = $('#searchNodes');
+const searchNodesCPsSelect = $('#searchNodesCPs');
 
-var opsCountPerType = {};
+let opsCountPerType = {};
+
+function getLabel(ctx) {
+    switch (ctx.dataset.label) {
+        case LABELS.throttling:
+            return "Count per second: " + ctx.raw.d.counter + ",\n" +
+                "Total duration: " + ctx.raw.d.duration + " ms."
+
+        default:
+            return "Count: " + ctx.parsed.y
+    }
+}
 
 function drawCacheCharts() {
     $("#operationsCharts").empty();
 
+    let nodeId = searchNodesCPsSelect.val()
+
     $.each(CACHE_OPERATIONS, function (k, opName) {
-        opsCountPerType[opName] = 0;
+            opsCountPerType[opName] = 0;
 
-        var chartId = opName + "OperationChart";
+            let chartId = opName + "OperationChart";
 
-        $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
+            $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
-        new Chart(document.getElementById(chartId), {
-            type: 'line',
-            data: {
-                datasets: prepareCacheDatasets(opName)
-            },
-            options: {
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        time: {
-                            displayFormats: {
-                                'millisecond': 'HH:mm:ss',
-                                'second': 'HH:mm:ss',
-                                'minute': 'HH:mm:ss',
-                                'hour': 'HH:mm'
+            let options = {
+                type: 'line',
+                data: {
+                    datasets: prepareCacheDatasets(opName),
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'nearest',
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (i) => getLabel(i),
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
+                            text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
+                            fontSize: 20
                         }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
+                    },
+                    scales: {
+                        x: {
                             display: true,
-                            labelString: 'Count'
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    'millisecond': 'HH:mm:ss',
+                                    'second': 'HH:mm:ss',
+                                    'minute': 'HH:mm:ss',
+                                    'hour': 'HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            adapters: {
+                                data: {
+                                    locale: 'date-fns/locale'
+                                }
+                            }
                         },
-                        ticks: {
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Сount of operations'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        },
+                        y1: {
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Сount of pages write throttle'
+                            },
                             suggestedMin: 0,
                             suggestedMax: 10
                         }
-                    }]
-                },
-                legend: {
-                    display: true
-                },
-                title: {
-                    display: true,
-                    text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
-                    fontSize: 20
-                },
-                animation: false
+                    },
+                    animation: false
+                }
             }
-        })
-    });
+
+            let chart = new Chart(document.getElementById(chartId), options)
+
+            chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+        }
+    );
 
     drawCacheBar();
+}
+
+function getCheckointsBoxes(nodeId, yMax) {
+    let boxes = []
+
+    let checkpoints = REPORT_DATA.checkpointsInfo.checkpoints
+
+    if (checkpoints === undefined || !nodeId)
+        return boxes;
+
+    checkpoints.forEach(function (cp) {
+
+        if (nodeId === "total" || nodeId === cp.nodeId) {
+            boxes.push(getBox(cp.cpStartTime, cp.cpStartTime + cp.totalDuration, 0, yMax, cp))
+        }
+    });
+
+    return boxes
+}
+
+function getBox(xMin, xMax, yMin, yMax, cp) {
+    let box = {
+        drawTime: 'afterDatasetsDraw',
+        type: 'box',
+        xMin: xMin,
+        xMax: xMax,
+        yMin: yMin,
+        yMax: yMax,
+        borderWidth: 1,
+        borderColor: CHECKPOINT_COLORS.CHECKPOINT,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        label: {
+            content: getCheckpointInfoArr(cp),
+            textAlign: 'start',
+            position: "top"
+        },
+        enter: (e) => {
+            box.label.enabled = true
+            box.borderWidth = 3
+            box.yMax = e.chart.scales.y.end
+            e.chart.update()
+        },
+
+        leave: (e) => {
+            box.label.enabled = false
+            box.borderWidth = 1
+            e.chart.update()
+        },
+    }
+
+    return box;
+}
+
+function getCheckpointInfoArr(cp) {
+    return [
+        'Checkpoint start time: ' + new Date(cp.cpStartTime).toLocaleTimeString(),
+        'Total duration: ' + cp.totalDuration / 1000 + ' s.',
+        'Number of dirty pages: ' + cp.pagesSize,
+        'Node ID: ' + cp.nodeId,
+        '',
+        'Before lock duration: ' + cp.beforeLockDuration + ' ms.',
+        'Lock wait duration: ' + cp.lockWaitDuration + ' ms.',
+        'Listeners exec duration: ' + cp.listenersExecDuration + ' ms.',
+        'Mark duration: ' + cp.markDuration + ' ms.',
+        'Lock hold duration: ' + cp.lockHoldDuration + ' ms.',
+        'Pages write duration: ' + cp.pagesWriteDuration + ' ms.',
+        'Fsync duration: ' + cp.fsyncDuration + ' ms.',
+        'Wal checkpoint record fsync duration: ' + cp.walCpRecordFsyncDuration + ' ms.',
+        'Write checkpoint entry duration: ' + cp.writeCheckpointEntryDuration + ' ms.',
+        'Split and sort checkpoint pages duration: ' + cp.splitAndSortCpPagesDuration + ' ms.',
+        'Data pages written: ' + cp.dataPagesWritten,
+        'Copy on write pages written: ' + cp.cowPagesWritten
+    ]
 }
 
 function prepareCacheDatasets(opName) {
@@ -114,14 +243,15 @@ function prepareCacheDatasets(opName) {
     var datasetData = [];
 
     $.each(cacheOps[opName], function (k, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]});
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]});
 
         opsCountPerType[opName] += arr[1];
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
+        type: 'line',
         data: datasetData,
         label: "Count of " + opName,
         lineTension: 0,
@@ -133,6 +263,11 @@ function prepareCacheDatasets(opName) {
     };
 
     datasets.push(dataset);
+
+    let nodeIdCP = searchNodesCPsSelect.val()
+
+    if (nodeIdCP)
+        datasets.push(getThrottlingDataset(nodeIdCP))
 
     return datasets;
 }
@@ -148,7 +283,7 @@ function drawCacheBar() {
         colors[k] = CACHE_OPERATIONS_COLORS[opName];
     });
 
-    new Chart(document.getElementById("operationBarChart"), {
+    let options = {
         type: 'bar',
         data: {
             datasets: [{
@@ -160,33 +295,65 @@ function drawCacheBar() {
         },
         options: {
             scales: {
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
+                x: {
+                    barPercentage: 0.4
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Count'
+                        text: 'Count'
                     },
-                    ticks: {
-                        suggestedMin: 0,
-                        suggestedMax: 10
-                    }
-                }]
-            },
-            legend: {
-                display: false
+                    suggestedMin: 0,
+                    suggestedMax: 10
+                }
             },
             title: {
                 display: true,
                 text: 'Distribution of count operations by type',
                 fontSize: 20
             },
-            animation: false
+            animation: false,
+        }
+    }
+
+    new Chart(document.getElementById("operationBarChart"), options);
+}
+
+function getThrottlingDataset(nodeId) {
+    let throttles = REPORT_DATA.checkpointsInfo.throttles
+
+    if (throttles === undefined)
+        return {};
+
+    let datasetData = [];
+
+    throttles.forEach(function (th) {
+
+        if (nodeId === "total" || nodeId === th.nodeId) {
+            datasetData.push({x: th.time, y: th.counter, d: th});
         }
     });
 
+    sortByKeyAsc(datasetData, "x");
+
+    throttlesDataset = {
+        type: 'bubble',
+        data: datasetData,
+        label: LABELS.throttling,
+        fill: false,
+        backgroundColor: CHECKPOINT_COLORS.THROTTLING,
+        borderColor: CHECKPOINT_COLORS.THROTTLING,
+        yAxisID: 'y1'
+    };
+
+
+    return throttlesDataset
 }
 
-buildSelectCaches(searchCachesSelect, drawCacheCharts);
-buildSelectNodes(searchNodesSelect, drawCacheCharts);
+
+buildSelectCaches(searchCachesSelect, drawCacheCharts, 'All nodes');
+buildSelectNodes(searchNodesSelect, drawCacheCharts, 'All nodes');
+buildSelectNodes(searchNodesCPsSelect, drawCacheCharts, 'All checkpoint nodes');
+searchNodesCPsSelect.append('<option data-content="<b>' + 'NONE' + '</b>"/>');
 
 drawCacheCharts();
