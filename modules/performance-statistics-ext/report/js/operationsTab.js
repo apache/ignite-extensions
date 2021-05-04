@@ -65,7 +65,7 @@ function getLabel(ctx) {
 function drawCacheCharts() {
     $("#operationsCharts").empty();
 
-    let nodeId = searchNodesCPsSelect.val()
+    let nodeIdCP = searchNodesCPsSelect.val()
 
     $.each(CACHE_OPERATIONS, function (k, opName) {
         opsCountPerType[opName] = 0;
@@ -92,7 +92,7 @@ function drawCacheCharts() {
 
                                 if (legendItem.text === LABELS.checkpoints){
                                     if(legendItem.hidden)
-                                        chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+                                        chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
                                     else
                                         chart.options.annotations = []
                                 }
@@ -163,7 +163,8 @@ function drawCacheCharts() {
                 }
             })
 
-            chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+            chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+            chart.update()
         }
     );
 

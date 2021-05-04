@@ -53,7 +53,7 @@ function drawTxCharts() {
 
                             if (legendItem.text === LABELS.checkpoints){
                                 if(legendItem.hidden)
-                                    chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+                                    chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
                                 else
                                     chart.options.annotations = []
                             }
@@ -124,7 +124,8 @@ function drawTxCharts() {
             }
         })
 
-        chart.options.annotations = getCheckointsBoxes(nodeId, chart.scales.y.end)
+        chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+        chart.update()
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');
