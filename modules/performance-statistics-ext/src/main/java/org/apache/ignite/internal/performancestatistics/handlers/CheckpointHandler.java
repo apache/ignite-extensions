@@ -58,8 +58,9 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  *      "throttles": [
  *          {
  *              "nodeId" : $nodeId,
- *              "startTime" : $startTime,
- *              "endTime" : $endTime
+ *              "time" : $time,
+ *              "counter" : $counter,
+ *              "duration" : $duration
  *          },
  *          ...
  *      ]
@@ -146,52 +147,52 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
      */
     private static class CheckpointInfo {
         /** */
-        UUID nodeId;
+        private final UUID nodeId;
 
         /** */
-        long beforeLockDuration;
+        private final long beforeLockDuration;
 
         /** */
-        long lockWaitDuration;
+        private final long lockWaitDuration;
 
         /** */
-        long listenersExecDuration;
+        private final long listenersExecDuration;
 
         /** */
-        long markDuration;
+        private final long markDuration;
 
         /** */
-        long lockHoldDuration;
+        private final long lockHoldDuration;
 
         /** */
-        long pagesWriteDuration;
+        private final long pagesWriteDuration;
 
         /** */
-        long fsyncDuration;
+        private final long fsyncDuration;
 
         /** */
-        long walCpRecordFsyncDuration;
+        private final long walCpRecordFsyncDuration;
 
         /** */
-        long writeCheckpointEntryDuration;
+        private final long writeCheckpointEntryDuration;
 
         /** */
-        long splitAndSortCpPagesDuration;
+        private final long splitAndSortCpPagesDuration;
 
         /** */
-        long totalDuration;
+        private final long totalDuration;
 
         /** */
-        long cpStartTime;
+        private final long cpStartTime;
 
         /** */
-        int pagesSize;
+        private final int pagesSize;
 
         /** */
-        int dataPagesWritten;
+        private final int dataPagesWritten;
 
         /** */
-        int cowPagesWritten;
+        private final int cowPagesWritten;
 
         /** */
         public CheckpointInfo(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
@@ -302,16 +303,16 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
      */
     private static class ThrottlesInfo {
         /** */
-        UUID nodeId;
+        private final UUID nodeId;
 
         /** */
-        long time;
+        private final long time;
 
         /** */
-        long counter;
+        private long counter;
 
         /** */
-        long duration;
+        private long duration;
 
         /** */
         public ThrottlesInfo(UUID nodeId, long time, long counter, long duration) {

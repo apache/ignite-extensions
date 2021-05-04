@@ -26,7 +26,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     PerformanceStatisticsReportSelfTest.class,
-    PerformanceStatisticsPrinterTest.class
+    PerformanceStatisticsPrinterTest.class,
+    PerformanceStatisticsHandlersTest.class
 })
 public class IgnitePerformanceStatisticsReportTestSuite {
 }

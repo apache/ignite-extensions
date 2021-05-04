@@ -258,7 +258,7 @@ public class PerformanceStatisticsPrinterTest {
     }
 
     /** Writes statistics through passed writer. */
-    private void createStatistics(Consumer<FilePerformanceStatisticsWriter> c) throws Exception {
+    public static void createStatistics(Consumer<FilePerformanceStatisticsWriter> c) throws Exception {
         FilePerformanceStatisticsWriter writer = new FilePerformanceStatisticsWriter(new TestKernalContext(NODE_ID));
 
         writer.start();
