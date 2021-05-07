@@ -17,10 +17,16 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,8 +79,8 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     /** */
     private final LinkedList<CheckpointInfo> checkpoints = new LinkedList<>();
 
-    /** */
-    private final LinkedList<ThrottlesInfo> pagesWriteThrottle = new LinkedList<>();
+    /** Pages write throttle: nodeId -> time -> throttlesInfo. */
+    private final Map<UUID, Map<Long, ThrottlesInfo>> pagesWriteThrottle = new HashMap<>();
 
     /** */
     public static final String CHECKPOINTS_INFO = "checkpointsInfo";
@@ -126,24 +132,36 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     /** {@inheritDoc} */
     @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
         long time = TimeUnit.MILLISECONDS.toSeconds(endTime);
+        long durationSec = TimeUnit.MILLISECONDS.toSeconds(duration);
 
-        if (!pagesWriteThrottle.isEmpty()) {
-            ThrottlesInfo last = pagesWriteThrottle.getLast();
+        if (durationSec > 0)
+            LongStream.range(0, durationSec + 1)
+                .forEach(d -> addThrottlesInfo(nodeId, TimeUnit.SECONDS.toMillis(time - d), duration));
+        else
+            addThrottlesInfo(nodeId, TimeUnit.SECONDS.toMillis(time), duration);
+    }
 
-            if (last.nodeId == nodeId && TimeUnit.MILLISECONDS.toSeconds(last.time) == time) {
+    /**
+     * @param nodeId Node id.
+     * @param time Time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    private void addThrottlesInfo(UUID nodeId, long time, long duration){
+        ThrottlesInfo info = pagesWriteThrottle.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+            .computeIfAbsent(time, t -> new ThrottlesInfo(nodeId, time, 0, duration));
 
-                last.counter++;
-                last.duration+=duration;
-
-                return;
-            }
-        }
-
-        pagesWriteThrottle.add(new ThrottlesInfo(nodeId, endTime, 1, duration));
+        info.incrementCounter();
+        info.setDurationIfMore(duration);
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
+        List<ThrottlesInfo> pagesWriteThrottle = this.pagesWriteThrottle.values().stream()
+            .map(Map::values)
+            .flatMap(Collection::stream)
+            .sorted(Comparator.comparingLong(ThrottlesInfo::getTime))
+            .collect(Collectors.toList());
+
         res.set(CHECKPOINTS, MAPPER.valueToTree(checkpoints));
         res.set(PAGES_WRITE_THROTTLE, MAPPER.valueToTree(pagesWriteThrottle));
 
@@ -342,8 +360,18 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
         }
 
         /** */
+        public void incrementCounter() {
+            counter++;
+        }
+
+        /** */
         public long getDuration() {
             return duration;
+        }
+
+        /** */
+        public void setDurationIfMore(long duration) {
+             this.duration = Math.max(this.duration, duration);
         }
     }
 }

@@ -54,8 +54,9 @@ let opsCountPerType = {};
 function getLabel(ctx) {
     switch (ctx.dataset.label) {
         case LABELS.pagesWriteThrottle:
-            return "Count per second: " + ctx.raw.d.counter + ",\n" +
-                "Total duration: " + ctx.raw.d.duration + " ms."
+            return ["Count per second: " + ctx.raw.d.counter,
+                "Total duration: " + ctx.raw.d.duration + " ms.",
+                "Node ID: " + ctx.raw.d.nodeId]
 
         default:
             return "Count: " + ctx.parsed.y
@@ -370,7 +371,6 @@ function getPagesWriteThrottleDataset(nodeId) {
         borderColor: CHECKPOINT_COLORS.PAGES_WRITE_THROTTLE,
         yAxisID: 'y1'
     };
-
 
     return dataset
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.handlers.CheckpointHandler;
@@ -119,11 +120,11 @@ public class PerformanceStatisticsHandlersTest {
     public void testPagesWriteThrottle() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        long endTime1 = 1000;
-        long duration1 = rnd.nextInt(100);
-        long endTime2 = 2000;
+        long endTime1 = 10000;
+        long duration1 = 1500;
+        long endTime2 = endTime1 + 1000;
         long duration2 = rnd.nextInt(100);
-        long endTime3 = 2500;
+        long endTime3 = endTime2 + 500;
         long duration3 = rnd.nextInt(100);
 
         createStatistics(writer -> {
@@ -137,19 +138,26 @@ public class PerformanceStatisticsHandlersTest {
         JsonNode node = MAPPER.readTree(res).get(CheckpointHandler.CHECKPOINTS_INFO)
             .get(CheckpointHandler.PAGES_WRITE_THROTTLE);
 
-        assertEquals(2, node.size());
+        assertEquals(3, node.size());
 
         JsonNode node1 = node.get(0);
 
         assertEquals(1, node1.get("counter").asLong());
-        assertEquals(endTime1, node1.get("time").asLong());
+        assertEquals(TimeUnit.MILLISECONDS.toSeconds(endTime1) - TimeUnit.MILLISECONDS.toSeconds(duration1),
+            TimeUnit.MILLISECONDS.toSeconds(node1.get("time").asLong()));
         assertEquals(duration1, node1.get("duration").asLong());
 
         JsonNode node2 = node.get(1);
 
-        assertEquals(2, node2.get("counter").asLong());
-        assertEquals(endTime2, node2.get("time").asLong());
-        assertEquals(duration2 + duration3, node2.get("duration").asLong());
+        assertEquals(1, node2.get("counter").asLong());
+        assertEquals(endTime1, node2.get("time").asLong());
+        assertEquals(duration1, node2.get("duration").asLong());
+
+        JsonNode node3 = node.get(2);
+
+        assertEquals(2, node3.get("counter").asLong());
+        assertEquals(endTime2, node3.get("time").asLong());
+        assertEquals(Math.max(duration2, duration3), node3.get("duration").asLong());
     }
 
     /**
