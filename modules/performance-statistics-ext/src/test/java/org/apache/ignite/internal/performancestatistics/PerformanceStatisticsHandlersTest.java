@@ -20,8 +20,6 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.File;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.handlers.CheckpointHandler;
@@ -93,28 +91,27 @@ public class PerformanceStatisticsHandlersTest {
                 cowPagesWritten);
         });
 
-        readResultStatistics(jsonNode -> {
-                JsonNode json = jsonNode.get("checkpointsInfo")
-                    .get("checkpoints")
+        String res = readResultStatistics(new CheckpointHandler());
+
+        JsonNode json = MAPPER.readTree(res).get(CheckpointHandler.CHECKPOINTS_INFO)
+                    .get(CheckpointHandler.CHECKPOINTS)
                     .get(0);
 
-                assertEquals(json.get("beforeLockDuration").asLong(), beforeLockDuration);
-                assertEquals(json.get("lockWaitDuration").asLong(), lockWaitDuration);
-                assertEquals(json.get("listenersExecDuration").asLong(), listenersExecDuration);
-                assertEquals(json.get("markDuration").asLong(), markDuration);
-                assertEquals(json.get("lockHoldDuration").asLong(), lockHoldDuration);
-                assertEquals(json.get("pagesWriteDuration").asLong(), pagesWriteDuration);
-                assertEquals(json.get("fsyncDuration").asLong(), fsyncDuration);
-                assertEquals(json.get("walCpRecordFsyncDuration").asLong(), walCpRecordFsyncDuration);
-                assertEquals(json.get("writeCheckpointEntryDuration").asLong(), writeCpEntryDuration);
-                assertEquals(json.get("splitAndSortCpPagesDuration").asLong(), splitAndSortCpPagesDuration);
-                assertEquals(json.get("totalDuration").asLong(), totalDuration);
-                assertEquals(json.get("cpStartTime").asLong(), cpStartTime);
-                assertEquals(json.get("pagesSize").asInt(), pagesSize);
-                assertEquals(json.get("dataPagesWritten").asInt(), dataPagesWritten);
-                assertEquals(json.get("cowPagesWritten").asInt(), cowPagesWritten);
-            },
-            new CheckpointHandler());
+        assertEquals(json.get("beforeLockDuration").asLong(), beforeLockDuration);
+        assertEquals(json.get("lockWaitDuration").asLong(), lockWaitDuration);
+        assertEquals(json.get("listenersExecDuration").asLong(), listenersExecDuration);
+        assertEquals(json.get("markDuration").asLong(), markDuration);
+        assertEquals(json.get("lockHoldDuration").asLong(), lockHoldDuration);
+        assertEquals(json.get("pagesWriteDuration").asLong(), pagesWriteDuration);
+        assertEquals(json.get("fsyncDuration").asLong(), fsyncDuration);
+        assertEquals(json.get("walCpRecordFsyncDuration").asLong(), walCpRecordFsyncDuration);
+        assertEquals(json.get("writeCheckpointEntryDuration").asLong(), writeCpEntryDuration);
+        assertEquals(json.get("splitAndSortCpPagesDuration").asLong(), splitAndSortCpPagesDuration);
+        assertEquals(json.get("totalDuration").asLong(), totalDuration);
+        assertEquals(json.get("cpStartTime").asLong(), cpStartTime);
+        assertEquals(json.get("pagesSize").asInt(), pagesSize);
+        assertEquals(json.get("dataPagesWritten").asInt(), dataPagesWritten);
+        assertEquals(json.get("cowPagesWritten").asInt(), cowPagesWritten);
     }
 
     /** */
@@ -122,48 +119,54 @@ public class PerformanceStatisticsHandlersTest {
     public void testPagesWriteThrottle() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        long endTime = System.currentTimeMillis();
-        long duration = rnd.nextInt(200);
+        long endTime1 = 1000;
+        long duration1 = rnd.nextInt(100);
+        long endTime2 = 2000;
+        long duration2 = rnd.nextInt(100);
+        long endTime3 = 2500;
+        long duration3 = rnd.nextInt(100);
 
         createStatistics(writer -> {
-            writer.pagesWriteThrottle(endTime, duration);
+            writer.pagesWriteThrottle(endTime1, duration1);
+            writer.pagesWriteThrottle(endTime2, duration2);
+            writer.pagesWriteThrottle(endTime3, duration3);
         });
 
-       readResultStatistics(jsonNode -> {
-           JsonNode json = jsonNode.get("checkpointsInfo")
-               .get("throttles")
-               .get(0);
+        String res = readResultStatistics(new CheckpointHandler());
 
-           assertEquals(1, json.get("counter").asLong());
-           assertEquals(duration, json.get("duration").asLong());
-           assertEquals(TimeUnit.MILLISECONDS.toSeconds(endTime),
-               TimeUnit.MILLISECONDS.toSeconds(json.get("time").asLong()));
-       },
-           new CheckpointHandler());
+        JsonNode node = MAPPER.readTree(res).get(CheckpointHandler.CHECKPOINTS_INFO)
+            .get(CheckpointHandler.PAGES_WRITE_THROTTLE);
+
+        assertEquals(2, node.size());
+
+        JsonNode node1 = node.get(0);
+
+        assertEquals(1, node1.get("counter").asLong());
+        assertEquals(endTime1, node1.get("time").asLong());
+        assertEquals(duration1, node1.get("duration").asLong());
+
+        JsonNode node2 = node.get(1);
+
+        assertEquals(2, node2.get("counter").asLong());
+        assertEquals(endTime2, node2.get("time").asLong());
+        assertEquals(duration2 + duration3, node2.get("duration").asLong());
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void readResultStatistics(Consumer<JsonNode> c, IgnitePerformanceStatisticsHandler... handlers)
+    private String readResultStatistics(IgnitePerformanceStatisticsHandler hnd)
         throws Exception {
         File perfStatDir = new File(U.defaultWorkDirectory(), PERF_STAT_DIR);
 
         assertTrue(perfStatDir.exists());
 
-        File out = new File(U.defaultWorkDirectory(), "report.txt");
-
-        U.delete(out);
-
-        new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(perfStatDir));
+        new FilePerformanceStatisticsReader(hnd).read(Collections.singletonList(perfStatDir));
 
         ObjectNode dataJson = MAPPER.createObjectNode();
 
-        for (IgnitePerformanceStatisticsHandler handler : handlers)
-            handler.results().forEach(dataJson::set);
+        hnd.results().forEach(dataJson::set);
 
-        JsonNode json = MAPPER.readTree(dataJson.toString());
-
-        c.accept(json);
+        return dataJson.toString();
     }
 }

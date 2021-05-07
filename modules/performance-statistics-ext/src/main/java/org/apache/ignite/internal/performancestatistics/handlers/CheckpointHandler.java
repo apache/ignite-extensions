@@ -17,8 +17,7 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +54,7 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  *          },
  *          ...
  *      ],
- *      "throttles": [
+ *      "pagesWriteThrottle": [
  *          {
  *              "nodeId" : $nodeId,
  *              "time" : $time,
@@ -72,10 +71,19 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     private final ObjectNode res = MAPPER.createObjectNode();
 
     /** */
-    private final List<CheckpointInfo> checkpoints = new ArrayList<>();
+    private final LinkedList<CheckpointInfo> checkpoints = new LinkedList<>();
 
     /** */
-    private final List<ThrottlesInfo> throttles = new ArrayList<>();
+    private final LinkedList<ThrottlesInfo> pagesWriteThrottle = new LinkedList<>();
+
+    /** */
+    public static final String CHECKPOINTS_INFO = "checkpointsInfo";
+
+    /** */
+    public static final String CHECKPOINTS = "checkpoints";
+
+    /** */
+    public static final String PAGES_WRITE_THROTTLE = "pagesWriteThrottle";
 
     /** {@inheritDoc} */
     @Override public void checkpoint(
@@ -119,8 +127,8 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
         long time = TimeUnit.MILLISECONDS.toSeconds(endTime);
 
-        if (!throttles.isEmpty()) {
-            ThrottlesInfo last = throttles.get(throttles.size() - 1);
+        if (!pagesWriteThrottle.isEmpty()) {
+            ThrottlesInfo last = pagesWriteThrottle.getLast();
 
             if (last.nodeId == nodeId && TimeUnit.MILLISECONDS.toSeconds(last.time) == time) {
 
@@ -131,20 +139,18 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
             }
         }
 
-        throttles.add(new ThrottlesInfo(nodeId, endTime, 1, duration));
+        pagesWriteThrottle.add(new ThrottlesInfo(nodeId, endTime, 1, duration));
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        res.set("checkpoints", MAPPER.valueToTree(checkpoints));
-        res.set("throttles", MAPPER.valueToTree(throttles));
+        res.set(CHECKPOINTS, MAPPER.valueToTree(checkpoints));
+        res.set(PAGES_WRITE_THROTTLE, MAPPER.valueToTree(pagesWriteThrottle));
 
-        return U.map("checkpointsInfo", res);
+        return U.map(CHECKPOINTS_INFO, res);
     }
 
-    /**
-     *
-     */
+    /** */
     private static class CheckpointInfo {
         /** */
         private final UUID nodeId;
@@ -298,9 +304,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private static class ThrottlesInfo {
         /** */
         private final UUID nodeId;

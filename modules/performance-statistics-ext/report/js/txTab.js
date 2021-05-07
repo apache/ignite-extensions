@@ -219,7 +219,7 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
 
     if (nodeIdCP) {
         datasets.push(getCheckpointDataset())
-        datasets.push(getThrottlingDataset(nodeIdCP))
+        datasets.push(getPagesWriteThrottleDataset(nodeIdCP))
     }
 
     return datasets;

@@ -37,11 +37,11 @@ const CACHE_OPERATIONS_COLORS = {
 
 const CHECKPOINT_COLORS = {
     CHECKPOINT: "#008000",
-    THROTTLING: "#c02332",
+    PAGES_WRITE_THROTTLE: "#c02332",
 }
 
 const LABELS = {
-    throttling: 'Pages write throttle',
+    pagesWriteThrottle: 'Pages write throttle',
     checkpoints: 'Checkpoints'
 }
 
@@ -53,7 +53,7 @@ let opsCountPerType = {};
 
 function getLabel(ctx) {
     switch (ctx.dataset.label) {
-        case LABELS.throttling:
+        case LABELS.pagesWriteThrottle:
             return "Count per second: " + ctx.raw.d.counter + ",\n" +
                 "Total duration: " + ctx.raw.d.duration + " ms."
 
@@ -90,7 +90,7 @@ function drawCacheCharts() {
                             onClick: (e, legendItem, legend) => {
                                 let index = legendItem.datasetIndex;
 
-                                if (legendItem.text === LABELS.checkpoints){
+                                if (legendItem.text === LABELS.checkpoints) {
                                     if(legendItem.hidden)
                                         chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
                                     else
@@ -282,7 +282,7 @@ function prepareCacheDatasets(opName) {
 
     if (nodeIdCP) {
         datasets.push(getCheckpointDataset())
-        datasets.push(getThrottlingDataset(nodeIdCP))
+        datasets.push(getPagesWriteThrottleDataset(nodeIdCP))
     }
 
     return datasets;
@@ -292,10 +292,10 @@ function getCheckpointDataset() {
     return {
         type: 'bar',
         data: [],
-        label: "Checkpoints",
-        backgroundColor: CHECKPOINT_COLORS["CHECKPOINT"],
-        borderColor: CHECKPOINT_COLORS["CHECKPOINT"],
-        pointBackgroundColor: CHECKPOINT_COLORS["CHECKPOINT"],
+        label: LABELS.checkpoints,
+        backgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
+        borderColor: CHECKPOINT_COLORS.CHECKPOINT,
+        pointBackgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
     }
 }
 
@@ -344,15 +344,15 @@ function drawCacheBar() {
     });
 }
 
-function getThrottlingDataset(nodeId) {
-    let throttles = REPORT_DATA.checkpointsInfo.throttles
+function getPagesWriteThrottleDataset(nodeId) {
+    let pagesWriteThrottle = REPORT_DATA.checkpointsInfo.pagesWriteThrottle
 
-    if (throttles === undefined)
+    if (pagesWriteThrottle === undefined)
         return {};
 
     let datasetData = [];
 
-    throttles.forEach(function (th) {
+    pagesWriteThrottle.forEach(function (th) {
 
         if (nodeId === "total" || nodeId === th.nodeId) {
             datasetData.push({x: th.time, y: th.counter, d: th});
@@ -364,10 +364,10 @@ function getThrottlingDataset(nodeId) {
     let dataset = {
         type: 'bubble',
         data: datasetData,
-        label: LABELS.throttling,
+        label: LABELS.pagesWriteThrottle,
         fill: false,
-        backgroundColor: CHECKPOINT_COLORS.THROTTLING,
-        borderColor: CHECKPOINT_COLORS.THROTTLING,
+        backgroundColor: CHECKPOINT_COLORS.PAGES_WRITE_THROTTLE,
+        borderColor: CHECKPOINT_COLORS.PAGES_WRITE_THROTTLE,
         yAxisID: 'y1'
     };
 
