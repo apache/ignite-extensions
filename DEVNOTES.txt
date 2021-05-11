@@ -5,3 +5,20 @@ Apache Ignite Extensions Maven Build Instructions
 	
 	mvn clean install
 
+
+Maven Build Instructions For Released Apache Ignite Extension
+================================================
+
+The release sources package of an Apache Ignite extension provides only released module sources.
+
+NOTE: The sources of other modules from the package are current development copy and should not be built.
+
+1) Compile and install:
+
+	mvn -pl modules/%MODULE_NAME% clean install
+
+    where the %MODULE_NAME% is a released extension module name.
+
+    Example:
+
+	mvn -pl modules/spring-data-ext clean install
