@@ -20,4 +20,4 @@ other modules from the package are development copy and should not be built.
 
     Example:
 
-	mvn -pl modules/spring-data-ext clean install
+    mvn -pl modules/spring-data-ext clean install
