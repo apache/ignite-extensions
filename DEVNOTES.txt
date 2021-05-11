@@ -14,7 +14,7 @@ other modules from the package are development copy and should not be built.
 
 1) Compile and install:
 
-	mvn -pl modules/%MODULE_NAME% clean install
+    mvn -pl modules/%MODULE_NAME% clean install
 
     where the %MODULE_NAME% is a released extension module name.
 
