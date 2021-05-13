@@ -51,11 +51,14 @@ const searchNodesCPsSelect = $('#searchNodesCPs');
 
 let opsCountPerType = {};
 
+let fullInfo = false;
+
 function getLabel(ctx) {
     switch (ctx.dataset.label) {
         case LABELS.pagesWriteThrottle:
-            return ["Count per second: " + ctx.raw.d.counter,
+            return [
                 "Total duration: " + ctx.raw.d.duration + " ms.",
+                "Count per second: " + ctx.raw.d.counter,
                 "Node ID: " + ctx.raw.d.nodeId]
 
         default:
@@ -92,7 +95,7 @@ function drawCacheCharts() {
                                 let index = legendItem.datasetIndex;
 
                                 if (legendItem.text === LABELS.checkpoints) {
-                                    if(legendItem.hidden)
+                                    if (legendItem.hidden)
                                         chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
                                     else
                                         chart.options.annotations = []
@@ -154,7 +157,7 @@ function drawCacheCharts() {
                             position: 'right',
                             title: {
                                 display: true,
-                                text: 'Сount of pages write throttle'
+                                text: 'Total duration of pages write throttle, ms.'
                             },
                             suggestedMin: 0,
                             suggestedMax: 10
@@ -183,14 +186,14 @@ function getCheckointsBoxes(nodeId, yMax) {
     checkpoints.forEach(function (cp) {
 
         if (nodeId === "total" || nodeId === cp.nodeId) {
-            boxes.push(getBox(cp.cpStartTime, cp.cpStartTime + cp.totalDuration, 0, yMax, cp))
+            boxes.push(getBox(cp.cpStartTime, cp.cpStartTime + cp.totalDuration, 0, yMax, cp, boxes))
         }
     });
 
     return boxes
 }
 
-function getBox(xMin, xMax, yMin, yMax, cp) {
+function getBox(xMin, xMax, yMin, yMax, cp, boxes) {
     let box = {
         drawTime: 'afterDatasetsDraw',
         type: 'box',
@@ -202,11 +205,26 @@ function getBox(xMin, xMax, yMin, yMax, cp) {
         borderColor: CHECKPOINT_COLORS.CHECKPOINT,
         backgroundColor: 'rgba(0, 0, 0, 0.05)',
         label: {
-            content: getCheckpointInfoArr(cp),
+            cp: cp,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
             textAlign: 'start',
-            position: "top"
+            position: "start"
         },
+        click: (e) => {
+            fullInfo = !fullInfo
+
+            box.label.content = fullInfo ? getCheckpointInfoArr(cp) : getCheckpointShortInfoArr(cp),
+
+            e.chart.update()
+        },
+
         enter: (e) => {
+            boxes.forEach(b => {
+                b.label.enabled = false,
+                b.borderWidth = 1
+            })
+
+            box.label.content = fullInfo ? getCheckpointInfoArr(cp) : getCheckpointShortInfoArr(cp),
             box.label.enabled = true
             box.borderWidth = 3
             box.yMax = e.chart.scales.y.end
@@ -242,6 +260,16 @@ function getCheckpointInfoArr(cp) {
         'Split and sort checkpoint pages duration: ' + cp.splitAndSortCpPagesDuration + ' ms.',
         'Data pages written: ' + cp.dataPagesWritten,
         'Copy on write pages written: ' + cp.cowPagesWritten
+    ]
+}
+
+function getCheckpointShortInfoArr(cp) {
+    return [
+        'Checkpoint start time: ' + new Date(cp.cpStartTime).toLocaleTimeString(),
+        'Total duration: ' + cp.totalDuration / 1000 + ' s.',
+        'Number of dirty pages: ' + cp.pagesSize,
+        'Node ID: ' + cp.nodeId,
+        'Click to see more details.'
     ]
 }
 
@@ -356,7 +384,7 @@ function getPagesWriteThrottleDataset(nodeId) {
     pagesWriteThrottle.forEach(function (th) {
 
         if (nodeId === "total" || nodeId === th.nodeId) {
-            datasetData.push({x: th.time, y: th.counter, d: th});
+            datasetData.push({x: th.time, y: th.duration, d: th});
         }
     });
 

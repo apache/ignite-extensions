@@ -627,8 +627,16 @@ function measureLabel(ctx, label) {
 function calculateLabelPosition(line, width, height, chartArea) {
   const label = line.options.label;
   const {xAdjust, yAdjust, xPadding, yPadding, position} = label;
-  const p1 = {x: line.x, y: line.y};
-  const p2 = {x: line.x2, y: line.y2};
+  let p1, p2;
+  if (line instanceof BoxAnnotation) {
+    let centerX = (line.x + line.x2) / 2;
+    p1 = {x: centerX, y: line.y};
+    p2 = {x: centerX, y: line.y2};
+  }
+  else {
+    p1 = {x: line.x, y: line.y};
+    p2 = {x: line.x2, y: line.y2};
+  }
   const rotation = label.rotation === 'auto' ? calculateAutoRotation(line) : helpers.toRadians(label.rotation);
   const size = rotatedSize(width, height, rotation);
   const t = calculateT(line, position, size, chartArea);

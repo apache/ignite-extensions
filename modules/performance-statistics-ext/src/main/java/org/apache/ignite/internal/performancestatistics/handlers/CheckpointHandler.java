@@ -136,7 +136,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
 
         if (durationSec > 0)
             LongStream.range(0, durationSec + 1)
-                .forEach(d -> addThrottlesInfo(nodeId, TimeUnit.SECONDS.toMillis(time - d), duration));
+                .forEach(d -> addThrottlesInfo(nodeId, TimeUnit.SECONDS.toMillis(time - d), 1000));
         else
             addThrottlesInfo(nodeId, TimeUnit.SECONDS.toMillis(time), duration);
     }
@@ -151,7 +151,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
             .computeIfAbsent(time, t -> new ThrottlesInfo(nodeId, time, 0, duration));
 
         info.incrementCounter();
-        info.setDurationIfMore(duration);
+        info.addDuration(duration);
     }
 
     /** {@inheritDoc} */
@@ -370,8 +370,8 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
         }
 
         /** */
-        public void setDurationIfMore(long duration) {
-             this.duration = Math.max(this.duration, duration);
+        public void addDuration(long duration) {
+             this.duration += duration;
         }
     }
 }
