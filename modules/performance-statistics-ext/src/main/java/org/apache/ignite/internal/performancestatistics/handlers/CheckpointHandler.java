@@ -80,7 +80,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     private final LinkedList<CheckpointInfo> checkpoints = new LinkedList<>();
 
     /** Pages write throttle: nodeId -> time -> throttlesInfo. */
-    private final Map<UUID, Map<Long, ThrottlesInfo>> pagesWriteThrottle = new HashMap<>();
+    private final Map<UUID, Map<Long, PagesWriteThrottleInfo>> pagesWriteThrottle = new HashMap<>();
 
     /** */
     public static final String CHECKPOINTS_INFO = "checkpointsInfo";
@@ -146,9 +146,9 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
      * @param time Time in milliseconds.
      * @param duration Duration in milliseconds.
      */
-    private void addThrottlesInfo(UUID nodeId, long time, long duration){
-        ThrottlesInfo info = pagesWriteThrottle.computeIfAbsent(nodeId, uuid -> new HashMap<>())
-            .computeIfAbsent(time, t -> new ThrottlesInfo(nodeId, time, 0, duration));
+    private void addThrottlesInfo(UUID nodeId, long time, long duration) {
+        PagesWriteThrottleInfo info = pagesWriteThrottle.computeIfAbsent(nodeId, uuid -> new HashMap<>())
+            .computeIfAbsent(time, t -> new PagesWriteThrottleInfo(nodeId, time, 0, 0));
 
         info.incrementCounter();
         info.addDuration(duration);
@@ -156,10 +156,10 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        List<ThrottlesInfo> pagesWriteThrottle = this.pagesWriteThrottle.values().stream()
+        List<PagesWriteThrottleInfo> pagesWriteThrottle = this.pagesWriteThrottle.values().stream()
             .map(Map::values)
             .flatMap(Collection::stream)
-            .sorted(Comparator.comparingLong(ThrottlesInfo::getTime))
+            .sorted(Comparator.comparingLong(PagesWriteThrottleInfo::getTime))
             .collect(Collectors.toList());
 
         res.set(CHECKPOINTS, MAPPER.valueToTree(checkpoints));
@@ -323,7 +323,7 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
     }
 
     /** */
-    private static class ThrottlesInfo {
+    private static class PagesWriteThrottleInfo {
         /** */
         private final UUID nodeId;
 
@@ -331,16 +331,16 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
         private final long time;
 
         /** */
-        private long counter;
+        private long cnt;
 
         /** */
         private long duration;
 
         /** */
-        public ThrottlesInfo(UUID nodeId, long time, long counter, long duration) {
+        public PagesWriteThrottleInfo(UUID nodeId, long time, long cnt, long duration) {
             this.nodeId = nodeId;
             this.time = time;
-            this.counter = counter;
+            this.cnt = cnt;
             this.duration = duration;
         }
 
@@ -356,12 +356,12 @@ public class CheckpointHandler implements IgnitePerformanceStatisticsHandler {
 
         /** */
         public long getCounter() {
-            return counter;
+            return cnt;
         }
 
         /** */
         public void incrementCounter() {
-            counter++;
+            cnt++;
         }
 
         /** */

@@ -74,14 +74,17 @@ function buildSelectCaches(el, onSelect) {
 }
 
 /** Builds bootstrap-select for nodes. */
-function buildSelectNodes(el, onSelect, info) {
-    el.append('<option data-content="<b>'+info+'</b>" value="total"/>');
+function buildSelectNodes(el, onSelect, totalDesc, noneEnabled) {
+    el.append('<option data-content="<b>'+totalDesc+'</b>" value="total"/>');
 
     var nodes = REPORT_DATA.clusterInfo.nodes;
 
     $.each(nodes, (nodeId, node) => {
         el.append('<option data-content="' + node.id + '" value="' + node.id + '"/>');
     });
+
+    if (noneEnabled)
+        el.append('<option data-content="<b>'+'NONE'+'</b>"/>')
 
     el.on('changed.bs.select', onSelect);
 }

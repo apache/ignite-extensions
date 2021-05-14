@@ -31,7 +31,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.performancestatistics.PerformanceStatisticsPrinterTest.createStatistics;
+import static org.apache.ignite.internal.performancestatistics.PerformanceStatisticsTestUtils.createStatistics;
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.junit.Assert.assertEquals;
@@ -92,11 +92,10 @@ public class PerformanceStatisticsHandlersTest {
                 cowPagesWritten);
         });
 
-        String res = readResultStatistics(new CheckpointHandler());
-
-        JsonNode json = MAPPER.readTree(res).get(CheckpointHandler.CHECKPOINTS_INFO)
-                    .get(CheckpointHandler.CHECKPOINTS)
-                    .get(0);
+        JsonNode json = readResultStatistics(new CheckpointHandler())
+            .get(CheckpointHandler.CHECKPOINTS_INFO)
+            .get(CheckpointHandler.CHECKPOINTS)
+            .get(0);
 
         assertEquals(json.get("beforeLockDuration").asLong(), beforeLockDuration);
         assertEquals(json.get("lockWaitDuration").asLong(), lockWaitDuration);
@@ -118,14 +117,12 @@ public class PerformanceStatisticsHandlersTest {
     /** */
     @Test
     public void testPagesWriteThrottle() throws Exception {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
         long endTime1 = 10000;
         long duration1 = 1500;
         long endTime2 = endTime1 + 1000;
-        long duration2 = rnd.nextInt(100);
+        long duration2 = 100;
         long endTime3 = endTime2 + 500;
-        long duration3 = rnd.nextInt(100);
+        long duration3 = 200;
 
         createStatistics(writer -> {
             writer.pagesWriteThrottle(endTime1, duration1);
@@ -133,9 +130,8 @@ public class PerformanceStatisticsHandlersTest {
             writer.pagesWriteThrottle(endTime3, duration3);
         });
 
-        String res = readResultStatistics(new CheckpointHandler());
-
-        JsonNode node = MAPPER.readTree(res).get(CheckpointHandler.CHECKPOINTS_INFO)
+        JsonNode node = readResultStatistics(new CheckpointHandler())
+            .get(CheckpointHandler.CHECKPOINTS_INFO)
             .get(CheckpointHandler.PAGES_WRITE_THROTTLE);
 
         assertEquals(3, node.size());
@@ -145,25 +141,25 @@ public class PerformanceStatisticsHandlersTest {
         assertEquals(1, node1.get("counter").asLong());
         assertEquals(TimeUnit.MILLISECONDS.toSeconds(endTime1) - TimeUnit.MILLISECONDS.toSeconds(duration1),
             TimeUnit.MILLISECONDS.toSeconds(node1.get("time").asLong()));
-        assertEquals(duration1, node1.get("duration").asLong());
+        assertEquals(1000, node1.get("duration").asLong());
 
         JsonNode node2 = node.get(1);
 
         assertEquals(1, node2.get("counter").asLong());
         assertEquals(endTime1, node2.get("time").asLong());
-        assertEquals(duration1, node2.get("duration").asLong());
+        assertEquals(1000, node2.get("duration").asLong());
 
         JsonNode node3 = node.get(2);
 
         assertEquals(2, node3.get("counter").asLong());
         assertEquals(endTime2, node3.get("time").asLong());
-        assertEquals(Math.max(duration2, duration3), node3.get("duration").asLong());
+        assertEquals(duration2 + duration3, node3.get("duration").asLong());
     }
 
     /**
      * @throws Exception If failed.
      */
-    private String readResultStatistics(IgnitePerformanceStatisticsHandler hnd)
+    private JsonNode readResultStatistics(IgnitePerformanceStatisticsHandler hnd)
         throws Exception {
         File perfStatDir = new File(U.defaultWorkDirectory(), PERF_STAT_DIR);
 
@@ -175,6 +171,6 @@ public class PerformanceStatisticsHandlersTest {
 
         hnd.results().forEach(dataJson::set);
 
-        return dataJson.toString();
+        return dataJson;
     }
 }

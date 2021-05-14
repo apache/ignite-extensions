@@ -24,13 +24,13 @@ const TX_COLORS = {
 
 const txSearchCachesSelect = $('#txSearchCaches');
 const txSearchNodesSelect = $('#txSearchNodes');
-const txSearchNodesCPSelect = $('#txSearchNodesCPs');
+const txSearchNodesCPSelect = $('#txSearchCpNodes');
 const txCharts = $("#txCharts");
 
 function drawTxCharts() {
     var cacheId = txSearchCachesSelect.val();
     var nodeId = txSearchNodesSelect.val();
-    var nodeIdCP = txSearchNodesCPSelect.val()
+    var cpNodeId = txSearchNodesCPSelect.val()
 
     txCharts.empty();
 
@@ -51,9 +51,9 @@ function drawTxCharts() {
                         onClick: (e, legendItem, legend) => {
                             let index = legendItem.datasetIndex;
 
-                            if (legendItem.text === LABELS.checkpoints){
+                            if (legendItem.text === LABELS.CHECKPOINT){
                                 if(legendItem.hidden)
-                                    chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+                                    chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
                                 else
                                     chart.options.annotations = []
                             }
@@ -124,7 +124,7 @@ function drawTxCharts() {
             }
         })
 
-        chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+        chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
         chart.update()
     });
 
@@ -145,7 +145,7 @@ function drawTxCharts() {
                 }
             },
             scales: {
-                x:{
+                x: {
                     gridLines: {
                         offsetGridLines: true
                     },
@@ -154,7 +154,7 @@ function drawTxCharts() {
                         text: 'Duration of transaction'
                     }
                 },
-                y:{
+                y: {
                     display: true,
                     title: {
                         display: true,
@@ -218,7 +218,7 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     let nodeIdCP = searchNodesCPsSelect.val()
 
     if (nodeIdCP) {
-        datasets.push(getCheckpointDataset())
+        datasets.push(checkpointDataset)
         datasets.push(getPagesWriteThrottleDataset(nodeIdCP))
     }
 
@@ -242,7 +242,6 @@ function buildTxHistogramBuckets() {
 
 buildSelectCaches(txSearchCachesSelect, drawTxCharts, 'All nodes');
 buildSelectNodes(txSearchNodesSelect, drawTxCharts, 'All nodes');
-buildSelectNodes(txSearchNodesCPSelect, drawTxCharts, 'All checkpoint nodes');
-txSearchNodesCPSelect.append('<option data-content="<b>'+'NONE'+'</b>"/>');
+buildSelectNodes(txSearchNodesCPSelect, drawTxCharts, 'All checkpoint nodes', true);
 
 drawTxCharts();

@@ -41,13 +41,22 @@ const CHECKPOINT_COLORS = {
 }
 
 const LABELS = {
-    pagesWriteThrottle: 'Pages write throttle',
-    checkpoints: 'Checkpoints'
+    PAGES_WRITE_THROTTLE: 'Pages write throttle',
+    CHECKPOINT: 'Checkpoints'
 }
 
 const searchCachesSelect = $('#searchCaches');
 const searchNodesSelect = $('#searchNodes');
-const searchNodesCPsSelect = $('#searchNodesCPs');
+const searchNodesCPsSelect = $('#searchCpNodes');
+
+const checkpointDataset = {
+    type: 'bar',
+    data: [],
+    label: LABELS.CHECKPOINT,
+    backgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
+    borderColor: CHECKPOINT_COLORS.CHECKPOINT,
+    pointBackgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
+}
 
 let opsCountPerType = {};
 
@@ -55,7 +64,7 @@ let fullInfo = false;
 
 function getLabel(ctx) {
     switch (ctx.dataset.label) {
-        case LABELS.pagesWriteThrottle:
+        case LABELS.PAGES_WRITE_THROTTLE:
             return [
                 "Total duration: " + ctx.raw.d.duration + " ms.",
                 "Count per second: " + ctx.raw.d.counter,
@@ -69,7 +78,7 @@ function getLabel(ctx) {
 function drawCacheCharts() {
     $("#operationsCharts").empty();
 
-    let nodeIdCP = searchNodesCPsSelect.val()
+    let cpNodeId = searchNodesCPsSelect.val()
 
     $.each(CACHE_OPERATIONS, function (k, opName) {
         opsCountPerType[opName] = 0;
@@ -94,9 +103,9 @@ function drawCacheCharts() {
                             onClick: (e, legendItem, legend) => {
                                 let index = legendItem.datasetIndex;
 
-                                if (legendItem.text === LABELS.checkpoints) {
+                                if (legendItem.text === LABELS.CHECKPOINT) {
                                     if (legendItem.hidden)
-                                        chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+                                        chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
                                     else
                                         chart.options.annotations = []
                                 }
@@ -167,7 +176,7 @@ function drawCacheCharts() {
                 }
             })
 
-            chart.options.annotations = getCheckointsBoxes(nodeIdCP, chart.scales.y.end)
+            chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
             chart.update()
         }
     );
@@ -217,7 +226,6 @@ function getBox(xMin, xMax, yMin, yMax, cp, boxes) {
 
             e.chart.update()
         },
-
         enter: (e) => {
             boxes.forEach(b => {
                 b.label.enabled = false,
@@ -230,7 +238,6 @@ function getBox(xMin, xMax, yMin, yMax, cp, boxes) {
             box.yMax = e.chart.scales.y.end
             e.chart.update()
         },
-
         leave: (e) => {
             box.label.enabled = false
             box.borderWidth = 1
@@ -310,22 +317,11 @@ function prepareCacheDatasets(opName) {
     let nodeIdCP = searchNodesCPsSelect.val()
 
     if (nodeIdCP) {
-        datasets.push(getCheckpointDataset())
+        datasets.push(checkpointDataset)
         datasets.push(getPagesWriteThrottleDataset(nodeIdCP))
     }
 
     return datasets;
-}
-
-function getCheckpointDataset() {
-    return {
-        type: 'bar',
-        data: [],
-        label: LABELS.checkpoints,
-        backgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
-        borderColor: CHECKPOINT_COLORS.CHECKPOINT,
-        pointBackgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
-    }
 }
 
 function drawCacheBar() {
@@ -376,13 +372,9 @@ function drawCacheBar() {
 function getPagesWriteThrottleDataset(nodeId) {
     let pagesWriteThrottle = REPORT_DATA.checkpointsInfo.pagesWriteThrottle
 
-    if (pagesWriteThrottle === undefined)
-        return {};
-
     let datasetData = [];
 
     pagesWriteThrottle.forEach(function (th) {
-
         if (nodeId === "total" || nodeId === th.nodeId) {
             datasetData.push({x: th.time, y: th.duration, d: th});
         }
@@ -390,22 +382,19 @@ function getPagesWriteThrottleDataset(nodeId) {
 
     sortByKeyAsc(datasetData, "x");
 
-    let dataset = {
+    return {
         type: 'bubble',
         data: datasetData,
-        label: LABELS.pagesWriteThrottle,
+        label: LABELS.PAGES_WRITE_THROTTLE,
         fill: false,
         backgroundColor: CHECKPOINT_COLORS.PAGES_WRITE_THROTTLE,
         borderColor: CHECKPOINT_COLORS.PAGES_WRITE_THROTTLE,
         yAxisID: 'y1'
     };
-
-    return dataset
 }
 
-buildSelectCaches(searchCachesSelect, drawCacheCharts, 'All nodes');
+buildSelectCaches(searchCachesSelect, drawCacheCharts);
 buildSelectNodes(searchNodesSelect, drawCacheCharts, 'All nodes');
-buildSelectNodes(searchNodesCPsSelect, drawCacheCharts, 'All checkpoint nodes');
-searchNodesCPsSelect.append('<option data-content="<b>' + 'NONE' + '</b>"/>');
+buildSelectNodes(searchNodesCPsSelect, drawCacheCharts, 'All checkpoint nodes', true);
 
 drawCacheCharts();
