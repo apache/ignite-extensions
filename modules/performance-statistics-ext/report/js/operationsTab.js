@@ -19,7 +19,7 @@ const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_A
     "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
-    "getAll", "putAll", "removeAll", "invoke", "invokeAll", "lock"];
+    "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
     CACHE_GET: "#007bff",
@@ -171,9 +171,6 @@ function drawCacheBar() {
         },
         options: {
             scales: {
-                x: {
-                    barPercentage: 0.4
-                },
                 y: {
                     title: {
                         display: true,
