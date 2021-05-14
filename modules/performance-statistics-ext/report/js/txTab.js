@@ -37,57 +37,58 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
-        new Chart(document.getElementById(txChartId), {
-            type: 'line',
-            data: {
-                datasets: prepareTxDatasets(nodeId, cacheId, opName)
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-                    title: {
-                        display: true,
-                        text: "Count of [" + opName + "]",
-                        fontSize: 20
-                    }
+        try {
+            new Chart(document.getElementById(txChartId), {
+                type: 'line',
+                data: {
+                    datasets: prepareTxDatasets(nodeId, cacheId, opName)
                 },
-                scales: {
-                    x: {
-                        display: true,
-                        type: 'time',
-                        time: {
-                            displayFormats: {
-                                'millisecond': 'HH:mm:ss',
-                                'second': 'HH:mm:ss',
-                                'minute': 'HH:mm:ss',
-                                'hour': 'HH:mm'
-                            }
-                        },
+                options: {
+                    plugins: {
                         title: {
                             display: true,
-                            text: 'Date'
-                        },
-                        adapters: {
-                            data: {
-                                locale: 'date-fns/locale'
-                            }
+                            text: "Count of [" + opName + "]",
+                            fontSize: 20
                         }
                     },
-                    y: {
-                        display: true,
-                        title: {
+                    scales: {
+                        x: {
                             display: true,
-                            text: 'Сount'
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    'millisecond': 'HH:mm:ss',
+                                    'second': 'HH:mm:ss',
+                                    'minute': 'HH:mm:ss',
+                                    'hour': 'HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            adapters: {
+                                data: {
+                                    locale: 'date-fns/locale'
+                                }
+                            }
                         },
-                        suggestedMin: 0,
-                        suggestedMax: 10
-                    }
-                },
-                animation: false
-            }
-        })
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Сount'
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    },
+                    animation: false
+                }
+            })
+        } catch (e) {
+            console.warn("Exception during plotting: ", e)
+        }
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');

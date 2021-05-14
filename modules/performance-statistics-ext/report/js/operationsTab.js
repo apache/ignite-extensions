@@ -19,7 +19,7 @@ const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_A
     "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
-    "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
+    "getAll", "putAll", "removeAll", "invoke", "invokeAll", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
     CACHE_GET: "#007bff",
@@ -50,7 +50,8 @@ function drawCacheCharts() {
 
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
-        new Chart(document.getElementById(chartId), {
+        try {
+            new Chart(document.getElementById(chartId), {
                 type: 'line',
                 data: {
                     datasets: prepareCacheDatasets(opName),
@@ -61,9 +62,6 @@ function drawCacheCharts() {
                         mode: 'nearest',
                     },
                     plugins: {
-                        legend: {
-                            display: true
-                        },
                         title: {
                             display: true,
                             text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
@@ -105,8 +103,10 @@ function drawCacheCharts() {
                     animation: false
                 }
             })
+        } catch (e) {
+            console.warn("Exception during plotting: ", e)
         }
-    );
+    });
 
     drawCacheBar();
 }
@@ -191,7 +191,6 @@ function drawCacheBar() {
             animation: false
         }
     });
-
 }
 
 buildSelectCaches(searchCachesSelect, drawCacheCharts);
