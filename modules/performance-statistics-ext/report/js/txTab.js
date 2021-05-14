@@ -37,7 +37,9 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
-        try {
+        let datasets = prepareTxDatasets(nodeId, cacheId, opName)
+
+        if (datasets[0].data.length > 0)
             new Chart(document.getElementById(txChartId), {
                 type: 'line',
                 data: {
@@ -86,9 +88,6 @@ function drawTxCharts() {
                     animation: false
                 }
             })
-        } catch (e) {
-            console.warn("Exception during plotting: ", e)
-        }
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');

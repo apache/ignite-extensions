@@ -50,7 +50,9 @@ function drawCacheCharts() {
 
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
-        try {
+        let datasets = prepareCacheDatasets(opName)
+
+        if (datasets[0].data.length > 0)
             new Chart(document.getElementById(chartId), {
                 type: 'line',
                 data: {
@@ -103,9 +105,6 @@ function drawCacheCharts() {
                     animation: false
                 }
             })
-        } catch (e) {
-            console.warn("Exception during plotting: ", e)
-        }
     });
 
     drawCacheBar();
