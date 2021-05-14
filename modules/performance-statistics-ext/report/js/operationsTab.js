@@ -51,51 +51,62 @@ function drawCacheCharts() {
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
         new Chart(document.getElementById(chartId), {
-            type: 'line',
-            data: {
-                datasets: prepareCacheDatasets(opName)
-            },
-            options: {
-                scales: {
-                    xAxes: [{
-                        type: 'time',
-                        time: {
-                            displayFormats: {
-                                'millisecond': 'HH:mm:ss',
-                                'second': 'HH:mm:ss',
-                                'minute': 'HH:mm:ss',
-                                'hour': 'HH:mm'
+                type: 'line',
+                data: {
+                    datasets: prepareCacheDatasets(opName),
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'nearest',
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        title: {
+                            display: true,
+                            text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
+                            fontSize: 20
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            type: 'time',
+                            time: {
+                                displayFormats: {
+                                    'millisecond': 'HH:mm:ss',
+                                    'second': 'HH:mm:ss',
+                                    'minute': 'HH:mm:ss',
+                                    'hour': 'HH:mm'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            adapters: {
+                                data: {
+                                    locale: 'date-fns/locale'
+                                }
                             }
                         },
-                        scaleLabel: {
+                        y: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
-                        },
-                        ticks: {
+                            title: {
+                                display: true,
+                                text: 'Сount of operations'
+                            },
                             suggestedMin: 0,
                             suggestedMax: 10
                         }
-                    }]
-                },
-                legend: {
-                    display: true
-                },
-                title: {
-                    display: true,
-                    text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
-                    fontSize: 20
-                },
-                animation: false
-            }
-        })
-    });
+                    },
+                    animation: false
+                }
+            })
+        }
+    );
 
     drawCacheBar();
 }
@@ -114,12 +125,12 @@ function prepareCacheDatasets(opName) {
     var datasetData = [];
 
     $.each(cacheOps[opName], function (k, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]});
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]});
 
         opsCountPerType[opName] += arr[1];
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
         data: datasetData,
@@ -160,20 +171,17 @@ function drawCacheBar() {
         },
         options: {
             scales: {
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
+                x: {
+                    barPercentage: 0.4
+                },
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Count'
+                        text: 'Count'
                     },
-                    ticks: {
-                        suggestedMin: 0,
-                        suggestedMax: 10
-                    }
-                }]
-            },
-            legend: {
-                display: false
+                    suggestedMin: 0,
+                    suggestedMax: 10
+                }
             },
             title: {
                 display: true,

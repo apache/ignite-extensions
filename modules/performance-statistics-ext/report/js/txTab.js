@@ -43,8 +43,19 @@ function drawTxCharts() {
                 datasets: prepareTxDatasets(nodeId, cacheId, opName)
             },
             options: {
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
+                    }
+                },
                 scales: {
-                    xAxes: [{
+                    x: {
+                        display: true,
                         type: 'time',
                         time: {
                             displayFormats: {
@@ -54,30 +65,25 @@ function drawTxCharts() {
                                 'hour': 'HH:mm'
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
+                            text: 'Date'
                         },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
-                    }]
-                },
-                legend: {
-                    display: true
-                },
-                title: {
-                    display: true,
-                    text: "Count of [" + opName + "]",
-                    fontSize: 20
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
                 },
                 animation: false
             }
@@ -93,31 +99,30 @@ function drawTxCharts() {
             datasets: prepareTxHistogramDatasets(nodeId, cacheId)
         },
         options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Histogram of transaction durations",
+                    fontSize: 20
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     gridLines: {
                         offsetGridLines: true
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Duration of transaction'
+                        text: 'Duration of transaction'
                     }
-                }],
-                yAxes: [{
+                },
+                y: {
                     display: true,
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Count of transactions'
+                        text: 'Count of transactions'
                     }
-                }]
-            },
-            legend: {
-                display: false
-            },
-            title: {
-                display: true,
-                text: "Histogram of transaction durations",
-                fontSize: 20
+                }
             },
             animation: false
         }
@@ -154,10 +159,10 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     var datasetData = [];
 
     $.each(txData[opName], function (time, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]})
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
         data: datasetData,
