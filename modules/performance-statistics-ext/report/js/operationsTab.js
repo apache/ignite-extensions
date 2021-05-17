@@ -52,59 +52,59 @@ function drawCacheCharts() {
 
         let datasets = prepareCacheDatasets(opName)
 
-        if (datasets[0].data.length > 0)
-            new Chart(document.getElementById(chartId), {
-                type: 'line',
-                data: {
-                    datasets: prepareCacheDatasets(opName),
+        new Chart(document.getElementById(chartId), {
+            type: 'line',
+            data: {
+                datasets: datasets,
+                labels: datasets[0].data.length > 0 ? undefined : [undefined],
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'nearest',
                 },
-                options: {
-                    responsive: true,
-                    interaction: {
-                        mode: 'nearest',
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
-                            fontSize: 20
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            type: 'time',
-                            time: {
-                                displayFormats: {
-                                    'millisecond': 'HH:mm:ss',
-                                    'second': 'HH:mm:ss',
-                                    'minute': 'HH:mm:ss',
-                                    'hour': 'HH:mm'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Date'
-                            },
-                            adapters: {
-                                data: {
-                                    locale: 'date-fns/locale'
-                                }
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
+                        fontSize: 20
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                'millisecond': 'HH:mm:ss',
+                                'second': 'HH:mm:ss',
+                                'minute': 'HH:mm:ss',
+                                'hour': 'HH:mm'
                             }
                         },
-                        y: {
+                        title: {
                             display: true,
-                            title: {
-                                display: true,
-                                text: 'Сount of operations'
-                            },
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                            text: 'Date'
+                        },
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
                     },
-                    animation: false
-                }
-            })
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount of operations'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
+                },
+                animation: false
+            }
+        })
     });
 
     drawCacheBar();
