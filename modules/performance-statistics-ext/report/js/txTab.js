@@ -42,7 +42,7 @@ function drawTxCharts() {
         new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
-                datasets: prepareTxDatasets(nodeId, cacheId, opName),
+                datasets: datasets,
                 labels: datasets[0].data.length > 0 ? undefined : [undefined]
             },
             options: {
