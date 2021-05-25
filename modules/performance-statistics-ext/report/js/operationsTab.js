@@ -56,19 +56,12 @@ function drawCacheCharts() {
             type: 'line',
             data: {
                 datasets: datasets,
-                labels: datasets[0].data.length > 0 ? undefined : [undefined],
+                labels: datasets[0].data.length > 0 ? undefined : [undefined]
             },
             options: {
                 responsive: true,
                 interaction: {
                     mode: 'nearest',
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
-                        fontSize: 20
-                    }
                 },
                 scales: {
                     x: {
@@ -100,6 +93,13 @@ function drawCacheCharts() {
                         },
                         suggestedMin: 0,
                         suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
+                        fontSize: 20
                     }
                 },
                 animation: false

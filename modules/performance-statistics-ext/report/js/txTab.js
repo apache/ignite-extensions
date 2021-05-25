@@ -39,55 +39,55 @@ function drawTxCharts() {
 
         let datasets = prepareTxDatasets(nodeId, cacheId, opName)
 
-        if (datasets[0].data.length > 0)
-            new Chart(document.getElementById(txChartId), {
-                type: 'line',
-                data: {
-                    datasets: prepareTxDatasets(nodeId, cacheId, opName)
-                },
-                options: {
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: "Count of [" + opName + "]",
-                            fontSize: 20
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            type: 'time',
-                            time: {
-                                displayFormats: {
-                                    'millisecond': 'HH:mm:ss',
-                                    'second': 'HH:mm:ss',
-                                    'minute': 'HH:mm:ss',
-                                    'hour': 'HH:mm'
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Date'
-                            },
-                            adapters: {
-                                data: {
-                                    locale: 'date-fns/locale'
-                                }
+        new Chart(document.getElementById(txChartId), {
+            type: 'line',
+            data: {
+                datasets: prepareTxDatasets(nodeId, cacheId, opName),
+                labels: datasets[0].data.length > 0 ? undefined : [undefined]
+            },
+            options: {
+                scales: {
+                    x: {
+                        display: true,
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                'millisecond': 'HH:mm:ss',
+                                'second': 'HH:mm:ss',
+                                'minute': 'HH:mm:ss',
+                                'hour': 'HH:mm'
                             }
                         },
-                        y: {
+                        title: {
                             display: true,
-                            title: {
-                                display: true,
-                                text: 'Сount'
-                            },
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                            text: 'Date'
+                        },
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
                     },
-                    animation: false
-                }
-            })
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
+                    }
+                },
+                animation: false,
+            }
+        })
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');
