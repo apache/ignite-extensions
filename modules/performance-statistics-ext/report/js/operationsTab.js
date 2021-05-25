@@ -87,10 +87,13 @@ function drawCacheCharts() {
 
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
+        let datasets = prepareCacheDatasets(opName)
+
         let chart = new Chart(document.getElementById(chartId), {
                 type: 'line',
                 data: {
                     datasets: prepareCacheDatasets(opName),
+                    labels: datasets[0].data.length > 0 ? undefined : [undefined]
                 },
                 options: {
                     responsive: true,
