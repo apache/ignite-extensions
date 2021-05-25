@@ -123,7 +123,7 @@ function drawTxCharts() {
                         fontSize: 20
                     }
                 },
-                animation: false
+                animation: false,
             }
         })
 
