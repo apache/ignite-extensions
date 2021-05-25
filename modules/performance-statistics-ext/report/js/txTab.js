@@ -45,39 +45,6 @@ function drawTxCharts() {
                 datasets: prepareTxDatasets(nodeId, cacheId, opName)
             },
             options: {
-                plugins: {
-                    legend: {
-                        display: true,
-                        onClick: (e, legendItem, legend) => {
-                            let index = legendItem.datasetIndex;
-
-                            if (legendItem.text === LABELS.CHECKPOINT){
-                                if(legendItem.hidden)
-                                    chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
-                                else
-                                    chart.options.annotations = []
-                            }
-
-                            let ci = legend.chart;
-
-                            let meta = ci.getDatasetMeta(index)
-
-                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null
-
-                            ci.update();
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (i) => getLabel(i),
-                        }
-                    },
-                    title: {
-                        display: true,
-                        text: "Count of [" + opName + "]",
-                        fontSize: 20
-                    }
-                },
                 scales: {
                     x: {
                         display: true,
@@ -118,6 +85,39 @@ function drawTxCharts() {
                         },
                         suggestedMin: 0,
                         suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        onClick: (e, legendItem, legend) => {
+                            let index = legendItem.datasetIndex;
+
+                            if (legendItem.text === LABELS.CHECKPOINT){
+                                if(legendItem.hidden)
+                                    chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
+                                else
+                                    chart.options.annotations = []
+                            }
+
+                            let ci = legend.chart;
+
+                            let meta = ci.getDatasetMeta(index)
+
+                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null
+
+                            ci.update();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (i) => getLabel(i),
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
                     }
                 },
                 animation: false
