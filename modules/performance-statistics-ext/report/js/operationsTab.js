@@ -92,7 +92,7 @@ function drawCacheCharts() {
         let chart = new Chart(document.getElementById(chartId), {
                 type: 'line',
                 data: {
-                    datasets: prepareCacheDatasets(opName),
+                    datasets: datasets,
                     labels: datasets.find(ds => ds.data.length > 0) ? undefined : [undefined]
                 },
                 options: {
