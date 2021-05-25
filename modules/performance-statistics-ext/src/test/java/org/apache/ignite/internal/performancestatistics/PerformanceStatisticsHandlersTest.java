@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.handlers.CheckpointHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.IgnitePerformanceStatisticsHandler;
+import org.apache.ignite.internal.performancestatistics.handlers.PagesWriteThrottleHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
@@ -93,7 +94,6 @@ public class PerformanceStatisticsHandlersTest {
         });
 
         JsonNode json = readResultStatistics(new CheckpointHandler())
-            .get(CheckpointHandler.CHECKPOINTS_INFO)
             .get(CheckpointHandler.CHECKPOINTS)
             .get(0);
 
@@ -130,9 +130,8 @@ public class PerformanceStatisticsHandlersTest {
             writer.pagesWriteThrottle(endTime3, duration3);
         });
 
-        JsonNode node = readResultStatistics(new CheckpointHandler())
-            .get(CheckpointHandler.CHECKPOINTS_INFO)
-            .get(CheckpointHandler.PAGES_WRITE_THROTTLE);
+        JsonNode node = readResultStatistics(new PagesWriteThrottleHandler())
+            .get(PagesWriteThrottleHandler.PAGES_WRITE_THROTTLE);
 
         assertEquals(3, node.size());
 

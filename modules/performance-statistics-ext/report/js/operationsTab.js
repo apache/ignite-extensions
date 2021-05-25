@@ -190,7 +190,7 @@ function drawCacheCharts() {
 function getCheckointsBoxes(nodeId, yMax) {
     let boxes = []
 
-    let checkpoints = REPORT_DATA.checkpointsInfo.checkpoints
+    let checkpoints = REPORT_DATA.checkpoints
 
     if (checkpoints === undefined || !nodeId)
         return boxes;
@@ -370,7 +370,7 @@ function drawCacheBar() {
 }
 
 function getPagesWriteThrottleDataset(nodeId) {
-    let pagesWriteThrottle = REPORT_DATA.checkpointsInfo.pagesWriteThrottle
+    let pagesWriteThrottle = REPORT_DATA.pagesWriteThrottle
 
     let datasetData = [];
 
