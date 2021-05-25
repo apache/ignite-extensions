@@ -36,13 +36,13 @@ const CACHE_OPERATIONS_COLORS = {
 };
 
 const CHECKPOINT_COLORS = {
-    CHECKPOINT: "#008000",
+    CHECKPOINTS: "#008000",
     PAGES_WRITE_THROTTLE: "#c02332",
 }
 
 const LABELS = {
     PAGES_WRITE_THROTTLE: 'Pages write throttle',
-    CHECKPOINT: 'Checkpoints'
+    CHECKPOINTS: 'Checkpoints'
 }
 
 const searchCachesSelect = $('#searchCaches');
@@ -52,10 +52,10 @@ const searchNodesCPsSelect = $('#searchCpNodes');
 const checkpointDataset = {
     type: 'bar',
     data: [],
-    label: LABELS.CHECKPOINT,
-    backgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
-    borderColor: CHECKPOINT_COLORS.CHECKPOINT,
-    pointBackgroundColor: CHECKPOINT_COLORS.CHECKPOINT,
+    label: LABELS.CHECKPOINTS,
+    backgroundColor: CHECKPOINT_COLORS.CHECKPOINTS,
+    borderColor: CHECKPOINT_COLORS.CHECKPOINTS,
+    pointBackgroundColor: CHECKPOINT_COLORS.CHECKPOINTS,
 }
 
 let opsCountPerType = {};
@@ -93,7 +93,7 @@ function drawCacheCharts() {
                 type: 'line',
                 data: {
                     datasets: prepareCacheDatasets(opName),
-                    labels: datasets[0].data.length > 0 ? undefined : [undefined]
+                    labels: datasets.find(ds => ds.data.length > 0) ? undefined : [undefined]
                 },
                 options: {
                     responsive: true,
@@ -148,7 +148,7 @@ function drawCacheCharts() {
                             onClick: (e, legendItem, legend) => {
                                 let index = legendItem.datasetIndex;
 
-                                if (legendItem.text === LABELS.CHECKPOINT) {
+                                if (legendItem.text === LABELS.CHECKPOINTS) {
                                     if (legendItem.hidden)
                                         chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
                                     else
@@ -214,7 +214,7 @@ function getBox(xMin, xMax, yMin, yMax, cp, boxes) {
         yMin: yMin,
         yMax: yMax,
         borderWidth: 1,
-        borderColor: CHECKPOINT_COLORS.CHECKPOINT,
+        borderColor: CHECKPOINT_COLORS.CHECKPOINTS,
         backgroundColor: 'rgba(0, 0, 0, 0.05)',
         label: {
             cp: cp,

@@ -39,10 +39,13 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
+        let datasets = prepareTxDatasets(nodeId, cacheId, opName)
+
         let chart = new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
-                datasets: prepareTxDatasets(nodeId, cacheId, opName)
+                datasets: datasets,
+                labels: datasets.find(ds => ds.data.length > 0) ? undefined : [undefined]
             },
             options: {
                 scales: {
@@ -93,7 +96,7 @@ function drawTxCharts() {
                         onClick: (e, legendItem, legend) => {
                             let index = legendItem.datasetIndex;
 
-                            if (legendItem.text === LABELS.CHECKPOINT){
+                            if (legendItem.text === LABELS.CHECKPOINTS){
                                 if(legendItem.hidden)
                                     chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
                                 else
