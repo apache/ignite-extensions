@@ -34,7 +34,7 @@ import org.springframework.data.domain.PageRequest;
  * The example demonstrates how to interact with an Apache Ignite cluster by means of Spring Data API.
  *
  * Additional cluster nodes can be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} modules/spring-data-2.0/examples/config/example-spring-data.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} modules/spring-data-2.2/examples/config/example-spring-data.xml'}.
  */
 public class SpringDataExample {
     /** Spring Application Context. */
