@@ -23,6 +23,6 @@ package org.apache.ignite.cdc;
 public class CacheConflictOperationsWithFieldTest extends CacheConflictOperationsTest {
     /** {@inheritDoc} */
     @Override protected String conflictResolveField() {
-        return "requestId";
+        return "reqId";
     }
 }

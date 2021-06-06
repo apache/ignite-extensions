@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -53,9 +54,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-
-import static org.apache.ignite.cdc.ChangeEventType.DELETE;
-import static org.apache.ignite.cdc.ChangeEventType.UPDATE;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite cahes.
@@ -79,8 +77,8 @@ import static org.apache.ignite.cdc.ChangeEventType.UPDATE;
  * @see IgniteInternalCache#removeAllConflict(Map)
  * @see CacheVersionConflictResolver
  * @see GridCacheVersion
- * @see ChangeEvent
- * @see ChangeEventOrder
+ * @see ChangeDataCaptureEvent
+ * @see CacheEntryVersion
  */
 class Applier implements Runnable, AutoCloseable {
     /** */
@@ -202,7 +200,7 @@ class Applier implements Runnable, AutoCloseable {
                 continue;
 
             try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-                ChangeEvent<BinaryObject, BinaryObject> evt = (ChangeEvent<BinaryObject, BinaryObject>)is.readObject();
+                ChangeDataCaptureEvent evt = (ChangeDataCaptureEvent)is.readObject();
 
                 IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
                     for (String cacheName : ign.cacheNames()) {
@@ -226,30 +224,23 @@ class Applier implements Runnable, AutoCloseable {
                     currCache = cache;
                 }
 
-                ChangeEventOrder order = evt.order();
+                CacheEntryVersion order = evt.version();
 
                 KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
-                switch (evt.operation()) {
-                    case UPDATE:
-                        applyIfRequired(updBatch, rmvBatch, currCache, key, UPDATE);
+                if (evt.value() != null) {
+                    applyIfRequired(updBatch, rmvBatch, currCache, key, true);
 
-                        CacheObject val = new CacheObjectImpl(evt.value(), null);
+                    CacheObject val = new CacheObjectImpl(evt.value(), null);
 
-                        updBatch.put(key, new GridCacheDrInfo(val,
-                                new GridCacheVersion(order.topVer(), order.nodeOrderDrId(), order.order())));
+                    updBatch.put(key, new GridCacheDrInfo(val,
+                        new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
+                }
+                else {
+                    applyIfRequired(updBatch, rmvBatch, currCache, key, false);
 
-                        break;
-
-                    case DELETE:
-                        applyIfRequired(updBatch, rmvBatch, currCache, key, DELETE);
-
-                        rmvBatch.put(key, new GridCacheVersion(order.topVer(), order.nodeOrderDrId(), order.order()));
-
-                        break;
-
-                    default:
-                        throw new IllegalArgumentException("Unknown operation type: " + evt.operation());
+                    rmvBatch.put(key,
+                        new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
                 }
             }
             catch (ClassNotFoundException | IOException e) {
@@ -275,7 +266,7 @@ class Applier implements Runnable, AutoCloseable {
      * @param rmvBatch Remove map.
      * @param cache Current cache.
      * @param key Key.
-     * @param op Operation.
+     * @param isUpdate {@code True} if next operation update.
      * @throws IgniteCheckedException
      */
     private void applyIfRequired(
@@ -283,15 +274,15 @@ class Applier implements Runnable, AutoCloseable {
         Map<KeyCacheObject, GridCacheVersion> rmvBatch,
         IgniteInternalCache<BinaryObject, BinaryObject> cache,
         KeyCacheObject key,
-        ChangeEventType op
+        boolean isUpdate
     ) throws IgniteCheckedException {
-        if (isApplyBatch(DELETE, rmvBatch, op, key)) {
+        if (isApplyBatch(false, rmvBatch, isUpdate, key)) {
             cache.removeAllConflict(rmvBatch);
 
             rmvBatch.clear();
         }
 
-        if (isApplyBatch(UPDATE, updBatch, op, key)) {
+        if (isApplyBatch(true, updBatch, isUpdate, key)) {
             cache.putAllConflict(updBatch);
 
             updBatch.clear();
@@ -300,12 +291,12 @@ class Applier implements Runnable, AutoCloseable {
 
     /** @return {@code True} if update batch should be applied. */
     private boolean isApplyBatch(
-        ChangeEventType batchOp,
+        boolean isUpdBatch,
         Map<KeyCacheObject, ?> map,
-        ChangeEventType op,
+        boolean isUpd,
         KeyCacheObject key
     ) {
-        return (!F.isEmpty(map) && op != batchOp) ||
+        return (!F.isEmpty(map) && isUpd != isUpdBatch) ||
             map.size() >= MAX_BATCH_SZ ||
             map.containsKey(key);
     }

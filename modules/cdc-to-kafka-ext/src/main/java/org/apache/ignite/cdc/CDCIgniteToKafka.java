@@ -30,11 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cdc.conflictplugin.DrIdCacheVersionConflictResolver;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -44,7 +43,7 @@ import static org.apache.ignite.cdc.Utils.property;
 
 /**
  * CDC consumer that streams all data changes to Kafka topic.
- * {@link ChangeEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
+ * {@link ChangeDataCaptureEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
  * In case of any error during write consumer just fail. Fail of consumer will lead to the fail of whole application.
  * It expected that CDC application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka unavailability.
  *
@@ -52,11 +51,11 @@ import static org.apache.ignite.cdc.Utils.property;
  * e.g. concurrent updates of the same entry in other cluster is possible, please, be aware of {@link DrIdCacheVersionConflictResolver} conflict resolved.
  * Configuration of {@link DrIdCacheVersionConflictResolver} can be found in {@link CDCKafkaToIgnite} documentation.
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see CDCKafkaToIgnite
  * @see DrIdCacheVersionConflictResolver
  */
-public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject> {
+public class CDCIgniteToKafka implements ChangeDataCaptureConsumer {
     /** Default kafka topic name. */
     private static final String DFLT_TOPIC_NAME = "cdc-ignite";
 
@@ -77,10 +76,11 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
         " should point to the Kafka properties file.";
 
     /** Log. */
+    @LoggerResource
     private IgniteLogger log;
 
     /** Kafka producer to stream events. */
-    private KafkaProducer<Integer, ChangeEvent<BinaryObject, BinaryObject>> producer;
+    private KafkaProducer<Integer, ChangeDataCaptureEvent> producer;
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary;
@@ -128,14 +128,14 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onChange(Iterator<ChangeEvent<BinaryObject, BinaryObject>> evts) {
+    @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
         evts.forEachRemaining(evt -> {
             if (onlyPrimary && !evt.primary())
                 return;
 
-            if (evt.order().otherDcOrder() != null)
+            if (evt.version().otherClusterVersion() != null)
                 return;
 
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
@@ -176,9 +176,7 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     }
 
     /** {@inheritDoc} */
-    @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
-        this.log = log;
-
+    @Override public void start() {
         try {
             if (startFromProps)
                 startFromProperties();
@@ -219,15 +217,5 @@ public class CDCIgniteToKafka implements CDCConsumer<BinaryObject, BinaryObject>
     /** {@inheritDoc} */
     @Override public void stop() {
         producer.close();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean keepBinary() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String id() {
-        return "ignite-to-kafka";
     }
 }

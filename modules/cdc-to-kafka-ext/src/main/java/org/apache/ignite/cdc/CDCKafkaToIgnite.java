@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.cdc.conflictplugin.CDCCacheConflictResolutionManager;
 import org.apache.ignite.cdc.conflictplugin.DrIdCacheVersionConflictResolver;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -47,7 +47,7 @@ import static org.apache.ignite.cdc.Utils.property;
 /**
  * Main class of CDC(Capture Data Change) Kafka to Ignite application.
  * This application is counterpart of {@link CDCIgniteToKafka} CDC consumer.
- * Application runs several {@link Applier} thread to read Kafka topic and apply {@link ChangeEvent} to Ignite.
+ * Application runs several {@link Applier} thread to read Kafka topic and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
  * <p>
@@ -77,9 +77,9 @@ import static org.apache.ignite.cdc.Utils.property;
  *  <li>{@link CDCIgniteToKafka#IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
  * </ul>
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see CDCIgniteToKafka
- * @see ChangeEvent
+ * @see ChangeDataCaptureEvent
  * @see Applier
  */
 public class CDCKafkaToIgnite implements Runnable {
