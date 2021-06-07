@@ -62,7 +62,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     public byte clusterId;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0},drId={1}")
+    @Parameterized.Parameters(name = "cacheMode={0},clusterId={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
             {ATOMIC, THIRD_CLUSTER},
@@ -95,14 +95,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
+        CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
 
-        cfgPlugin.setClusterId(SECOND_CLUSTER);
-        cfgPlugin.setCaches(new HashSet<>(Collections.singleton("cache")));
-        cfgPlugin.setConflictResolveField(conflictResolveField());
+        pluginCfg.setClusterId(SECOND_CLUSTER);
+        pluginCfg.setCaches(new HashSet<>(Collections.singleton("cache")));
+        pluginCfg.setConflictResolveField(conflictResolveField());
 
         return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(cfgPlugin);
+            .setPluginProviders(pluginCfg);
     }
 
     /** {@inheritDoc} */
@@ -208,22 +208,19 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void putx(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
-        putx(k, drId, order++, expectSuccess);
+    private void putx(String k, byte clusterId, boolean expectSuccess) throws IgniteCheckedException {
+        putx(k, clusterId, order++, expectSuccess);
     }
 
     /** */
-    private void putx(String k, byte drId, long order, boolean expectSuccess) throws IgniteCheckedException {
+    private void putx(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
         Data newVal = generateSingleData(1);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
-
         CacheObject val = new CacheObjectImpl(cli.binary().toBinary(newVal), null);
 
-        cachex.putAllConflict(singletonMap(key,
-            new GridCacheDrInfo(val,
-                new GridCacheVersion(1, order, 1, drId))));
+        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, new GridCacheVersion(1, order, 1, clusterId))));
 
         if (expectSuccess) {
             assertTrue(cache.containsKey(k));
@@ -248,18 +245,17 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void removex(String k, byte drId, boolean expectSuccess) throws IgniteCheckedException {
-        removex(k, drId, order++, expectSuccess);
+    private void removex(String k, byte clusterId, boolean expectSuccess) throws IgniteCheckedException {
+        removex(k, clusterId, order++, expectSuccess);
     }
 
     /** */
-    private void removex(String k, byte drId, long order, boolean expectSuccess) throws IgniteCheckedException {
+    private void removex(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
-        cachex.removeAllConflict(singletonMap(key,
-                new GridCacheVersion(1, order, 1, drId)));
+        cachex.removeAllConflict(singletonMap(key, new GridCacheVersion(1, order, 1, clusterId)));
 
         if (expectSuccess)
             assertFalse(cache.containsKey(k));
@@ -272,8 +268,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private String key(String key, byte drId) {
-        return key + drId + cacheMode;
+    private String key(String key, byte clusterId) {
+        return key + clusterId + cacheMode;
     }
 
     /** */
