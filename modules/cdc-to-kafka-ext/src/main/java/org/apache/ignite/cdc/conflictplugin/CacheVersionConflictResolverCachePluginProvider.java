@@ -26,33 +26,33 @@ import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Intermediate component to provide {@link CDCCacheConflictResolutionManager} for specific cache.
+ * Intermediate component to provide {@link CacheConflictResolutionManagerImpl} for specific cache.
  *
- * @see CDCCacheConflictResolutionManager
- * @see DrIdCacheVersionConflictResolver
+ * @see CacheConflictResolutionManagerImpl
+ * @see CacheVersionConflictResolverImpl
  * @see CacheVersionConflictResolver
  */
-public class ConflictResolutionProvider implements CachePluginProvider {
+public class CacheVersionConflictResolverCachePluginProvider implements CachePluginProvider {
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
      * Note, values of this field must implement {@link Comparable} interface.
      *
-     * @see DrIdCacheVersionConflictResolver
+     * @see CacheVersionConflictResolverImpl
      */
     private final String conflictResolveField;
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
      */
-    public ConflictResolutionProvider(String conflictResolveField) {
+    public CacheVersionConflictResolverCachePluginProvider(String conflictResolveField) {
         this.conflictResolveField = conflictResolveField;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(Class cls) {
         if (cls.equals(CacheConflictResolutionManager.class))
-            return new CDCCacheConflictResolutionManager(conflictResolveField);
+            return new CacheConflictResolutionManagerImpl(conflictResolveField);
 
         return null;
     }

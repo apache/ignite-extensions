@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.ignite.cdc.conflictplugin.CDCCacheConflictResolutionManager;
-import org.apache.ignite.cdc.conflictplugin.DrIdCacheVersionConflictResolver;
+import org.apache.ignite.cdc.conflictplugin.CacheConflictResolutionManagerImpl;
+import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -41,12 +41,12 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
+import static org.apache.ignite.cdc.ChangeDataCaptureIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
 import static org.apache.ignite.cdc.Utils.property;
 
 /**
  * Main class of CDC(Capture Data Change) Kafka to Ignite application.
- * This application is counterpart of {@link CDCIgniteToKafka} CDC consumer.
+ * This application is counterpart of {@link ChangeDataCaptureIgniteToKafka} CDC consumer.
  * Application runs several {@link Applier} thread to read Kafka topic and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
@@ -55,7 +55,7 @@ import static org.apache.ignite.cdc.Utils.property;
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
  * <p>
  * To resolve possible update conflicts(in case of concurrent update in source and destination Ignite clusters) real-world deployments should use
- * some conflict resolver, for example {@link DrIdCacheVersionConflictResolver}.
+ * some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
  * Example of Ignite configuration with the conflict resolver:
  * <pre>
  * {@code
@@ -69,20 +69,20 @@ import static org.apache.ignite.cdc.Utils.property;
  * cfg.setPluginProviders(cfgPlugin);
  * }
  * </pre>
- * Please, see {@link CDCCacheConflictResolutionManager} for additional information.
+ * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
  *
  * Properties list:
  * <ul>
  *  <li>{@link #KAFKA_TO_IGNITE_THREAD_COUNT} - count of {@link Applier} threads.</li>
- *  <li>{@link CDCIgniteToKafka#IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
+ *  <li>{@link ChangeDataCaptureIgniteToKafka#IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
  * </ul>
  *
  * @see ChangeDataCapture
- * @see CDCIgniteToKafka
+ * @see ChangeDataCaptureIgniteToKafka
  * @see ChangeDataCaptureEvent
  * @see Applier
  */
-public class CDCKafkaToIgnite implements Runnable {
+public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Property to define number of {@link Applier} threads. */
     private static final String KAFKA_TO_IGNITE_THREAD_COUNT = "kafka.to.ignite.thread.count";
 
@@ -113,7 +113,7 @@ public class CDCKafkaToIgnite implements Runnable {
      * @param topic Topic name.
      * @param cacheNames Cache names.
      */
-    public CDCKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
+    public ChangeDataCaptureKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;

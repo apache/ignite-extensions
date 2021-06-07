@@ -56,8 +56,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
 /**
- * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite cahes.
- * It expected that messages was written to the Kafka by the {@link CDCIgniteToKafka} CDC consumer.
+ * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
+ * It expected that messages was written to the Kafka by the {@link ChangeDataCaptureIgniteToKafka} CDC consumer.
  * <p>
  * Each applier receive set of Kafka topic partitions to read and caches to process.
  * Applier creates consumer per partition because Kafka consumer reads not fair, consumer reads messages from specific partition while there is new messages in specific partition.
@@ -68,11 +68,11 @@ import org.apache.kafka.common.errors.WakeupException;
  * Messages applied to Ignite using {@link IgniteInternalCache#putAllConflict(Map)}, {@link IgniteInternalCache#removeAllConflict(Map)}
  * these methods allows to provide {@link GridCacheVersion} of the entry to the Ignite so in case update conflicts they can be resolved by the {@link CacheVersionConflictResolver}.
  * <p>
- * In case of any error during read applier just fail. Fail of any applier will lead to the fail of {@link CDCKafkaToIgnite} application.
+ * In case of any error during read applier just fail. Fail of any applier will lead to the fail of {@link ChangeDataCaptureKafkaToIgnite} application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
  *
- * @see CDCKafkaToIgnite
- * @see CDCIgniteToKafka
+ * @see ChangeDataCaptureKafkaToIgnite
+ * @see ChangeDataCaptureIgniteToKafka
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  * @see CacheVersionConflictResolver

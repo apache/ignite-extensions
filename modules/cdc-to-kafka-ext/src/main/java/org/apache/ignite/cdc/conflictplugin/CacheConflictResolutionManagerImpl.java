@@ -23,18 +23,18 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * Intermediate component to provide {@link DrIdCacheVersionConflictResolver} for specific cache.
+ * Intermediate component to provide {@link CacheVersionConflictResolverImpl} for specific cache.
  *
- * @see DrIdCacheVersionConflictResolver
+ * @see CacheVersionConflictResolverImpl
  * @see CacheVersionConflictResolver
  */
-public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictResolutionManager<K, V> {
+public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictResolutionManager<K, V> {
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
      * Note, values of this field must implement {@link Comparable} interface.
      *
-     * @see DrIdCacheVersionConflictResolver
+     * @see CacheVersionConflictResolverImpl
      */
     private final String conflictResolveField;
 
@@ -44,16 +44,16 @@ public class CDCCacheConflictResolutionManager<K, V> implements CacheConflictRes
     /**
      * @param conflictResolveField Field to resolve conflicts.
      */
-    public CDCCacheConflictResolutionManager(String conflictResolveField) {
+    public CacheConflictResolutionManagerImpl(String conflictResolveField) {
         this.conflictResolveField = conflictResolveField;
     }
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        return new DrIdCacheVersionConflictResolver(
+        return new CacheVersionConflictResolverImpl(
             cctx.versions().dataCenterId(),
             conflictResolveField,
-            cctx.logger(DrIdCacheVersionConflictResolver.class)
+            cctx.logger(CacheVersionConflictResolverImpl.class)
         );
     }
 

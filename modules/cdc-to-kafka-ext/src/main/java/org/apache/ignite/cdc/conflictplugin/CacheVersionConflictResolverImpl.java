@@ -40,19 +40,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  * Note, data center with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved automatically.
  */
-public class DrIdCacheVersionConflictResolver implements CacheVersionConflictResolver {
+public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
     /**
-     * Data center replication id.
-     * Note, data center with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved automatically.
+     * Cluster id.
+     * Note, cluster with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved automatically.
      */
-    private final byte drId;
+    private final byte clusterId;
 
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
      * Note, values of this field must implement {@link Comparable} interface.
      *
-     * @see DrIdCacheVersionConflictResolver
+     * @see CacheVersionConflictResolverImpl
      */
     private final String conflictResolveField;
 
@@ -63,12 +63,12 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
     private boolean conflictResolveFieldEnabled;
 
     /**
-     * @param drId Data center id.
+     * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
      */
-    public DrIdCacheVersionConflictResolver(byte drId, String conflictResolveField, IgniteLogger log) {
-        this.drId = drId;
+    public CacheVersionConflictResolverImpl(byte clusterId, String conflictResolveField, IgniteLogger log) {
+        this.clusterId = clusterId;
         this.conflictResolveField = conflictResolveField;
         this.log = log;
 
@@ -112,7 +112,7 @@ public class DrIdCacheVersionConflictResolver implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // New entry.
             return true;
 
-        if (newEntry.dataCenterId() == drId) // Update made on the same DC.
+        if (newEntry.dataCenterId() == clusterId) // Update made on the same DC.
             return true;
 
         if (oldEntry.dataCenterId() == newEntry.dataCenterId())

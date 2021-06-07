@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cdc.conflictplugin.CDCReplicationConfigurationPluginProvider;
+import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -60,7 +60,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.CDCIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
+import static org.apache.ignite.cdc.ChangeDataCaptureIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -71,7 +71,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests for kafka replication.
  */
 @RunWith(Parameterized.class)
-public class CDCReplicationTest extends GridCommonAbstractTest {
+public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     /** Cache mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
@@ -104,7 +104,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     public static final int KEYS_CNT = 50;
 
     /** */
-    public static final byte SOURCE_DRID = 26;
+    public static final byte SOURCE_CLUSTER_ID = 26;
 
     /** */
     public static final byte DEST_DRID = 27;
@@ -125,10 +125,10 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     private static Properties props;
 
     /** */
-    private static IgniteEx[] src;
+    private static IgniteEx[] srcCluster;
 
     /** */
-    private static IgniteEx[] dest;
+    private static IgniteEx[] destCluster;
 
     /** */
     @ClassRule
@@ -141,16 +141,16 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     private int discoPort = TcpDiscoverySpi.DFLT_PORT;
 
     /** */
-    private byte drId = SOURCE_DRID;
+    private byte drId = SOURCE_CLUSTER_ID;
 
     /** */
     private static final ThreadLocal<FastCrc> crc = new ThreadLocal<>().withInitial(FastCrc::new);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CDCReplicationConfigurationPluginProvider<?> cfgPlugin = new CDCReplicationConfigurationPluginProvider<>();
+        CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
 
-        cfgPlugin.setDrId(drId);
+        cfgPlugin.setClusterId(drId);
         cfgPlugin.setCaches(new HashSet<>(Collections.singletonList(ACTIVE_ACTIVE_CACHE)));
         cfgPlugin.setConflictResolveField("reqId");
 
@@ -204,29 +204,29 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
             props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10_000);
         }
 
-        src = new IgniteEx[] {
+        srcCluster = new IgniteEx[] {
             startGrid(1),
             startGrid(2),
             startClientGrid(3)
         };
 
-        src[0].cluster().state(ACTIVE);
-        src[0].cluster().tag("source");
+        srcCluster[0].cluster().state(ACTIVE);
+        srcCluster[0].cluster().tag("source");
 
         discoPort += DFLT_PORT_RANGE + 1;
         commPort += DFLT_PORT_RANGE + 1;
         drId = DEST_DRID;
 
-        dest = new IgniteEx[] {
+        destCluster = new IgniteEx[] {
             startGrid(4),
             startGrid(5),
             startClientGrid(6)
         };
 
-        assertFalse("source".equals(dest[0].cluster().tag()));
+        assertFalse("source".equals(destCluster[0].cluster().tag()));
 
-        dest[0].cluster().state(ACTIVE);
-        dest[0].cluster().tag("destination");
+        destCluster[0].cluster().state(ACTIVE);
+        destCluster[0].cluster().tag("destination");
     }
 
     /** {@inheritDoc} */
@@ -243,22 +243,22 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testActivePassiveReplication() throws Exception {
-        IgniteInternalFuture<?> fut1 = igniteToKafka(src[0], AP_TOPIC_NAME, AP_CACHE);
-        IgniteInternalFuture<?> fut2 = igniteToKafka(src[1], AP_TOPIC_NAME, AP_CACHE);
+        IgniteInternalFuture<?> fut1 = igniteToKafka(srcCluster[0], AP_TOPIC_NAME, AP_CACHE);
+        IgniteInternalFuture<?> fut2 = igniteToKafka(srcCluster[1], AP_TOPIC_NAME, AP_CACHE);
 
         try {
-            IgniteCache<Integer, Data> destCache = dest[0].createCache(AP_CACHE);
+            IgniteCache<Integer, Data> destCache = destCluster[0].createCache(AP_CACHE);
 
             destCache.put(1, new Data(null, 0, 1, REQUEST_ID.incrementAndGet()));
             destCache.remove(1);
 
-            runAsync(generateData("cache-1", src[src.length - 1], IntStream.range(0, KEYS_CNT), 1));
-            runAsync(generateData(AP_CACHE, src[src.length - 1], IntStream.range(0, KEYS_CNT), 1));
+            runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
+            runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
-            IgniteInternalFuture<?> k2iFut = runAsync(new CDCKafkaToIgnite(dest[0], props, AP_TOPIC_NAME, AP_CACHE));
+            IgniteInternalFuture<?> k2iFut = runAsync(new ChangeDataCaptureKafkaToIgnite(destCluster[0], props, AP_TOPIC_NAME, AP_CACHE));
 
             try {
-                IgniteCache<Integer, Data> srcCache = src[src.length - 1].getOrCreateCache(AP_CACHE);
+                IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
 
                 waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
                     fut1, fut2, k2iFut);
@@ -285,23 +285,23 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
         String srcDestTopic = "source-dest";
         String destSrcTopic = "dest-source";
 
-        IgniteCache<Integer, Data> srcCache = src[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
-        IgniteCache<Integer, Data> destCache = dest[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, Data> srcCache = srcCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, Data> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
-        runAsync(generateData(ACTIVE_ACTIVE_CACHE, src[src.length - 1],
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster[srcCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0), 1));
-        runAsync(generateData(ACTIVE_ACTIVE_CACHE, dest[dest.length - 1],
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
 
-        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(src[0], srcDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(src[1], srcDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(dest[0], destSrcTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(dest[1], destSrcTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0], srcDestTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1], srcDestTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(destCluster[0], destSrcTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], destSrcTopic, ACTIVE_ACTIVE_CACHE);
 
         try {
-            IgniteInternalFuture<?> k2iFut1 = runAsync(new CDCKafkaToIgnite(dest[0], props, srcDestTopic,
+            IgniteInternalFuture<?> k2iFut1 = runAsync(new ChangeDataCaptureKafkaToIgnite(destCluster[0], props, srcDestTopic,
                 ACTIVE_ACTIVE_CACHE));
-            IgniteInternalFuture<?> k2iFut2 = runAsync(new CDCKafkaToIgnite(src[0], props, destSrcTopic,
+            IgniteInternalFuture<?> k2iFut2 = runAsync(new ChangeDataCaptureKafkaToIgnite(srcCluster[0], props, destSrcTopic,
                 ACTIVE_ACTIVE_CACHE));
 
             try {
@@ -398,7 +398,7 @@ public class CDCReplicationTest extends GridCommonAbstractTest {
      */
     private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
-            CDCIgniteToKafka cdc = new CDCIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
+            ChangeDataCaptureIgniteToKafka cdc = new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
 
             cdc.setKafkaProps(props);
 

@@ -35,17 +35,17 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Plugin to enable {@link DrIdCacheVersionConflictResolver} for provided caches.
+ * Plugin to enable {@link CacheVersionConflictResolverImpl} for provided caches.
  *
- * @see DrIdCacheVersionConflictResolver
+ * @see CacheVersionConflictResolverImpl
  * @see CacheVersionConflictResolver
  */
-public class CDCReplicationConfigurationPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
+public class CacheVersionConflictResolverPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
     /** Plugin context. */
     private PluginContext ctx;
 
-    /** Data center replication id. */
-    private byte drId;
+    /** Cluster id. */
+    private byte clusterId;
 
     /** Cache names. */
     private Set<String> caches;
@@ -55,7 +55,7 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
      * Value of this field will be used to compare two entries in case of conflicting changes.
      * Note, values of this field must implement {@link Comparable} interface.
      *
-     * @see DrIdCacheVersionConflictResolver
+     * @see CacheVersionConflictResolverImpl
      */
     private String conflictResolveField;
 
@@ -63,13 +63,13 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
     private CachePluginProvider<?> provider;
 
     /** */
-    public CDCReplicationConfigurationPluginProvider() {
+    public CacheVersionConflictResolverPluginProvider() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "cdc-replication-configuration";
+        return "cache-version-conflict-resolver";
     }
 
     /** {@inheritDoc} */
@@ -79,14 +79,14 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
 
     /** {@inheritDoc} */
     @Override public String copyright() {
-        return "Sberbank Technology";
+        return "Apache Software Foundation";
     }
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.ctx = ctx;
 
-        this.provider = new ConflictResolutionProvider(conflictResolveField);
+        this.provider = new CacheVersionConflictResolverCachePluginProvider(conflictResolveField);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
     @Override public void onIgniteStart() {
         IgniteEx ign = (IgniteEx)ctx.grid();
 
-        ign.context().cache().context().versions().dataCenterId(drId);
+        ign.context().cache().context().versions().dataCenterId(clusterId);
     }
 
     /** {@inheritDoc} */
@@ -109,9 +109,9 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
         return new IgnitePlugin() { /* No-op. */ };
     }
 
-    /** @param drId Data center ID. */
-    public void setDrId(byte drId) {
-        this.drId = drId;
+    /** @param clusterId Data center ID. */
+    public void setClusterId(byte clusterId) {
+        this.clusterId = clusterId;
     }
 
     /** @param caches Caches to replicate */
@@ -125,12 +125,12 @@ public class CDCReplicationConfigurationPluginProvider<C extends PluginConfigura
     }
 
     /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+    @Override public void start(PluginContext ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+    @Override public void stop(boolean cancel) {
         // No-op.
     }
 

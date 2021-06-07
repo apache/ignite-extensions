@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.conflictplugin.DrIdCacheVersionConflictResolver;
+import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -48,14 +48,14 @@ import static org.apache.ignite.cdc.Utils.property;
  * It expected that CDC application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka unavailability.
  *
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
- * e.g. concurrent updates of the same entry in other cluster is possible, please, be aware of {@link DrIdCacheVersionConflictResolver} conflict resolved.
- * Configuration of {@link DrIdCacheVersionConflictResolver} can be found in {@link CDCKafkaToIgnite} documentation.
+ * e.g. concurrent updates of the same entry in other cluster is possible, please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
+ * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link ChangeDataCaptureKafkaToIgnite} documentation.
  *
  * @see ChangeDataCapture
- * @see CDCKafkaToIgnite
- * @see DrIdCacheVersionConflictResolver
+ * @see ChangeDataCaptureKafkaToIgnite
+ * @see CacheVersionConflictResolverImpl
  */
-public class CDCIgniteToKafka implements ChangeDataCaptureConsumer {
+public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer {
     /** Default kafka topic name. */
     private static final String DFLT_TOPIC_NAME = "cdc-ignite";
 
@@ -104,7 +104,7 @@ public class CDCIgniteToKafka implements ChangeDataCaptureConsumer {
     private boolean startFromProps;
 
     /** Empty constructor. */
-    public CDCIgniteToKafka() {
+    public ChangeDataCaptureIgniteToKafka() {
         startFromProps = true;
     }
 
@@ -114,7 +114,7 @@ public class CDCIgniteToKafka implements ChangeDataCaptureConsumer {
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafpa properties.
      */
-    public CDCIgniteToKafka(String topic, Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
+    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
