@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,8 @@ import org.jetbrains.annotations.Nullable;
  * @see CacheVersionConflictResolverImpl
  * @see CacheVersionConflictResolver
  */
-public class CacheVersionConflictResolverCachePluginProvider implements CachePluginProvider {
+public class CacheVersionConflictResolverCachePluginProvider<K, V, C extends CachePluginConfiguration<K, V>>
+    implements CachePluginProvider<C> {
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
@@ -50,9 +52,10 @@ public class CacheVersionConflictResolverCachePluginProvider implements CachePlu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(Class cls) {
+    @SuppressWarnings("unchecked")
+    @Nullable @Override public <T> T createComponent(Class<T> cls) {
         if (cls.equals(CacheConflictResolutionManager.class))
-            return new CacheConflictResolutionManagerImpl(conflictResolveField);
+            return (T)new CacheConflictResolutionManagerImpl<>(conflictResolveField);
 
         return null;
     }
@@ -88,7 +91,7 @@ public class CacheVersionConflictResolverCachePluginProvider implements CachePlu
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object unwrapCacheEntry(Cache.Entry entry, Class cls) {
+    @Nullable public <T, K2, V2> T unwrapCacheEntry(Cache.Entry<K2, V2> entry, Class<T> cls) {
         return null;
     }
 }

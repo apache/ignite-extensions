@@ -59,7 +59,7 @@ import org.apache.kafka.common.errors.WakeupException;
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
  * It expected that messages was written to the Kafka by the {@link ChangeDataCaptureIgniteToKafka} Change Data Capture consumer.
  * <p>
- * Each applier receive set of Kafka topic partitions to read and caches to process.
+ * Each {@code Applier} receive set of Kafka topic partitions to read and caches to process.
  * Applier creates consumer per partition because Kafka consumer reads not fair,
  * consumer reads messages from specific partition while there is new messages in specific partition.
  * See <a href=

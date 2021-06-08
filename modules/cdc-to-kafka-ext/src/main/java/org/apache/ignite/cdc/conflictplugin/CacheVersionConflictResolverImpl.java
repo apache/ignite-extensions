@@ -106,6 +106,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param <V> Key type.
      * @return {@code True} is should use new entry.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
@@ -138,11 +139,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                         n = U.field(newVal, conflictResolveField);
                     }
 
-                    if (o != null)
-                        return o.compareTo(n) < 0;
+                    if (o == null || n == null)
+                        return o == null;
 
-                    if (n != null)
-                        return n.compareTo(o) > 0;
+                    return o.compareTo(n) < 0;
                 }
                 catch (Exception e) {
                     log.error("Error while resolving replication conflict with field '" +

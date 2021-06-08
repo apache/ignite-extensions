@@ -20,7 +20,6 @@ package org.apache.ignite.cdc.conflictplugin;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -86,7 +85,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.ctx = ctx;
 
-        this.provider = new CacheVersionConflictResolverCachePluginProvider(conflictResolveField);
+        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField);
     }
 
     /** {@inheritDoc} */
@@ -155,7 +154,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
+    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 }

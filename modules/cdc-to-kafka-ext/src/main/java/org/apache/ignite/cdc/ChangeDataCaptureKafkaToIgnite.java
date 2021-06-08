@@ -66,7 +66,7 @@ import static org.apache.ignite.cdc.Utils.property;
  *
  * IgniteConfiguration cfg = ...;
  *
- * cfg.setPluginProviders(cfgPlugin);
+ * cfg.setPluginProviders(conflictPlugin);
  * }
  * </pre>
  * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
