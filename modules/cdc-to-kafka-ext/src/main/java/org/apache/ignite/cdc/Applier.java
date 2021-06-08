@@ -88,9 +88,6 @@ import org.apache.kafka.common.errors.WakeupException;
  */
 class Applier implements Runnable, AutoCloseable {
     /** */
-    public static final int MAX_BATCH_SZ = 256;
-
-    /** */
     public static final int DFLT_REQ_TIMEOUT = 3;
 
     /** Ignite instance. */
@@ -111,6 +108,9 @@ class Applier implements Runnable, AutoCloseable {
     /** Kafka properties. */
     private final Properties kafkaProps;
 
+    /** Maximum batch size. */
+    private final int maxBatchSz;
+
     /** Topic to read. */
     private final String topic;
 
@@ -118,10 +118,16 @@ class Applier implements Runnable, AutoCloseable {
     private final Set<Integer> caches;
 
     /** Consumers. */
-    private final List<KafkaConsumer<Integer, byte[]>> consumers = new ArrayList<>();
+    private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
+
+    /** Update batch. */
+    private final Map<KeyCacheObject, GridCacheDrInfo> updBatch = new HashMap<>();
+
+    /** Remove batch. */
+    private final Map<KeyCacheObject, GridCacheVersion> rmvBatch = new HashMap<>();
 
     /** */
-    private static final AtomicLong rcvdEvts = new AtomicLong();
+    private final AtomicLong rcvdEvts = new AtomicLong();
 
     /**
      * @param ign Ignite instance
@@ -130,13 +136,14 @@ class Applier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param closed Closed flag.
      */
-    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, AtomicBoolean closed) {
+    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, int maxBatchSz, AtomicBoolean closed) {
         assert !F.isEmpty(caches);
 
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.caches = caches;
+        this.maxBatchSz = maxBatchSz;
         this.closed = closed;
 
         log = ign.log().getLogger(Applier.class);
@@ -150,20 +157,20 @@ class Applier implements Runnable, AutoCloseable {
 
         try {
             for (int kafkaPart : kafkaParts) {
-                KafkaConsumer<Integer, byte[]> consumer = new KafkaConsumer<>(kafkaProps);
+                KafkaConsumer<Integer, byte[]> cnsmr = new KafkaConsumer<>(kafkaProps);
 
-                consumer.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
+                cnsmr.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
 
-                consumers.add(consumer);
+                cnsmrs.add(cnsmr);
             }
 
-            Iterator<KafkaConsumer<Integer, byte[]>> consumerIter = Collections.emptyIterator();
+            Iterator<KafkaConsumer<Integer, byte[]>> cnsmrIter = Collections.emptyIterator();
 
             while (!closed.get()) {
-                if (!consumerIter.hasNext())
-                    consumerIter = consumers.iterator();
+                if (!cnsmrIter.hasNext())
+                    cnsmrIter = cnsmrs.iterator();
 
-                poll(consumerIter.next());
+                poll(cnsmrIter.next());
             }
         }
         catch (WakeupException e) {
@@ -176,7 +183,7 @@ class Applier implements Runnable, AutoCloseable {
             closed.set(true);
         }
         finally {
-            for (KafkaConsumer<Integer, byte[]> consumer : consumers) {
+            for (KafkaConsumer<Integer, byte[]> consumer : cnsmrs) {
                 try {
                     consumer.close(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
                 }
@@ -185,7 +192,7 @@ class Applier implements Runnable, AutoCloseable {
                 }
             }
 
-            consumers.clear();
+            cnsmrs.clear();
         }
 
         if (log.isInfoEnabled())
@@ -194,19 +201,17 @@ class Applier implements Runnable, AutoCloseable {
 
     /**
      * Polls data from the specific consumer and applies it to the Ignite.
-     * @param consumer Data consumer.
+     * @param cnsmr Data consumer.
      */
-    private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+    private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
+        ConsumerRecords<Integer, byte[]> records = cnsmr.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
 
         if (log.isDebugEnabled()) {
             log.debug(
-                "Polled from consumer [assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']'
+                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']'
             );
         }
 
-        Map<KeyCacheObject, GridCacheDrInfo> updBatch = new HashMap<>();
-        Map<KeyCacheObject, GridCacheVersion> rmvBatch = new HashMap<>();
         IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
 
         for (ConsumerRecord<Integer, byte[]> rec : records) {
@@ -226,7 +231,7 @@ class Applier implements Runnable, AutoCloseable {
                 });
 
                 if (cache != currCache) {
-                    applyIfNotEmpty(updBatch, rmvBatch, currCache);
+                    applyIfNotEmpty(currCache);
 
                     updBatch.clear();
                     rmvBatch.clear();
@@ -239,7 +244,7 @@ class Applier implements Runnable, AutoCloseable {
                 KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
                 if (evt.value() != null) {
-                    applyIfRequired(updBatch, rmvBatch, currCache, key, true);
+                    applyIfRequired(currCache, key, true);
 
                     CacheObject val = new CacheObjectImpl(evt.value(), null);
 
@@ -247,7 +252,7 @@ class Applier implements Runnable, AutoCloseable {
                         new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
                 }
                 else {
-                    applyIfRequired(updBatch, rmvBatch, currCache, key, false);
+                    applyIfRequired(currCache, key, false);
 
                     rmvBatch.put(key,
                         new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
@@ -259,24 +264,18 @@ class Applier implements Runnable, AutoCloseable {
         }
 
         if (currCache != null)
-            applyIfNotEmpty(updBatch, rmvBatch, currCache);
+            applyIfNotEmpty(currCache);
 
-        consumer.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+        cnsmr.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
     }
 
     /**
      * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
      *
-     * @param updBatch Update map.
-     * @param rmvBatch Remove map.
      * @param cache Current cache.
      * @throws IgniteCheckedException In case of error.
      */
-    private void applyIfNotEmpty(
-        Map<KeyCacheObject, GridCacheDrInfo> updBatch,
-        Map<KeyCacheObject, GridCacheVersion> rmvBatch,
-        IgniteInternalCache<BinaryObject, BinaryObject> cache
-    ) throws IgniteCheckedException {
+    private void applyIfNotEmpty(IgniteInternalCache<BinaryObject, BinaryObject> cache) throws IgniteCheckedException {
         if (!F.isEmpty(rmvBatch))
             cache.removeAllConflict(rmvBatch);
 
@@ -287,16 +286,12 @@ class Applier implements Runnable, AutoCloseable {
     /**
      * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
      *
-     * @param updBatch Update map.
-     * @param rmvBatch Remove map.
      * @param cache Current cache.
      * @param key Key.
      * @param isUpdate {@code True} if next operation update.
      * @throws IgniteCheckedException In case of error.
      */
     private void applyIfRequired(
-        Map<KeyCacheObject, GridCacheDrInfo> updBatch,
-        Map<KeyCacheObject, GridCacheVersion> rmvBatch,
         IgniteInternalCache<BinaryObject, BinaryObject> cache,
         KeyCacheObject key,
         boolean isUpdate
@@ -316,13 +311,13 @@ class Applier implements Runnable, AutoCloseable {
 
     /** @return {@code True} if update batch should be applied. */
     private boolean isApplyBatch(
-        boolean isUpdBatch,
+        boolean batchContainsUpd,
         Map<KeyCacheObject, ?> map,
-        boolean isUpd,
+        boolean currOpUpd,
         KeyCacheObject key
     ) {
-        return (!F.isEmpty(map) && isUpd != isUpdBatch) ||
-            map.size() >= MAX_BATCH_SZ ||
+        return (!F.isEmpty(map) && currOpUpd != batchContainsUpd) ||
+            map.size() >= maxBatchSz ||
             map.containsKey(key);
     }
 
@@ -337,7 +332,7 @@ class Applier implements Runnable, AutoCloseable {
 
         closed.set(true);
 
-        consumers.forEach(KafkaConsumer::wakeup);
+        cnsmrs.forEach(KafkaConsumer::wakeup);
     }
 
     /** {@inheritDoc} */

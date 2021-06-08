@@ -76,7 +76,7 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     private final int maxBatchSz;
 
     /** Kafka properties. */
-    private Properties kafkaProps;
+    private final Properties kafkaProps;
 
     /** Count of sent messages.  */
     private long cntSntMsgs;
@@ -84,9 +84,9 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     /**
      * @param topic Topic name.
      * @param caches Cache names.
-     * @param maxBatchSz Maximum count of concurrently
+     * @param maxBatchSz Maximum count of concurrently.
      * @param onlyPrimary If {@code true} then stream only events from primaries.
-     * @param kafkaProps Kafpa properties.
+     * @param kafkaProps Kafka properties.
      */
     public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, int maxBatchSz, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
@@ -154,15 +154,6 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Sets kafka properties.
-     *
-     * @param kafkaProps Kafka properties.
-     */
-    public void setKafkaProps(Properties kafkaProps) {
-        this.kafkaProps = kafkaProps;
     }
 
     /** {@inheritDoc} */

@@ -90,6 +90,9 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Ignite to Kafka topic name. */
     public static final String IGNITE_TO_KAFKA_TOPIC = "ignite.to.kafka.topic";
 
+    /** Ignite to Kafka maximum batch size. */
+    public static final String IGNITE_TO_KAFKA_MAX_BATCH_SZ = "ignite.to.kafka.max.batch.size";
+
     /** Ignite instance shared between all {@link Applier}. */
     private final IgniteEx ign;
 
@@ -165,8 +168,10 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
 
         AtomicBoolean closed = new AtomicBoolean();
 
+        int maxBatchSz = Integer.parseInt(property(IGNITE_TO_KAFKA_MAX_BATCH_SZ, kafkaProps, "256"));
+
         for (int i = 0; i < thCnt; i++)
-            appliers.add(new Applier(ign, kafkaProps, topic, caches, closed));
+            appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSz, closed));
 
         int kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 

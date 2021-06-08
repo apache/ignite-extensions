@@ -394,8 +394,6 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             ChangeDataCaptureIgniteToKafka cdcCnsmr =
                 new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
 
-            cdcCnsmr.setKafkaProps(props);
-
             GridSpringResourceContext rsrcCtx = getFieldValue(ign.context().resource(), "rsrcCtx");
 
             ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
