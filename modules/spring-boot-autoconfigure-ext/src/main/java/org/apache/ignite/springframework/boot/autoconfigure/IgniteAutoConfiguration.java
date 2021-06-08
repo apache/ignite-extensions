@@ -95,7 +95,7 @@ public class IgniteAutoConfiguration {
      */
     @ConditionalOnBean(IgniteConfiguration.class)
     @Bean
-    public Ignite ignite(IgniteConfiguration cfg) {
+    public Ignite igniteInstance(IgniteConfiguration cfg) {
         return Ignition.start(cfg);
     }
 }

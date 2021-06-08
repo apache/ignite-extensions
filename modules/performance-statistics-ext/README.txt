@@ -6,6 +6,8 @@ Apache Ignite Performance Statistics module provides the tool to collect perform
 Cluster nodes collect performance statistics to the files placed under 'Ignite_work_directory/perf_stat/'.
 Performance statistics files are used to build the report offline.
 
+Building the Report
+---------------------------
 To collect statistics in runtime and to build the performance report follow:
 
 1) Start collecting performance statistics (use IgnitePerformanceStatisticsMBean JMX bean).
@@ -22,8 +24,23 @@ To collect statistics in runtime and to build the performance report follow:
 
         performance-statistics/build-report.sh path_to_files
 
-    to build the performance report. It will be created in the new directory under the performance statistics files path:
+    to build the performance report. It will be created in the new directory under the performance statistics files:
 
         path_to_files/report_yyyy-MM-dd_HH-mm-ss/
 
     Open 'report_yyyy-MM-dd_HH-mm-ss/index.html' in the browser to see the report.
+
+Print statistics
+---------------------------
+Ignite provides a tool to print statistics to a console or to a file in JSON format.
+
+Run the script from the release package of the tool to print statistics:
+
+    performance-statistics-tool/print-statistics.sh path_to_files
+
+Note that `path_to_files` is a path to the performance statistics file or files directory.
+
+The script provides the ability to filter operations by operation's type, time, or cache. For more details run the
+help command:
+
+    performance-statistics-tool/print-statistics.sh --help
