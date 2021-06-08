@@ -61,7 +61,6 @@ import org.testcontainers.utility.DockerImageName;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.KEYS_CNT;
-import static org.apache.ignite.cdc.ChangeDataCaptureIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -276,7 +275,6 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_TO_KAFKA_CACHES, value = ACTIVE_ACTIVE_CACHE)
     public void testActiveActiveReplication() throws Exception {
         String srcDestTopic = "source-dest";
         String destSrcTopic = "dest-source";

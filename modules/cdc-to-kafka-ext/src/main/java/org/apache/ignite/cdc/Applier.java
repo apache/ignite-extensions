@@ -226,11 +226,7 @@ class Applier implements Runnable, AutoCloseable {
                 });
 
                 if (cache != currCache) {
-                    if (!F.isEmpty(rmvBatch))
-                        currCache.removeAllConflict(rmvBatch);
-
-                    if (!F.isEmpty(updBatch))
-                        currCache.putAllConflict(updBatch);
+                    applyIfNotEmpty(updBatch, rmvBatch, currCache);
 
                     updBatch.clear();
                     rmvBatch.clear();
@@ -262,13 +258,8 @@ class Applier implements Runnable, AutoCloseable {
             }
         }
 
-        if (currCache != null) {
-            if (!F.isEmpty(rmvBatch))
-                currCache.removeAllConflict(rmvBatch);
-
-            if (!F.isEmpty(updBatch))
-                currCache.putAllConflict(updBatch);
-        }
+        if (currCache != null)
+            applyIfNotEmpty(updBatch, rmvBatch, currCache);
 
         consumer.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
     }
@@ -279,9 +270,29 @@ class Applier implements Runnable, AutoCloseable {
      * @param updBatch Update map.
      * @param rmvBatch Remove map.
      * @param cache Current cache.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private void applyIfNotEmpty(
+        Map<KeyCacheObject, GridCacheDrInfo> updBatch,
+        Map<KeyCacheObject, GridCacheVersion> rmvBatch,
+        IgniteInternalCache<BinaryObject, BinaryObject> cache
+    ) throws IgniteCheckedException {
+        if (!F.isEmpty(rmvBatch))
+            cache.removeAllConflict(rmvBatch);
+
+        if (!F.isEmpty(updBatch))
+            cache.putAllConflict(updBatch);
+    }
+
+    /**
+     * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
+     *
+     * @param updBatch Update map.
+     * @param rmvBatch Remove map.
+     * @param cache Current cache.
      * @param key Key.
      * @param isUpdate {@code True} if next operation update.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException In case of error.
      */
     private void applyIfRequired(
         Map<KeyCacheObject, GridCacheDrInfo> updBatch,

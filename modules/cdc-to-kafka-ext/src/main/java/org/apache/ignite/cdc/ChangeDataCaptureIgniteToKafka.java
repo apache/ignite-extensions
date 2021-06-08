@@ -18,8 +18,6 @@
 package org.apache.ignite.cdc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -38,9 +36,6 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
-import static org.apache.ignite.cdc.Utils.properties;
-import static org.apache.ignite.cdc.Utils.property;
-
 /**
  * CDC consumer that streams all data changes to Kafka topic.
  * {@link ChangeDataCaptureEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
@@ -58,25 +53,6 @@ import static org.apache.ignite.cdc.Utils.property;
  * @see CacheVersionConflictResolverImpl
  */
 public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer {
-    /** Default kafka topic name. */
-    private static final String DFLT_TOPIC_NAME = "cdc-ignite";
-
-    /** Path to the kafka properties file. */
-    private static final String CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS = "CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS";
-
-    /** Ignite to Kafka topic name. */
-    public static final String IGNITE_TO_KAFKA_TOPIC = "ignite.to.kafka.topic";
-
-    /** Ignite to Kafka only primary flag. */
-    public static final String IGNITE_TO_KAFKA_ONLY_PRIMARY = "ignite.to.kafka.only.primary";
-
-    /** Ignite to Kafka only primary flag. */
-    public static final String IGNITE_TO_KAFKA_CACHES = "ignite.to.kafka.caches";
-
-    /** Error message. */
-    private static final String ERR_MSG = CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS +
-        " should point to the Kafka properties file.";
-
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
@@ -85,30 +61,22 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     private KafkaProducer<Integer, ChangeDataCaptureEvent> producer;
 
     /** Handle only primary entry flag. */
-    private boolean onlyPrimary;
+    private final boolean onlyPrimary;
 
     /** Topic name. */
-    private String topic;
+    private final String topic;
 
     /** Number Kafka topic partitions. */
     private int kafkaPartitionsNum;
 
     /** Cache IDs. */
-    private Set<Integer> cachesIds;
+    private final Set<Integer> cachesIds;
 
     /** Kafka properties. */
     private Properties kafkaProps;
 
     /** Count of sent messages.  */
     private long cntSntMsgs;
-
-    /** */
-    private boolean startFromProps;
-
-    /** Empty constructor. */
-    public ChangeDataCaptureIgniteToKafka() {
-        startFromProps = true;
-    }
 
     /**
      * @param topic Topic name.
@@ -167,45 +135,18 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
         return true;
     }
 
-    /** Starts event consumer. */
-    public void startFromProperties() throws Exception {
-        kafkaProps = properties(System.getProperty(CDC_CONSUMER_IGNITE_TO_KAFKA_PROPS), ERR_MSG);
-
-        topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps, DFLT_TOPIC_NAME);
-
-        cachesIds = cachesIds(kafkaProps);
-
-        onlyPrimary = Boolean.parseBoolean(property(IGNITE_TO_KAFKA_ONLY_PRIMARY, kafkaProps, "false"));
-    }
-
     /** {@inheritDoc} */
     @Override public void start() {
         try {
-            if (startFromProps)
-                startFromProperties();
-
             kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 
             producer = new KafkaProducer<>(kafkaProps);
 
-            log.info("Ignite To Kafka started [topic=" + topic + ",onlyPrimary=" + onlyPrimary + ",cacheIds=" + cachesIds + ']');
+            log.info("Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /** Reads cache ids from properties. */
-    private Set<Integer> cachesIds(Properties props) {
-        String cacheNames = property(IGNITE_TO_KAFKA_CACHES, props);
-
-        if (cacheNames == null || cacheNames.isEmpty())
-            return Collections.emptySet();
-
-        return Arrays.stream(cacheNames.split(","))
-            .mapToInt(CU::cacheId)
-            .boxed()
-            .collect(Collectors.toSet());
     }
 
     /**

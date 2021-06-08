@@ -41,7 +41,6 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.cdc.ChangeDataCaptureIgniteToKafka.IGNITE_TO_KAFKA_TOPIC;
 import static org.apache.ignite.cdc.Utils.property;
 
 /**
@@ -75,7 +74,7 @@ import static org.apache.ignite.cdc.Utils.property;
  * Properties list:
  * <ul>
  *  <li>{@link #KAFKA_TO_IGNITE_THREAD_COUNT} - count of {@link Applier} threads.</li>
- *  <li>{@link ChangeDataCaptureIgniteToKafka#IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
+ *  <li>{@link #IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
  * </ul>
  *
  * @see ChangeDataCapture
@@ -87,6 +86,9 @@ import static org.apache.ignite.cdc.Utils.property;
 public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Property to define number of {@link Applier} threads. */
     private static final String KAFKA_TO_IGNITE_THREAD_COUNT = "kafka.to.ignite.thread.count";
+
+    /** Ignite to Kafka topic name. */
+    public static final String IGNITE_TO_KAFKA_TOPIC = "ignite.to.kafka.topic";
 
     /** Ignite instance shared between all {@link Applier}. */
     private final IgniteEx ign;

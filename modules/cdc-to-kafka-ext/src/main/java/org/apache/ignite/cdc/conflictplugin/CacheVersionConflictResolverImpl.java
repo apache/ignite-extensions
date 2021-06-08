@@ -89,8 +89,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (isUseNew(ctx, oldEntry, newEntry))
             res.useNew();
         else {
-            log.warning("Skip update due to the conflict[key=" + newEntry.key() + ",fromDC=" + newEntry.dataCenterId()
-                + ",toDC=" + oldEntry.dataCenterId() + ']');
+            log.warning("Skip update due to the conflict[key=" + newEntry.key() + ",fromCluster=" + newEntry.dataCenterId()
+                + ",toCluster=" + oldEntry.dataCenterId() + ']');
 
             res.useOld();
         }
