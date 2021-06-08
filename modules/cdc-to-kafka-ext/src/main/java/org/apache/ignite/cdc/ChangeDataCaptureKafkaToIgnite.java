@@ -47,21 +47,22 @@ import static org.apache.ignite.cdc.Utils.property;
 /**
  * Main class of CDC(Capture Data Change) Kafka to Ignite application.
  * This application is counterpart of {@link ChangeDataCaptureIgniteToKafka} CDC consumer.
- * Application runs several {@link Applier} thread to read Kafka topic and apply {@link ChangeDataCaptureEvent} to Ignite.
+ * Application runs several {@link Applier} thread to read Kafka topic partitions and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
  * <p>
  * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
- * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
+ * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
+ * such as Kafka or Ignite unavailability.
  * <p>
- * To resolve possible update conflicts(in case of concurrent update in source and destination Ignite clusters) real-world deployments should use
- * some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
+ * To resolve possible update conflicts(in case of concurrent update in source and destination Ignite clusters)
+ * real-world deployments should use some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
  * Example of Ignite configuration with the conflict resolver:
  * <pre>
  * {@code
  * CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
  *
- * cfgPlugin.setDrId(drId); // Data center replication ID.
+ * cfgPlugin.setClusterId(clusterId); // Cluster id.
  * cfgPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
  *
  * IgniteConfiguration cfg = ...;
@@ -81,6 +82,7 @@ import static org.apache.ignite.cdc.Utils.property;
  * @see ChangeDataCaptureIgniteToKafka
  * @see ChangeDataCaptureEvent
  * @see Applier
+ * @see CacheConflictResolutionManagerImpl
  */
 public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Property to define number of {@link Applier} threads. */

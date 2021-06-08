@@ -60,16 +60,22 @@ import org.apache.kafka.common.errors.WakeupException;
  * It expected that messages was written to the Kafka by the {@link ChangeDataCaptureIgniteToKafka} CDC consumer.
  * <p>
  * Each applier receive set of Kafka topic partitions to read and caches to process.
- * Applier creates consumer per partition because Kafka consumer reads not fair, consumer reads messages from specific partition while there is new messages in specific partition.
- * See <a href="https://cwiki.apache.org/confluence/display/KAFKA/KIP-387%3A+Fair+Message+Consumption+Across+Partitions+in+KafkaConsumer">KIP-387</a> and <a href="https://issues.apache.org/jira/browse/KAFKA-3932">KAFKA-3932</a> for further information.
+ * Applier creates consumer per partition because Kafka consumer reads not fair,
+ * consumer reads messages from specific partition while there is new messages in specific partition.
+ * See <a href=
+ * "https://cwiki.apache.org/confluence/display/KAFKA/KIP-387%3A+Fair+Message+Consumption+Across+Partitions+in+KafkaConsumer">KIP-387</a>
+ * and <a href="https://issues.apache.org/jira/browse/KAFKA-3932">KAFKA-3932</a> for further information.
  * All consumers should belongs to the same consumer-group to ensure consistent reading.
  * Applier polls messages from each consumer in round-robin fashion.
  * <p>
  * Messages applied to Ignite using {@link IgniteInternalCache#putAllConflict(Map)}, {@link IgniteInternalCache#removeAllConflict(Map)}
- * these methods allows to provide {@link GridCacheVersion} of the entry to the Ignite so in case update conflicts they can be resolved by the {@link CacheVersionConflictResolver}.
+ * these methods allows to provide {@link GridCacheVersion} of the entry to the Ignite so in case update conflicts they can be resolved
+ * by the {@link CacheVersionConflictResolver}.
  * <p>
- * In case of any error during read applier just fail. Fail of any applier will lead to the fail of {@link ChangeDataCaptureKafkaToIgnite} application.
- * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka or Ignite unavailability.
+ * In case of any error during read applier just fail.
+ * Fail of any applier will lead to the fail of {@link ChangeDataCaptureKafkaToIgnite} application.
+ * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
+ * such as Kafka or Ignite unavailability.
  *
  * @see ChangeDataCaptureKafkaToIgnite
  * @see ChangeDataCaptureIgniteToKafka
@@ -83,6 +89,9 @@ import org.apache.kafka.common.errors.WakeupException;
 class Applier implements Runnable, AutoCloseable {
     /** */
     public static final int MAX_BATCH_SZ = 256;
+
+    /** */
+    public static final int DFLT_REQ_TIMEOUT = 3;
 
     /** Ignite instance. */
     private final IgniteEx ign;
@@ -169,7 +178,7 @@ class Applier implements Runnable, AutoCloseable {
         finally {
             for (KafkaConsumer<Integer, byte[]> consumer : consumers) {
                 try {
-                    consumer.close(Duration.ofSeconds(3));
+                    consumer.close(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
                 }
                 catch (Exception e) {
                     log.warning("Close error!", e);
@@ -179,7 +188,8 @@ class Applier implements Runnable, AutoCloseable {
             consumers.clear();
         }
 
-        log.warning(Thread.currentThread().getName() + " - stoped!");
+        if (log.isInfoEnabled())
+            log.info(Thread.currentThread().getName() + " - stopped!");
     }
 
     /**
@@ -187,9 +197,13 @@ class Applier implements Runnable, AutoCloseable {
      * @param consumer Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> consumer) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(3));
+        ConsumerRecords<Integer, byte[]> records = consumer.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
 
-        log.warning("Polled from consumer[assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']');
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "Polled from consumer [assignments=" + consumer.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']'
+            );
+        }
 
         Map<KeyCacheObject, GridCacheDrInfo> updBatch = new HashMap<>();
         Map<KeyCacheObject, GridCacheVersion> rmvBatch = new HashMap<>();
@@ -208,7 +222,7 @@ class Applier implements Runnable, AutoCloseable {
                             return ign.cachex(cacheName);
                     }
 
-                    throw new IllegalStateException("Cache with id not found[cacheId=" + cacheId + ']');
+                    throw new IllegalStateException("Cache with id not found [cacheId=" + cacheId + ']');
                 });
 
                 if (cache != currCache) {
@@ -256,7 +270,7 @@ class Applier implements Runnable, AutoCloseable {
                 currCache.putAllConflict(updBatch);
         }
 
-        consumer.commitSync(Duration.ofSeconds(3));
+        consumer.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
     }
 
     /**

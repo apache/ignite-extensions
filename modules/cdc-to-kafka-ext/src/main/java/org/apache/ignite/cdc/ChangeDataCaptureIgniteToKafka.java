@@ -161,7 +161,8 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
             throw new RuntimeException(e);
         }
 
-        log.info("cntSntMsgs=" + cntSntMsgs);
+        if (log.isDebugEnabled())
+            log.debug("Events processed [cntSntMsgs=" + cntSntMsgs + ']');
 
         return true;
     }
@@ -187,7 +188,7 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
 
             producer = new KafkaProducer<>(kafkaProps);
 
-            log.info("Ignite To Kafka started[topic=" + topic + ",onlyPrimary=" + onlyPrimary + ",cacheIds=" + cachesIds + ']');
+            log.info("Ignite To Kafka started [topic=" + topic + ",onlyPrimary=" + onlyPrimary + ",cacheIds=" + cachesIds + ']');
         }
         catch (Exception e) {
             throw new RuntimeException(e);

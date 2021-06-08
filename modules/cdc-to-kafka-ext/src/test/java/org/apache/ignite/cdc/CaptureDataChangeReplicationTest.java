@@ -258,13 +258,11 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
-                    fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1, fut1, fut2, k2iFut);
 
                 IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1,
-                    fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1, fut1, fut2, k2iFut);
             }
             finally {
                 k2iFut.cancel();
