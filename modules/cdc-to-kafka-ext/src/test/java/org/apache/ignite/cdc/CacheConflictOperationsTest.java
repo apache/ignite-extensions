@@ -53,9 +53,6 @@ import static org.apache.ignite.cdc.CaptureDataChangeReplicationTest.generateSin
  */
 @RunWith(Parameterized.class)
 public class CacheConflictOperationsTest extends GridCommonAbstractTest {
-    /** */
-    public static final String CACHE = "cache";
-
     /** Cache mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
@@ -65,7 +62,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     public byte clusterId;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0},clusterId={1}")
+    @Parameterized.Parameters(name = "cacheMode={0}, clusterId={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
             {ATOMIC, THIRD_CLUSTER},
@@ -98,7 +95,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
 
         pluginCfg.setClusterId(SECOND_CLUSTER);
-        pluginCfg.setCaches(new HashSet<>(Collections.singleton(CACHE)));
+        pluginCfg.setCaches(new HashSet<>(Collections.singleton(DEFAULT_CACHE_NAME)));
         pluginCfg.setConflictResolveField(conflictResolveField());
 
         return super.getConfiguration(igniteInstanceName)
@@ -110,8 +107,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         startGrid(1);
         cli = startClientGrid(2);
 
-        cache = cli.createCache(new CacheConfiguration<String, Data>(CACHE).setAtomicityMode(cacheMode));
-        cachex = cli.cachex(CACHE);
+        cache = cli.createCache(new CacheConfiguration<String, Data>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
+        cachex = cli.cachex(DEFAULT_CACHE_NAME);
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */

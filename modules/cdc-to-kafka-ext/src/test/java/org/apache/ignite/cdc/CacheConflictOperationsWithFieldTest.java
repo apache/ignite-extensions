@@ -17,9 +17,7 @@
 
 package org.apache.ignite.cdc;
 
-/**
- * Cache conflict operations test.
- */
+/** Cache conflict operations test. */
 public class CacheConflictOperationsWithFieldTest extends CacheConflictOperationsTest {
     /** {@inheritDoc} */
     @Override protected String conflictResolveField() {

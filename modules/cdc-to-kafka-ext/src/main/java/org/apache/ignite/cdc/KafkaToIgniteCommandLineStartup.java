@@ -25,7 +25,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -120,7 +119,8 @@ public class KafkaToIgniteCommandLineStartup {
                 "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " + NL +
                 "    Note that bean will be fetched by the type and its ID is not used." + NL +
                 "Kafka properties should contain properties to connect to Kafka cluster." + NL +
-                "CacheNames is comma separated list of caches to process.");
+                "CacheNames is comma separated list of caches to process."
+            );
         }
 
         System.exit(exitCode);
