@@ -44,8 +44,8 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.cdc.Utils.property;
 
 /**
- * Main class of CDC(Capture Data Change) Kafka to Ignite application.
- * This application is counterpart of {@link ChangeDataCaptureIgniteToKafka} CDC consumer.
+ * Main class of Kafka to Ignite application.
+ * This application is counterpart of {@link ChangeDataCaptureIgniteToKafka} Change Data Capture consumer.
  * Application runs several {@link Applier} thread to read Kafka topic partitions and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
@@ -59,10 +59,10 @@ import static org.apache.ignite.cdc.Utils.property;
  * Example of Ignite configuration with the conflict resolver:
  * <pre>
  * {@code
- * CDCReplicationConfigurationPluginProvider cfgPlugin = new CDCReplicationConfigurationPluginProvider();
+ * CacheVersionConflictResolverCachePluginProvider conflictPlugin = new CacheVersionConflictResolverCachePluginProvider();
  *
- * cfgPlugin.setClusterId(clusterId); // Cluster id.
- * cfgPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
+ * conflictPlugin.setClusterId(clusterId); // Cluster id.
+ * conflictPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
  *
  * IgniteConfiguration cfg = ...;
  *
@@ -146,7 +146,7 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
         kafkaProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     }
 
-    /** Runs CDC. */
+    /** {@inheritDoc} */
     @Override public void run() {
         try {
             runX();
@@ -158,7 +158,7 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
         }
     }
 
-    /** Runs CDC application with possible exception. */
+    /** Runs application with possible exception. */
     public void runX() throws Exception {
         if (topic == null)
             topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps);

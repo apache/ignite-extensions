@@ -37,7 +37,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
 /**
- * CDC consumer that streams all data changes to Kafka topic.
+ * Change Data Consumer that streams all data changes to Kafka topic.
  * {@link ChangeDataCaptureEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
  * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
  * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
@@ -72,6 +72,9 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     /** Cache IDs. */
     private final Set<Integer> cachesIds;
 
+    /** Max batch size. */
+    private final int maxBatchSz;
+
     /** Kafka properties. */
     private Properties kafkaProps;
 
@@ -81,15 +84,17 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     /**
      * @param topic Topic name.
      * @param caches Cache names.
+     * @param maxBatchSz Maximum count of concurrently
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafpa properties.
      */
-    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, boolean onlyPrimary, Properties kafkaProps) {
+    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, int maxBatchSz, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
         this.onlyPrimary = onlyPrimary;
         this.kafkaProps = kafkaProps;
+        this.maxBatchSz = maxBatchSz;
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
@@ -101,15 +106,17 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
-        evts.forEachRemaining(evt -> {
+        while (evts.hasNext() && futs.size() <= maxBatchSz) {
+            ChangeDataCaptureEvent evt = evts.next();
+
             if (onlyPrimary && !evt.primary())
-                return;
+                continue;
 
             if (evt.version().otherClusterVersion() != null)
-                return;
+                continue;
 
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
-                return;
+                continue;
 
             cntSntMsgs++;
 
@@ -119,7 +126,7 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
                 evt.cacheId(),
                 evt
             )));
-        });
+        }
 
         try {
             for (Future<RecordMetadata> fut : futs)

@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -388,12 +387,12 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
      * @param ign Ignite instance to watch for.
      * @param topic Kafka topic name.
      * @param caches Caches names to stream to kafka.
-     * @return Future for CDC application.
+     * @return Future for Change Data Capture application.
      */
     private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
             ChangeDataCaptureIgniteToKafka cdcCnsmr =
-                new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
+                new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
 
             cdcCnsmr.setKafkaProps(props);
 

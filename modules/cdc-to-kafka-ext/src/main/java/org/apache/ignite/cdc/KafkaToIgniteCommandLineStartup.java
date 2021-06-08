@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
+import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
@@ -52,7 +53,7 @@ public class KafkaToIgniteCommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("Kafka To Ignite CDC Command Line Startup, ver. " + ACK_VER_STR);
+            X.println("Kafka To Ignite Command Line Startup, ver. " + ACK_VER_STR);
             X.println(COPYRIGHT);
             X.println();
         }
@@ -90,7 +91,7 @@ public class KafkaToIgniteCommandLineStartup {
             if (X.hasCause(e, ClassNotFoundException.class))
                 note = "\nNote! You may use 'USER_LIBS' environment variable to specify your classpath.";
 
-            exit("Failed to run CDC: " + e.getMessage() + note, false, -1);
+            exit("Failed to run app: " + e.getMessage() + note, false, -1);
         }
     }
 
@@ -105,16 +106,10 @@ public class KafkaToIgniteCommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "cdc-ignite-to-kafka");
-
-        int space = runner.indexOf(' ');
-
-        runner = runner.substring(0, space == -1 ? runner.length() : space);
-
         if (showUsage) {
             X.error(
                 "Usage:",
-                "    " + runner + " [?]|[IgniteXml] [KafkaProperties] [CacheNames]",
+                "    kafka-to-ignite [?]|[IgniteXml] [KafkaProperties] [CacheNames]",
                 "    Where:",
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
@@ -122,9 +117,10 @@ public class KafkaToIgniteCommandLineStartup {
                 "    KafkaProperties  - path to Kafka properties file.",
                 "    CacheNames       - comma separated cache names.",
                 " ",
-                "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " +
-                "And one or more implementations of 'org.apache.ignite.cdc.CDCConsumer'." +
-                "Note that bean will be fetched by the type and its ID is not used.");
+                "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " + NL +
+                "    Note that bean will be fetched by the type and its ID is not used." + NL +
+                "Kafka properties should contain properties to connect to Kafka cluster." + NL +
+                "CacheNames is comma separated list of caches to process.");
         }
 
         System.exit(exitCode);
