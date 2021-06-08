@@ -21,6 +21,7 @@ import org.apache.ignite.cache.spring.GridSpringCacheManagerMultiJvmSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.cache.spring.GridSpringCacheManagerSpringBeanSelfTest;
 import org.apache.ignite.cache.spring.IgniteClientSpringCacheManagerTest;
+import org.apache.ignite.cache.spring.IgniteSpringCacheCompatibilityTest;
 import org.apache.ignite.cache.spring.SpringCacheManagerContextInjectionTest;
 import org.apache.ignite.cache.spring.SpringCacheTest;
 import org.junit.runner.RunWith;
@@ -36,7 +37,8 @@ import org.junit.runners.Suite;
     SpringCacheManagerContextInjectionTest.class,
     SpringCacheTest.class,
     GridSpringCacheManagerMultiJvmSelfTest.class,
-    IgniteClientSpringCacheManagerTest.class
+    IgniteClientSpringCacheManagerTest.class,
+    IgniteSpringCacheCompatibilityTest.class
 })
 public class IgniteSpringCacheTestSuite {
 }

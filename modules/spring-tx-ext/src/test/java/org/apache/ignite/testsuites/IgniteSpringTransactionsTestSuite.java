@@ -21,6 +21,7 @@ import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfT
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSelfTest;
 import org.apache.ignite.transactions.spring.GridSpringTransactionManagerSpringBeanSelfTest;
 import org.apache.ignite.transactions.spring.IgniteClientSpringTransactionManagerTest;
+import org.apache.ignite.transactions.spring.IgniteSpringTransactionsCompatibilityTest;
 import org.apache.ignite.transactions.spring.SpringTransactionManagerContextInjectionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     GridSpringTransactionManagerSpringBeanSelfTest.class,
     IgniteClientSpringTransactionManagerTest.class,
     SpringTransactionManagerContextInjectionTest.class,
-    CacheSpringStoreSessionListenerSelfTest.class
+    CacheSpringStoreSessionListenerSelfTest.class,
+    IgniteSpringTransactionsCompatibilityTest.class
 })
 public class IgniteSpringTransactionsTestSuite {
 }
