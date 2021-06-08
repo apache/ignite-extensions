@@ -36,7 +36,7 @@ public class CacheVersionConflictResolverCachePluginProvider implements CachePlu
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
-     * Note, values of this field must implement {@link Comparable} interface.
+     * Note, values of this field must implement {@link Comparable}.
      *
      * @see CacheVersionConflictResolverImpl
      */

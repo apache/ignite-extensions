@@ -26,24 +26,26 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * This class implements simple coflict resolution algorithm.
- * Algorith decides which version of the entry should be used "new" or "old".
+ * This class implements simple conflict resolution algorithm.
+ * Algorithm decides which version of the entry should be used "new" or "old".
  * The following steps performed:
  * <ul>
  *     <li>If entry is freshly created then new version used - {@link GridCacheVersionedEntryEx#isStartVersion()}.</li>
- *     <li>If change made in this data center then new version used - {@link GridCacheVersionedEntryEx#dataCenterId()}.</li>
- *     <li>If data center of new entry equal to data center of old entry then entry with the greater {@link GridCacheVersionedEntryEx#order()} used.</li>
+ *     <li>If change made in this cluster then new version used - {@link GridCacheVersionedEntryEx#dataCenterId()}.</li>
+ *     <li>If cluster of new entry equal to cluster of old entry
+ *     then entry with the greater {@link GridCacheVersionedEntryEx#order()} used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of new entry greater then new version used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of old entry greater then old version used.</li>
  *     <li>Entry with the lower value of {@link GridCacheVersionedEntryEx#dataCenterId()} used.</li>
  * </ul>
  *
- * Note, data center with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved automatically.
+ * Note, data center with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved
+ * automatically.
  */
 public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
     /**
      * Cluster id.
-     * Note, cluster with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved automatically.
+     * Note, cluster with lower value has greater priority e.g first (1) cluster is main in case conflict can't be resolved automatically.
      */
     private final byte clusterId;
 

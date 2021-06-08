@@ -44,11 +44,13 @@ import static org.apache.ignite.cdc.Utils.property;
 /**
  * CDC consumer that streams all data changes to Kafka topic.
  * {@link ChangeDataCaptureEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
- * In case of any error during write consumer just fail. Fail of consumer will lead to the fail of whole application.
- * It expected that CDC application will be configured for automatic restarts with the OS tool to failover temporary errors such as Kafka unavailability.
+ * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
+ * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
+ * such as Kafka unavailability or network issues.
  *
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
- * e.g. concurrent updates of the same entry in other cluster is possible, please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
+ * e.g. concurrent updates of the same entry in other cluster is possible,
+ * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
  * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link ChangeDataCaptureKafkaToIgnite} documentation.
  *
  * @see ChangeDataCapture

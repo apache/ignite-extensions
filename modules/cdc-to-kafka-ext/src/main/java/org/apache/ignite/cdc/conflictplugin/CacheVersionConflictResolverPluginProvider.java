@@ -53,7 +53,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
-     * Note, values of this field must implement {@link Comparable} interface.
+     * Note, values of this field must implement {@link Comparable}.
      *
      * @see CacheVersionConflictResolverImpl
      */
@@ -114,7 +114,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
         this.clusterId = clusterId;
     }
 
-    /** @param caches Caches to replicate */
+    /** @param caches Caches to replicate. */
     public void setCaches(Set<String> caches) {
         this.caches = caches;
     }

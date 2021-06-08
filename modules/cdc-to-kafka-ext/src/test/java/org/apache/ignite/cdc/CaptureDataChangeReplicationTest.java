@@ -60,6 +60,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.KEYS_CNT;
 import static org.apache.ignite.cdc.ChangeDataCaptureIgniteToKafka.IGNITE_TO_KAFKA_CACHES;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
@@ -101,13 +102,10 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     public static final String ACTIVE_ACTIVE_CACHE = "active-active-cache";
 
     /** */
-    public static final int KEYS_CNT = 50;
+    public static final byte SRC_CLUSTER_ID = 26;
 
     /** */
-    public static final byte SOURCE_CLUSTER_ID = 26;
-
-    /** */
-    public static final byte DEST_DRID = 27;
+    public static final byte DEST_CLUSTER_ID = 27;
 
     /** */
     public static final int BOTH_EXISTS = 1;
@@ -141,7 +139,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     private int discoPort = TcpDiscoverySpi.DFLT_PORT;
 
     /** */
-    private byte drId = SOURCE_CLUSTER_ID;
+    private byte clusterId = SRC_CLUSTER_ID;
 
     /** */
     private static final ThreadLocal<FastCrc> crc = new ThreadLocal<>().withInitial(FastCrc::new);
@@ -150,7 +148,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
 
-        cfgPlugin.setClusterId(drId);
+        cfgPlugin.setClusterId(clusterId);
         cfgPlugin.setCaches(new HashSet<>(Collections.singletonList(ACTIVE_ACTIVE_CACHE)));
         cfgPlugin.setConflictResolveField("reqId");
 
@@ -215,7 +213,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
 
         discoPort += DFLT_PORT_RANGE + 1;
         commPort += DFLT_PORT_RANGE + 1;
-        drId = DEST_DRID;
+        clusterId = DEST_CLUSTER_ID;
 
         destCluster = new IgniteEx[] {
             startGrid(4),
@@ -398,15 +396,16 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
      */
     private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
-            ChangeDataCaptureIgniteToKafka cdc = new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
+            ChangeDataCaptureIgniteToKafka cdcCnsmr =
+                new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), false, props);
 
-            cdc.setKafkaProps(props);
+            cdcCnsmr.setKafkaProps(props);
 
             GridSpringResourceContext rsrcCtx = getFieldValue(ign.context().resource(), "rsrcCtx");
 
             ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
-            cdcCfg.setConsumer(cdc);
+            cdcCfg.setConsumer(cdcCnsmr);
 
             new ChangeDataCapture(ign.configuration(), rsrcCtx, cdcCfg).run();
         });

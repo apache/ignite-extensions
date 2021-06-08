@@ -53,6 +53,9 @@ import static org.apache.ignite.cdc.CaptureDataChangeReplicationTest.generateSin
  */
 @RunWith(Parameterized.class)
 public class CacheConflictOperationsTest extends GridCommonAbstractTest {
+    /** */
+    public static final String CACHE = "cache";
+
     /** Cache mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
@@ -81,24 +84,21 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx cli;
 
-    /** This cluster have a greater priority that {@link #SECOND_CLUSTER}. */
+    /** Cluster have a greater priority that {@link #SECOND_CLUSTER}. */
     private static final byte FIRST_CLUSTER = 1;
 
     /** */
     private static final byte SECOND_CLUSTER = 2;
 
-    /** This DC have a lower priority that {@link #SECOND_CLUSTER}. */
+    /** Cluster have a lower priority that {@link #SECOND_CLUSTER}. */
     private static final byte THIRD_CLUSTER = 3;
-
-    /** */
-    private long order;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
 
         pluginCfg.setClusterId(SECOND_CLUSTER);
-        pluginCfg.setCaches(new HashSet<>(Collections.singleton("cache")));
+        pluginCfg.setCaches(new HashSet<>(Collections.singleton(CACHE)));
         pluginCfg.setConflictResolveField(conflictResolveField());
 
         return super.getConfiguration(igniteInstanceName)
@@ -110,14 +110,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         startGrid(1);
         cli = startClientGrid(2);
 
-        cache = cli.createCache(new CacheConfiguration<String, Data>("cache").setAtomicityMode(cacheMode));
-        cachex = cli.cachex("cache");
+        cache = cli.createCache(new CacheConfiguration<String, Data>(CACHE).setAtomicityMode(cacheMode));
+        cachex = cli.cachex(CACHE);
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
     @Test
-    public void testThisClusterUpdateWithoutConflict() {
-        String key = "testUpdateThisClusterWithoutConflict";
+    public void testSimpleUpdates() {
+        String key = "UpdatesWithoutConflict";
 
         put(key);
 
@@ -131,14 +131,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
      * when there is no update conflicts.
      */
     @Test
-    public void testThatClusterUpdateWithoutConflict() throws Exception {
-        String key = "testUpdateThatClusterWithoutConflict";
+    public void testUpdatesFromOtherClusterWithoutConflict() throws Exception {
+        String key = "UpdateFromOtherClusterWithoutConflict";
 
-        putx(key(key, clusterId), clusterId, true);
+        putx(key(key, clusterId), clusterId, 1, true);
 
-        putx(key(key, clusterId), clusterId, true);
+        putx(key(key, clusterId), clusterId, 2, true);
 
-        removex(key(key, clusterId), clusterId, true);
+        removex(key(key, clusterId), clusterId, 3, true);
     }
 
 
@@ -147,53 +147,56 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
      * when there is no update conflicts.
      */
     @Test
-    public void testThatClusterUpdateReorder() throws Exception {
-        String key = "testThatClusterUpdateReorder";
+    public void testUpdatesReorderFromOtherCluster() throws Exception {
+        String key = "UpdateClusterUpdateReorder";
 
-        order += 1;
+        putx(key(key, clusterId), clusterId, 2, true);
 
-        putx(key(key, clusterId), clusterId, order, true);
+        // Update with the equal or lower order should fail.
+        putx(key(key, clusterId), clusterId, 2, false);
+        putx(key(key, clusterId), clusterId, 1, false);
 
-        putx(key(key, clusterId), clusterId, order, false);
+        // Remove with the equal or lower order should fail.
+        removex(key(key, clusterId), clusterId, 2, false);
+        removex(key(key, clusterId), clusterId, 1, false);
 
-        putx(key(key, clusterId), clusterId, order - 1, false);
-
-        removex(key(key, clusterId), clusterId, order, false);
-
-        removex(key(key, clusterId), clusterId, order - 1, false);
+        // Remove with the higher order should succeed.
+        putx(key(key, clusterId), clusterId, 3, true);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
-    public void testUpdateThisClusterConflict() throws Exception {
-        String key = "testUpdateThisClusterConflict0";
+    public void testUpdatesConflict() throws Exception {
+        String key = "UpdateThisClusterConflict0";
 
-        putx(key(key, clusterId), clusterId, true);
+        putx(key(key, clusterId), clusterId, 1, true);
 
+        // Local remove for other cluster entry should succeed.
         remove(key(key, clusterId));
 
         // Conflict replicated update succeed only if cluster has a greater priority than this cluster.
-        putx(key(key, clusterId), clusterId, clusterId == FIRST_CLUSTER);
+        putx(key(key, clusterId), clusterId, 2, clusterId == FIRST_CLUSTER);
 
-        key = "testUpdateThisDCConflict1";
+        key = "UpdateThisDCConflict1";
 
-        putx(key(key, clusterId), clusterId, true);
+        putx(key(key, clusterId), clusterId, 3, true);
 
+        // Local update for other cluster entry should succeed.
         put(key(key, clusterId));
 
-        key = "testUpdateThisDCConflict2";
+        key = "UpdateThisDCConflict2";
 
         put(key(key, clusterId));
 
         // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-        removex(key(key, clusterId), clusterId, clusterId == FIRST_CLUSTER);
+        removex(key(key, clusterId), clusterId, 4, clusterId == FIRST_CLUSTER);
 
-        key = "testUpdateThisDCConflict3";
+        key = "UpdateThisDCConflict3";
 
         put(key(key, clusterId));
 
         // Conflict replicated update succeed only if DC has a greater priority than this DC.
-        putx(key(key, clusterId), clusterId, clusterId == FIRST_CLUSTER || conflictResolveField() != null);
+        putx(key(key, clusterId), clusterId, 5, clusterId == FIRST_CLUSTER || conflictResolveField() != null);
     }
 
     /** */
@@ -205,11 +208,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         assertEquals(newVal, cache.get(key));
 
         checkCRC(cache.get(key), 1);
-    }
-
-    /** */
-    private void putx(String k, byte clusterId, boolean expectSuccess) throws IgniteCheckedException {
-        putx(k, clusterId, order++, expectSuccess);
     }
 
     /** */
@@ -242,11 +240,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         cache.remove(key);
 
         assertFalse(cache.containsKey(key));
-    }
-
-    /** */
-    private void removex(String k, byte clusterId, boolean expectSuccess) throws IgniteCheckedException {
-        removex(k, clusterId, order++, expectSuccess);
     }
 
     /** */
