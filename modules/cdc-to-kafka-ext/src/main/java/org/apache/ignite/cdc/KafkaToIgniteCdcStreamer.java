@@ -97,6 +97,9 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     /** Maximum batch size. */
     private final int maxBatchSize;
 
+    /** Kafka partitions count. */
+    private final int kafkaPartsNum;
+
     /** Kafka topic to read. */
     private final String topic;
 
@@ -106,11 +109,12 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
      * @param topic Topic name.
      * @param cacheNames Cache names.
      */
-    public KafkaToIgniteCdcStreamer(IgniteEx ign, int threadCnt, Properties kafkaProps, String topic, int maxBatchSize, String... cacheNames) {
+    public KafkaToIgniteCdcStreamer(IgniteEx ign, int threadCnt, Properties kafkaProps, String topic, int kafkaPartsNum, int maxBatchSize, String... cacheNames) {
         this.ign = ign;
         this.threadCnt = threadCnt;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
+        this.kafkaPartsNum = kafkaPartsNum;
         this.maxBatchSize = maxBatchSize;
         this.caches = Arrays.stream(cacheNames)
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
@@ -137,26 +141,12 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try {
-            runX();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-
-            throw new RuntimeException(e);
-        }
-    }
-
-    /** Runs application with possible exception. */
-    public void runX() throws Exception {
         AtomicBoolean closed = new AtomicBoolean();
 
         for (int i = 0; i < threadCnt; i++)
             appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSize, closed));
 
-        int kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
-
-        for (int i = 0; i < kafkaPartitionsNum; i++)
+        for (int i = 0; i < kafkaPartsNum; i++)
             appliers.get(i % threadCnt).addPartition(i);
 
         try {

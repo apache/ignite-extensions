@@ -53,6 +53,9 @@ import org.apache.kafka.clients.producer.RecordMetadata;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
+    /** Default kafka request timeout. */
+    public static final int DFLT_REQ_TIMEOUT_MIN = 1;
+
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
@@ -67,7 +70,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     private final String topic;
 
     /** Kafka topic partitions count. */
-    private int kafkaParts;
+    private final int kafkaParts;
 
     /** Cache IDs. */
     private final Set<Integer> cachesIds;
@@ -83,15 +86,17 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
 
     /**
      * @param topic Topic name.
+     * @param kafkaParts Kafka partitions count.
      * @param caches Cache names.
      * @param maxBatchSize Maximum count of concurrently.
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
-    public IgniteToKafkaCdcStreamer(String topic, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
+    public IgniteToKafkaCdcStreamer(String topic, int kafkaParts, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
+        this.kafkaParts = kafkaParts;
         this.onlyPrimary = onlyPrimary;
         this.kafkaProps = kafkaProps;
         this.maxBatchSize = maxBatchSize;
@@ -130,7 +135,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
 
         try {
             for (Future<RecordMetadata> fut : futs)
-                fut.get(KafkaUtils.DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
+                fut.get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -145,8 +150,6 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     /** {@inheritDoc} */
     @Override public void start() {
         try {
-            kafkaParts = KafkaUtils.initTopic(topic, kafkaProps);
-
             producer = new KafkaProducer<>(kafkaProps);
 
             log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');

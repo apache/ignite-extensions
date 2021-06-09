@@ -80,7 +80,7 @@ public class KafkaToIgniteCommandLineStartup {
                 kafkaProps.load(reader);
             }
 
-            new KafkaToIgniteCdcStreamer(ign, 16, kafkaProps, null, 256, cacheNames).run();
+            new KafkaToIgniteCdcStreamer(ign, 16, kafkaProps, null, 16, 256, cacheNames).run();
         }
         catch (Throwable e) {
             e.printStackTrace();

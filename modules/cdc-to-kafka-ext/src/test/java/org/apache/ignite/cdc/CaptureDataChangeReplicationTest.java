@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
@@ -45,6 +48,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -60,6 +65,7 @@ import org.testcontainers.utility.DockerImageName;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.KEYS_CNT;
+import static org.apache.ignite.cdc.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT_MIN;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -93,6 +99,16 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     /** */
     public static final String AP_TOPIC_NAME = "active-passive-topic";
 
+    /** */
+    public static final String SRC_DEST_TOPIC = "source-dest";
+
+    /** */
+    public static final String DEST_SRC_TOPIC = "dest-source";
+
+    /** */
+    public static final int KAFKA_PARTS = 16;
+
+    /** */
     public static final int MAX_BATCH_SIZE = 256;
 
     /** */
@@ -205,6 +221,10 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10_000);
         }
 
+        createTopic(AP_TOPIC_NAME, KAFKA_PARTS, props);
+        createTopic(SRC_DEST_TOPIC, KAFKA_PARTS, props);
+        createTopic(DEST_SRC_TOPIC, KAFKA_PARTS, props);
+
         srcCluster = new IgniteEx[] {
             startGrid(1),
             startGrid(2),
@@ -257,7 +277,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
             IgniteInternalFuture<?> k2iFut =
-                runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, AP_TOPIC_NAME, MAX_BATCH_SIZE, AP_CACHE));
+                runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, AP_TOPIC_NAME, KAFKA_PARTS, MAX_BATCH_SIZE, AP_CACHE));
 
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
@@ -281,9 +301,6 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testActiveActiveReplication() throws Exception {
-        String srcDestTopic = "source-dest";
-        String destSrcTopic = "dest-source";
-
         IgniteCache<Integer, Data> srcCache = srcCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
         IgniteCache<Integer, Data> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
@@ -292,16 +309,16 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
 
-        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0], srcDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1], srcDestTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(destCluster[0], destSrcTopic, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], destSrcTopic, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0], SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1], SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(destCluster[0], DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
 
         try {
-            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, srcDestTopic,
-                MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
-            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCdcStreamer(srcCluster[0], THREAD_CNT, props, destSrcTopic,
-                MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
+            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, SRC_DEST_TOPIC,
+                KAFKA_PARTS, MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
+            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCdcStreamer(srcCluster[0], THREAD_CNT, props, DEST_SRC_TOPIC,
+                KAFKA_PARTS, MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
 
             try {
                 waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
@@ -398,7 +415,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr =
-                new IgniteToKafkaCdcStreamer(topic, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
+                new IgniteToKafkaCdcStreamer(topic, KAFKA_PARTS, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
 
             GridSpringResourceContext rsrcCtx = getFieldValue(ign.context().resource(), "rsrcCtx");
 
@@ -477,6 +494,23 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             int result = Objects.hash(crc, iter);
             result = 31 * result + Arrays.hashCode(payload);
             return result;
+        }
+    }
+
+    /**
+     * Create Kafka topic.
+     *
+     * @param topic Topic name
+     * @param props Properties.
+     */
+    public static void createTopic(String topic, int kafkaParts, Properties props)
+        throws InterruptedException, ExecutionException, TimeoutException {
+        try (AdminClient adminCli = AdminClient.create(props)) {
+            adminCli.createTopics(Collections.singleton(new NewTopic(
+                topic,
+                kafkaParts,
+                (short)1
+            ))).all().get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
         }
     }
 }
