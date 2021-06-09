@@ -138,7 +138,16 @@ class Applier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param closed Closed flag.
      */
-    public Applier(IgniteEx ign, Properties kafkaProps, String topic, int kafkaPartFrom, int kafkaPartTo, Set<Integer> caches, int maxBatchSize, AtomicBoolean closed) {
+    public Applier(
+        IgniteEx ign,
+        Properties kafkaProps,
+        String topic,
+        int kafkaPartFrom,
+        int kafkaPartTo,
+        Set<Integer> caches,
+        int maxBatchSize,
+        AtomicBoolean closed
+    ) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
