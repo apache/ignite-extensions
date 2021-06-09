@@ -57,7 +57,7 @@ import org.apache.kafka.common.errors.WakeupException;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
- * It expected that messages was written to the Kafka by the {@link IgniteToKafkaCDCStreamer} Change Data Capture consumer.
+ * It expected that messages was written to the Kafka by the {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
  * <p>
  * Each {@code Applier} receive set of Kafka topic partitions to read and caches to process.
  * Applier creates consumer per partition because Kafka consumer reads not fair,
@@ -73,12 +73,12 @@ import org.apache.kafka.common.errors.WakeupException;
  * by the {@link CacheVersionConflictResolver}.
  * <p>
  * In case of any error during read applier just fail.
- * Fail of any applier will lead to the fail of {@link KafkaToIgniteCDCStreamer} application.
+ * Fail of any applier will lead to the fail of {@link KafkaToIgniteCdcStreamer} application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka or Ignite unavailability.
  *
- * @see KafkaToIgniteCDCStreamer
- * @see IgniteToKafkaCDCStreamer
+ * @see KafkaToIgniteCdcStreamer
+ * @see IgniteToKafkaCdcStreamer
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  * @see CacheVersionConflictResolver
@@ -109,7 +109,7 @@ class Applier implements Runnable, AutoCloseable {
     private final Properties kafkaProps;
 
     /** Maximum batch size. */
-    private final int maxBatchSz;
+    private final int maxBatchSize;
 
     /** Topic to read. */
     private final String topic;
@@ -136,14 +136,14 @@ class Applier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param closed Closed flag.
      */
-    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, int maxBatchSz, AtomicBoolean closed) {
+    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, int maxBatchSize, AtomicBoolean closed) {
         assert !F.isEmpty(caches);
 
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.caches = caches;
-        this.maxBatchSz = maxBatchSz;
+        this.maxBatchSize = maxBatchSize;
         this.closed = closed;
 
         log = ign.log().getLogger(Applier.class);
@@ -317,7 +317,7 @@ class Applier implements Runnable, AutoCloseable {
         KeyCacheObject key
     ) {
         return (!F.isEmpty(map) && currOpUpd != batchContainsUpd) ||
-            map.size() >= maxBatchSz ||
+            map.size() >= maxBatchSize ||
             map.containsKey(key);
     }
 

@@ -53,7 +53,9 @@ public class KafkaUtils {
     /**
      * Initialize Kafka topic.
      *
+     * @param topic Topic name
      * @param props Properties.
+     * @return Topic partitions count.
      */
     public static int initTopic(String topic, Properties props)
         throws InterruptedException, ExecutionException, TimeoutException {
@@ -71,20 +73,20 @@ public class KafkaUtils {
      * Creates Kafka topic, returns partitions count if topic already exists.
      *
      * @param topic Topic name.
-     * @param kafkaPartsCnt Kafka topic partitions count.
+     * @param kafkaParts Kafka topic partitions count.
      * @param adminCli Admin client.
      * @return Kafka topic partitions count.
      */
-    private static int createTopic(String topic, int kafkaPartsCnt, String replicationFactorStr, AdminClient adminCli)
+    private static int createTopic(String topic, int kafkaParts, String replicationFactorStr, AdminClient adminCli)
         throws InterruptedException, ExecutionException, TimeoutException {
         try {
             adminCli.createTopics(Collections.singleton(new NewTopic(
                 topic,
-                kafkaPartsCnt,
+                kafkaParts,
                 replicationFactorStr == null ? 1 : Short.parseShort(replicationFactorStr))
             )).all().get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
 
-            return kafkaPartsCnt;
+            return kafkaParts;
         }
         catch (ExecutionException e) {
             if (!(e.getCause() instanceof TopicExistsException))
