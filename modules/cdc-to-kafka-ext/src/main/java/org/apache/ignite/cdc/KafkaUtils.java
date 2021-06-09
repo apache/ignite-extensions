@@ -36,13 +36,19 @@ import static org.apache.ignite.cdc.Utils.property;
 /** Kafka Utils. */
 public class KafkaUtils {
     /** Default kafka request timeout. */
-    public static final int TIMEOUT_MIN = 1;
+    public static final int DFLT_REQ_TIMEOUT_MIN = 1;
 
-    /** Ignite to Kafka topic partitions number. */
-    public static final String IGNITE_TO_KAFKA_NUM_PARTITIONS = "ignite.to.kafka.numpartitions";
+    /** Ignite to Kafka topic partitions count. */
+    public static final String IGNITE_TO_KAFKA_PART = "ignite.to.kafka.partitions";
 
-    /** Ignite to Kafka topic partitions number. */
+    /** Ignite to Kafka topic replication factor. */
     public static final String IGNITE_TO_KAFKA_REPLICATION_FACTOR = "ignite.to.kafka.replication.factor";
+
+    /** Default kafka topic partitions count. */
+    private static final String DFLT_TOPIC_PART_CNT = "32";
+
+    /** Default kafka topic replication factor. */
+    private static final String DFLT_REPLICATION_FACTOR = "1";
 
     /**
      * Initialize Kafka topic.
@@ -54,8 +60,8 @@ public class KafkaUtils {
         try (AdminClient adminCli = AdminClient.create(props)) {
             return createTopic(
                 topic,
-                Integer.parseInt(property(IGNITE_TO_KAFKA_NUM_PARTITIONS, props, "32")),
-                property(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props, "1"),
+                Integer.parseInt(property(IGNITE_TO_KAFKA_PART, props, DFLT_TOPIC_PART_CNT)),
+                property(IGNITE_TO_KAFKA_REPLICATION_FACTOR, props, DFLT_REPLICATION_FACTOR),
                 adminCli
             );
         }
@@ -76,7 +82,7 @@ public class KafkaUtils {
                 topic,
                 kafkaPartsCnt,
                 replicationFactorStr == null ? 1 : Short.parseShort(replicationFactorStr))
-            )).all().get(TIMEOUT_MIN, TimeUnit.MINUTES);
+            )).all().get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
 
             return kafkaPartsCnt;
         }
@@ -107,7 +113,7 @@ public class KafkaUtils {
         try {
             DescribeTopicsResult res = adminCli.describeTopics(Collections.singleton(topic));
 
-            Map<String, TopicDescription> map = res.all().get(TIMEOUT_MIN, TimeUnit.MINUTES);
+            Map<String, TopicDescription> map = res.all().get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
 
             if (!map.containsKey(topic))
                 throw new IllegalStateException("Topic info not returned by describe topic request.");

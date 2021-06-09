@@ -73,8 +73,8 @@ import static org.apache.ignite.cdc.Utils.property;
  *
  * Properties list:
  * <ul>
- *  <li>{@link #KAFKA_TO_IGNITE_THREAD_COUNT} - count of {@link Applier} threads.</li>
- *  <li>{@link #IGNITE_TO_KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
+ *  <li>{@link #THREAD_COUNT} - count of {@link Applier} threads.</li>
+ *  <li>{@link #KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
  * </ul>
  *
  * @see ChangeDataCapture
@@ -85,13 +85,16 @@ import static org.apache.ignite.cdc.Utils.property;
  */
 public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Property to define number of {@link Applier} threads. */
-    private static final String KAFKA_TO_IGNITE_THREAD_COUNT = "kafka.to.ignite.thread.count";
+    private static final String THREAD_COUNT = "kafka.to.ignite.thread.count";
 
     /** Ignite to Kafka topic name. */
-    public static final String IGNITE_TO_KAFKA_TOPIC = "ignite.to.kafka.topic";
+    public static final String KAFKA_TOPIC = "ignite.kafka.topic";
 
     /** Ignite to Kafka maximum batch size. */
-    public static final String IGNITE_TO_KAFKA_MAX_BATCH_SZ = "ignite.to.kafka.max.batch.size";
+    public static final String MAX_BATCH_SIZE = "ignite.kafka.max.batch.size";
+
+    /** Default Ignite to Kafka maximum batch size. */
+    public static final String DFLT_MAX_BATCH_SIZE = "256";
 
     /** Ignite instance shared between all {@link Applier}. */
     private final IgniteEx ign;
@@ -128,7 +131,7 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
             .map(CU::cacheId).collect(Collectors.toSet());
 
-        this.thCnt = Integer.parseInt(property(KAFKA_TO_IGNITE_THREAD_COUNT, kafkaProps, "3"));
+        this.thCnt = Integer.parseInt(property(THREAD_COUNT, kafkaProps, "3"));
 
         execSvc = Executors.newFixedThreadPool(thCnt, new ThreadFactory() {
             private final AtomicInteger cntr = new AtomicInteger();
@@ -164,14 +167,14 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
     /** Runs application with possible exception. */
     public void runX() throws Exception {
         if (topic == null)
-            topic = property(IGNITE_TO_KAFKA_TOPIC, kafkaProps);
+            topic = property(KAFKA_TOPIC, kafkaProps);
 
         AtomicBoolean closed = new AtomicBoolean();
 
-        int maxBatchSz = Integer.parseInt(property(IGNITE_TO_KAFKA_MAX_BATCH_SZ, kafkaProps, "256"));
+        int maxBatchSize = Integer.parseInt(property(MAX_BATCH_SIZE, kafkaProps, DFLT_MAX_BATCH_SIZE));
 
         for (int i = 0; i < thCnt; i++)
-            appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSz, closed));
+            appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSize, closed));
 
         int kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 

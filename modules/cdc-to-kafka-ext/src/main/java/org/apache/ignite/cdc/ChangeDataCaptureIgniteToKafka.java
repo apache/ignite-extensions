@@ -66,35 +66,35 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     /** Topic name. */
     private final String topic;
 
-    /** Number Kafka topic partitions. */
-    private int kafkaPartitionsNum;
+    /** Kafka topic partitions count. */
+    private int kafkaPartsCnt;
 
     /** Cache IDs. */
     private final Set<Integer> cachesIds;
 
     /** Max batch size. */
-    private final int maxBatchSz;
+    private final int maxBatchSize;
 
     /** Kafka properties. */
     private final Properties kafkaProps;
 
     /** Count of sent messages.  */
-    private long cntSntMsgs;
+    private long msgCnt;
 
     /**
      * @param topic Topic name.
      * @param caches Cache names.
-     * @param maxBatchSz Maximum count of concurrently.
+     * @param maxBatchSize Maximum count of concurrently.
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
-    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, int maxBatchSz, boolean onlyPrimary, Properties kafkaProps) {
+    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
         this.onlyPrimary = onlyPrimary;
         this.kafkaProps = kafkaProps;
-        this.maxBatchSz = maxBatchSz;
+        this.maxBatchSize = maxBatchSize;
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
@@ -106,7 +106,7 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
-        while (evts.hasNext() && futs.size() <= maxBatchSz) {
+        while (evts.hasNext() && futs.size() <= maxBatchSize) {
             ChangeDataCaptureEvent evt = evts.next();
 
             if (onlyPrimary && !evt.primary())
@@ -118,11 +118,11 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
             if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
                 continue;
 
-            cntSntMsgs++;
+            msgCnt++;
 
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
-                evt.partition() % kafkaPartitionsNum,
+                evt.partition() % kafkaPartsCnt,
                 evt.cacheId(),
                 evt
             )));
@@ -130,14 +130,14 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
 
         try {
             for (Future<RecordMetadata> fut : futs)
-                fut.get(KafkaUtils.TIMEOUT_MIN, TimeUnit.MINUTES);
+                fut.get(KafkaUtils.DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
         if (log.isDebugEnabled())
-            log.debug("Events processed [cntSntMsgs=" + cntSntMsgs + ']');
+            log.debug("Events processed [sentMessagesCount=" + msgCnt + ']');
 
         return true;
     }
@@ -145,11 +145,11 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
     /** {@inheritDoc} */
     @Override public void start() {
         try {
-            kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
+            kafkaPartsCnt = KafkaUtils.initTopic(topic, kafkaProps);
 
             producer = new KafkaProducer<>(kafkaProps);
 
-            log.info("Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+            log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
         }
         catch (Exception e) {
             throw new RuntimeException(e);
