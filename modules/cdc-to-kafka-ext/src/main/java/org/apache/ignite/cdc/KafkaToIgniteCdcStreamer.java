@@ -98,23 +98,34 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     private final int maxBatchSize;
 
     /** Kafka partitions count. */
-    private final int kafkaPartsNum;
+    private final int kafkaParts;
 
     /** Kafka topic to read. */
     private final String topic;
 
     /**
      * @param ign Ignite instance
+     * @param threadCnt {@link Applier} thread count.
      * @param kafkaProps Kafka properties.
      * @param topic Topic name.
+     * @param kafkaParts Kafka partitions count.
+     * @param maxBatchSize Maximum batch size.
      * @param cacheNames Cache names.
      */
-    public KafkaToIgniteCdcStreamer(IgniteEx ign, int threadCnt, Properties kafkaProps, String topic, int kafkaPartsNum, int maxBatchSize, String... cacheNames) {
+    public KafkaToIgniteCdcStreamer(
+        IgniteEx ign,
+        int threadCnt,
+        Properties kafkaProps,
+        String topic,
+        int kafkaParts,
+        int maxBatchSize,
+        String... cacheNames
+    ) {
         this.ign = ign;
         this.threadCnt = threadCnt;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
-        this.kafkaPartsNum = kafkaPartsNum;
+        this.kafkaParts = kafkaParts;
         this.maxBatchSize = maxBatchSize;
         this.caches = Arrays.stream(cacheNames)
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
@@ -146,7 +157,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         for (int i = 0; i < threadCnt; i++)
             appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSize, closed));
 
-        for (int i = 0; i < kafkaPartsNum; i++)
+        for (int i = 0; i < kafkaParts; i++)
             appliers.get(i % threadCnt).addPartition(i);
 
         try {

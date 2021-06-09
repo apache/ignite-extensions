@@ -92,7 +92,14 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
-    public IgniteToKafkaCdcStreamer(String topic, int kafkaParts, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
+    public IgniteToKafkaCdcStreamer(
+        String topic,
+        int kafkaParts,
+        Set<String> caches,
+        int maxBatchSize,
+        boolean onlyPrimary,
+        Properties kafkaProps
+    ) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;
