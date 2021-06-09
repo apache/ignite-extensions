@@ -17,15 +17,11 @@
 
 package org.apache.ignite.cdc;
 
-import java.io.FileReader;
-import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteKernal.NL;
+import static org.apache.ignite.cdc.KafkaToIgniteLoader.KAFKA_PROPERTIES;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
@@ -34,12 +30,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * This class defines command-line {@link KafkaToIgniteCdcStreamer} startup. This startup can be used to start Ignite
  * {@link KafkaToIgniteCdcStreamer} application outside of any hosting environment from command line.
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
- * It accepts three parameters which is:
- * <ul>
- *    <li>Ignite Spring XML configuration file path.</li>
- *    <li>Kafka properties file.</li>
- *    <li>Replicated cache names(comma separated).</li>
- * </ul>
+ * It accepts on parameter which is Ignite Spring XML configuration file path.
  * You can run this class from command line without parameters to get help message.
  */
 public class KafkaToIgniteCommandLineStartup {
@@ -57,7 +48,7 @@ public class KafkaToIgniteCommandLineStartup {
             X.println();
         }
 
-        if (args.length > 3)
+        if (args.length > 1)
             exit("Too many arguments.", true, -1);
 
         if (args.length > 0 && isHelp(args[0]))
@@ -70,17 +61,7 @@ public class KafkaToIgniteCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         try {
-            IgniteEx ign = (IgniteEx)IgnitionEx.start(args[0]);
-
-            Properties kafkaProps = new Properties();
-
-            String[] cacheNames = args[2].split(",");
-
-            try (FileReader reader = new FileReader(args[1])) {
-                kafkaProps.load(reader);
-            }
-
-            new KafkaToIgniteCdcStreamer(ign, 16, kafkaProps, null, 16, 256, cacheNames).run();
+            KafkaToIgniteLoader.loadKafkaToIgniteStreamer(args[0]).run();
         }
         catch (Throwable e) {
             e.printStackTrace();
@@ -108,19 +89,18 @@ public class KafkaToIgniteCommandLineStartup {
         if (showUsage) {
             X.error(
                 "Usage:",
-                "    kafka-to-ignite [?]|[IgniteXml] [KafkaProperties] [CacheNames]",
+                "    kafka-to-ignite.{sh|bat} [?]|[path]",
                 "    Where:",
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
-                "    IgniteXml        - path to Spring XML configuration file.",
-                "    KafkaProperties  - path to Kafka properties file.",
-                "    CacheNames       - comma separated cache names.",
+                "    path            - path to Spring XML configuration file.",
+                "                      Path can be absolute or relative to IGNITE_HOME.",
                 " ",
-                "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " + NL +
-                "    Note that bean will be fetched by the type and its ID is not used." + NL +
-                "Kafka properties should contain properties to connect to Kafka cluster." + NL +
-                "CacheNames is comma separated list of caches to process."
-            );
+                "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " +
+                    "and 'org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration' " +
+                    "and bean of class 'java.util.Properties' with '" + KAFKA_PROPERTIES + "' name " +
+                    "that contains properties to connect to Apache Kafka cluster. " +
+                    "Note that bean will be fetched by the type and its ID is not used.");
         }
 
         System.exit(exitCode);

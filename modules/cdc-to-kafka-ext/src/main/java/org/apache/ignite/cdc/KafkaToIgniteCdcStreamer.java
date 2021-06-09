@@ -18,7 +18,6 @@
 package org.apache.ignite.cdc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -30,10 +29,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictplugin.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -76,62 +81,38 @@ import org.jetbrains.annotations.NotNull;
  * @see CacheConflictResolutionManagerImpl
  */
 public class KafkaToIgniteCdcStreamer implements Runnable {
-    /** Ignite instance shared between all {@link Applier}. */
-    private final IgniteEx ign;
+    /** Ignite configuration. */
+    private final IgniteConfiguration iCfg;
 
     /** Kafka consumer properties. */
     private final Properties kafkaProps;
 
-    /** Replicated caches. */
-    private final Set<Integer> caches;
+    /** Streamer configuration. */
+    private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
     /** Executor service to run {@link Applier} instances. */
     private final ExecutorService execSvc;
 
     /** Appliers. */
-    private final List<Applier> appliers = new ArrayList<>();
-
-    /** Threads count. */
-    private final int threadCnt;
-
-    /** Maximum batch size. */
-    private final int maxBatchSize;
-
-    /** Kafka partitions count. */
-    private final int kafkaParts;
-
-    /** Kafka topic to read. */
-    private final String topic;
+    private final List<Applier> appliers;
 
     /**
-     * @param ign Ignite instance
-     * @param threadCnt {@link Applier} thread count.
+     * @param iCfg Ignite configuration.
      * @param kafkaProps Kafka properties.
-     * @param topic Topic name.
-     * @param kafkaParts Kafka partitions count.
-     * @param maxBatchSize Maximum batch size.
-     * @param cacheNames Cache names.
+     * @param streamerCfg Streamer configuration.
      */
     public KafkaToIgniteCdcStreamer(
-        IgniteEx ign,
-        int threadCnt,
+        IgniteConfiguration iCfg,
         Properties kafkaProps,
-        String topic,
-        int kafkaParts,
-        int maxBatchSize,
-        String... cacheNames
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
-        this.ign = ign;
-        this.threadCnt = threadCnt;
+        this.iCfg = iCfg;
         this.kafkaProps = kafkaProps;
-        this.topic = topic;
-        this.kafkaParts = kafkaParts;
-        this.maxBatchSize = maxBatchSize;
-        this.caches = Arrays.stream(cacheNames)
-            .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
-            .map(CU::cacheId).collect(Collectors.toSet());
+        this.streamerCfg = streamerCfg;
 
-        execSvc = Executors.newFixedThreadPool(threadCnt, new ThreadFactory() {
+        appliers = new ArrayList<>(streamerCfg.getThreadCount());
+
+        execSvc = Executors.newFixedThreadPool(streamerCfg.getThreadCount(), new ThreadFactory() {
             private final AtomicInteger cntr = new AtomicInteger();
 
             @Override public Thread newThread(@NotNull Runnable r) {
@@ -152,26 +133,41 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        AtomicBoolean closed = new AtomicBoolean();
+        try (IgniteEx ign = (IgniteEx)Ignition.start(iCfg)) {
+            AtomicBoolean closed = new AtomicBoolean();
 
-        for (int i = 0; i < threadCnt; i++)
-            appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSize, closed));
+            Set<Integer> caches = null;
 
-        for (int i = 0; i < kafkaParts; i++)
-            appliers.get(i % threadCnt).addPartition(i);
+            if (!F.isEmpty(streamerCfg.getCacheNames())) {
+                caches = streamerCfg.getCacheNames().stream()
+                    .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
+                    .map(CU::cacheId).collect(Collectors.toSet());
+            }
 
-        try {
-            for (int i = 0; i < threadCnt; i++)
-                execSvc.submit(appliers.get(i));
+            int partPerApplier = streamerCfg.getKafkaPartitions() / streamerCfg.getThreadCount();
 
-            execSvc.shutdown();
+            for (int i = 0; i < streamerCfg.getThreadCount(); i++) {
+                int from = i * partPerApplier;
 
-            execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-        }
-        catch (InterruptedException e) {
-            closed.set(true);
+                int to = (i == streamerCfg.getThreadCount() - 1)
+                    ? streamerCfg.getKafkaPartitions()
+                    : (i + 1) * partPerApplier;
 
-            appliers.forEach(U::closeQuiet);
+                appliers.add(new Applier(ign, kafkaProps, streamerCfg.getTopic(), from, to, caches, streamerCfg.getMaxBatchSize(), closed));
+            }
+
+            try {
+                appliers.forEach(execSvc::submit);
+
+                execSvc.shutdown();
+
+                execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException e) {
+                closed.set(true);
+
+                appliers.forEach(U::closeQuiet);
+            }
         }
     }
 }

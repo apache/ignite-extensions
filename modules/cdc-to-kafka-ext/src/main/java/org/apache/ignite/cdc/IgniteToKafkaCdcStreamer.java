@@ -72,14 +72,14 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     /** Kafka topic partitions count. */
     private final int kafkaParts;
 
+    /** Kafka properties. */
+    private final Properties kafkaProps;
+
     /** Cache IDs. */
     private final Set<Integer> cachesIds;
 
     /** Max batch size. */
     private final int maxBatchSize;
-
-    /** Kafka properties. */
-    private final Properties kafkaProps;
 
     /** Count of sent messages.  */
     private long msgCnt;

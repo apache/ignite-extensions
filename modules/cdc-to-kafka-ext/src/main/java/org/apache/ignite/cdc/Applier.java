@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -99,9 +98,6 @@ class Applier implements Runnable, AutoCloseable {
     /** Closed flag. Shared between all appliers. */
     private final AtomicBoolean closed;
 
-    /** Kafka partitions to poll. */
-    private final Set<Integer> kafkaParts = new HashSet<>();
-
     /** Caches. */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
 
@@ -113,6 +109,12 @@ class Applier implements Runnable, AutoCloseable {
 
     /** Topic to read. */
     private final String topic;
+
+    /** Lower kafka partition (inclusive). */
+    private final int kafkaPartFrom;
+
+    /** Higher kafka partition (exclusive). */
+    private final int kafkaPartTo;
 
     /** Caches ids to read. */
     private final Set<Integer> caches;
@@ -136,12 +138,12 @@ class Applier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param closed Closed flag.
      */
-    public Applier(IgniteEx ign, Properties kafkaProps, String topic, Set<Integer> caches, int maxBatchSize, AtomicBoolean closed) {
-        assert !F.isEmpty(caches);
-
+    public Applier(IgniteEx ign, Properties kafkaProps, String topic, int kafkaPartFrom, int kafkaPartTo, Set<Integer> caches, int maxBatchSize, AtomicBoolean closed) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
+        this.kafkaPartFrom = kafkaPartFrom;
+        this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
         this.maxBatchSize = maxBatchSize;
         this.closed = closed;
@@ -151,12 +153,10 @@ class Applier implements Runnable, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        assert !F.isEmpty(kafkaParts);
-
         U.setCurrentIgniteName(ign.name());
 
         try {
-            for (int kafkaPart : kafkaParts) {
+            for (int kafkaPart = kafkaPartFrom; kafkaPart < kafkaPartTo; kafkaPart++) {
                 KafkaConsumer<Integer, byte[]> cnsmr = new KafkaConsumer<>(kafkaProps);
 
                 cnsmr.assign(Collections.singleton(new TopicPartition(topic, kafkaPart)));
@@ -215,7 +215,7 @@ class Applier implements Runnable, AutoCloseable {
         IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
 
         for (ConsumerRecord<Integer, byte[]> rec : records) {
-            if (!caches.contains(rec.key()))
+            if (!F.isEmpty(caches) && !caches.contains(rec.key()))
                 continue;
 
             try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
@@ -325,11 +325,6 @@ class Applier implements Runnable, AutoCloseable {
         return (!F.isEmpty(map) && currOpUpd != batchContainsUpd) ||
             map.size() >= maxBatchSize ||
             map.containsKey(key);
-    }
-
-    /** @param kafkaPart Kafka partition to consumer by this applier. */
-    public void addPartition(int kafkaPart) {
-        kafkaParts.add(kafkaPart);
     }
 
     /** {@inheritDoc} */
