@@ -41,8 +41,6 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.cdc.Utils.property;
-
 /**
  * Main class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
@@ -71,12 +69,6 @@ import static org.apache.ignite.cdc.Utils.property;
  * </pre>
  * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
  *
- * Properties list:
- * <ul>
- *  <li>{@link #THREAD_COUNT} - count of {@link Applier} threads.</li>
- *  <li>{@link #KAFKA_TOPIC} - Kafka topic name if not provided in constructor.</li>
- * </ul>
- *
  * @see ChangeDataCapture
  * @see IgniteToKafkaCdcStreamer
  * @see ChangeDataCaptureEvent
@@ -84,18 +76,6 @@ import static org.apache.ignite.cdc.Utils.property;
  * @see CacheConflictResolutionManagerImpl
  */
 public class KafkaToIgniteCdcStreamer implements Runnable {
-    /** Property to define number of {@link Applier} threads. */
-    private static final String THREAD_COUNT = "kafka.to.ignite.thread.count";
-
-    /** Ignite to Kafka topic name. */
-    public static final String KAFKA_TOPIC = "ignite.kafka.topic";
-
-    /** Ignite to Kafka maximum batch size. */
-    public static final String MAX_BATCH_SIZE = "ignite.kafka.max.batch.size";
-
-    /** Default Ignite to Kafka maximum batch size. */
-    public static final String DFLT_MAX_BATCH_SIZE = "256";
-
     /** Ignite instance shared between all {@link Applier}. */
     private final IgniteEx ign;
 
@@ -112,10 +92,13 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     private final List<Applier> appliers = new ArrayList<>();
 
     /** Threads count. */
-    private final int thCnt;
+    private final int threadCnt;
+
+    /** Maximum batch size. */
+    private final int maxBatchSize;
 
     /** Kafka topic to read. */
-    private String topic;
+    private final String topic;
 
     /**
      * @param ign Ignite instance
@@ -123,17 +106,17 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
      * @param topic Topic name.
      * @param cacheNames Cache names.
      */
-    public KafkaToIgniteCdcStreamer(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
+    public KafkaToIgniteCdcStreamer(IgniteEx ign, int threadCnt, Properties kafkaProps, String topic, int maxBatchSize, String... cacheNames) {
         this.ign = ign;
+        this.threadCnt = threadCnt;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
+        this.maxBatchSize = maxBatchSize;
         this.caches = Arrays.stream(cacheNames)
             .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
             .map(CU::cacheId).collect(Collectors.toSet());
 
-        this.thCnt = Integer.parseInt(property(THREAD_COUNT, kafkaProps, "3"));
-
-        execSvc = Executors.newFixedThreadPool(thCnt, new ThreadFactory() {
+        execSvc = Executors.newFixedThreadPool(threadCnt, new ThreadFactory() {
             private final AtomicInteger cntr = new AtomicInteger();
 
             @Override public Thread newThread(@NotNull Runnable r) {
@@ -166,23 +149,18 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
     /** Runs application with possible exception. */
     public void runX() throws Exception {
-        if (topic == null)
-            topic = property(KAFKA_TOPIC, kafkaProps);
-
         AtomicBoolean closed = new AtomicBoolean();
 
-        int maxBatchSize = Integer.parseInt(property(MAX_BATCH_SIZE, kafkaProps, DFLT_MAX_BATCH_SIZE));
-
-        for (int i = 0; i < thCnt; i++)
+        for (int i = 0; i < threadCnt; i++)
             appliers.add(new Applier(ign, kafkaProps, topic, caches, maxBatchSize, closed));
 
         int kafkaPartitionsNum = KafkaUtils.initTopic(topic, kafkaProps);
 
         for (int i = 0; i < kafkaPartitionsNum; i++)
-            appliers.get(i % thCnt).addPartition(i);
+            appliers.get(i % threadCnt).addPartition(i);
 
         try {
-            for (int i = 0; i < thCnt; i++)
+            for (int i = 0; i < threadCnt; i++)
                 execSvc.submit(appliers.get(i));
 
             execSvc.shutdown();

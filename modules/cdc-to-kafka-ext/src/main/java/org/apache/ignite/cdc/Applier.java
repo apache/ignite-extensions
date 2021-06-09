@@ -276,11 +276,17 @@ class Applier implements Runnable, AutoCloseable {
      * @throws IgniteCheckedException In case of error.
      */
     private void applyIfNotEmpty(IgniteInternalCache<BinaryObject, BinaryObject> cache) throws IgniteCheckedException {
-        if (!F.isEmpty(rmvBatch))
+        if (!F.isEmpty(rmvBatch)) {
             cache.removeAllConflict(rmvBatch);
 
-        if (!F.isEmpty(updBatch))
+            rmvBatch.clear();
+        }
+
+        if (!F.isEmpty(updBatch)) {
             cache.putAllConflict(updBatch);
+
+            updBatch.clear();
+        }
     }
 
     /**

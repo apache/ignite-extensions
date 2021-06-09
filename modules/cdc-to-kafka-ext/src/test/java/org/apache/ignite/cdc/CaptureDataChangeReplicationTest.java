@@ -93,6 +93,11 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
     /** */
     public static final String AP_TOPIC_NAME = "active-passive-topic";
 
+    public static final int MAX_BATCH_SIZE = 256;
+
+    /** */
+    public static final int THREAD_CNT = 16;
+
     /** */
     public static final String AP_CACHE = "active-passive-cache";
 
@@ -251,7 +256,8 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
-            IgniteInternalFuture<?> k2iFut = runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], props, AP_TOPIC_NAME, AP_CACHE));
+            IgniteInternalFuture<?> k2iFut =
+                runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, AP_TOPIC_NAME, MAX_BATCH_SIZE, AP_CACHE));
 
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
@@ -292,10 +298,10 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], destSrcTopic, ACTIVE_ACTIVE_CACHE);
 
         try {
-            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], props, srcDestTopic,
-                ACTIVE_ACTIVE_CACHE));
-            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCdcStreamer(srcCluster[0], props, destSrcTopic,
-                ACTIVE_ACTIVE_CACHE));
+            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCdcStreamer(destCluster[0], THREAD_CNT, props, srcDestTopic,
+                MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
+            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCdcStreamer(srcCluster[0], THREAD_CNT, props, destSrcTopic,
+                MAX_BATCH_SIZE, ACTIVE_ACTIVE_CACHE));
 
             try {
                 waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
