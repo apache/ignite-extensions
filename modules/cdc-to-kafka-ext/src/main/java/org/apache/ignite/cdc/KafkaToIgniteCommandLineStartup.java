@@ -31,8 +31,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
 
 /**
- * This class defines command-line {@link ChangeDataCaptureKafkaToIgnite} startup. This startup can be used to start Ignite
- * {@link ChangeDataCaptureKafkaToIgnite} application outside of any hosting environment from command line.
+ * This class defines command-line {@link KafkaToIgniteCDCStreamer} startup. This startup can be used to start Ignite
+ * {@link KafkaToIgniteCDCStreamer} application outside of any hosting environment from command line.
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
  * It accepts three parameters which is:
  * <ul>
@@ -80,7 +80,7 @@ public class KafkaToIgniteCommandLineStartup {
                 kafkaProps.load(reader);
             }
 
-            new ChangeDataCaptureKafkaToIgnite(ign, kafkaProps, null, cacheNames).run();
+            new KafkaToIgniteCDCStreamer(ign, kafkaProps, null, cacheNames).run();
         }
         catch (Throwable e) {
             e.printStackTrace();

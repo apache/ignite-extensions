@@ -46,13 +46,13 @@ import org.apache.kafka.clients.producer.RecordMetadata;
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
- * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link ChangeDataCaptureKafkaToIgnite} documentation.
+ * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCDCStreamer} documentation.
  *
  * @see ChangeDataCapture
- * @see ChangeDataCaptureKafkaToIgnite
+ * @see KafkaToIgniteCDCStreamer
  * @see CacheVersionConflictResolverImpl
  */
-public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer {
+public class IgniteToKafkaCDCStreamer implements ChangeDataCaptureConsumer {
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
@@ -88,7 +88,7 @@ public class ChangeDataCaptureIgniteToKafka implements ChangeDataCaptureConsumer
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
-    public ChangeDataCaptureIgniteToKafka(String topic, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
+    public IgniteToKafkaCDCStreamer(String topic, Set<String> caches, int maxBatchSize, boolean onlyPrimary, Properties kafkaProps) {
         assert caches != null && !caches.isEmpty();
 
         this.topic = topic;

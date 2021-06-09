@@ -45,7 +45,7 @@ import static org.apache.ignite.cdc.Utils.property;
 
 /**
  * Main class of Kafka to Ignite application.
- * This application is counterpart of {@link ChangeDataCaptureIgniteToKafka} Change Data Capture consumer.
+ * This application is counterpart of {@link IgniteToKafkaCDCStreamer} Change Data Capture consumer.
  * Application runs several {@link Applier} thread to read Kafka topic partitions and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
@@ -78,12 +78,12 @@ import static org.apache.ignite.cdc.Utils.property;
  * </ul>
  *
  * @see ChangeDataCapture
- * @see ChangeDataCaptureIgniteToKafka
+ * @see IgniteToKafkaCDCStreamer
  * @see ChangeDataCaptureEvent
  * @see Applier
  * @see CacheConflictResolutionManagerImpl
  */
-public class ChangeDataCaptureKafkaToIgnite implements Runnable {
+public class KafkaToIgniteCDCStreamer implements Runnable {
     /** Property to define number of {@link Applier} threads. */
     private static final String THREAD_COUNT = "kafka.to.ignite.thread.count";
 
@@ -123,7 +123,7 @@ public class ChangeDataCaptureKafkaToIgnite implements Runnable {
      * @param topic Topic name.
      * @param cacheNames Cache names.
      */
-    public ChangeDataCaptureKafkaToIgnite(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
+    public KafkaToIgniteCDCStreamer(IgniteEx ign, Properties kafkaProps, String topic, String... cacheNames) {
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;

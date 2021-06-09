@@ -251,7 +251,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
-            IgniteInternalFuture<?> k2iFut = runAsync(new ChangeDataCaptureKafkaToIgnite(destCluster[0], props, AP_TOPIC_NAME, AP_CACHE));
+            IgniteInternalFuture<?> k2iFut = runAsync(new KafkaToIgniteCDCStreamer(destCluster[0], props, AP_TOPIC_NAME, AP_CACHE));
 
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
@@ -292,9 +292,9 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], destSrcTopic, ACTIVE_ACTIVE_CACHE);
 
         try {
-            IgniteInternalFuture<?> k2iFut1 = runAsync(new ChangeDataCaptureKafkaToIgnite(destCluster[0], props, srcDestTopic,
+            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCDCStreamer(destCluster[0], props, srcDestTopic,
                 ACTIVE_ACTIVE_CACHE));
-            IgniteInternalFuture<?> k2iFut2 = runAsync(new ChangeDataCaptureKafkaToIgnite(srcCluster[0], props, destSrcTopic,
+            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCDCStreamer(srcCluster[0], props, destSrcTopic,
                 ACTIVE_ACTIVE_CACHE));
 
             try {
@@ -391,8 +391,8 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
      */
     private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
         return runAsync(() -> {
-            ChangeDataCaptureIgniteToKafka cdcCnsmr =
-                new ChangeDataCaptureIgniteToKafka(topic, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
+            IgniteToKafkaCDCStreamer cdcCnsmr =
+                new IgniteToKafkaCDCStreamer(topic, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
 
             GridSpringResourceContext rsrcCtx = getFieldValue(ign.context().resource(), "rsrcCtx");
 
