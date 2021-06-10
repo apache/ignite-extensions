@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -29,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictplugin.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
@@ -79,7 +83,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class KafkaToIgniteCdcStreamer implements Runnable {
     /** Ignite configuration. */
-    private final IgniteConfiguration iCfg;
+    private final IgniteConfiguration igniteCfg;
 
     /** Kafka consumer properties. */
     private final Properties kafkaProps;
@@ -94,16 +98,16 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     private final List<Applier> appliers;
 
     /**
-     * @param iCfg Ignite configuration.
+     * @param igniteCfg Ignite configuration.
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
     public KafkaToIgniteCdcStreamer(
-        IgniteConfiguration iCfg,
+        IgniteConfiguration igniteCfg,
         Properties kafkaProps,
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
-        this.iCfg = iCfg;
+        this.igniteCfg = igniteCfg;
         this.kafkaProps = kafkaProps;
         this.streamerCfg = streamerCfg;
 
@@ -130,7 +134,14 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (IgniteEx ign = (IgniteEx)Ignition.start(iCfg)) {
+        try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
+            IgniteLogger log = U.initLogger(
+                igniteCfg.getGridLogger(),
+                "kafka-ignite-streamer",
+                igniteCfg.getNodeId() != null ? igniteCfg.getNodeId() : UUID.randomUUID(),
+                igniteCfg.getWorkDirectory()
+            );
+
             AtomicBoolean closed = new AtomicBoolean();
 
             Set<Integer> caches = null;
@@ -150,8 +161,17 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     ? streamerCfg.getKafkaPartitions() + 1
                     : (i + 1) * partPerApplier;
 
-                // TODO: inject logger.
-                appliers.add(new Applier(ign, kafkaProps, streamerCfg.getTopic(), from, to, caches, streamerCfg.getMaxBatchSize(), closed));
+                appliers.add(new Applier(
+                    ign,
+                    log,
+                    kafkaProps,
+                    streamerCfg.getTopic(),
+                    from,
+                    to,
+                    caches,
+                    streamerCfg.getMaxBatchSize(),
+                    closed
+                ));
             }
 
             try {
@@ -166,6 +186,9 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
                 appliers.forEach(U::closeQuiet);
             }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 }

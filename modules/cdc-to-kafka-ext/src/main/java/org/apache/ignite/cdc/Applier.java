@@ -132,14 +132,19 @@ class Applier implements Runnable, AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /**
-     * @param ign Ignite instance
+     * @param ign Ignite instance.
+     * @param log Logger.
      * @param kafkaProps Kafka properties.
      * @param topic Topic name.
+     * @param kafkaPartFrom Read from partition.
+     * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
+     * @param maxBatchSize Maximum batch size.
      * @param closed Closed flag.
      */
     public Applier(
         IgniteEx ign,
+        IgniteLogger log,
         Properties kafkaProps,
         String topic,
         int kafkaPartFrom,
@@ -156,8 +161,7 @@ class Applier implements Runnable, AutoCloseable {
         this.caches = caches;
         this.maxBatchSize = maxBatchSize;
         this.closed = closed;
-
-        log = ign.log().getLogger(Applier.class);
+        this.log = log.getLogger(Applier.class);
     }
 
     /** {@inheritDoc} */
