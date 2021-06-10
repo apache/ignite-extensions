@@ -37,7 +37,6 @@ import org.apache.ignite.cdc.serde.JavaObjectSerializer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -78,7 +77,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests for kafka replication.
  */
 @RunWith(Parameterized.class)
-public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
+public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** Cache mode. */
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
@@ -186,8 +185,7 @@ public class CaptureDataChangeReplicationTest extends GridCommonAbstractTest {
 
             cfg.getDataStorageConfiguration()
                 .setWalForceArchiveTimeout(5_000)
-                .setChangeDataCaptureEnabled(true)
-                .setWalMode(WALMode.FSYNC);
+                .setChangeDataCaptureEnabled(true);
 
             cfg.setConsistentId(igniteInstanceName);
         }

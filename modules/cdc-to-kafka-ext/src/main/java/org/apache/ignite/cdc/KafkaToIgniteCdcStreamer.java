@@ -29,14 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictplugin.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -150,9 +147,10 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 int from = i * partPerApplier;
 
                 int to = (i == streamerCfg.getThreadCount() - 1)
-                    ? streamerCfg.getKafkaPartitions()
+                    ? streamerCfg.getKafkaPartitions() + 1
                     : (i + 1) * partPerApplier;
 
+                // TODO: inject logger.
                 appliers.add(new Applier(ign, kafkaProps, streamerCfg.getTopic(), from, to, caches, streamerCfg.getMaxBatchSize(), closed));
             }
 

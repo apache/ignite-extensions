@@ -61,7 +61,9 @@ public class KafkaToIgniteCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         try {
-            KafkaToIgniteLoader.loadKafkaToIgniteStreamer(args[0]).run();
+            KafkaToIgniteCdcStreamer streamer = KafkaToIgniteLoader.loadKafkaToIgniteStreamer(args[0]);
+
+            streamer.run();
         }
         catch (Throwable e) {
             e.printStackTrace();
