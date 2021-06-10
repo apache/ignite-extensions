@@ -42,7 +42,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -69,7 +68,6 @@ import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_P
 import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -424,13 +422,11 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             IgniteToKafkaCdcStreamer cdcCnsmr =
                 new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
 
-            GridSpringResourceContext rsrcCtx = getFieldValue(ign.context().resource(), "rsrcCtx");
-
             ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
             cdcCfg.setConsumer(cdcCnsmr);
 
-            new ChangeDataCapture(ign.configuration(), rsrcCtx, cdcCfg).run();
+            new ChangeDataCapture(ign.configuration(), null, cdcCfg).run();
         });
     }
 

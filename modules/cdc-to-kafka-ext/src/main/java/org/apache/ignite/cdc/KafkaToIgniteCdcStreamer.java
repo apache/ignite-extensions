@@ -179,7 +179,9 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
                 execSvc.shutdown();
 
-                execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+                boolean stopped = execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
+                assert stopped;
             }
             catch (InterruptedException e) {
                 closed.set(true);
