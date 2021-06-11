@@ -52,7 +52,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
-     * Note, values of this field must implement {@link Comparable} interface.
+     * values of this field must implement {@link Comparable} interface.
+     * <pre><i>Note, value of this field used to resolve conflict for external updates only.</i>
      *
      * @see CacheVersionConflictResolverImpl
      */

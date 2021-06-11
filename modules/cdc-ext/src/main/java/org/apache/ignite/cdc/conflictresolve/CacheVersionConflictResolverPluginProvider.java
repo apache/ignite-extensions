@@ -68,12 +68,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "cache-version-conflict-resolver";
+        return "Cache version conflict resolver";
     }
 
     /** {@inheritDoc} */
     @Override public String version() {
-        return "0.0.1-SNAPSHOT";
+        return "1.0.0-SNAPSHOT";
     }
 
     /** {@inheritDoc} */

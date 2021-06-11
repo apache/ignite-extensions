@@ -18,7 +18,7 @@
 package org.apache.ignite.cdc;
 
 import org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest;
-import org.apache.ignite.cdc.kafka.KafkaToIgniteLoader;
+import org.apache.ignite.cdc.kafka.KafkaToIgniteLoaderTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -30,7 +30,7 @@ import org.junit.runners.Suite;
     CacheConflictOperationsTest.class,
     CacheConflictOperationsWithFieldTest.class,
     CdcKafkaReplicationTest.class,
-    KafkaToIgniteLoader.class
+    KafkaToIgniteLoaderTest.class
 })
 public class IgniteCdcTestSuite {
 }
