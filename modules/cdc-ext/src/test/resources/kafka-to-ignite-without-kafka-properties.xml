@@ -34,5 +34,5 @@
         </property>
     </bean>
 
-    <bean id="streamer.cfg" class="org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration" />
+    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration" />
 </beans>

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.kafka;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.KafkaToIgniteLoader.loadKafkaToIgniteStreamer;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteLoader.loadKafkaToIgniteStreamer;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Tests load {@link KafkaToIgniteCdcStreamer} from Srping xml file. */

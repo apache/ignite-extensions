@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.kafka;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cdc.KafkaToIgniteLoader.KAFKA_PROPERTIES;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteLoader.KAFKA_PROPERTIES;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;

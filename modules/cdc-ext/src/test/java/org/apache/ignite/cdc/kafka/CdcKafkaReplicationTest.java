@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.kafka;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -57,9 +58,9 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
-import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
-import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;

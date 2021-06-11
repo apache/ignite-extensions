@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cdc.CdcKafkaReplicationTest.Data;
+import org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.Data;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,8 +45,8 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.CdcKafkaReplicationTest.checkCRC;
-import static org.apache.ignite.cdc.CdcKafkaReplicationTest.generateSingleData;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.checkCRC;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.generateSingleData;
 
 /**
  * Cache conflict operations test.

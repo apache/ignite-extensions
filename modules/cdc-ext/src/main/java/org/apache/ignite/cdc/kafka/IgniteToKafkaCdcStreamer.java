@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
+import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.IgniteUtils;

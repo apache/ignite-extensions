@@ -62,7 +62,7 @@
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
         <module>modules/spring-cache-ext</module>
-        <module>modules/cdc-to-kafka-ext</module>
+        <module>modules/cdc-ext</module>
     </modules>
 
     <profiles>
