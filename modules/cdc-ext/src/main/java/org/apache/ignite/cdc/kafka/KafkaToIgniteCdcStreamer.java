@@ -54,7 +54,8 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
 /**
  * Main class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
- * Application runs several {@link Applier} thread to read Kafka topic partitions and apply {@link ChangeDataCaptureEvent} to Ignite.
+ * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
+ * and apply {@link ChangeDataCaptureEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
  * <p>
@@ -62,7 +63,7 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka or Ignite unavailability.
  * <p>
- * To resolve possible update conflicts(in case of concurrent update in source and destination Ignite clusters)
+ * To resolve possible update conflicts (in case of concurrent update in source and destination Ignite clusters)
  * real-world deployments should use some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
  * Example of Ignite configuration with the conflict resolver:
  * <pre>
@@ -82,7 +83,7 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * @see ChangeDataCapture
  * @see IgniteToKafkaCdcStreamer
  * @see ChangeDataCaptureEvent
- * @see Applier
+ * @see KafkaToIgniteCdcStreamerApplier
  * @see CacheConflictResolutionManagerImpl
  */
 public class KafkaToIgniteCdcStreamer implements Runnable {
@@ -95,11 +96,11 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     /** Streamer configuration. */
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
-    /** Executor service to run {@link Applier} instances. */
+    /** Executor service to run {@link KafkaToIgniteCdcStreamerApplier} instances. */
     private final ExecutorService execSvc;
 
     /** Appliers. */
-    private final List<Applier> appliers;
+    private final List<KafkaToIgniteCdcStreamerApplier> appliers;
 
     /**
      * @param igniteCfg Ignite configuration.
@@ -156,16 +157,18 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     .map(CU::cacheId).collect(Collectors.toSet());
             }
 
-            int partPerApplier = streamerCfg.getKafkaPartitions() / streamerCfg.getThreadCount();
+            int kafkaParts = streamerCfg.getKafkaPartitions();
+            int threadCnt = streamerCfg.getThreadCount();
+            int partPerApplier = kafkaParts / threadCnt;
 
-            for (int i = 0; i < streamerCfg.getThreadCount(); i++) {
+            for (int i = 0; i < threadCnt; i++) {
                 int from = i * partPerApplier;
+                int to = (i + 1) * partPerApplier;
 
-                int to = (i == streamerCfg.getThreadCount() - 1)
-                    ? streamerCfg.getKafkaPartitions() + 1
-                    : (i + 1) * partPerApplier;
+                if (i == threadCnt - 1)
+                    to = kafkaParts + 1;
 
-                appliers.add(new Applier(
+                appliers.add(new KafkaToIgniteCdcStreamerApplier(
                     ign,
                     log,
                     kafkaProps,

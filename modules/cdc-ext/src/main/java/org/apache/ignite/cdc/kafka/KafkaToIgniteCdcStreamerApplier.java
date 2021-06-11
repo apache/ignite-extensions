@@ -86,7 +86,7 @@ import org.apache.kafka.common.errors.WakeupException;
  * @see ChangeDataCaptureEvent
  * @see CacheEntryVersion
  */
-class Applier implements Runnable, AutoCloseable {
+class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** */
     public static final int DFLT_REQ_TIMEOUT = 3;
 
@@ -143,7 +143,7 @@ class Applier implements Runnable, AutoCloseable {
      * @param maxBatchSize Maximum batch size.
      * @param closed Closed flag.
      */
-    public Applier(
+    public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
         IgniteLogger log,
         Properties kafkaProps,
@@ -162,7 +162,7 @@ class Applier implements Runnable, AutoCloseable {
         this.caches = caches;
         this.maxBatchSize = maxBatchSize;
         this.closed = closed;
-        this.log = log.getLogger(Applier.class);
+        this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
     }
 
     /** {@inheritDoc} */
@@ -352,6 +352,6 @@ class Applier implements Runnable, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Applier.class, this);
+        return S.toString(KafkaToIgniteCdcStreamerApplier.class, this);
     }
 }

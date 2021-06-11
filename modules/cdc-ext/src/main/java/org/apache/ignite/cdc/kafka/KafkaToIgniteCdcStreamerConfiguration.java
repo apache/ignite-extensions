@@ -37,7 +37,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default {@link #maxBatchSize} value. */
     public static final int DFLT_MAX_BATCH_SIZE = 1024;
 
-    /** {@link Applier} thread count. */
+    /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_PARTS;
 
     /** Topic name. */
@@ -56,7 +56,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /**
      * Cache names to process.
-     *
      */
     private Collection<String> cacheNames;
 

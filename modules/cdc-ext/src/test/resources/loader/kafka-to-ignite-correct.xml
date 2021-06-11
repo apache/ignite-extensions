@@ -41,5 +41,5 @@
 
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration" />
 
-    <util:properties id="kafkaProperties" location="kafka.properties" />
+    <util:properties id="kafkaProperties" location="loader/kafka.properties" />
 </beans>

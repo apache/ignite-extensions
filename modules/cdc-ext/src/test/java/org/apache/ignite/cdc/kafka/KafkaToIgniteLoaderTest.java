@@ -31,19 +31,19 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
     public void testLoadConfig() throws Exception {
         assertThrows(
             null,
-            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-double-ignite-cfg.xml"),
+            () -> loadKafkaToIgniteStreamer("loader/kafka-to-ignite-double-ignite-cfg.xml"),
             IgniteCheckedException.class,
             "Exact 1 IgniteConfiguration should be defined. Found 2"
         );
 
         assertThrows(
             null,
-            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-without-kafka-properties.xml"),
+            () -> loadKafkaToIgniteStreamer("loader/kafka-to-ignite-without-kafka-properties.xml"),
             IgniteCheckedException.class,
             "Spring bean with provided name doesn't exist"
         );
 
-        KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("kafka-to-ignite-correct.xml");
+        KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/kafka-to-ignite-correct.xml");
 
         assertNotNull(streamer);
     }

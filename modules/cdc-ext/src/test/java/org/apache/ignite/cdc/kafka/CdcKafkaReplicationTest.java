@@ -198,11 +198,9 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         if (props == null) {
             props = new Properties();
 
+            props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("replication/kafka.properties"));
+
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-            props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
-            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-            props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10_000);
         }
 
         createTopic(DFLT_TOPIC, DFLT_PARTS, props);
@@ -262,12 +260,7 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
 
-            KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
-
-            cfg.setCacheNames(Collections.singletonList(AP_CACHE));
-
-            IgniteInternalFuture<?> k2iFut =
-                runAsync(new KafkaToIgniteCdcStreamer(destClusterCliCfg, props, cfg));
+            IgniteInternalFuture<?> k2iFut = kafkaToIgnite(AP_CACHE, DFLT_TOPIC, destClusterCliCfg);
 
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
@@ -305,17 +298,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
 
         try {
-            KafkaToIgniteCdcStreamerConfiguration cfg1 = new KafkaToIgniteCdcStreamerConfiguration();
-            KafkaToIgniteCdcStreamerConfiguration cfg2 = new KafkaToIgniteCdcStreamerConfiguration();
-
-            cfg1.setTopic(SRC_DEST_TOPIC);
-            cfg1.setCacheNames(Collections.singletonList(ACTIVE_ACTIVE_CACHE));
-
-            cfg2.setTopic(DEST_SRC_TOPIC);
-            cfg2.setCacheNames(Collections.singletonList(ACTIVE_ACTIVE_CACHE));
-
-            IgniteInternalFuture<?> k2iFut1 = runAsync(new KafkaToIgniteCdcStreamer(destClusterCliCfg, props, cfg1));
-            IgniteInternalFuture<?> k2iFut2 = runAsync(new KafkaToIgniteCdcStreamer(srcClusterCliCfg, props, cfg2));
+            IgniteInternalFuture<?> k2iFut1 = kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg);
+            IgniteInternalFuture<?> k2iFut2 = kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg);
 
             try {
                 waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
@@ -420,6 +404,20 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
             new ChangeDataCapture(ign.configuration(), null, cdcCfg).run();
         });
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param igniteCfg Ignite configuration.
+     * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
+     */
+    private IgniteInternalFuture<?> kafkaToIgnite(String cacheName, String topic, IgniteConfiguration igniteCfg) {
+        KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
+
+        cfg.setCacheNames(Collections.singletonList(cacheName));
+        cfg.setTopic(topic);
+
+        return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, props, cfg));
     }
 
     /** */
