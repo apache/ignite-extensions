@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.conflictplugin;
+package org.apache.ignite.cdc.conflictresolve;
 
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;

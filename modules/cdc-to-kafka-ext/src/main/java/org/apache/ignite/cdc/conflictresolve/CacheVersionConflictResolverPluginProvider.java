@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.conflictplugin;
+package org.apache.ignite.cdc.conflictresolve;
 
 import java.io.Serializable;
 import java.util.Set;

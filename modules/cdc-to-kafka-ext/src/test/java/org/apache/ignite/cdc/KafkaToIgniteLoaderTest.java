@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cdc.KafkaToIgniteLoader.loadKafkaToIgniteStreamer;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** Tests load {@link KafkaToIgniteCdcStreamer} from Srping xml file. */
 public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
@@ -32,14 +31,16 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
     public void testLoadConfig() throws Exception {
         assertThrows(
             null,
-            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-2.xml"),
+            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-double-ignite-cfg.xml"),
             IgniteCheckedException.class,
             "Exact 1 IgniteConfiguration should be defined. Found 2"
         );
 
-        assertThrowsWithCause(
-            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-3.xml"),
-            IgniteCheckedException.class
+        assertThrows(
+            null,
+            () -> loadKafkaToIgniteStreamer("kafka-to-ignite-without-kafka-properties.xml"),
+            IgniteCheckedException.class,
+            "Spring bean with provided name doesn't exist"
         );
 
         KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("kafka-to-ignite-correct.xml");

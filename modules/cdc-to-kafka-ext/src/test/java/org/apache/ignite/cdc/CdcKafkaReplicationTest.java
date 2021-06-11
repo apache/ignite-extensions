@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverPluginProvider;
+import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.cdc.serde.JavaObjectSerializer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -63,7 +63,7 @@ import org.testcontainers.utility.DockerImageName;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.KEYS_CNT;
-import static org.apache.ignite.cdc.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT_MIN;
+import static org.apache.ignite.cdc.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -414,13 +414,13 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /**
      * @param ign Ignite instance to watch for.
      * @param topic Kafka topic name.
-     * @param caches Caches names to stream to kafka.
+     * @param caches Cache name to stream to kafka.
      * @return Future for Change Data Capture application.
      */
-    private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String...caches) {
+    private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String caches) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr =
-                new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, new HashSet<>(Arrays.asList(caches)), KEYS_CNT, false, props);
+                new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(caches), KEYS_CNT, false, props);
 
             ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
@@ -513,7 +513,7 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
                 topic,
                 kafkaParts,
                 (short)1
-            ))).all().get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
+            ))).all().get(DFLT_REQ_TIMEOUT, TimeUnit.MINUTES);
         }
     }
 }

@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.conflictplugin.CacheVersionConflictResolverImpl;
+import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -53,8 +53,8 @@ import org.apache.kafka.clients.producer.RecordMetadata;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
-    /** Default kafka request timeout. */
-    public static final int DFLT_REQ_TIMEOUT_MIN = 1;
+    /** Default kafka request timeout in minutes. */
+    public static final int DFLT_REQ_TIMEOUT = 1;
 
     /** Log. */
     @LoggerResource
@@ -88,7 +88,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
      * @param topic Topic name.
      * @param kafkaParts Kafka partitions count.
      * @param caches Cache names.
-     * @param maxBatchSize Maximum count of concurrently.
+     * @param maxBatchSize Maximum size of records concurrently sent to Kafka.
      * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
@@ -118,7 +118,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
-        while (evts.hasNext() && futs.size() <= maxBatchSize) {
+        while (evts.hasNext() && futs.size() < maxBatchSize) {
             ChangeDataCaptureEvent evt = evts.next();
 
             if (onlyPrimary && !evt.primary())
@@ -142,7 +142,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
 
         try {
             for (Future<RecordMetadata> fut : futs)
-                fut.get(DFLT_REQ_TIMEOUT_MIN, TimeUnit.MINUTES);
+                fut.get(DFLT_REQ_TIMEOUT, TimeUnit.MINUTES);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);

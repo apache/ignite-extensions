@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.conflictplugin;
+package org.apache.ignite.cdc.conflictresolve;
 
 import javax.cache.Cache;
 import org.apache.ignite.cluster.ClusterNode;

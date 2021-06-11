@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.conflictplugin;
+package org.apache.ignite.cdc.conflictresolve;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -89,8 +89,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (isUseNew(ctx, oldEntry, newEntry))
             res.useNew();
         else {
-            log.warning("Skip update due to the conflict[key=" + newEntry.key() + ",fromCluster=" + newEntry.dataCenterId()
-                + ",toCluster=" + oldEntry.dataCenterId() + ']');
+            log.warning("Skip update due to the conflict [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
+                + ", toCluster=" + oldEntry.dataCenterId() + ']');
 
             res.useOld();
         }
@@ -112,14 +112,14 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
     ) {
+        if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
+            return true;
+
         if (oldEntry.isStartVersion()) // New entry.
             return true;
 
-        if (newEntry.dataCenterId() == clusterId) // Update made on the same DC.
-            return true;
-
         if (oldEntry.dataCenterId() == newEntry.dataCenterId())
-            return newEntry.order() > oldEntry.order(); // New version from the same DC.
+            return newEntry.version().compareTo(oldEntry.version()) > 0; // New version from the same cluster.
 
         if (conflictResolveFieldEnabled) {
             Object oldVal = oldEntry.value(ctx);
@@ -153,6 +153,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             }
         }
 
-        return newEntry.dataCenterId() < oldEntry.dataCenterId(); // DC with the lower ID have biggest priority.
+        // Cluster with the lower ID have biggest priority(e.g. first cluster is main).
+        return newEntry.dataCenterId() < oldEntry.dataCenterId();
     }
 }

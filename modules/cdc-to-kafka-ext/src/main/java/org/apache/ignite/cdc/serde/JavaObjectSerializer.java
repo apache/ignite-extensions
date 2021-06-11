@@ -17,25 +17,14 @@
 
 package org.apache.ignite.cdc.serde;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.kafka.common.serialization.Serializer;
 
 /** Java object serializer. */
 public class JavaObjectSerializer implements Serializer<Serializable> {
     /** {@inheritDoc} */
     @Override public byte[] serialize(String s, Serializable o) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-
-            oos.writeObject(o);
-
-            return baos.toByteArray();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return IgniteUtils.toBytes(o);
     }
 }
