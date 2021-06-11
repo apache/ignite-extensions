@@ -62,7 +62,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.KEYS_CNT;
 import static org.apache.ignite.cdc.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
@@ -121,6 +120,9 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public static final int ANY_SAME_STATE = 3;
+
+    /** */
+    public static final int KEYS_CNT = 50;
 
     /** */
     public static final AtomicLong REQUEST_ID = new AtomicLong();
