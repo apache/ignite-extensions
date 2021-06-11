@@ -30,11 +30,17 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.IntegerSerializer;
+
+import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
 /**
  * Change Data Consumer that streams all data changes to Kafka topic.
@@ -61,7 +67,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     private IgniteLogger log;
 
     /** Kafka producer to stream events. */
-    private KafkaProducer<Integer, ChangeDataCaptureEvent> producer;
+    private KafkaProducer<Integer, byte[]> producer;
 
     /** Handle only primary entry flag. */
     private final boolean onlyPrimary;
@@ -112,6 +118,9 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
             .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
+
+        kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
+        kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
     }
 
     /** {@inheritDoc} */
@@ -136,7 +145,7 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
                 topic,
                 evt.partition() % kafkaParts,
                 evt.cacheId(),
-                evt
+                IgniteUtils.toBytes(evt)
             )));
         }
 
