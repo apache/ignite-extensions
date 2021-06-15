@@ -57,7 +57,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /**
      * Cache names to process.
      */
-    private Collection<String> cacheNames;
+    private Collection<String> caches;
 
     /** */
     public int getThreadCount() {
@@ -100,12 +100,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /** */
-    public Collection<String> getCacheNames() {
-        return cacheNames;
+    public Collection<String> getCaches() {
+        return caches;
     }
 
     /** */
-    public void setCacheNames(Collection<String> cacheNames) {
-        this.cacheNames = cacheNames;
+    public void setCaches(Collection<String> caches) {
+        this.caches = caches;
     }
 }

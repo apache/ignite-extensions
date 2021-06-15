@@ -124,7 +124,7 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     public static final AtomicLong REQUEST_ID = new AtomicLong();
 
     /** */
-    private static Properties props;
+    protected static Properties props;
 
     /** */
     private static IgniteEx[] srcCluster;
@@ -156,25 +156,24 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
-
-        cfgPlugin.setClusterId(clusterId);
-        cfgPlugin.setCaches(new HashSet<>(Collections.singletonList(ACTIVE_ACTIVE_CACHE)));
-        cfgPlugin.setConflictResolveField("reqId");
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi()
                 .setLocalPort(discoPort)
-                .setLocalPortRange(DFLT_PORT_RANGE)
                 .setIpFinder(new TcpDiscoveryVmIpFinder() {{
                     setAddresses(Collections.singleton("127.0.0.1:" + discoPort + ".." + (discoPort + DFLT_PORT_RANGE)));
                 }}))
             .setCommunicationSpi(new TcpCommunicationSpi()
-                .setLocalPort(commPort)
-                .setLocalPortRange(DFLT_PORT_RANGE))
-            .setPluginProviders(cfgPlugin);
+                .setLocalPort(commPort));
 
         if (!cfg.isClientMode()) {
+            CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
+
+            cfgPlugin.setClusterId(clusterId);
+            cfgPlugin.setCaches(new HashSet<>(Collections.singletonList(ACTIVE_ACTIVE_CACHE)));
+            cfgPlugin.setConflictResolveField("reqId");
+
+            cfg.setPluginProviders(cfgPlugin);
+
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
@@ -198,9 +197,11 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         if (props == null) {
             props = new Properties();
 
-            props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("replication/kafka.properties"));
-
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+            props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
+            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+            props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
         }
 
         createTopic(DFLT_TOPIC, DFLT_PARTS, props);
@@ -248,8 +249,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testActivePassiveReplication() throws Exception {
-        IgniteInternalFuture<?> fut1 = igniteToKafka(srcCluster[0], DFLT_TOPIC, AP_CACHE);
-        IgniteInternalFuture<?> fut2 = igniteToKafka(srcCluster[1], DFLT_TOPIC, AP_CACHE);
+        IgniteInternalFuture<?> fut1 = igniteToKafka(srcCluster[0].configuration(), DFLT_TOPIC, AP_CACHE);
+        IgniteInternalFuture<?> fut2 = igniteToKafka(srcCluster[1].configuration(), DFLT_TOPIC, AP_CACHE);
 
         try {
             IgniteCache<Integer, Data> destCache = destCluster[0].createCache(AP_CACHE);
@@ -292,10 +293,10 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
 
-        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0], SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1], SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(destCluster[0], DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
-        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1], DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0].configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1].configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut1 = igniteToKafka(destCluster[0].configuration(), DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
+        IgniteInternalFuture<?> cdcDestFut2 = igniteToKafka(destCluster[1].configuration(), DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE);
 
         try {
             IgniteInternalFuture<?> k2iFut1 = kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg);
@@ -388,12 +389,12 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param ign Ignite instance to watch for.
+     * @param igniteCfg Ignite configuration.
      * @param topic Kafka topic name.
      * @param caches Cache name to stream to kafka.
      * @return Future for Change Data Capture application.
      */
-    private IgniteInternalFuture<?> igniteToKafka(IgniteEx ign, String topic, String caches) {
+    protected IgniteInternalFuture<?> igniteToKafka(IgniteConfiguration igniteCfg, String topic, String caches) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr =
                 new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(caches), KEYS_CNT, false, props);
@@ -402,7 +403,7 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
             cdcCfg.setConsumer(cdcCnsmr);
 
-            new ChangeDataCapture(ign.configuration(), null, cdcCfg).run();
+            new ChangeDataCapture(igniteCfg, null, cdcCfg).run();
         });
     }
 
@@ -411,10 +412,10 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
      * @param igniteCfg Ignite configuration.
      * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
-    private IgniteInternalFuture<?> kafkaToIgnite(String cacheName, String topic, IgniteConfiguration igniteCfg) {
+    protected IgniteInternalFuture<?> kafkaToIgnite(String cacheName, String topic, IgniteConfiguration igniteCfg) {
         KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
 
-        cfg.setCacheNames(Collections.singletonList(cacheName));
+        cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);
 
         return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, props, cfg));

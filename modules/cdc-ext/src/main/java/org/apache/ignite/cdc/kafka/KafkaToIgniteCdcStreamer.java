@@ -151,8 +151,8 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
             Set<Integer> caches = null;
 
-            if (!F.isEmpty(streamerCfg.getCacheNames())) {
-                caches = streamerCfg.getCacheNames().stream()
+            if (!F.isEmpty(streamerCfg.getCaches())) {
+                caches = streamerCfg.getCaches().stream()
                     .peek(cache -> Objects.requireNonNull(ign.cache(cache), cache + " not exists!"))
                     .map(CU::cacheId).collect(Collectors.toSet());
             }
