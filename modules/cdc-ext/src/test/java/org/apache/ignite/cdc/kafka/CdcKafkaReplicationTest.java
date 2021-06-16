@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -151,9 +149,6 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** */
     private byte clusterId = SRC_CLUSTER_ID;
 
-    /** */
-    private static final ThreadLocal<FastCrc> crc = new ThreadLocal<>().withInitial(FastCrc::new);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
@@ -255,22 +250,22 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Integer, Data> destCache = destCluster[0].createCache(AP_CACHE);
 
-            destCache.put(1, new Data(null, 0, 1, REQUEST_ID.incrementAndGet()));
+            destCache.put(1, new Data(null, REQUEST_ID.incrementAndGet()));
             destCache.remove(1);
 
-            runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
-            runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT), 1));
+            runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+            runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
             IgniteInternalFuture<?> k2iFut = kafkaToIgnite(AP_CACHE, DFLT_TOPIC, destClusterCliCfg);
 
             try {
                 IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1, fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, fut1, fut2, k2iFut);
 
                 IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, 1, fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, fut1, fut2, k2iFut);
             }
             finally {
                 k2iFut.cancel();
@@ -289,9 +284,9 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Data> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster[srcCluster.length - 1],
-            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0), 1));
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0)));
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
-            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0), 1));
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 
         IgniteInternalFuture<?> cdcSrcFut1 = igniteToKafka(srcCluster[0].configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
         IgniteInternalFuture<?> cdcSrcFut2 = igniteToKafka(srcCluster[1].configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE);
@@ -303,15 +298,15 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> k2iFut2 = kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg);
 
             try {
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, 1,
+                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS,
                     cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
 
                 for (int i = 0; i < KEYS_CNT; i++) {
-                    srcCache.put(i, generateSingleData(2));
-                    destCache.put(i, generateSingleData(2));
+                    srcCache.put(i, generateSingleData());
+                    destCache.put(i, generateSingleData());
                 }
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, ANY_SAME_STATE, 2,
+                waitForSameData(srcCache, destCache, KEYS_CNT, ANY_SAME_STATE,
                     cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
             }
             finally {
@@ -333,7 +328,6 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Data> dest,
         int keysCnt,
         int keysState,
-        int iter,
         IgniteInternalFuture<?>...futs
     ) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
@@ -362,8 +356,6 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
                 if (!data.equals(src.get(i)))
                     return checkFuts(false, futs);
-
-                checkCRC(data, iter);
             }
 
             return checkFuts(true, futs);
@@ -376,16 +368,6 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             assertFalse(fut.isDone());
 
         return res;
-    }
-
-    /** */
-    public static void checkCRC(Data data, int iter) {
-        assertEquals(iter, data.iter);
-
-        crc.get().reset();
-        crc.get().update(ByteBuffer.wrap(data.payload), data.payload.length);
-
-        assertEquals(crc.get().getValue(), data.crc);
     }
 
     /**
@@ -422,28 +404,23 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static Runnable generateData(String cacheName, IgniteEx ign, IntStream keys, int iter) {
+    public static Runnable generateData(String cacheName, IgniteEx ign, IntStream keys) {
         return () -> {
             IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
 
-            keys.forEach(i -> cache.put(i, generateSingleData(iter)));
+            keys.forEach(i -> cache.put(i, generateSingleData()));
         };
     }
 
     /**
-     * @param iter Iteration number.
      * @return Generated data object.
      */
-    public static Data generateSingleData(int iter) {
-        crc.get().reset();
-
+    public static Data generateSingleData() {
         byte[] payload = new byte[1024];
 
         ThreadLocalRandom.current().nextBytes(payload);
 
-        crc.get().update(ByteBuffer.wrap(payload), 1024);
-
-        return new Data(payload, crc.get().getValue(), iter, REQUEST_ID.incrementAndGet());
+        return new Data(payload, REQUEST_ID.incrementAndGet());
     }
 
     /** */
@@ -452,25 +429,12 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         private final byte[] payload;
 
         /** */
-        private final int crc;
-
-        /** */
-        private final int iter;
-
-        /** */
         private final long reqId;
 
         /** */
-        public Data(byte[] payload, int crc, int iter, long reqId) {
+        public Data(byte[] payload, long reqId) {
             this.payload = payload;
-            this.crc = crc;
-            this.iter = iter;
             this.reqId = reqId;
-        }
-
-        /** */
-        public int getIter() {
-            return iter;
         }
 
         /** {@inheritDoc} */
@@ -480,12 +444,12 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
             Data data = (Data)o;
-            return crc == data.crc && iter == data.iter && Arrays.equals(payload, data.payload);
+            return reqId == data.reqId && Arrays.equals(payload, data.payload);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = Objects.hash(crc, iter);
+            int result = Objects.hash(reqId);
             result = 31 * result + Arrays.hashCode(payload);
             return result;
         }

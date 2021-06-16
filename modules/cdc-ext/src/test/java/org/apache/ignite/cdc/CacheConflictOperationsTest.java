@@ -45,7 +45,6 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.checkCRC;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.generateSingleData;
 
 /**
@@ -65,10 +64,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     @Parameterized.Parameters(name = "cacheMode={0}, clusterId={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
-            {ATOMIC, THIRD_CLUSTER},
-            {TRANSACTIONAL, THIRD_CLUSTER},
-            {ATOMIC, FIRST_CLUSTER},
-            {TRANSACTIONAL, FIRST_CLUSTER},
+            {ATOMIC, THIRD_CLUSTER_ID},
+            {TRANSACTIONAL, THIRD_CLUSTER_ID},
+            {ATOMIC, FIRST_CLUSTER_ID},
+            {TRANSACTIONAL, FIRST_CLUSTER_ID},
         });
     }
 
@@ -79,22 +78,22 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
 
     /** */
-    private static IgniteEx cli;
+    private static IgniteEx client;
 
-    /** Cluster have a greater priority that {@link #SECOND_CLUSTER}. */
-    private static final byte FIRST_CLUSTER = 1;
+    /** Cluster have a greater priority that {@link #SECOND_CLUSTER_ID}. */
+    private static final byte FIRST_CLUSTER_ID = 1;
 
     /** */
-    private static final byte SECOND_CLUSTER = 2;
+    private static final byte SECOND_CLUSTER_ID = 2;
 
-    /** Cluster have a lower priority that {@link #SECOND_CLUSTER}. */
-    private static final byte THIRD_CLUSTER = 3;
+    /** Cluster have a lower priority that {@link #SECOND_CLUSTER_ID}. */
+    private static final byte THIRD_CLUSTER_ID = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
 
-        pluginCfg.setClusterId(SECOND_CLUSTER);
+        pluginCfg.setClusterId(SECOND_CLUSTER_ID);
         pluginCfg.setCaches(new HashSet<>(Collections.singleton(DEFAULT_CACHE_NAME)));
         pluginCfg.setConflictResolveField(conflictResolveField());
 
@@ -105,10 +104,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(1);
-        cli = startClientGrid(2);
+        client = startClientGrid(2);
 
-        cache = cli.createCache(new CacheConfiguration<String, Data>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
-        cachex = cli.cachex(DEFAULT_CACHE_NAME);
+        cache = client.createCache(new CacheConfiguration<String, Data>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
+        cachex = client.cachex(DEFAULT_CACHE_NAME);
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
@@ -172,7 +171,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         remove(key(key, clusterId));
 
         // Conflict replicated update succeed only if cluster has a greater priority than this cluster.
-        putx(key(key, clusterId), clusterId, 2, clusterId == FIRST_CLUSTER);
+        putx(key(key, clusterId), clusterId, 2, clusterId == FIRST_CLUSTER_ID);
 
         key = "UpdateThisDCConflict1";
 
@@ -186,34 +185,32 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         put(key(key, clusterId));
 
         // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-        removex(key(key, clusterId), clusterId, 4, clusterId == FIRST_CLUSTER);
+        removex(key(key, clusterId), clusterId, 4, clusterId == FIRST_CLUSTER_ID);
 
         key = "UpdateThisDCConflict3";
 
         put(key(key, clusterId));
 
         // Conflict replicated update succeed only if DC has a greater priority than this DC.
-        putx(key(key, clusterId), clusterId, 5, clusterId == FIRST_CLUSTER || conflictResolveField() != null);
+        putx(key(key, clusterId), clusterId, 5, clusterId == FIRST_CLUSTER_ID || conflictResolveField() != null);
     }
 
     /** */
     private void put(String key) {
-        Data newVal = generateSingleData(1);
+        Data newVal = generateSingleData();
 
         cache.put(key, newVal);
 
         assertEquals(newVal, cache.get(key));
-
-        checkCRC(cache.get(key), 1);
     }
 
     /** */
     private void putx(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
-        Data newVal = generateSingleData(1);
+        Data newVal = generateSingleData();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
-        CacheObject val = new CacheObjectImpl(cli.binary().toBinary(newVal), null);
+        CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
 
         cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, new GridCacheVersion(1, order, 1, clusterId))));
 
@@ -221,8 +218,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
             assertTrue(cache.containsKey(k));
 
             assertEquals(newVal, cache.get(k));
-
-            checkCRC(cache.get(k), newVal.getIter());
         }
         else {
             assertTrue(cache.containsKey(k) || oldVal == null);
