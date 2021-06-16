@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.Data;
+import org.apache.ignite.cdc.kafka.Data;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,7 +45,6 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.generateSingleData;
 
 /**
  * Cache conflict operations test.
@@ -197,7 +196,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     private void put(String key) {
-        Data newVal = generateSingleData();
+        Data newVal = Data.create();
 
         cache.put(key, newVal);
 
@@ -207,7 +206,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private void putx(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
-        Data newVal = generateSingleData();
+        Data newVal = Data.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);

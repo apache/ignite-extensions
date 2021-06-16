@@ -21,13 +21,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -117,9 +114,6 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public static final int KEYS_CNT = 50;
-
-    /** */
-    public static final AtomicLong REQUEST_ID = new AtomicLong();
 
     /** */
     protected static Properties props;
@@ -250,7 +244,7 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Integer, Data> destCache = destCluster[0].createCache(AP_CACHE);
 
-            destCache.put(1, new Data(null, REQUEST_ID.incrementAndGet()));
+            destCache.put(1, Data.create());
             destCache.remove(1);
 
             runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
@@ -302,8 +296,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
                     cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
 
                 for (int i = 0; i < KEYS_CNT; i++) {
-                    srcCache.put(i, generateSingleData());
-                    destCache.put(i, generateSingleData());
+                    srcCache.put(i, Data.create());
+                    destCache.put(i, Data.create());
                 }
 
                 waitForSameData(srcCache, destCache, KEYS_CNT, ANY_SAME_STATE,
@@ -408,51 +402,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         return () -> {
             IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
 
-            keys.forEach(i -> cache.put(i, generateSingleData()));
+            keys.forEach(i -> cache.put(i, Data.create()));
         };
-    }
-
-    /**
-     * @return Generated data object.
-     */
-    public static Data generateSingleData() {
-        byte[] payload = new byte[1024];
-
-        ThreadLocalRandom.current().nextBytes(payload);
-
-        return new Data(payload, REQUEST_ID.incrementAndGet());
-    }
-
-    /** */
-    public static class Data {
-        /** */
-        private final byte[] payload;
-
-        /** */
-        private final long reqId;
-
-        /** */
-        public Data(byte[] payload, long reqId) {
-            this.payload = payload;
-            this.reqId = reqId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            Data data = (Data)o;
-            return reqId == data.reqId && Arrays.equals(payload, data.payload);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = Objects.hash(reqId);
-            result = 31 * result + Arrays.hashCode(payload);
-            return result;
-        }
     }
 
     /**

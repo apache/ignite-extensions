@@ -127,23 +127,23 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             Object newVal = newEntry.value(ctx);
 
             if (oldVal != null && newVal != null) {
-                Comparable o;
-                Comparable n;
+                Comparable oldResolveField;
+                Comparable newResolveField;
 
                 try {
                     if (oldVal instanceof BinaryObject) {
-                        o = ((BinaryObject)oldVal).field(conflictResolveField);
-                        n = ((BinaryObject)newVal).field(conflictResolveField);
+                        oldResolveField = ((BinaryObject)oldVal).field(conflictResolveField);
+                        newResolveField = ((BinaryObject)newVal).field(conflictResolveField);
                     }
                     else {
-                        o = U.field(oldVal, conflictResolveField);
-                        n = U.field(newVal, conflictResolveField);
+                        oldResolveField = U.field(oldVal, conflictResolveField);
+                        newResolveField = U.field(newVal, conflictResolveField);
                     }
 
-                    if (o == null || n == null)
-                        return o == null;
+                    if (oldResolveField == null || newResolveField == null)
+                        return oldResolveField == null;
 
-                    return o.compareTo(n) < 0;
+                    return oldResolveField.compareTo(newResolveField) < 0;
                 }
                 catch (Exception e) {
                     log.error("Error while resolving replication conflict with field '" +
