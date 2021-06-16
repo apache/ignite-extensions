@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.kafka.Data;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
@@ -202,9 +203,17 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private void put(String key) {
         Data newVal = Data.create();
 
+        CacheEntry<String, Data> oldEntry = cache.getEntry(key);
+
         cache.put(key, newVal);
 
+        CacheEntry<String, Data> newEntry = cache.getEntry(key);
+
+        assertNull(((CacheEntryVersion)newEntry.version()).otherClusterVersion());
         assertEquals(newVal, cache.get(key));
+
+        if (oldEntry != null)
+            assertTrue(((CacheEntryVersion)oldEntry.version()).order() < ((CacheEntryVersion)newEntry.version()).order());
     }
 
     /** */
