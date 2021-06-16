@@ -139,7 +139,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     return oldResolveField.compareTo(newResolveField) < 0;
                 }
                 catch (Exception e) {
-                    log.error("Error while resolving replication conflict. [field=" + conflictResolveField + ']', e);
+                    log.error(
+                        "Error while resolving replication conflict. [field=" + conflictResolveField + ", key=" + newEntry.key() + ']',
+                        e
+                    );
                 }
             }
         }

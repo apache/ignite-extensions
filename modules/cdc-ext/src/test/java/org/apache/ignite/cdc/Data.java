@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.kafka;
+package org.apache.ignite.cdc;
 
 import java.util.Arrays;
 import java.util.Objects;

@@ -31,6 +31,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
+import org.apache.ignite.cdc.Data;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -250,7 +251,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             destCache.put(1, Data.create());
             destCache.remove(1);
 
-            runAsync(generateData("cache-1", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+            // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
+            runAsync(generateData("ignored-cache", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
             IgniteInternalFuture<?> k2iFut = kafkaToIgnite(AP_CACHE, DFLT_TOPIC, destClusterCliCfg);
