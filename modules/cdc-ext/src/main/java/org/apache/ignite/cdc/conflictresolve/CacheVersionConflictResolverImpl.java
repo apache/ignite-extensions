@@ -89,12 +89,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         if (isUseNew(ctx, oldEntry, newEntry))
             res.useNew();
-        else {
-            log.warning("Skip update due to the conflict [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
-                + ", toCluster=" + oldEntry.dataCenterId() + ']');
-
+        else
             res.useOld();
-        }
 
         return res;
     }
@@ -147,6 +143,9 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                 }
             }
         }
+
+        log.warning("Conflict resolved by dataCenterId [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
+            + ", toCluster=" + oldEntry.dataCenterId() + ']');
 
         // Cluster with the lower ID have biggest priority(e.g. first cluster is main).
         return newEntry.dataCenterId() < oldEntry.dataCenterId();
