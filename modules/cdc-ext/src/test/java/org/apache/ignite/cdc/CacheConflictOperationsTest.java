@@ -17,10 +17,12 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -56,19 +58,20 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public CacheAtomicityMode cacheMode;
 
-    /** Cluster id. */
+    /** Other cluster id. */
     @Parameterized.Parameter(1)
-    public byte clusterId;
+    public byte otherClusterId;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}, clusterId={1}")
+    @Parameterized.Parameters(name = "cacheMode={0}, otherClusterId={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {ATOMIC, THIRD_CLUSTER_ID},
-            {TRANSACTIONAL, THIRD_CLUSTER_ID},
-            {ATOMIC, FIRST_CLUSTER_ID},
-            {TRANSACTIONAL, FIRST_CLUSTER_ID},
-        });
+        List<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode mode : EnumSet.of(ATOMIC, TRANSACTIONAL))
+            for (byte otherClusterId : new byte[] {FIRST_CLUSTER_ID, THIRD_CLUSTER_ID})
+                params.add(new Object[] {mode, otherClusterId});
+
+        return params;
     }
 
     /** */
@@ -130,11 +133,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     public void testUpdatesFromOtherClusterWithoutConflict() throws Exception {
         String key = "UpdateFromOtherClusterWithoutConflict";
 
-        putx(key(key, clusterId), clusterId, 1, true);
+        putx(key(key, otherClusterId), otherClusterId, 1, true);
 
-        putx(key(key, clusterId), clusterId, 2, true);
+        putx(key(key, otherClusterId), otherClusterId, 2, true);
 
-        removex(key(key, clusterId), clusterId, 3, true);
+        removex(key(key, otherClusterId), otherClusterId, 3, true);
     }
 
 
@@ -146,18 +149,18 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     public void testUpdatesReorderFromOtherCluster() throws Exception {
         String key = "UpdateClusterUpdateReorder";
 
-        putx(key(key, clusterId), clusterId, 2, true);
+        putx(key(key, otherClusterId), otherClusterId, 2, true);
 
         // Update with the equal or lower order should fail.
-        putx(key(key, clusterId), clusterId, 2, false);
-        putx(key(key, clusterId), clusterId, 1, false);
+        putx(key(key, otherClusterId), otherClusterId, 2, false);
+        putx(key(key, otherClusterId), otherClusterId, 1, false);
 
         // Remove with the equal or lower order should fail.
-        removex(key(key, clusterId), clusterId, 2, false);
-        removex(key(key, clusterId), clusterId, 1, false);
+        removex(key(key, otherClusterId), otherClusterId, 2, false);
+        removex(key(key, otherClusterId), otherClusterId, 1, false);
 
         // Remove with the higher order should succeed.
-        putx(key(key, clusterId), clusterId, 3, true);
+        putx(key(key, otherClusterId), otherClusterId, 3, true);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -165,34 +168,34 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     public void testUpdatesConflict() throws Exception {
         String key = "UpdateThisClusterConflict0";
 
-        putx(key(key, clusterId), clusterId, 1, true);
+        putx(key(key, otherClusterId), otherClusterId, 1, true);
 
         // Local remove for other cluster entry should succeed.
-        remove(key(key, clusterId));
+        remove(key(key, otherClusterId));
 
         // Conflict replicated update succeed only if cluster has a greater priority than this cluster.
-        putx(key(key, clusterId), clusterId, 2, clusterId == FIRST_CLUSTER_ID);
+        putx(key(key, otherClusterId), otherClusterId, 2, otherClusterId == FIRST_CLUSTER_ID);
 
         key = "UpdateThisDCConflict1";
 
-        putx(key(key, clusterId), clusterId, 3, true);
+        putx(key(key, otherClusterId), otherClusterId, 3, true);
 
         // Local update for other cluster entry should succeed.
-        put(key(key, clusterId));
+        put(key(key, otherClusterId));
 
         key = "UpdateThisDCConflict2";
 
-        put(key(key, clusterId));
+        put(key(key, otherClusterId));
 
         // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-        removex(key(key, clusterId), clusterId, 4, clusterId == FIRST_CLUSTER_ID);
+        removex(key(key, otherClusterId), otherClusterId, 4, otherClusterId == FIRST_CLUSTER_ID);
 
         key = "UpdateThisDCConflict3";
 
-        put(key(key, clusterId));
+        put(key(key, otherClusterId));
 
         // Conflict replicated update succeed only if DC has a greater priority than this DC.
-        putx(key(key, clusterId), clusterId, 5, clusterId == FIRST_CLUSTER_ID || conflictResolveField() != null);
+        putx(key(key, otherClusterId), otherClusterId, 5, otherClusterId == FIRST_CLUSTER_ID || conflictResolveField() != null);
     }
 
     /** */
@@ -205,14 +208,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void putx(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
+    private void putx(String k, byte otherClusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
         Data newVal = Data.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
 
-        GridCacheVersion ver = new GridCacheVersion(1, order, 1, clusterId);
+        GridCacheVersion ver = new GridCacheVersion(1, order, 1, otherClusterId);
 
         cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, ver)));
 
@@ -235,12 +238,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void removex(String k, byte clusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
+    private void removex(String k, byte otherClusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
         Data oldVal = cache.get(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
-        cachex.removeAllConflict(singletonMap(key, new GridCacheVersion(1, order, 1, clusterId)));
+        cachex.removeAllConflict(singletonMap(key, new GridCacheVersion(1, order, 1, otherClusterId)));
 
         if (expectSuccess)
             assertFalse(cache.containsKey(k));
@@ -253,8 +256,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private String key(String key, byte clusterId) {
-        return key + clusterId + cacheMode;
+    private String key(String key, byte otherClusterId) {
+        return key + otherClusterId + cacheMode;
     }
 
     /** */

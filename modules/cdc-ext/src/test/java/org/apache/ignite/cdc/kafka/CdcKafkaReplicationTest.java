@@ -17,10 +17,12 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -77,12 +79,13 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "cacheMode={0},backupCnt={1}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {ATOMIC, 0},
-            {ATOMIC, 1},
-            {TRANSACTIONAL, 0},
-            {TRANSACTIONAL, 1}
-        });
+        List<Object[]> params = new ArrayList<>();
+
+        for (CacheAtomicityMode mode : EnumSet.of(ATOMIC, TRANSACTIONAL))
+            for (int i = 0; i < 2; i++)
+                params.add(new Object[] {mode, i});
+
+        return params;
     }
 
     /** */
