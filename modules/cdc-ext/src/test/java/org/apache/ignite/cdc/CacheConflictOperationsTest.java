@@ -246,7 +246,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     private void removex(String k, byte otherClusterId, long order, boolean expectSuccess) throws IgniteCheckedException {
-        Data oldVal = cache.get(k);
+        CacheEntry<String, Data> oldVal = cache.getEntry(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
@@ -254,11 +254,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         if (expectSuccess)
             assertFalse(cache.containsKey(k));
-        else {
-            assertTrue(cache.containsKey(k) || oldVal == null);
-
-            if (oldVal != null)
-                assertEquals(oldVal, cache.get(k));
+        else if (oldVal != null) {
+            assertEquals(oldVal.getValue(), cache.get(k));
+            assertEquals(oldVal.version(), cache.getEntry(k).version());
         }
     }
 
