@@ -140,16 +140,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                         newResolveField = U.field(newVal, conflictResolveField);
                     }
 
-                    if (oldResolveField == null || newResolveField == null)
-                        return oldResolveField == null;
-
                     return oldResolveField.compareTo(newResolveField) < 0;
                 }
                 catch (Exception e) {
-                    log.error("Error while resolving replication conflict with field '" +
-                        conflictResolveField + "'.\nConflict resolve with the field disabled.", e);
-
-                    conflictResolveFieldEnabled = false;
+                    log.error("Error while resolving replication conflict. [field=" + conflictResolveField + ']', e);
                 }
             }
         }

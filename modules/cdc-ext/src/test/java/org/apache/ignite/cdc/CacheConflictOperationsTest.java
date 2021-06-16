@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.kafka.Data;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -211,14 +212,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
 
-        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, new GridCacheVersion(1, order, 1, clusterId))));
+        GridCacheVersion ver = new GridCacheVersion(1, order, 1, clusterId);
+
+        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, ver)));
 
         if (expectSuccess) {
-            assertTrue(cache.containsKey(k));
-
+            assertEquals(ver, ((CacheEntryVersion)cache.getEntry(k).version()).otherClusterVersion());
             assertEquals(newVal, cache.get(k));
-        }
-        else {
+        } else {
             assertTrue(cache.containsKey(k) || oldVal == null);
 
             if (oldVal != null)
