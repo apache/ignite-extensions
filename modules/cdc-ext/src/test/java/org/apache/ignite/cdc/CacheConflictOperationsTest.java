@@ -231,13 +231,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         if (expectSuccess) {
             assertEquals(ver, ((CacheEntryVersion)cache.getEntry(k).version()).otherClusterVersion());
             assertEquals(newVal, cache.get(k));
-        } else {
-            assertTrue(cache.containsKey(k) || oldVal == null);
-
-            if (oldVal != null) {
-                assertEquals(oldVal.getValue(), cache.get(k));
-                assertEquals(oldVal.version(), cache.getEntry(k).version());
-            }
+        } else if (oldVal != null) {
+            assertEquals(oldVal.getValue(), cache.get(k));
+            assertEquals(oldVal.version(), cache.getEntry(k).version());
         }
     }
 
