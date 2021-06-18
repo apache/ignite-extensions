@@ -144,7 +144,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         }
 
         log.error("Conflict can't be resolved, update ignored [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
-            + ", toCluster=" + oldEntry.dataCenterId() + ", conflictResolveField=" + conflictResolveField + ']');
+            + ", toCluster=" + oldEntry.dataCenterId() + ']');
 
         // Ignoring update.
         return false;

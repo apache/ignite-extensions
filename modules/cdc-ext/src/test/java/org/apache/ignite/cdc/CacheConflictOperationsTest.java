@@ -84,13 +84,13 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private static IgniteEx client;
 
-    /** Cluster have a greater priority that {@link #SECOND_CLUSTER_ID}. */
+    /** */
     private static final byte FIRST_CLUSTER_ID = 1;
 
     /** */
     private static final byte SECOND_CLUSTER_ID = 2;
 
-    /** Cluster have a lower priority that {@link #SECOND_CLUSTER_ID}. */
+    /** */
     private static final byte THIRD_CLUSTER_ID = 3;
 
     /** {@inheritDoc} */
@@ -206,7 +206,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Local remove for other cluster entry should succeed.
         remove(key);
 
-        // Conflict replicated update succeed only if cluster has a greater priority than this cluster.
+        // Conflict replicated update should fail.
         putConflict(key, 2, false);
 
         key = key("UpdateThisDCConflict1", otherClusterId);
@@ -220,14 +220,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         put(key);
 
-        // Conflict replicated remove succeed only if DC has a greater priority than this DC.
+        // Conflict replicated remove should fail.
         removeConflict(key, 4, false);
 
         key = key("UpdateThisDCConflict3", otherClusterId);
 
         put(key);
 
-        // Conflict replicated update succeed only if DC has a greater priority than this DC.
+        // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
     }
 
