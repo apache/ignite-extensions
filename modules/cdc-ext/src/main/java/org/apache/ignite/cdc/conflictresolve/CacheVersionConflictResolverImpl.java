@@ -59,7 +59,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     private final IgniteLogger log;
 
     /** If {@code true} then conflict resolving with the value field enabled. */
-    private boolean conflictResolveFieldEnabled;
+    private final boolean conflictResolveFieldEnabled;
 
     /**
      * @param clusterId Data center id.
