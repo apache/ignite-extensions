@@ -36,16 +36,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     then entry with the greater {@link GridCacheVersionedEntryEx#order()} used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of new entry greater then new version used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of old entry greater then old version used.</li>
- *     <li>Entry with the lower value of {@link GridCacheVersionedEntryEx#dataCenterId()} used.</li>
+ *     <li>Conflict can't be resolved. Update ignored. Old version used.</li>
  * </ul>
- *
- * Note, data center with lower value has greater priority e.g first (1) data center is main in case conflict can't be resolved
- * automatically.
  */
 public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
     /**
      * Cluster id.
-     * Note, cluster with lower value has greater priority e.g first (1) cluster is main in case conflict can't be resolved automatically.
      */
     private final byte clusterId;
 
@@ -147,10 +143,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             }
         }
 
-        log.warning("Conflict resolved by dataCenterId [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
-            + ", toCluster=" + oldEntry.dataCenterId() + ']');
+        log.error("Conflict can't be resolved, update ignored [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
+            + ", toCluster=" + oldEntry.dataCenterId() + ", conflictResolveField=" + conflictResolveField + ']');
 
-        // Cluster with the lower ID have biggest priority(e.g. first cluster is main).
-        return newEntry.dataCenterId() < oldEntry.dataCenterId();
+        // Ignoring update.
+        return false;
     }
 }

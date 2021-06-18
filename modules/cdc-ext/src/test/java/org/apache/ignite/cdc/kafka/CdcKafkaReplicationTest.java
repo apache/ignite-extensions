@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.cdc.Data;
+import org.apache.ignite.cdc.ConflictResolvableTestData;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -108,13 +108,10 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     public static final byte DEST_CLUSTER_ID = 27;
 
     /** */
-    public static final int BOTH_EXISTS = 1;
+    public static final int EXISTS = 1;
 
     /** */
-    public static final int BOTH_REMOVED = 2;
-
-    /** */
-    public static final int ANY_SAME_STATE = 3;
+    public static final int REMOVED = 2;
 
     /** */
     public static final int KEYS_CNT = 50;
@@ -246,9 +243,9 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = igniteToKafka(srcCluster[1].configuration(), DFLT_TOPIC, AP_CACHE);
 
         try {
-            IgniteCache<Integer, Data> destCache = destCluster[0].createCache(AP_CACHE);
+            IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster[0].createCache(AP_CACHE);
 
-            destCache.put(1, Data.create());
+            destCache.put(1, ConflictResolvableTestData.create());
             destCache.remove(1);
 
             // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
@@ -258,13 +255,13 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> k2iFut = kafkaToIgnite(AP_CACHE, DFLT_TOPIC, destClusterCliCfg);
 
             try {
-                IgniteCache<Integer, Data> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
+                IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS, fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, EXISTS, fut1, fut2, k2iFut);
 
                 IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_REMOVED, fut1, fut2, k2iFut);
+                waitForSameData(srcCache, destCache, KEYS_CNT, REMOVED, fut1, fut2, k2iFut);
             }
             finally {
                 k2iFut.cancel();
@@ -279,8 +276,8 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testActiveActiveReplication() throws Exception {
-        IgniteCache<Integer, Data> srcCache = srcCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
-        IgniteCache<Integer, Data> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster[srcCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0)));
@@ -297,15 +294,13 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> k2iFut2 = kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg);
 
             try {
-                waitForSameData(srcCache, destCache, KEYS_CNT, BOTH_EXISTS,
+                waitForSameData(srcCache, destCache, KEYS_CNT, EXISTS,
                     cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
 
-                for (int i = 0; i < KEYS_CNT; i++) {
-                    srcCache.put(i, Data.create());
-                    destCache.put(i, Data.create());
-                }
+                runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 == 0).forEach(srcCache::remove));
+                runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 != 0).forEach(destCache::remove));
 
-                waitForSameData(srcCache, destCache, KEYS_CNT, ANY_SAME_STATE,
+                waitForSameData(srcCache, destCache, KEYS_CNT, REMOVED,
                     cdcDestFut1, cdcDestFut2, cdcDestFut1, cdcDestFut2, k2iFut1, k2iFut2);
             }
             finally {
@@ -323,35 +318,28 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public void waitForSameData(
-        IgniteCache<Integer, Data> src,
-        IgniteCache<Integer, Data> dest,
+        IgniteCache<Integer, ConflictResolvableTestData> src,
+        IgniteCache<Integer, ConflictResolvableTestData> dest,
         int keysCnt,
         int keysState,
         IgniteInternalFuture<?>...futs
     ) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> {
             for (int i = 0; i < keysCnt; i++) {
-                if (keysState == BOTH_EXISTS) {
+                if (keysState == EXISTS) {
                     if (!src.containsKey(i) || !dest.containsKey(i))
                         return checkFuts(false, futs);
                 }
-                else if (keysState == BOTH_REMOVED) {
+                else if (keysState == REMOVED) {
                     if (src.containsKey(i) || dest.containsKey(i))
                         return checkFuts(false, futs);
 
                     continue;
                 }
-                else if (keysState == ANY_SAME_STATE) {
-                    if (src.containsKey(i) != dest.containsKey(i))
-                        return checkFuts(false, futs);
-
-                    if (!src.containsKey(i))
-                        continue;
-                }
                 else
                     throw new IllegalArgumentException(keysState + " not supported.");
 
-                Data data = dest.get(i);
+                ConflictResolvableTestData data = dest.get(i);
 
                 if (!data.equals(src.get(i)))
                     return checkFuts(false, futs);
@@ -405,9 +393,9 @@ public class CdcKafkaReplicationTest extends GridCommonAbstractTest {
     /** */
     public static Runnable generateData(String cacheName, IgniteEx ign, IntStream keys) {
         return () -> {
-            IgniteCache<Integer, Data> cache = ign.getOrCreateCache(cacheName);
+            IgniteCache<Integer, ConflictResolvableTestData> cache = ign.getOrCreateCache(cacheName);
 
-            keys.forEach(i -> cache.put(i, Data.create()));
+            keys.forEach(i -> cache.put(i, ConflictResolvableTestData.create()));
         };
     }
 

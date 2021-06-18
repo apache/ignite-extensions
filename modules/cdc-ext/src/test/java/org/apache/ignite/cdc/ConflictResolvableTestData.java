@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** */
-public class Data {
+public class ConflictResolvableTestData {
     /** */
     public static final AtomicLong REQUEST_ID = new AtomicLong();
 
@@ -34,7 +34,7 @@ public class Data {
     private final long reqId;
 
     /** */
-    public Data(byte[] payload, long reqId) {
+    public ConflictResolvableTestData(byte[] payload, long reqId) {
         this.payload = payload;
         this.reqId = reqId;
     }
@@ -42,12 +42,12 @@ public class Data {
     /**
      * @return Generated data object.
      */
-    public static Data create() {
+    public static ConflictResolvableTestData create() {
         byte[] payload = new byte[1024];
 
         ThreadLocalRandom.current().nextBytes(payload);
 
-        return new Data(payload, REQUEST_ID.incrementAndGet());
+        return new ConflictResolvableTestData(payload, REQUEST_ID.incrementAndGet());
     }
 
     /** {@inheritDoc} */
@@ -56,7 +56,7 @@ public class Data {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Data data = (Data)o;
+        ConflictResolvableTestData data = (ConflictResolvableTestData)o;
         return reqId == data.reqId && Arrays.equals(payload, data.payload);
     }
 

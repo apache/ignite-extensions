@@ -76,7 +76,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static IgniteCache<String, Data> cache;
+    private static IgniteCache<String, ConflictResolvableTestData> cache;
 
     /** */
     private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
@@ -110,7 +110,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         client = startClientGrid(2);
 
-        cache = client.createCache(new CacheConfiguration<String, Data>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
+        cache = client.createCache(new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
         cachex = client.cachex(DEFAULT_CACHE_NAME);
     }
 
@@ -207,7 +207,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         remove(key);
 
         // Conflict replicated update succeed only if cluster has a greater priority than this cluster.
-        putConflict(key, 2, otherClusterId == FIRST_CLUSTER_ID);
+        putConflict(key, 2, false);
 
         key = key("UpdateThisDCConflict1", otherClusterId);
 
@@ -221,25 +221,25 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         put(key);
 
         // Conflict replicated remove succeed only if DC has a greater priority than this DC.
-        removeConflict(key, 4, otherClusterId == FIRST_CLUSTER_ID);
+        removeConflict(key, 4, false);
 
         key = key("UpdateThisDCConflict3", otherClusterId);
 
         put(key);
 
         // Conflict replicated update succeed only if DC has a greater priority than this DC.
-        putConflict(key, 5, otherClusterId == FIRST_CLUSTER_ID || conflictResolveField() != null);
+        putConflict(key, 5, conflictResolveField() != null);
     }
 
     /** */
     private void put(String key) {
-        Data newVal = Data.create();
+        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
-        CacheEntry<String, Data> oldEntry = cache.getEntry(key);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(key);
 
         cache.put(key, newVal);
 
-        CacheEntry<String, Data> newEntry = cache.getEntry(key);
+        CacheEntry<String, ConflictResolvableTestData> newEntry = cache.getEntry(key);
 
         assertNull(((CacheEntryVersion)newEntry.version()).otherClusterVersion());
         assertEquals(newVal, cache.get(key));
@@ -255,8 +255,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, Data> oldVal = cache.getEntry(k);
-        Data newVal = Data.create();
+        CacheEntry<String, ConflictResolvableTestData> oldVal = cache.getEntry(k);
+        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
@@ -286,7 +286,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
     private void removeConflict(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, Data> oldVal = cache.getEntry(k);
+        CacheEntry<String, ConflictResolvableTestData> oldVal = cache.getEntry(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
