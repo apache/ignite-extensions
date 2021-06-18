@@ -108,7 +108,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
             return true;
 
-        if (oldEntry.isStartVersion()) // Entry miss (new entry).
+        if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
         if (oldEntry.dataCenterId() == newEntry.dataCenterId())
