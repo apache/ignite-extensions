@@ -142,7 +142,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /**
      * Tests that {@code IgniteInternalCache#*AllConflict} cache operations works with the conflict resolver
-     * when there is no update conflicts.
+     * when there are update conflicts.
      */
     @Test
     public void testUpdatesReorderFromOtherCluster() throws Exception {
@@ -150,11 +150,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         putConflict(key, 2, true);
 
-        // Update with the equal or lower order should fail.
+        // Update with the equal or lower order should ignored.
         putConflict(key, 2, false);
         putConflict(key, 1, false);
 
-        // Remove with the equal or lower order should fail.
+        // Remove with the equal or lower order should ignored.
         removeConflict(key, 2, false);
         removeConflict(key, 1, false);
 
@@ -167,11 +167,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         putConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), true);
 
-        // Update with the equal or lower topVer should fail.
+        // Update with the equal or lower topVer should ignored.
         putConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), false);
         putConflict(key, new GridCacheVersion(1, order, 1, otherClusterId), false);
 
-        // Remove with the equal or lower topVer should fail.
+        // Remove with the equal or lower topVer should ignored.
         removeConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), false);
         removeConflict(key, new GridCacheVersion(1, order, 1, otherClusterId), false);
 
@@ -184,11 +184,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), true);
 
-        // Update with the equal or lower nodeOrder should fail.
+        // Update with the equal or lower nodeOrder should ignored.
         putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         putConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
-        // Remove with the equal or lower nodeOrder should fail.
+        // Remove with the equal or lower nodeOrder should ignored.
         removeConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         removeConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
@@ -206,7 +206,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Local remove for other cluster entry should succeed.
         remove(key);
 
-        // Conflict replicated update should fail.
+        // Conflict replicated update should ignored.
+        // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
         putConflict(key, 2, false);
 
         key = key("UpdateThisDCConflict1", otherClusterId);
@@ -220,7 +221,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         put(key);
 
-        // Conflict replicated remove should fail.
+        // Conflict replicated remove should ignored.
         removeConflict(key, 4, false);
 
         key = key("UpdateThisDCConflict3", otherClusterId);
@@ -255,7 +256,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, ConflictResolvableTestData> oldVal = cache.getEntry(k);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
@@ -266,14 +267,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         if (success) {
             assertEquals(newVer, ((CacheEntryVersion)cache.getEntry(k).version()).otherClusterVersion());
             assertEquals(newVal, cache.get(k));
-        } else if (oldVal != null) {
-            assertEquals(oldVal.getValue(), cache.get(k));
-            assertEquals(oldVal.version(), cache.getEntry(k).version());
+        } else if (oldEntry != null) {
+            assertEquals(oldEntry.getValue(), cache.get(k));
+            assertEquals(oldEntry.version(), cache.getEntry(k).version());
         }
     }
 
     /** */
     private void remove(String key) {
+        assertTrue(cache.containsKey(key));
+
         cache.remove(key);
 
         assertFalse(cache.containsKey(key));
@@ -286,7 +289,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
     private void removeConflict(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, ConflictResolvableTestData> oldVal = cache.getEntry(k);
+        assertTrue(cache.containsKey(k));
+
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
@@ -294,9 +299,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         if (success)
             assertFalse(cache.containsKey(k));
-        else if (oldVal != null) {
-            assertEquals(oldVal.getValue(), cache.get(k));
-            assertEquals(oldVal.version(), cache.getEntry(k).version());
+        else if (oldEntry != null) {
+            assertEquals(oldEntry.getValue(), cache.get(k));
+            assertEquals(oldEntry.version(), cache.getEntry(k).version());
         }
     }
 

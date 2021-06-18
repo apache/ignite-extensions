@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -140,12 +139,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
-            IgniteLogger log = U.initLogger(
-                igniteCfg.getGridLogger(),
-                "kafka-ignite-streamer",
-                igniteCfg.getNodeId() != null ? igniteCfg.getNodeId() : UUID.randomUUID(),
-                igniteCfg.getWorkDirectory()
-            );
+            IgniteLogger log = U.initLogger(igniteCfg, "kafka-ignite-streamer");
 
             AtomicBoolean closed = new AtomicBoolean();
 
