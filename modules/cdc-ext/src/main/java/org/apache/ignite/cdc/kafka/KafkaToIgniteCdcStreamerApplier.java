@@ -23,7 +23,6 @@ import java.io.ObjectInputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,21 +31,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -86,7 +80,7 @@ import org.apache.kafka.common.errors.WakeupException;
  * @see ChangeDataCaptureEvent
  * @see CacheEntryVersion
  */
-class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
+class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnable, AutoCloseable {
     /** */
     public static final int DFLT_REQ_TIMEOUT = 3;
 
@@ -99,14 +93,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Closed flag. Shared between all appliers. */
     private final AtomicBoolean closed;
 
-    /** Caches. */
-    private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
-
     /** Kafka properties. */
     private final Properties kafkaProps;
-
-    /** Maximum batch size. */
-    private final int maxBatchSize;
 
     /** Topic to read. */
     private final String topic;
@@ -122,12 +110,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
     /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
-
-    /** Update batch. */
-    private final Map<KeyCacheObject, GridCacheDrInfo> updBatch = new HashMap<>();
-
-    /** Remove batch. */
-    private final Map<KeyCacheObject, GridCacheVersion> rmvBatch = new HashMap<>();
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
@@ -154,13 +136,14 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         int maxBatchSize,
         AtomicBoolean closed
     ) {
+        super(maxBatchSize);
+
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
-        this.maxBatchSize = maxBatchSize;
         this.closed = closed;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
     }
@@ -218,127 +201,30 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param cnsmr Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> records = cnsmr.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
 
         if (log.isDebugEnabled()) {
             log.debug(
-                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(records.count()) + ']'
+                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']'
             );
         }
 
-        IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
-
-        for (ConsumerRecord<Integer, byte[]> rec : records) {
-            if (!F.isEmpty(caches) && !caches.contains(rec.key()))
-                continue;
-
-            try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-                ChangeDataCaptureEvent evt = (ChangeDataCaptureEvent)is.readObject();
-
-                IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
-                    for (String cacheName : ign.cacheNames()) {
-                        if (CU.cacheId(cacheName) == cacheId)
-                            return ign.cachex(cacheName);
-                    }
-
-                    throw new IllegalStateException("Cache with id not found [cacheId=" + cacheId + ']');
-                });
-
-                if (cache != currCache) {
-                    applyIfNotEmpty(currCache);
-
-                    updBatch.clear();
-                    rmvBatch.clear();
-
-                    currCache = cache;
-                }
-
-                CacheEntryVersion order = evt.version();
-
-                KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
-
-                if (evt.value() != null) {
-                    applyIfRequired(currCache, key, true);
-
-                    CacheObject val = new CacheObjectImpl(evt.value(), null);
-
-                    updBatch.put(key, new GridCacheDrInfo(val,
-                        new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
-                }
-                else {
-                    applyIfRequired(currCache, key, false);
-
-                    rmvBatch.put(key,
-                        new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
-                }
-            }
-            catch (ClassNotFoundException | IOException e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-
-        if (currCache != null)
-            applyIfNotEmpty(currCache);
+        apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
 
         cnsmr.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
     }
 
     /**
-     * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
-     *
-     * @param cache Current cache.
-     * @throws IgniteCheckedException In case of error.
+     * @param rec Kafka record.
+     * @return CDC event.
      */
-    private void applyIfNotEmpty(IgniteInternalCache<BinaryObject, BinaryObject> cache) throws IgniteCheckedException {
-        if (!F.isEmpty(rmvBatch)) {
-            cache.removeAllConflict(rmvBatch);
-
-            rmvBatch.clear();
+    private ChangeDataCaptureEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
+        try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
+            return (ChangeDataCaptureEvent)is.readObject();
         }
-
-        if (!F.isEmpty(updBatch)) {
-            cache.putAllConflict(updBatch);
-
-            updBatch.clear();
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
-     *
-     * @param cache Current cache.
-     * @param key Key.
-     * @param isUpdate {@code True} if next operation update.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void applyIfRequired(
-        IgniteInternalCache<BinaryObject, BinaryObject> cache,
-        KeyCacheObject key,
-        boolean isUpdate
-    ) throws IgniteCheckedException {
-        if (isApplyBatch(false, rmvBatch, isUpdate, key)) {
-            cache.removeAllConflict(rmvBatch);
-
-            rmvBatch.clear();
-        }
-
-        if (isApplyBatch(true, updBatch, isUpdate, key)) {
-            cache.putAllConflict(updBatch);
-
-            updBatch.clear();
-        }
-    }
-
-    /** @return {@code True} if update batch should be applied. */
-    private boolean isApplyBatch(
-        boolean batchContainsUpd,
-        Map<KeyCacheObject, ?> map,
-        boolean currOpUpd,
-        KeyCacheObject key
-    ) {
-        return (!F.isEmpty(map) && currOpUpd != batchContainsUpd) ||
-            map.size() >= maxBatchSize ||
-            map.containsKey(key);
     }
 
     /** {@inheritDoc} */
@@ -348,6 +234,16 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         closed.set(true);
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx ignite() {
+        return ign;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteLogger log() {
+        return log;
     }
 
     /** {@inheritDoc} */

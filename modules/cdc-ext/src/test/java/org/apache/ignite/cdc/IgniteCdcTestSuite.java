@@ -30,9 +30,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     CacheConflictOperationsTest.class,
     CacheConflictOperationsWithFieldTest.class,
+    CdcIgniteToIgniteReplicationTest.class,
+    KafkaToIgniteLoaderTest.class,
     CdcKafkaReplicationTest.class,
-    CdcKafkaReplicationAppsTest.class,
-    KafkaToIgniteLoaderTest.class
+    CdcKafkaReplicationAppsTest.class
 })
 public class IgniteCdcTestSuite {
 }
