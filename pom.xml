@@ -62,7 +62,7 @@
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
         <module>modules/spring-cache-ext</module>
-        <module>modules/spring-sessions</module>
+        <module>modules/spring-session-ext</module>
     </modules>
 
     <profiles>
