@@ -91,7 +91,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     private final IgniteLogger log;
 
     /** Closed flag. Shared between all appliers. */
-    private final AtomicBoolean closed;
+    private final AtomicBoolean stopped;
 
     /** Kafka properties. */
     private final Properties kafkaProps;
@@ -123,7 +123,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
-     * @param closed Closed flag.
+     * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
@@ -134,7 +134,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         int kafkaPartTo,
         Set<Integer> caches,
         int maxBatchSize,
-        AtomicBoolean closed
+        AtomicBoolean stopped
     ) {
         super(maxBatchSize);
 
@@ -144,7 +144,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
-        this.closed = closed;
+        this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
     }
 
@@ -163,7 +163,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
 
             Iterator<KafkaConsumer<Integer, byte[]>> cnsmrIter = Collections.emptyIterator();
 
-            while (!closed.get()) {
+            while (!stopped.get()) {
                 if (!cnsmrIter.hasNext())
                     cnsmrIter = cnsmrs.iterator();
 
@@ -171,13 +171,13 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
             }
         }
         catch (WakeupException e) {
-            if (!closed.get())
+            if (!stopped.get())
                 log.error("Applier wakeup error!", e);
         }
         catch (Throwable e) {
             log.error("Applier error!", e);
 
-            closed.set(true);
+            stopped.set(true);
         }
         finally {
             for (KafkaConsumer<Integer, byte[]> consumer : cnsmrs) {
@@ -231,7 +231,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     @Override public void close() {
         log.warning("Close applier!");
 
-        closed.set(true);
+        stopped.set(true);
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
     }

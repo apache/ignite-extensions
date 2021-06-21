@@ -124,7 +124,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
             IgniteLogger log = U.initLogger(igniteCfg, "kafka-ignite-streamer");
 
-            AtomicBoolean closed = new AtomicBoolean();
+            AtomicBoolean stopped = new AtomicBoolean();
 
             Set<Integer> caches = null;
 
@@ -154,7 +154,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     to,
                     caches,
                     streamerCfg.getMaxBatchSize(),
-                    closed
+                    stopped
                 );
 
                 appliers.add(applier);
@@ -169,9 +169,11 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     runners[i].join();
             }
             catch (InterruptedException e) {
-                closed.set(true);
+                stopped.set(true);
 
                 appliers.forEach(U::closeQuiet);
+
+                log.info("Kafka to Ignite streamer interrupted");
             }
         }
         catch (IgniteCheckedException e) {

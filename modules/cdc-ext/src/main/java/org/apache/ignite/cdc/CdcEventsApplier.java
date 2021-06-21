@@ -116,7 +116,7 @@ public abstract class CdcEventsApplier {
     }
 
     /**
-     * Applies data from {@code updMap} or {@code rmvBatch} to Ignite if required.
+     * Applies data from {@link #updBatch} or {@link #rmvBatch} to Ignite if required.
      *
      * @param cache Current cache.
      * @param applyUpd Apply update batch flag supplier.
