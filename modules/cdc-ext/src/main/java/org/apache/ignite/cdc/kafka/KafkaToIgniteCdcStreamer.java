@@ -22,12 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -45,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
@@ -95,8 +89,8 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     /** Streamer configuration. */
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
-    /** Executor service to run {@link KafkaToIgniteCdcStreamerApplier} instances. */
-    private final ExecutorService execSvc;
+    /** Runners to run {@link KafkaToIgniteCdcStreamerApplier} instances. */
+    private final Thread[] runners;
 
     /** Appliers. */
     private final List<KafkaToIgniteCdcStreamerApplier> appliers;
@@ -116,18 +110,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         this.streamerCfg = streamerCfg;
 
         appliers = new ArrayList<>(streamerCfg.getThreadCount());
-
-        execSvc = Executors.newFixedThreadPool(streamerCfg.getThreadCount(), new ThreadFactory() {
-            private final AtomicInteger cntr = new AtomicInteger();
-
-            @Override public Thread newThread(@NotNull Runnable r) {
-                Thread th = new Thread(r);
-
-                th.setName("applier-thread-" + cntr.getAndIncrement());
-
-                return th;
-            }
-        });
+        runners = new Thread[streamerCfg.getThreadCount()];
 
         if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
             throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
@@ -162,7 +145,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 if (i == threadCnt - 1)
                     to = kafkaParts + 1;
 
-                appliers.add(new KafkaToIgniteCdcStreamerApplier(
+                KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                     ign,
                     log,
                     kafkaProps,
@@ -172,17 +155,18 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     caches,
                     streamerCfg.getMaxBatchSize(),
                     closed
-                ));
+                );
+
+                appliers.add(applier);
+
+                runners[i] = new Thread(applier, "applier-thread-" + i);
+
+                runners[i].start();
             }
 
             try {
-                appliers.forEach(execSvc::submit);
-
-                execSvc.shutdown();
-
-                boolean stopped = execSvc.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-
-                assert stopped;
+                for (int i = 0; i < threadCnt; i ++)
+                    runners[i].join();
             }
             catch (InterruptedException e) {
                 closed.set(true);
