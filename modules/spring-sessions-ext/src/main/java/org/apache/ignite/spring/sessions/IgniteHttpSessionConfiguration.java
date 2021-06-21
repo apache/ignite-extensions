@@ -49,64 +49,42 @@ import org.springframework.util.StringUtils;
 @Configuration(proxyBeanMethods = false)
 public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfiguration implements ImportAware {
 
-    /**
-     *
-     */
+    /** */
     private Integer maxInactiveIntervalInSeconds = MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
 
-    /**
-     *
-     */
+    /** */
     private String sessionMapName = IgniteIndexedSessionRepository.DEFAULT_SESSION_MAP_NAME;
 
-    /**
-     *
-     */
+    /** */
     private FlushMode flushMode = FlushMode.ON_SAVE;
 
-    /**
-     *
-     */
+    /** */
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
-    /**
-     *
-     */
+    /** */
     private Ignite ignite;
 
-    /**
-     *
-     */
+    /** */
     private ApplicationEventPublisher applicationEventPublisher;
 
-    /**
-     *
-     */
+    /** */
     private IndexResolver<Session> indexResolver;
 
-    /**
-     *
-     */
+    /** */
     private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers;
 
-    /**
-     *
-     */
+    /** */
     @Bean
     public SessionRepository<?> sessionRepository() {
         return createIgniteIndexedSessionRepository();
     }
 
-    /**
-     *
-     */
+    /** */
     public void setMaxInactiveIntervalInSeconds(int maxInactiveIntervalInSeconds) {
         this.maxInactiveIntervalInSeconds = maxInactiveIntervalInSeconds;
     }
 
-    /**
-     *
-     */
+    /** */
     public void setSessionMapName(String sessionMapName) {
         this.sessionMapName = sessionMapName;
     }
@@ -118,16 +96,12 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.flushMode = flushMode;
     }
 
-    /**
-     *
-     */
+    /** */
     public void setSaveMode(SaveMode saveMode) {
         this.saveMode = saveMode;
     }
 
-    /**
-     *
-     */
+    /** */
     @Autowired
     public void setIgnite(@SpringSessionIgnite ObjectProvider<Ignite> springSessionIgnite,
                           ObjectProvider<Ignite> ignite) {
@@ -138,34 +112,26 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.ignite = igniteToUse;
     }
 
-    /**
-     *
-     */
+    /** */
     @Autowired
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    /**
-     *
-     */
+    /** */
     @Autowired(required = false)
     public void setIndexResolver(IndexResolver<Session> indexResolver) {
         this.indexResolver = indexResolver;
     }
 
-    /**
-     *
-     */
+    /** */
     @Autowired(required = false)
     public void setSessionRepositoryCustomizer(
             ObjectProvider<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers) {
         this.sessionRepositoryCustomizers = sessionRepositoryCustomizers.orderedStream().collect(Collectors.toList());
     }
 
-    /**
-     *
-     */
+    /** */
     @Override @SuppressWarnings("deprecation") public void setImportMetadata(AnnotationMetadata importMetadata) {
         Map<String, Object> attributeMap = importMetadata
                 .getAnnotationAttributes(EnableIgniteHttpSession.class.getName());
@@ -179,9 +145,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.saveMode = attributes.getEnum("saveMode");
     }
 
-    /**
-     *
-     */
+    /** */
     private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository() {
         IgniteIndexedSessionRepository sessionRepository = new IgniteIndexedSessionRepository(this.ignite);
         sessionRepository.setApplicationEventPublisher(this.applicationEventPublisher);
@@ -199,4 +163,5 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         return sessionRepository;
     }
 }
+
 

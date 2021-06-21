@@ -229,3 +229,4 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
     }
 
 }
+

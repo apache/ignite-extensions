@@ -36,3 +36,4 @@ final class IgniteITestUtils {
         return Ignition.start();
     }
 }
+

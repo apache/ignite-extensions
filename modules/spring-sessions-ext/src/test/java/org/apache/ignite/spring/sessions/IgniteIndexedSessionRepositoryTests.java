@@ -448,3 +448,4 @@ class IgniteIndexedSessionRepositoryTests {
     }
 
 }
+

@@ -109,24 +109,16 @@ public class IgniteIndexedSessionRepository
      */
     public static final String DEFAULT_SESSION_MAP_NAME = "spring:session:sessions";
 
-    /**
-     *
-     */
+    /** */
     private static final String SPRING_SECURITY_CONTEXT = "SPRING_SECURITY_CONTEXT";
 
-    /**
-     *
-     */
+    /** */
     private static final Log logger = LogFactory.getLog(IgniteIndexedSessionRepository.class);
 
-    /**
-     *
-     */
+    /** */
     private final Ignite ignite;
 
-    /**
-     *
-     */
+    /** */
     private ApplicationEventPublisher eventPublisher = (event) -> {
     };
 
@@ -136,34 +128,22 @@ public class IgniteIndexedSessionRepository
      */
     private Integer defaultMaxInactiveInterval;
 
-    /**
-     *
-     */
+    /** */
     private IndexResolver<Session> indexResolver = new DelegatingIndexResolver<>(new PrincipalNameIndexResolver<>());
 
-    /**
-     *
-     */
+    /** */
     private String sessionMapName = DEFAULT_SESSION_MAP_NAME;
 
-    /**
-     *
-     */
+    /** */
     private FlushMode flushMode = FlushMode.ON_SAVE;
 
-    /**
-     *
-     */
+    /** */
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
-    /**
-     *
-     */
+    /** */
     private IgniteCache<String, IgniteSession> sessions;
 
-    /**
-     *
-     */
+    /** */
     private CacheEntryListenerConfiguration<String, IgniteSession> listenerConfiguration;
 
     /**
@@ -175,9 +155,7 @@ public class IgniteIndexedSessionRepository
         this.ignite = ignite;
     }
 
-    /**
-     *
-     */
+    /** */
     @PostConstruct
     public void init() {
         final CacheConfiguration<String, IgniteSession> configuration = new CacheConfiguration<String, IgniteSession>(
@@ -209,9 +187,7 @@ public class IgniteIndexedSessionRepository
         this.sessions.registerCacheEntryListener(this.listenerConfiguration);
     }
 
-    /**
-     *
-     */
+    /** */
     @PreDestroy
     public void close() {
         this.sessions.deregisterCacheEntryListener(this.listenerConfiguration);
@@ -275,9 +251,7 @@ public class IgniteIndexedSessionRepository
         this.saveMode = saveMode;
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public IgniteSession createSession() {
         MapSession cached = new MapSession();
         if (this.defaultMaxInactiveInterval != null)
@@ -288,9 +262,7 @@ public class IgniteIndexedSessionRepository
         return session;
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public void save(IgniteSession session) {
         if (session.isNew)
             ttlSessions(session.getMaxInactiveInterval()).put(session.getId(), session);
@@ -311,9 +283,7 @@ public class IgniteIndexedSessionRepository
         session.clearChangeFlags();
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public IgniteSession findById(String id) {
         IgniteSession saved = this.sessions.get(id);
         if (saved == null)
@@ -327,16 +297,12 @@ public class IgniteIndexedSessionRepository
         return saved;
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public void deleteById(String id) {
         this.sessions.remove(id);
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public Map<String, IgniteSession> findByIndexNameAndIndexValue(String indexName, String indexValue) {
         if (!PRINCIPAL_NAME_INDEX_NAME.equals(indexName))
             return Collections.emptyMap();
@@ -360,9 +326,7 @@ public class IgniteIndexedSessionRepository
         return sessionMap;
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public void onCreated(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
             throws CacheEntryListenerException {
         events.forEach((event) -> {
@@ -376,9 +340,7 @@ public class IgniteIndexedSessionRepository
         });
     }
 
-    /**
-     *
-     */
+    /** */
     @Override
     public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
             throws CacheEntryListenerException {
@@ -390,9 +352,7 @@ public class IgniteIndexedSessionRepository
         });
     }
 
-    /**
-     *
-     */
+    /** */
     @Override public void onRemoved(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
             throws CacheEntryListenerException {
         events.forEach((event) -> {
@@ -430,51 +390,35 @@ public class IgniteIndexedSessionRepository
      */
     final class IgniteSession implements Session {
 
-        /**
-         *
-         */
+        /** */
         @QuerySqlField
         private final MapSession delegate;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private boolean isNew;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private boolean sessionIdChanged;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private boolean lastAccessedTimeChanged;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private boolean maxInactiveIntervalChanged;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private String originalId;
 
-        /**
-         *
-         */
+        /** */
         @GridDirectTransient
         private Map<String, Object> delta = new HashMap<>();
 
-        /**
-         *
-         */
+        /** */
         @QuerySqlField(index = true)
         private String principal;
 
@@ -488,71 +432,53 @@ public class IgniteIndexedSessionRepository
 
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public void setLastAccessedTime(Instant lastAccessedTime) {
             this.delegate.setLastAccessedTime(lastAccessedTime);
             this.lastAccessedTimeChanged = true;
             flushImmediateIfNecessary();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public boolean isExpired() {
             return this.delegate.isExpired();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public Instant getCreationTime() {
             return this.delegate.getCreationTime();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public String getId() {
             return this.delegate.getId();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public String changeSessionId() {
             String newSessionId = this.delegate.changeSessionId();
             this.sessionIdChanged = true;
             return newSessionId;
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public Instant getLastAccessedTime() {
             return this.delegate.getLastAccessedTime();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public void setMaxInactiveInterval(Duration interval) {
             this.delegate.setMaxInactiveInterval(interval);
             this.maxInactiveIntervalChanged = true;
             flushImmediateIfNecessary();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public Duration getMaxInactiveInterval() {
             return this.delegate.getMaxInactiveInterval();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public <T> T getAttribute(String attributeName) {
             T attributeValue = this.delegate.getAttribute(attributeName);
             if (attributeValue != null
@@ -562,16 +488,12 @@ public class IgniteIndexedSessionRepository
             return attributeValue;
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public Set<String> getAttributeNames() {
             return this.delegate.getAttributeNames();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public void setAttribute(String attributeName, Object attributeValue) {
             this.delegate.setAttribute(attributeName, attributeValue);
             this.delta.put(attributeName, attributeValue);
@@ -584,30 +506,22 @@ public class IgniteIndexedSessionRepository
             flushImmediateIfNecessary();
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public void removeAttribute(String attributeName) {
             setAttribute(attributeName, null);
         }
 
-        /**
-         *
-         */
+        /** */
         MapSession getDelegate() {
             return this.delegate;
         }
 
-        /**
-         *
-         */
+        /** */
         boolean hasChanges() {
             return (this.lastAccessedTimeChanged || this.maxInactiveIntervalChanged || !this.delta.isEmpty());
         }
 
-        /**
-         *
-         */
+        /** */
         void clearChangeFlags() {
             this.isNew = false;
             this.lastAccessedTimeChanged = false;
@@ -616,17 +530,13 @@ public class IgniteIndexedSessionRepository
             this.delta.clear();
         }
 
-        /**
-         *
-         */
+        /** */
         private void flushImmediateIfNecessary() {
             if (IgniteIndexedSessionRepository.this.flushMode == FlushMode.IMMEDIATE)
                 IgniteIndexedSessionRepository.this.save(this);
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -638,12 +548,11 @@ public class IgniteIndexedSessionRepository
             return this.delegate.equals(session.delegate);
         }
 
-        /**
-         *
-         */
+        /** */
         @Override public int hashCode() {
             return Objects.hash(this.delegate);
         }
     }
 }
+
 

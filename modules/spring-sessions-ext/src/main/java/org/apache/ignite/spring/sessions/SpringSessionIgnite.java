@@ -38,3 +38,4 @@ import org.springframework.beans.factory.annotation.Qualifier;
 public @interface SpringSessionIgnite {
 
 }
+
