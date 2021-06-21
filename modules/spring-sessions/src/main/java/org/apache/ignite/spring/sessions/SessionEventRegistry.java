@@ -31,12 +31,20 @@ import org.springframework.session.events.AbstractSessionEvent;
  */
 class SessionEventRegistry implements ApplicationListener<AbstractSessionEvent> {
 
+    /**
+     *
+     */
     private Map<String, AbstractSessionEvent> events = new HashMap<>();
 
+    /**
+     *
+     */
     private ConcurrentMap<String, Object> locks = new ConcurrentHashMap<>();
 
-    @Override
-    public void onApplicationEvent(AbstractSessionEvent event) {
+    /**
+     *
+     */
+    @Override public void onApplicationEvent(AbstractSessionEvent event) {
         String sessionId = event.getSessionId();
         this.events.put(sessionId, event);
         Object lock = getLock(sessionId);
@@ -45,29 +53,44 @@ class SessionEventRegistry implements ApplicationListener<AbstractSessionEvent> 
         }
     }
 
+    /**
+     *
+     */
     void clear() {
         this.events.clear();
         this.locks.clear();
     }
 
+    /**
+     *
+     */
     boolean receivedEvent(String sessionId) throws InterruptedException {
         return waitForEvent(sessionId) != null;
     }
 
+    /**
+     *
+     */
     <E extends AbstractSessionEvent> E getEvent(String sessionId) throws InterruptedException {
         return (E) waitForEvent(sessionId);
     }
 
+    /**
+     *
+     */
     private <E extends AbstractSessionEvent> E waitForEvent(String sessionId) throws InterruptedException {
         Object lock = getLock(sessionId);
         synchronized (lock) {
-            if (!this.events.containsKey(sessionId)) {
+            if (!this.events.containsKey(sessionId))
                 lock.wait(10000);
-            }
+
         }
         return (E) this.events.get(sessionId);
     }
 
+    /**
+     *
+     */
     private Object getLock(String sessionId) {
         return this.locks.computeIfAbsent(sessionId, (k) -> new Object());
     }

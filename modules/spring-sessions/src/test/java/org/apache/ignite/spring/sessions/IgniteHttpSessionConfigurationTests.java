@@ -55,9 +55,8 @@ class IgniteHttpSessionConfigurationTests {
 
     @AfterEach
     void closeContext() {
-        if (this.context != null) {
+        if (this.context != null)
             this.context.close();
-        }
     }
 
     @Test
@@ -436,7 +435,5 @@ class IgniteHttpSessionConfigurationTests {
             return (sessionRepository) -> sessionRepository
                     .setDefaultMaxInactiveInterval(MAX_INACTIVE_INTERVAL_IN_SECONDS);
         }
-
     }
-
 }

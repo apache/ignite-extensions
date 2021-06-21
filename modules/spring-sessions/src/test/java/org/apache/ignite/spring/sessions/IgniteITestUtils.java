@@ -35,5 +35,4 @@ final class IgniteITestUtils {
     static Ignite embeddedIgniteServer() {
         return Ignition.start();
     }
-
 }
