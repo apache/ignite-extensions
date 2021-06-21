@@ -21,22 +21,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.junit.ClassRule;
-import org.testcontainers.containers.KafkaContainer;
-import org.testcontainers.utility.DockerImageName;
 
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -56,27 +49,27 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** */
     @ClassRule
-    public static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"));
+    public static final EmbeddedKafkaCluster KAFKA = new EmbeddedKafkaCluster(1);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        kafka.start();
+        KAFKA.start();
 
         if (props == null) {
             props = new Properties();
 
-            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
+            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.bootstrapServers());
             props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
             props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
             props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
             props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
         }
 
-        createTopic(DFLT_TOPIC, DFLT_PARTS, props);
-        createTopic(SRC_DEST_TOPIC, DFLT_PARTS, props);
-        createTopic(DEST_SRC_TOPIC, DFLT_PARTS, props);
+        KAFKA.createTopic(DFLT_TOPIC, DFLT_PARTS, 1);
+        KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
+        KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
     }
 
     /** {@inheritDoc} */
@@ -85,7 +78,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         props = null;
 
-        kafka.stop();
+        KAFKA.deleteAllTopicsAndWait(getTestTimeout());
     }
 
     /** {@inheritDoc} */
@@ -156,26 +149,5 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setTopic(topic);
 
         return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, props, cfg));
-    }
-
-    /**
-     * Create Kafka topic.
-     *
-     * @param topic Topic name
-     * @param kafkaParts Number of partition.
-     * @param props Properties.
-     */
-    public static void createTopic(
-        String topic,
-        int kafkaParts,
-        Properties props
-    ) throws InterruptedException, ExecutionException, TimeoutException {
-        try (AdminClient adminCli = AdminClient.create(props)) {
-            adminCli.createTopics(Collections.singleton(new NewTopic(
-                topic,
-                kafkaParts,
-                (short)1
-            ))).all().get(DFLT_REQ_TIMEOUT, TimeUnit.MINUTES);
-        }
     }
 }
