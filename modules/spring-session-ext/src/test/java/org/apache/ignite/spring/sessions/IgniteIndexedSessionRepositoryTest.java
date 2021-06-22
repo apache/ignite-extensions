@@ -58,17 +58,21 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 /**
  * Tests for {@link IgniteIndexedSessionRepository}.
  */
-class IgniteIndexedSessionRepositoryTests {
-
+public class IgniteIndexedSessionRepositoryTest {
+    /** */
     private static final String SPRING_SECURITY_CONTEXT = "SPRING_SECURITY_CONTEXT";
 
+    /** */
     private final Ignite ignite = mock(Ignite.class);
 
+    /** */
     @SuppressWarnings("unchecked")
     private final IgniteCache<String, IgniteSession> sessions = mock(IgniteCache.class);
 
+    /** */
     private IgniteIndexedSessionRepository repository;
 
+    /** */
     @BeforeEach
     void setUp() {
         given(this.ignite.<String, IgniteSession>getOrCreateCache(
@@ -78,18 +82,21 @@ class IgniteIndexedSessionRepositoryTests {
         this.repository.init();
     }
 
+    /** */
     @Test
     void constructorNullIgnite() {
         assertThatIllegalArgumentException().isThrownBy(() -> new IgniteIndexedSessionRepository(null))
                 .withMessage("Ignite must not be null");
     }
 
+    /** */
     @Test
     void setSaveModeNull() {
         assertThatIllegalArgumentException().isThrownBy(() -> this.repository.setSaveMode(null))
                 .withMessage("saveMode must not be null");
     }
 
+    /** */
     @Test
     void createSessionDefaultMaxInactiveInterval() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -100,6 +107,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void createSessionCustomMaxInactiveInterval() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -113,6 +121,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveNewFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -126,6 +135,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveNewFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -138,6 +148,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedAttributeFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -168,6 +179,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void removeAttributeFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -182,6 +194,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void removeAttributeFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -198,6 +211,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedLastAccessedTimeFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -212,6 +226,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedLastAccessedTimeFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -228,6 +243,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedMaxInactiveIntervalInSecondsFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -242,6 +258,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedMaxInactiveIntervalInSecondsFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -260,6 +277,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUnchangedFlushModeOnSave() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -273,6 +291,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUnchangedFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -287,6 +306,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void getSessionNotFound() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -300,6 +320,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void getSessionExpired() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -317,6 +338,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void getSessionFound() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -333,6 +355,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void delete() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -345,6 +368,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void findByIndexNameAndIndexValueUnknownIndexName() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -357,6 +381,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void findByIndexNameAndIndexValuePrincipalIndexNameNotFound() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -374,6 +399,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void findByIndexNameAndIndexValuePrincipalIndexNameFound() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -394,26 +420,31 @@ class IgniteIndexedSessionRepositoryTests {
         saved.add(Arrays.asList(ses2, authentication.getPrincipal()));
 
         given(this.sessions.query(ArgumentMatchers.any())).willReturn(new FieldsQueryCursor<List<?>>() {
+            /** */
             @Override
             public String getFieldName(int idx) {
                 return null;
             }
 
+            /** */
             @Override
             public int getColumnsCount() {
                 return 2;
             }
 
+            /** */
             @Override
             public List<List<?>> getAll() {
                 return (List) saved;
             }
 
+            /** */
             @Override
             public void close() {
 
             }
 
+            /** */
             @NotNull
             @Override
             public Iterator<List<?>> iterator() {
@@ -429,6 +460,7 @@ class IgniteIndexedSessionRepositoryTests {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void getAttributeNamesAndRemove() {
         IgniteSession session = this.repository.createSession();
@@ -442,6 +474,7 @@ class IgniteIndexedSessionRepositoryTests {
         assertThat(session.getAttributeNames()).isEmpty();
     }
 
+    /** */
     private static TouchedExpiryPolicy createExpiryPolicy(IgniteSession session) {
         return new TouchedExpiryPolicy(
                 new javax.cache.expiry.Duration(TimeUnit.SECONDS, session.getMaxInactiveInterval().getSeconds()));

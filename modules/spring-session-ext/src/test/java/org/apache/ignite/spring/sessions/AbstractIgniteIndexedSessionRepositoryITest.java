@@ -38,16 +38,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Base class for {@link IgniteIndexedSessionRepository} integration tests.
  */
-abstract class AbstractIgniteIndexedSessionRepositoryITests {
-
+abstract class AbstractIgniteIndexedSessionRepositoryITest {
+    /** */
     private static final String SPRING_SECURITY_CONTEXT = "SPRING_SECURITY_CONTEXT";
 
+    /** */
     @Autowired
     private Ignite ignite;
 
+    /** */
     @Autowired
     private IgniteIndexedSessionRepository repository;
 
+    /** */
     @Test
     void createAndDestroySession() {
         IgniteIndexedSessionRepository.IgniteSession sessionToSave = this.repository.createSession();
@@ -68,6 +71,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         assertThat(cache.size()).isEqualTo(0);
     }
 
+    /** */
     @Test
     void changeSessionIdWhenOnlyChangeId() {
         String attrName = "changeSessionId";
@@ -95,6 +99,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         this.repository.deleteById(changeSessionId);
     }
 
+    /** */
     @Test
     void changeSessionIdWhenChangeTwice() {
         IgniteSession toSave = this.repository.createSession();
@@ -114,6 +119,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         this.repository.deleteById(changeId2);
     }
 
+    /** */
     @Test
     void changeSessionIdWhenSetAttributeOnChangedSession() {
         String attrName = "changeSessionId";
@@ -141,6 +147,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         this.repository.deleteById(changeSessionId);
     }
 
+    /** */
     @Test
     void changeSessionIdWhenHasNotSaved() {
         IgniteSession toSave = this.repository.createSession();
@@ -168,6 +175,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         assertThat(this.repository.findById(sessionId)).isNull();
     }
 
+    /** */
     @Test
     void expireSession() {
         IgniteSession session = this.repository.createSession();
@@ -179,6 +187,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         assertThat(this.repository.findById(sessionId)).isNull();
     }
 
+    /** */
     @Test
     void createAndUpdateSession() {
         IgniteSession session = this.repository.createSession();
@@ -194,6 +203,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         assertThat(this.repository.findById(sessionId)).isNotNull();
     }
 
+    /** */
     @Test
     void createSessionWithSecurityContextAndFindById() {
         IgniteSession session = this.repository.createSession();
@@ -210,6 +220,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITests {
         assertThat(this.repository.findById(sessionId)).isNotNull();
     }
 
+    /** */
     @Test
     void createSessionWithSecurityContextAndFindByPrincipal() {
         IgniteSession session = this.repository.createSession();

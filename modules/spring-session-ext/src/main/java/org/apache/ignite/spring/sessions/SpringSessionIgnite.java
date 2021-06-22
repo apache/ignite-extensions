@@ -36,6 +36,5 @@ import org.springframework.beans.factory.annotation.Qualifier;
 @Documented
 @Qualifier
 public @interface SpringSessionIgnite {
-
 }
 

@@ -35,22 +35,26 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration
 @WebAppConfiguration
-class EmbeddedIgniteIndexedSessionRepositoryITests extends AbstractIgniteIndexedSessionRepositoryITests {
-
+public
+class EmbeddedIgniteIndexedSessionRepositoryITest extends AbstractIgniteIndexedSessionRepositoryITest {
+    /** */
     @BeforeAll
     static void setUpClass() {
         Ignition.stopAll(true);
     }
 
+    /** */
     @AfterAll
     static void tearDownClass() {
         Ignition.stopAll(true);
     }
 
+    /** */
     @EnableIgniteHttpSession
     @Configuration
     static class IgniteSessionConfig {
 
+        /** */
         @Bean
         Ignite ignite() {
             return IgniteITestUtils.embeddedIgniteServer();

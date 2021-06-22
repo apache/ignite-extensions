@@ -45,26 +45,31 @@ import static org.mockito.Mockito.mock;
 /**
  * Tests for {@link IgniteHttpSessionConfiguration}.
  */
-class IgniteHttpSessionConfigurationTests {
-
+public class IgniteHttpSessionConfigurationTest {
+    /** */
     private static final String MAP_NAME = "spring:test:sessions";
 
+    /** */
     private static final int MAX_INACTIVE_INTERVAL_IN_SECONDS = 600;
 
+    /** */
     private AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
+    /** */
     @AfterEach
     void closeContext() {
         if (this.context != null)
             this.context.close();
     }
 
+    /** */
     @Test
     void noIgniteConfiguration() {
         assertThatExceptionOfType(BeanCreationException.class)
                 .isThrownBy(() -> registerAndRefresh(NoIgniteConfiguration.class)).withMessageContaining("Ignite");
     }
 
+    /** */
     @Test
     void defaultConfiguration() {
         registerAndRefresh(DefaultConfiguration.class);
@@ -72,6 +77,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(this.context.getBean(IgniteIndexedSessionRepository.class)).isNotNull();
     }
 
+    /** */
     @Test
     void customTableName() {
         registerAndRefresh(CustomSessionMapNameConfiguration.class);
@@ -82,6 +88,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(ReflectionTestUtils.getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
     }
 
+    /** */
     @Test
     void setCustomSessionMapName() {
         registerAndRefresh(BaseConfiguration.class, CustomSessionMapNameSetConfiguration.class);
@@ -92,6 +99,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(ReflectionTestUtils.getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
     }
 
+    /** */
     @Test
     void setCustomMaxInactiveIntervalInSeconds() {
         registerAndRefresh(BaseConfiguration.class, CustomMaxInactiveIntervalInSecondsSetConfiguration.class);
@@ -102,6 +110,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
+    /** */
     @Test
     void customMaxInactiveIntervalInSeconds() {
         registerAndRefresh(CustomMaxInactiveIntervalInSecondsConfiguration.class);
@@ -112,6 +121,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
+    /** */
     @Test
     void customFlushImmediately() {
         registerAndRefresh(CustomFlushImmediatelyConfiguration.class);
@@ -121,6 +131,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(ReflectionTestUtils.getField(repository, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
     }
 
+    /** */
     @Test
     void setCustomFlushImmediately() {
         registerAndRefresh(BaseConfiguration.class, CustomFlushImmediatelySetConfiguration.class);
@@ -130,6 +141,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(ReflectionTestUtils.getField(repository, "flushMode")).isEqualTo(FlushMode.IMMEDIATE);
     }
 
+    /** */
     @Test
     void customSaveModeAnnotation() {
         registerAndRefresh(BaseConfiguration.class, CustomSaveModeExpressionAnnotationConfiguration.class);
@@ -137,6 +149,7 @@ class IgniteHttpSessionConfigurationTests {
                 SaveMode.ALWAYS);
     }
 
+    /** */
     @Test
     void customSaveModeSetter() {
         registerAndRefresh(BaseConfiguration.class, CustomSaveModeExpressionSetterConfiguration.class);
@@ -144,6 +157,7 @@ class IgniteHttpSessionConfigurationTests {
                 SaveMode.ALWAYS);
     }
 
+    /** */
     @Test
     void qualifiedIgniteConfiguration() {
         registerAndRefresh(QualifiedIgniteConfiguration.class);
@@ -156,6 +170,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(QualifiedIgniteConfiguration.qualifiedIgniteSessions);
     }
 
+    /** */
     @Test
     void primaryIgniteConfiguration() {
         registerAndRefresh(PrimaryIgniteConfiguration.class);
@@ -168,6 +183,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(PrimaryIgniteConfiguration.primaryIgniteSessions);
     }
 
+    /** */
     @Test
     void qualifiedAndPrimaryIgniteConfiguration() {
         registerAndRefresh(QualifiedAndPrimaryIgniteConfiguration.class);
@@ -180,6 +196,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(QualifiedAndPrimaryIgniteConfiguration.qualifiedIgniteSessions);
     }
 
+    /** */
     @Test
     void namedIgniteConfiguration() {
         registerAndRefresh(NamedIgniteConfiguration.class);
@@ -192,6 +209,7 @@ class IgniteHttpSessionConfigurationTests {
                 .isEqualTo(NamedIgniteConfiguration.igniteSessions);
     }
 
+    /** */
     @Test
     void multipleIgniteConfiguration() {
         assertThatExceptionOfType(BeanCreationException.class)
@@ -199,6 +217,7 @@ class IgniteHttpSessionConfigurationTests {
                 .withMessageContaining("expected single matching bean but found 2");
     }
 
+    /** */
     @Test
     void customIndexResolverConfiguration() {
         registerAndRefresh(CustomIndexResolverConfiguration.class);
@@ -210,6 +229,7 @@ class IgniteHttpSessionConfigurationTests {
         assertThat(repository).hasFieldOrPropertyWithValue("indexResolver", indexResolver);
     }
 
+    /** */
     @Test
     void sessionRepositoryCustomizer() {
         registerAndRefresh(SessionRepositoryCustomizerConfiguration.class);
@@ -218,22 +238,27 @@ class IgniteHttpSessionConfigurationTests {
                 MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
+    /** */
     private void registerAndRefresh(Class<?>... annotatedClasses) {
         this.context.register(annotatedClasses);
         this.context.refresh();
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class NoIgniteConfiguration {
 
     }
 
+    /** */
     static class BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> defaultIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         Ignite defaultIgnite() {
             Ignite ignite = mock(Ignite.class);
@@ -244,18 +269,21 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class DefaultConfiguration extends BaseConfiguration {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession(sessionMapName = MAP_NAME)
     static class CustomSessionMapNameConfiguration extends BaseConfiguration {
 
     }
 
+    /** */
     @Configuration
     static class CustomSessionMapNameSetConfiguration extends IgniteHttpSessionConfiguration {
 
@@ -265,6 +293,7 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     static class CustomMaxInactiveIntervalInSecondsSetConfiguration extends IgniteHttpSessionConfiguration {
 
@@ -274,12 +303,14 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession(maxInactiveIntervalInSeconds = MAX_INACTIVE_INTERVAL_IN_SECONDS)
     static class CustomMaxInactiveIntervalInSecondsConfiguration extends BaseConfiguration {
 
     }
 
+    /** */
     @Configuration
     static class CustomFlushImmediatelySetConfiguration extends IgniteHttpSessionConfiguration {
 
@@ -289,11 +320,13 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @EnableIgniteHttpSession(saveMode = SaveMode.ALWAYS)
     static class CustomSaveModeExpressionAnnotationConfiguration {
 
     }
 
+    /** */
     @Configuration
     static class CustomSaveModeExpressionSetterConfiguration extends IgniteHttpSessionConfiguration {
 
@@ -303,19 +336,23 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession(flushMode = FlushMode.IMMEDIATE)
     static class CustomFlushImmediatelyConfiguration extends BaseConfiguration {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class QualifiedIgniteConfiguration extends BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> qualifiedIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         @SpringSessionIgnite
         Ignite qualifiedIgnite() {
@@ -327,13 +364,16 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class PrimaryIgniteConfiguration extends BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> primaryIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         @Primary
         Ignite primaryIgnite() {
@@ -345,16 +385,20 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class QualifiedAndPrimaryIgniteConfiguration extends BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> qualifiedIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> primaryIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         @SpringSessionIgnite
         Ignite qualifiedIgnite() {
@@ -364,6 +408,7 @@ class IgniteHttpSessionConfigurationTests {
             return ignite;
         }
 
+        /** */
         @Bean
         @Primary
         Ignite primaryIgnite() {
@@ -375,13 +420,16 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class NamedIgniteConfiguration extends BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> igniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         Ignite ignite() {
             Ignite ignite = mock(Ignite.class);
@@ -392,13 +440,16 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @Configuration
     @EnableIgniteHttpSession
     static class MultipleIgniteConfiguration extends BaseConfiguration {
 
+        /** */
         @SuppressWarnings("unchecked")
         static IgniteCache<Object, Object> secondaryIgniteSessions = mock(IgniteCache.class);
 
+        /** */
         @Bean
         Ignite secondaryIgnite() {
             Ignite ignite = mock(Ignite.class);
@@ -409,9 +460,11 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @EnableIgniteHttpSession
     static class CustomIndexResolverConfiguration extends BaseConfiguration {
 
+        /** */
         @Bean
         @SuppressWarnings("unchecked")
         IndexResolver<Session> indexResolver() {
@@ -420,15 +473,18 @@ class IgniteHttpSessionConfigurationTests {
 
     }
 
+    /** */
     @EnableIgniteHttpSession
     static class SessionRepositoryCustomizerConfiguration extends BaseConfiguration {
 
+        /** */
         @Bean
         @Order(0)
         SessionRepositoryCustomizer<IgniteIndexedSessionRepository> sessionRepositoryCustomizerOne() {
             return (sessionRepository) -> sessionRepository.setDefaultMaxInactiveInterval(0);
         }
 
+        /** */
         @Bean
         @Order(1)
         SessionRepositoryCustomizer<IgniteIndexedSessionRepository> sessionRepositoryCustomizerTwo() {

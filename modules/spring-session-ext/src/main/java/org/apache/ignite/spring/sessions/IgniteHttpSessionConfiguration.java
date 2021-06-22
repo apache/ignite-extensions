@@ -48,7 +48,6 @@ import org.springframework.util.StringUtils;
  */
 @Configuration(proxyBeanMethods = false)
 public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfiguration implements ImportAware {
-
     /** */
     private Integer maxInactiveIntervalInSeconds = MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
 

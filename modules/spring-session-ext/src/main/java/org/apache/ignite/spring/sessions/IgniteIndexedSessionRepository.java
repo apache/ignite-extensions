@@ -103,7 +103,6 @@ public class IgniteIndexedSessionRepository
         CacheEntryCreatedListener<String, IgniteIndexedSessionRepository.IgniteSession>,
         CacheEntryRemovedListener<String, IgniteIndexedSessionRepository.IgniteSession>,
         CacheEntryExpiredListener<String, IgniteIndexedSessionRepository.IgniteSession> {
-
     /**
      * The default name of map used by Spring Session to store sessions.
      */

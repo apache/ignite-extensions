@@ -61,7 +61,6 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
 @Import(IgniteHttpSessionConfiguration.class)
 @Configuration(proxyBeanMethods = false)
 public @interface EnableIgniteHttpSession {
-
     /**
      * The session timeout in seconds. By default, it is set to 1800 seconds (30 minutes).
      * This should be a non-negative integer.
