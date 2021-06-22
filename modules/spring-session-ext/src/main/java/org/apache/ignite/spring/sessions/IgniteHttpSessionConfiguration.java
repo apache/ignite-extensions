@@ -163,4 +163,3 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 }
 
-

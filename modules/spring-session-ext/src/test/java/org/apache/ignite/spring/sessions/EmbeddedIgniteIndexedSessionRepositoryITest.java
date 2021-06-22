@@ -63,3 +63,4 @@ class EmbeddedIgniteIndexedSessionRepositoryITest extends AbstractIgniteIndexedS
     }
 
 }
+

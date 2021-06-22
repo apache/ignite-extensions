@@ -240,4 +240,3 @@ abstract class AbstractIgniteIndexedSessionRepositoryITest {
     }
 
 }
-

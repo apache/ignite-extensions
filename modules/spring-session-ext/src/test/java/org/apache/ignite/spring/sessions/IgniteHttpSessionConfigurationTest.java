@@ -494,3 +494,4 @@ public class IgniteHttpSessionConfigurationTest {
     }
 }
 
+

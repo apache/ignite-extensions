@@ -553,5 +553,3 @@ public class IgniteIndexedSessionRepository
         }
     }
 }
-
-
