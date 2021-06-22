@@ -96,4 +96,3 @@ public @interface EnableIgniteHttpSession {
     SaveMode saveMode() default SaveMode.ON_SET_ATTRIBUTE;
 
 }
-

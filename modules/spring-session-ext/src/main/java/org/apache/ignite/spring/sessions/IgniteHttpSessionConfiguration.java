@@ -162,4 +162,3 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         return sessionRepository;
     }
 }
-

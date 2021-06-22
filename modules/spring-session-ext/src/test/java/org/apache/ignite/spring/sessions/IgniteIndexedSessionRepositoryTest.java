@@ -481,4 +481,3 @@ public class IgniteIndexedSessionRepositoryTest {
     }
 
 }
-
