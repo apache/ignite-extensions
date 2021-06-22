@@ -44,12 +44,6 @@
                 <property name="joinTimeout" value="10000" />
             </bean>
         </property>
-
-        <property name="communicationSpi">
-            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-                <property name="localPort" value="{COMM_PORT}" />
-            </bean>
-        </property>
     </bean>
 
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">

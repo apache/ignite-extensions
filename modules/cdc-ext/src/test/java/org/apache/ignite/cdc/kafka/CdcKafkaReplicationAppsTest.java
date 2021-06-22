@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
@@ -38,9 +37,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     /** */
     public static final String INSTANCE_NAME = "INSTANCE_NAME";
-
-    /** */
-    public static final String COMM_PORT = "COMM_PORT";
 
     /** */
     public static final String DISCO_PORT = "DISCO_PORT";
@@ -125,7 +121,6 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         int discoPort = getFieldValue(igniteCfg.getDiscoverySpi(), "locPort");
 
         params.put(INSTANCE_NAME, igniteCfg.getIgniteInstanceName());
-        params.put(COMM_PORT, Integer.toString(((TcpCommunicationSpi)igniteCfg.getCommunicationSpi()).getLocalPort()));
         params.put(DISCO_PORT, Integer.toString(discoPort));
         params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
         params.put(REPLICATED_CACHE, cacheName);

@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -104,16 +103,10 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected static IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> destCluster;
 
     /** */
-    private int commPort = TcpCommunicationSpi.DFLT_PORT;
-
-    /** */
     private int discoPort = TcpDiscoverySpi.DFLT_PORT;
 
     /** */
     private byte clusterId = SRC_CLUSTER_ID;
-
-    /** */
-    protected int clientsCnt = 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -122,9 +115,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                 .setLocalPort(discoPort)
                 .setIpFinder(new TcpDiscoveryVmIpFinder() {{
                     setAddresses(Collections.singleton("127.0.0.1:" + discoPort + ".." + (discoPort + DFLT_PORT_RANGE)));
-                }}))
-            .setCommunicationSpi(new TcpCommunicationSpi()
-                .setLocalPort(commPort));
+                }}));
 
         if (!cfg.isClientMode()) {
             CacheVersionConflictResolverPluginProvider<?> cfgPlugin = new CacheVersionConflictResolverPluginProvider<>();
@@ -156,7 +147,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         srcCluster = setupCluster("source", "src-cluster-client", 0);
 
         discoPort += DFLT_PORT_RANGE + 1;
-        commPort += DFLT_PORT_RANGE + 1;
         clusterId = DEST_CLUSTER_ID;
 
         destCluster = setupCluster("destination", "dest-cluster-client", 2);
@@ -169,7 +159,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             startGrid(idx + 2)
         };
 
-        IgniteConfiguration[] clusterCliCfg = new IgniteConfiguration[clientsCnt];
+        IgniteConfiguration[] clusterCliCfg = new IgniteConfiguration[2];
 
         for (int i = 0; i < 2; i++)
             clusterCliCfg[i] = optimize(getConfiguration(clientPrefix + i).setClientMode(true));
