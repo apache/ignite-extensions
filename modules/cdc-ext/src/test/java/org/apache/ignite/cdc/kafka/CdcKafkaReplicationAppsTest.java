@@ -54,13 +54,13 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String CONSISTENT_ID = "CONSISTENT_ID";
 
     /** */
-    public static final String KAFKA_PARTS = "KAFKA_PARTS";
+    public static final String PARTS = "PARTS";
 
     /** */
-    public static final String KAFKA_PARTS_FROM = "KAFKA_PARTS_FROM";
+    public static final String PARTS_FROM = "PARTS_FROM";
 
     /** */
-    public static final String KAFKA_PARTS_TO = "KAFKA_PARTS_TO";
+    public static final String PARTS_TO = "PARTS_TO";
 
     /** */
     public static final String THREAD_CNT = "THREAD_CNT";
@@ -69,7 +69,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String MAX_BATCH_SIZE = "MAX_BATCH_SIZE";
 
     /** */
-    public static final String KAFKA_PROPS_PATH = "KAFKA_PROPS_PATH";
+    public static final String PROPS_PATH = "PROPS_PATH";
 
     /** */
     private String kafkaPropsPath = null;
@@ -84,7 +84,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
             file.deleteOnExit();
 
             try (FileOutputStream fos = new FileOutputStream(file)) {
-                props.store(fos, null);
+                kafkaProperties().store(fos, null);
             }
 
             kafkaPropsPath = "file://" + file.getAbsolutePath();
@@ -99,9 +99,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(REPLICATED_CACHE, cache);
         params.put(TOPIC, topic);
         params.put(CONSISTENT_ID, String.valueOf(igniteCfg.getConsistentId()));
-        params.put(KAFKA_PARTS, Integer.toString(DFLT_PARTS));
+        params.put(PARTS, Integer.toString(DFLT_PARTS));
         params.put(MAX_BATCH_SIZE, Integer.toString(KEYS_CNT));
-        params.put(KAFKA_PROPS_PATH, kafkaPropsPath);
+        params.put(PROPS_PATH, kafkaPropsPath);
 
         return runAsync(
             () -> ChangeDataCaptureCommandLineStartup.main(new String[] {prepareConfig("replication/ignite-to-kafka.xml", params)})
@@ -125,9 +125,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
         params.put(REPLICATED_CACHE, cacheName);
         params.put(TOPIC, topic);
-        params.put(KAFKA_PROPS_PATH, kafkaPropsPath);
-        params.put(KAFKA_PARTS_FROM, Integer.toString(partFrom));
-        params.put(KAFKA_PARTS_TO, Integer.toString(partTo));
+        params.put(PROPS_PATH, kafkaPropsPath);
+        params.put(PARTS_FROM, Integer.toString(partFrom));
+        params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
 
         return runAsync(

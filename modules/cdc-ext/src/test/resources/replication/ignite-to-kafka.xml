@@ -48,7 +48,7 @@
         <property name="consumer">
             <bean class="org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer">
                 <constructor-arg name="topic" value="{TOPIC}" />
-                <constructor-arg name="kafkaParts" value="{KAFKA_PARTS}" />
+                <constructor-arg name="kafkaParts" value="{PARTS}" />
                 <constructor-arg name="caches">
                     <util:list>
                         <bean class="java.lang.String">
@@ -63,5 +63,5 @@
         </property>
     </bean>
 
-    <util:properties id="kafkaProperties" location="{KAFKA_PROPS_PATH}" />
+    <util:properties id="kafkaProperties" location="{PROPS_PATH}" />
 </beans>

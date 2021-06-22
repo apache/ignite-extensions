@@ -45,9 +45,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     public static final String DEST_SRC_TOPIC = "dest-source";
 
     /** */
-    protected static Properties props;
-
-    /** */
     @ClassRule
     public static final EmbeddedKafkaCluster KAFKA = new EmbeddedKafkaCluster(1);
 
@@ -57,16 +54,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         KAFKA.start();
 
-        if (props == null) {
-            props = new Properties();
-
-            props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.bootstrapServers());
-            props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
-            props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-            props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-            props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
-        }
-
         KAFKA.createTopic(DFLT_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
@@ -75,8 +62,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        props = null;
 
         KAFKA.deleteAllTopicsAndWait(getTestTimeout());
     }
@@ -128,7 +113,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     protected IgniteInternalFuture<?> igniteToKafka(IgniteConfiguration igniteCfg, String topic, String cache) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr =
-                new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(cache), KEYS_CNT, false, props);
+                new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(cache), KEYS_CNT, false, kafkaProperties());
 
             ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
@@ -159,6 +144,19 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);
 
-        return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, props, cfg));
+        return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
+    }
+
+    /** */
+    protected Properties kafkaProperties() {
+        Properties props = new Properties();
+
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KAFKA.bootstrapServers());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafka-to-ignite-applier");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
+
+        return props;
     }
 }
