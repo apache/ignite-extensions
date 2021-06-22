@@ -553,3 +553,4 @@ public class IgniteIndexedSessionRepository
         }
     }
 }
+
