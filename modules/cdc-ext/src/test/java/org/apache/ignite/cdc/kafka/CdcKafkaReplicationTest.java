@@ -85,8 +85,19 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        futs.add(igniteToKafka(srcCluster.get1()[0].configuration(), DFLT_TOPIC, AbstractReplicationTest.ACTIVE_PASSIVE_CACHE));
-        futs.add(igniteToKafka(srcCluster.get1()[1].configuration(), DFLT_TOPIC, AbstractReplicationTest.ACTIVE_PASSIVE_CACHE));
+        for (int i = 0; i < srcCluster.get1().length; i++)
+            futs.add(igniteToKafka(srcCluster.get1()[i].configuration(), DFLT_TOPIC, ACTIVE_PASSIVE_CACHE));
+
+        for (int i = 0; i < destCluster.get1().length; i++) {
+            futs.add(kafkaToIgnite(
+                ACTIVE_PASSIVE_CACHE,
+                DFLT_TOPIC,
+                destCluster.get2()[i],
+                i * (DFLT_PARTS / 2),
+                (i + 1) * (DFLT_PARTS / 2)
+            ));
+        }
+
 
         return futs;
     }
@@ -95,29 +106,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        futs.add(igniteToKafka(srcCluster.get1()[0].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToKafka(srcCluster.get1()[1].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToKafka(destCluster.get1()[0].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToKafka(destCluster.get1()[1].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < srcCluster.get1().length; i++)
+            futs.add(igniteToKafka(srcCluster.get1()[i].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
 
-        return futs;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<IgniteInternalFuture<?>> startActivePassiveReplication() {
-        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
-        futs.add(kafkaToIgnite(AbstractReplicationTest.ACTIVE_PASSIVE_CACHE, DFLT_TOPIC, destCluster.get2()[0], 0, DFLT_PARTS/2));
-        futs.add(kafkaToIgnite(AbstractReplicationTest.ACTIVE_PASSIVE_CACHE, DFLT_TOPIC, destCluster.get2()[1], DFLT_PARTS/2, DFLT_PARTS));
-
-        return futs;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected List<IgniteInternalFuture<?>> startActiveActiveReplication() {
-        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+        for (int i = 0; i < destCluster.get1().length; i++)
+            futs.add(igniteToKafka(destCluster.get1()[i].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
 
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destCluster.get2()[0], 0, DFLT_PARTS));
+
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcCluster.get2()[0], 0, DFLT_PARTS));
 
         return futs;

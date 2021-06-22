@@ -192,11 +192,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData("ignored-cache", srcCluster.get1()[srcCluster.get1().length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster.get1()[srcCluster.get1().length - 1], IntStream.range(0, KEYS_CNT)));
 
-            List<IgniteInternalFuture<?>> k2iFut = startActivePassiveReplication();
-
-            if (k2iFut != null)
-                futs.addAll(k2iFut);
-
             IgniteCache<Integer, ConflictResolvableTestData> srcCache =
                 srcCluster.get1()[srcCluster.get1().length - 1].getOrCreateCache(ACTIVE_PASSIVE_CACHE);
 
@@ -226,11 +221,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         List<IgniteInternalFuture<?>> futs = startActiveActiveCdc();
 
         try {
-            List<IgniteInternalFuture<?>> replicationFuts = startActiveActiveReplication();
-
-            if (replicationFuts != null)
-                futs.addAll(replicationFuts);
-
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
             runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 == 0).forEach(srcCache::remove));
@@ -302,14 +292,4 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
-
-    /** */
-    protected List<IgniteInternalFuture<?>> startActivePassiveReplication() {
-        return null;
-    }
-
-    /** */
-    protected List<IgniteInternalFuture<?>> startActiveActiveReplication() {
-        return null;
-    }
 }
