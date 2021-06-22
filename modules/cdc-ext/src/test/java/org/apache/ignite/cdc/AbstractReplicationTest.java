@@ -150,6 +150,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         clusterId = DEST_CLUSTER_ID;
 
         destCluster = setupCluster("destination", "dest-cluster-client", 2);
+
+        String srcTag = srcCluster.get1()[0].cluster().tag();
+        String destTag = destCluster.get1()[0].cluster().tag();
+
+        assertNotNull(srcTag);
+        assertNotNull(destTag);
+        assertFalse(srcTag.equals(destTag));
     }
 
     /** */
@@ -213,8 +220,11 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster.get1()[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster.get1()[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
+        // Even keys goes to src cluster.
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster.get1()[srcCluster.get1().length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0)));
+
+        // Odd keys goes to dest cluster.
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster.get1()[destCluster.get1().length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 

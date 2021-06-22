@@ -98,7 +98,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             futs.add(igniteToKafka(destCluster.get1()[i].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
 
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destCluster.get2()[0], 0, DFLT_PARTS));
-
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcCluster.get2()[0], 0, DFLT_PARTS));
 
         return futs;
