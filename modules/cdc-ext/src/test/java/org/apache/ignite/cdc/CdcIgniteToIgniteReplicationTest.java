@@ -29,18 +29,11 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /** */
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        clientsCnt = 2;
-
-        super.beforeTest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        futs.add(igniteToIgnite(srcCluster[0].configuration(), destClusterCliCfg[0], AP_CACHE));
-        futs.add(igniteToIgnite(srcCluster[1].configuration(), destClusterCliCfg[1], AP_CACHE));
+        futs.add(igniteToIgnite(srcCluster.get1()[0].configuration(), destCluster.get2()[0], ACTIVE_PASSIVE_CACHE));
+        futs.add(igniteToIgnite(srcCluster.get1()[1].configuration(), destCluster.get2()[1], ACTIVE_PASSIVE_CACHE));
 
         return futs;
     }
@@ -49,10 +42,10 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        futs.add(igniteToIgnite(srcCluster[0].configuration(), destClusterCliCfg[0], ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToIgnite(srcCluster[1].configuration(), destClusterCliCfg[1], ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToIgnite(destCluster[0].configuration(), srcClusterCliCfg[0], ACTIVE_ACTIVE_CACHE));
-        futs.add(igniteToIgnite(destCluster[1].configuration(), srcClusterCliCfg[1], ACTIVE_ACTIVE_CACHE));
+        futs.add(igniteToIgnite(srcCluster.get1()[0].configuration(), destCluster.get2()[0], ACTIVE_ACTIVE_CACHE));
+        futs.add(igniteToIgnite(srcCluster.get1()[1].configuration(), destCluster.get2()[1], ACTIVE_ACTIVE_CACHE));
+        futs.add(igniteToIgnite(destCluster.get1()[0].configuration(), srcCluster.get2()[0], ACTIVE_ACTIVE_CACHE));
+        futs.add(igniteToIgnite(destCluster.get1()[1].configuration(), srcCluster.get2()[1], ACTIVE_ACTIVE_CACHE));
 
         return futs;
     }
