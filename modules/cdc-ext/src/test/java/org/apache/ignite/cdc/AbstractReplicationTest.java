@@ -209,10 +209,10 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData("ignored-cache", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(AP_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
-            IgniteInternalFuture<?> k2iFut = startActivePassiveReplication();
+            List<IgniteInternalFuture<?>> k2iFut = startActivePassiveReplication();
 
             if (k2iFut != null)
-                futs.add(k2iFut);
+                futs.addAll(k2iFut);
 
             IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster[srcCluster.length - 1].getOrCreateCache(AP_CACHE);
 
@@ -304,6 +304,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private boolean checkFuts(boolean res, List<IgniteInternalFuture<?>> futs) {
+        for (int i = 0; i < futs.size(); i++)
+            assertFalse("Fut " + i, futs.get(i).isDone());
+
         for (IgniteInternalFuture<?> fut : futs)
             assertFalse(fut.isDone());
 
@@ -317,7 +320,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
 
     /** */
-    protected IgniteInternalFuture<?> startActivePassiveReplication() {
+    protected List<IgniteInternalFuture<?>> startActivePassiveReplication() {
         return null;
     }
 

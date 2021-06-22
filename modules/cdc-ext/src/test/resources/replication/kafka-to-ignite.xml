@@ -61,6 +61,9 @@
             </util:list>
         </property>
         <property name="topic" value="{TOPIC}" />
+        <property name="kafkaPartsFrom" value="{KAFKA_PARTS_FROM}"/>
+        <property name="kafkaPartsTo" value="{KAFKA_PARTS_TO}"/>
+        <property name="threadCount" value="{THREAD_CNT}"/>
     </bean>
 
     <util:properties id="kafkaProperties" location="{KAFKA_PROPS_PATH}" />

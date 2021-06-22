@@ -53,6 +53,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        clientsCnt = 2;
+
         super.beforeTest();
 
         KAFKA.start();
@@ -104,16 +106,21 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<?> startActivePassiveReplication() {
-        return kafkaToIgnite(AbstractReplicationTest.AP_CACHE, DFLT_TOPIC, destClusterCliCfg[0]);
+    @Override protected List<IgniteInternalFuture<?>> startActivePassiveReplication() {
+        List<IgniteInternalFuture<?>> futs = new ArrayList<>();
+
+        futs.add(kafkaToIgnite(AbstractReplicationTest.AP_CACHE, DFLT_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS/2));
+        futs.add(kafkaToIgnite(AbstractReplicationTest.AP_CACHE, DFLT_TOPIC, destClusterCliCfg[1], DFLT_PARTS/2, DFLT_PARTS));
+
+        return futs;
     }
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveReplication() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0]));
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0]));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
 
         return futs;
     }
@@ -142,8 +149,18 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
      * @param igniteCfg Ignite configuration.
      * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
-    protected IgniteInternalFuture<?> kafkaToIgnite(String cacheName, String topic, IgniteConfiguration igniteCfg) {
+    protected IgniteInternalFuture<?> kafkaToIgnite(
+        String cacheName,
+        String topic,
+        IgniteConfiguration igniteCfg,
+        int fromPart,
+        int toPart
+    ) {
         KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
+
+        cfg.setKafkaPartsFrom(fromPart);
+        cfg.setKafkaPartsTo(toPart);
+        cfg.setThreadCount((toPart - fromPart)/2);
 
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);

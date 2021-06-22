@@ -134,8 +134,13 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     .map(CU::cacheId).collect(Collectors.toSet());
             }
 
-            int kafkaParts = streamerCfg.getKafkaPartitions();
+            int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
+            int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
             int threadCnt = streamerCfg.getThreadCount();
+
+            assert kafkaParts >= threadCnt
+                : "Threads count bigger then kafka partitions count [kafkaParts=" + kafkaParts + ",threadCount=" + threadCnt + ']';
+
             int partPerApplier = kafkaParts / threadCnt;
 
             for (int i = 0; i < threadCnt; i++) {
@@ -143,15 +148,15 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 int to = (i + 1) * partPerApplier;
 
                 if (i == threadCnt - 1)
-                    to = kafkaParts + 1;
+                    to = kafkaParts;
 
                 KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                     ign,
                     log,
                     kafkaProps,
                     streamerCfg.getTopic(),
-                    from,
-                    to,
+                    kafkaPartsFrom + from,
+                    kafkaPartsFrom + to,
                     caches,
                     streamerCfg.getMaxBatchSize(),
                     stopped
@@ -173,7 +178,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
                 appliers.forEach(U::closeQuiet);
 
-                log.info("Kafka to Ignite streamer interrupted");
+                log.warning("Kafka to Ignite streamer interrupted", e);
             }
         }
         catch (IgniteCheckedException e) {

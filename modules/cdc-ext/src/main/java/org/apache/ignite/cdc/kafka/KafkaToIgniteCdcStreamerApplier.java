@@ -231,8 +231,6 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     @Override public void close() {
         log.warning("Close applier!");
 
-        stopped.set(true);
-
         cnsmrs.forEach(KafkaConsumer::wakeup);
     }
 

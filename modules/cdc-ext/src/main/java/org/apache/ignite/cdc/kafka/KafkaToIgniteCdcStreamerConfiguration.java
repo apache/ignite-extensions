@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
  * @see KafkaToIgniteLoader
  */
 public class KafkaToIgniteCdcStreamerConfiguration {
-    /** Default {@link #kafkaParts} value. */
+    /** Default {@link #kafkaPartsTo} value. */
     public static final int DFLT_PARTS = 16;
 
     /** Default {@link #topic} value. */
@@ -43,8 +43,11 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Topic name. */
     private String topic = DFLT_TOPIC;
 
-    /** Kafka partitions count. */
-    private int kafkaParts = DFLT_PARTS;
+    /** Kafka partitions lower bound (inclusive). */
+    private int kafkaPartsFrom = 0;
+
+    /** Kafka partitions higher bound (exclusive). */
+    private int kafkaPartsTo = DFLT_PARTS;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -80,13 +83,23 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /** */
-    public int getKafkaPartitions() {
-        return kafkaParts;
+    public int getKafkaPartsFrom() {
+        return kafkaPartsFrom;
     }
 
     /** */
-    public void setKafkaPartitions(int kafkaParts) {
-        this.kafkaParts = kafkaParts;
+    public void setKafkaPartsFrom(int kafkaPartsFrom) {
+        this.kafkaPartsFrom = kafkaPartsFrom;
+    }
+
+    /** */
+    public int getKafkaPartsTo() {
+        return kafkaPartsTo;
+    }
+
+    /** */
+    public void setKafkaPartsTo(int kafkaPartsTo) {
+        this.kafkaPartsTo = kafkaPartsTo;
     }
 
     /** */
