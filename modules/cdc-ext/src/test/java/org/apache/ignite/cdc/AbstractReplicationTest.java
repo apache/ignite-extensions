@@ -79,6 +79,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public static final String ACTIVE_ACTIVE_CACHE = "active-active-cache";
 
     /** */
+    public static final String IGNORED_CACHE = "ignored-cache";
+
+    /** */
     public static final byte SRC_CLUSTER_ID = 1;
 
     /** */
@@ -208,7 +211,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             destCache.remove(1);
 
             // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
-            runAsync(generateData("ignored-cache", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+            runAsync(generateData(IGNORED_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
             IgniteCache<Integer, ConflictResolvableTestData> srcCache =
@@ -219,6 +222,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
+
+            assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
