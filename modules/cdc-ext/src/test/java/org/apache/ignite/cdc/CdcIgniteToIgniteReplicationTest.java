@@ -32,8 +32,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.get1().length; i++)
-            futs.add(igniteToIgnite(srcCluster.get1()[i].configuration(), destCluster.get2()[i], ACTIVE_PASSIVE_CACHE));
+        for (int i = 0; i < srcCluster.length; i++)
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_PASSIVE_CACHE));
 
         return futs;
     }
@@ -42,11 +42,11 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.get1().length; i++)
-            futs.add(igniteToIgnite(srcCluster.get1()[i].configuration(), destCluster.get2()[i], ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < srcCluster.length; i++)
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
 
-        for (int i = 0; i < destCluster.get1().length; i++)
-            futs.add(igniteToIgnite(destCluster.get1()[i].configuration(), srcCluster.get2()[i], ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < destCluster.length; i++)
+            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
 
         return futs;
     }

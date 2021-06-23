@@ -70,14 +70,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.get1().length; i++)
-            futs.add(igniteToKafka(srcCluster.get1()[i].configuration(), DFLT_TOPIC, ACTIVE_PASSIVE_CACHE));
+        for (int i = 0; i < srcCluster.length; i++)
+            futs.add(igniteToKafka(srcCluster[i].configuration(), DFLT_TOPIC, ACTIVE_PASSIVE_CACHE));
 
-        for (int i = 0; i < destCluster.get1().length; i++) {
+        for (int i = 0; i < destCluster.length; i++) {
             futs.add(kafkaToIgnite(
                 ACTIVE_PASSIVE_CACHE,
                 DFLT_TOPIC,
-                destCluster.get2()[i],
+                destClusterCliCfg[i],
                 i * (DFLT_PARTS / 2),
                 (i + 1) * (DFLT_PARTS / 2)
             ));
@@ -91,14 +91,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.get1().length; i++)
-            futs.add(igniteToKafka(srcCluster.get1()[i].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < srcCluster.length; i++)
+            futs.add(igniteToKafka(srcCluster[i].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
 
-        for (int i = 0; i < destCluster.get1().length; i++)
-            futs.add(igniteToKafka(destCluster.get1()[i].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < destCluster.length; i++)
+            futs.add(igniteToKafka(destCluster[i].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
 
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destCluster.get2()[0], 0, DFLT_PARTS));
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcCluster.get2()[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
 
         return futs;
     }

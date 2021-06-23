@@ -97,10 +97,16 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public static final int KEYS_CNT = 1000;
 
     /** */
-    protected static IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> srcCluster;
+    protected static IgniteEx[] srcCluster;
 
     /** */
-    protected static IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> destCluster;
+    protected static IgniteEx[] destCluster;
+
+    /** */
+    protected static IgniteConfiguration[] srcClusterCliCfg;
+
+    /** */
+    protected static IgniteConfiguration[] destClusterCliCfg;
 
     /** */
     private int discoPort = TcpDiscoverySpi.DFLT_PORT;
@@ -144,15 +150,21 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
-        srcCluster = setupCluster("source", "src-cluster-client", 0);
+        IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> cluster = setupCluster("source", "src-cluster-client", 0);
+
+        srcCluster = cluster.get1();
+        srcClusterCliCfg = cluster.get2();
 
         discoPort += DFLT_PORT_RANGE + 1;
         clusterId = DEST_CLUSTER_ID;
 
-        destCluster = setupCluster("destination", "dest-cluster-client", 2);
+        cluster = setupCluster("destination", "dest-cluster-client", 2);
 
-        String srcTag = srcCluster.get1()[0].cluster().tag();
-        String destTag = destCluster.get1()[0].cluster().tag();
+        destCluster = cluster.get1();
+        destClusterCliCfg = cluster.get2();
+
+        String srcTag = srcCluster[0].cluster().tag();
+        String destTag = destCluster[0].cluster().tag();
 
         assertNotNull(srcTag);
         assertNotNull(destTag);
@@ -190,17 +202,17 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdc();
 
         try {
-            IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster.get1()[0].createCache(ACTIVE_PASSIVE_CACHE);
+            IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster[0].createCache(ACTIVE_PASSIVE_CACHE);
 
             destCache.put(1, ConflictResolvableTestData.create());
             destCache.remove(1);
 
             // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
-            runAsync(generateData("ignored-cache", srcCluster.get1()[srcCluster.get1().length - 1], IntStream.range(0, KEYS_CNT)));
-            runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster.get1()[srcCluster.get1().length - 1], IntStream.range(0, KEYS_CNT)));
+            runAsync(generateData("ignored-cache", srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+            runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
             IgniteCache<Integer, ConflictResolvableTestData> srcCache =
-                srcCluster.get1()[srcCluster.get1().length - 1].getOrCreateCache(ACTIVE_PASSIVE_CACHE);
+                srcCluster[srcCluster.length - 1].getOrCreateCache(ACTIVE_PASSIVE_CACHE);
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
@@ -217,15 +229,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Active/Active mode means changes made in both clusters. */
     @Test
     public void testActiveActiveReplication() throws Exception {
-        IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster.get1()[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
-        IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster.get1()[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, ConflictResolvableTestData> srcCache = srcCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
+        IgniteCache<Integer, ConflictResolvableTestData> destCache = destCluster[0].getOrCreateCache(ACTIVE_ACTIVE_CACHE);
 
         // Even keys goes to src cluster.
-        runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster.get1()[srcCluster.get1().length - 1],
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, srcCluster[srcCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0)));
 
         // Odd keys goes to dest cluster.
-        runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster.get1()[destCluster.get1().length - 1],
+        runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 
         List<IgniteInternalFuture<?>> futs = startActiveActiveCdc();
