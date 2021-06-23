@@ -28,7 +28,7 @@ import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -44,10 +44,10 @@ import org.apache.ignite.resources.LoggerResource;
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
  * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
  *
- * @see ChangeDataCapture
+ * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements ChangeDataCaptureConsumer {
+public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcConsumer {
     /** Destination cluster client configuration. */
     private final IgniteConfiguration destIgniteCfg;
 
@@ -88,7 +88,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements Chang
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+    @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         try {
             apply(() -> F.iterator(
                 evts,

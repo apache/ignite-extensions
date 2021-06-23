@@ -22,10 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import org.apache.ignite.cdc.AbstractReplicationTest;
-import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
+import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.junit.ClassRule;
@@ -114,11 +114,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             IgniteToKafkaCdcStreamer cdcCnsmr =
                 new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(cache), KEYS_CNT, false, kafkaProperties());
 
-            ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
+            CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(cdcCnsmr);
 
-            new ChangeDataCapture(igniteCfg, null, cdcCfg).run();
+            new CdcMain(igniteCfg, null, cdcCfg).run();
         });
     }
 

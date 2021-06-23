@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup;
+import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
@@ -104,7 +104,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PROPS_PATH, kafkaPropsPath);
 
         return runAsync(
-            () -> ChangeDataCaptureCommandLineStartup.main(new String[] {prepareConfig("replication/ignite-to-kafka.xml", params)})
+            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("replication/ignite-to-kafka.xml", params)})
         );
     }
 

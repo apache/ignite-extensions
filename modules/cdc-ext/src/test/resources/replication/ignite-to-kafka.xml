@@ -39,7 +39,7 @@
                         <property name="persistenceEnabled" value="true" />
                     </bean>
                 </property>
-                <property name="changeDataCaptureEnabled" value="true" />
+                <property name="cdcEnabled" value="true" />
             </bean>
         </property>
     </bean>

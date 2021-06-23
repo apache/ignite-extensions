@@ -34,7 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -77,7 +77,7 @@ import org.apache.kafka.common.errors.WakeupException;
  * @see IgniteInternalCache#removeAllConflict(Map)
  * @see CacheVersionConflictResolver
  * @see GridCacheVersion
- * @see ChangeDataCaptureEvent
+ * @see CdcEvent
  * @see CacheEntryVersion
  */
 class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnable, AutoCloseable {
@@ -218,9 +218,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param rec Kafka record.
      * @return CDC event.
      */
-    private ChangeDataCaptureEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
+    private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-            return (ChangeDataCaptureEvent)is.readObject();
+            return (CdcEvent)is.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);

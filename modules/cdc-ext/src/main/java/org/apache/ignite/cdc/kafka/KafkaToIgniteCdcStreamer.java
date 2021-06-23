@@ -28,12 +28,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +48,7 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * Main class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
  * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
- * and apply {@link ChangeDataCaptureEvent} to Ignite.
+ * and apply {@link CdcEvent} to Ignite.
  * <p>
  * Each applier receive even number of kafka topic partition to read.
  * <p>
@@ -73,9 +73,9 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * </pre>
  * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
  *
- * @see ChangeDataCapture
+ * @see CdcMain
  * @see IgniteToKafkaCdcStreamer
- * @see ChangeDataCaptureEvent
+ * @see CdcEvent
  * @see KafkaToIgniteCdcStreamerApplier
  * @see CacheConflictResolutionManagerImpl
  */

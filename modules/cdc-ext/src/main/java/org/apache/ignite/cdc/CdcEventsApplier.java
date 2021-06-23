@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
- * Contains logic to process {@link ChangeDataCaptureEvent} and apply them to the provided by {@link #ignite()} cluster.
+ * Contains logic to process {@link CdcEvent} and apply them to the provided by {@link #ignite()} cluster.
  */
 public abstract class CdcEventsApplier {
     /** Maximum batch size. */
@@ -68,10 +68,10 @@ public abstract class CdcEventsApplier {
      * @param evts Events to process.
      * @throws IgniteCheckedException If failed.
      */
-    protected void apply(Iterable<ChangeDataCaptureEvent> evts) throws IgniteCheckedException {
+    protected void apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
         IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
 
-        for (ChangeDataCaptureEvent evt : evts) {
+        for (CdcEvent evt : evts) {
             IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
                 for (String cacheName : ignite().cacheNames()) {
                     if (CU.cacheId(cacheName) == cacheId) {

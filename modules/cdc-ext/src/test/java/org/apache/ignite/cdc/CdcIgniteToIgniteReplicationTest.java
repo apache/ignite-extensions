@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -59,11 +59,11 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      */
     protected IgniteInternalFuture<?> igniteToIgnite(IgniteConfiguration srcCfg, IgniteConfiguration destCfg, String cache) {
         return runAsync(() -> {
-            ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
+            CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(new IgniteToIgniteCdcStreamer(destCfg, false, Collections.singleton(cache), KEYS_CNT));
 
-            new ChangeDataCapture(srcCfg, null, cdcCfg).run();
+            new CdcMain(srcCfg, null, cdcCfg).run();
         });
     }
 }

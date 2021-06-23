@@ -141,7 +141,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             cfg.getDataStorageConfiguration()
                 .setWalForceArchiveTimeout(5_000)
-                .setChangeDataCaptureEnabled(true);
+                .setCdcEnabled(true);
 
             cfg.setConsistentId(igniteInstanceName);
         }

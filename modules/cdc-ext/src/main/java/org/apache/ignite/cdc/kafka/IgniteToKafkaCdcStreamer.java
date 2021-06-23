@@ -28,10 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -46,7 +46,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
 
 /**
  * Change Data Consumer that streams all data changes to Kafka topic.
- * {@link ChangeDataCaptureEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
+ * {@link CdcEvent} spread across Kafka topic partitions with {@code {ignite_partition} % {kafka_topic_count}} formula.
  * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
  * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka unavailability or network issues.
@@ -56,11 +56,11 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
  * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
  *
- * @see ChangeDataCapture
+ * @see CdcMain
  * @see KafkaToIgniteCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
+public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Default kafka request timeout in minutes. */
     public static final int DFLT_REQ_TIMEOUT = 1;
 
@@ -126,11 +126,11 @@ public class IgniteToKafkaCdcStreamer implements ChangeDataCaptureConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+    @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
         while (evts.hasNext() && futs.size() < maxBatchSize) {
-            ChangeDataCaptureEvent evt = evts.next();
+            CdcEvent evt = evts.next();
 
             if (onlyPrimary && !evt.primary())
                 continue;
