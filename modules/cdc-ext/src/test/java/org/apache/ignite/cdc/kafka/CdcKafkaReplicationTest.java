@@ -24,6 +24,7 @@ import java.util.Properties;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -70,8 +71,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToKafka(srcCluster[i].configuration(), DFLT_TOPIC, ACTIVE_PASSIVE_CACHE));
+        for (IgniteEx ex : srcCluster)
+            futs.add(igniteToKafka(ex.configuration(), DFLT_TOPIC, ACTIVE_PASSIVE_CACHE));
 
         for (int i = 0; i < destCluster.length; i++) {
             futs.add(kafkaToIgnite(
@@ -91,11 +92,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToKafka(srcCluster[i].configuration(), SRC_DEST_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
+        for (IgniteEx ex : srcCluster)
+            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE));
 
-        for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToKafka(destCluster[i].configuration(), DEST_SRC_TOPIC, AbstractReplicationTest.ACTIVE_ACTIVE_CACHE));
+        for (IgniteEx ex : destCluster)
+            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE));
 
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
         futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
