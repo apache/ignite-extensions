@@ -866,6 +866,8 @@
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!--Performance statistics report libraries. -->
+                                        <exclude>report/libs/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
