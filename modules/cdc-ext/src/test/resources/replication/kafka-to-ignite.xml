@@ -17,9 +17,6 @@
   limitations under the License.
 -->
 
-<!--
-    Ignite Spring configuration file to startup grid cache.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:util="http://www.springframework.org/schema/util"
