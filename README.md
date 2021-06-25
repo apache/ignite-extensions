@@ -3,6 +3,7 @@
 <a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/images/ignite_logo_full.svg" hspace="20"/></a>
 
 [![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![GitHub release](https://img.shields.io/badge/release-download-brightgreen.svg)](https://ignite.apache.org/download.cgi#extensions)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ApacheIgnite?style=social)](https://twitter.com/ApacheIgnite)
 
 ## What Are Apache Ignite Extensions?
