@@ -852,7 +852,8 @@
                                         <exclude>modules/platforms/python/docs/conf.py</exclude><!--sphinx files: BSD license-->
                                         <exclude>modules/platforms/python/docs/source/**/*.rst</exclude><!--sphinx-apidoc generated files-->
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
-
+                                        <!--web console-->
+                                        <exclude>**/web-console/**/.eslintrc</exclude>
                                         <exclude>**/web-console/**/.babelrc</exclude>
                                         <exclude>**/web-console/**/*.json</exclude>
                                         <exclude>**/web-console/**/*.json.sample</exclude>
