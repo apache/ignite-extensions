@@ -16,13 +16,14 @@
  */
 
 /** Plugin for Charts JS to print 'No data to display' if there is no data for chart. */
-Chart.plugins.register({
+Chart.register({
+    id: 'plugin',
     afterDraw: function (chart) {
         if (chart.data.datasets.length === 0 || chart.data.datasets.every(val => val.data.length === 0)) {
             // No data is present
-            var ctx = chart.chart.ctx;
-            var width = chart.chart.width;
-            var height = chart.chart.height;
+            var ctx = chart.ctx;
+            var width = chart.width;
+            var height = chart.height;
 
             ctx.save();
             ctx.textAlign = 'center';
@@ -73,14 +74,17 @@ function buildSelectCaches(el, onSelect) {
 }
 
 /** Builds bootstrap-select for nodes. */
-function buildSelectNodes(el, onSelect) {
-    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+function buildSelectNodes(el, onSelect, totalDesc, noneEnabled) {
+    el.append('<option data-content="<b>'+totalDesc+'</b>" value="total"/>');
 
     var nodes = REPORT_DATA.clusterInfo.nodes;
 
     $.each(nodes, (nodeId, node) => {
         el.append('<option data-content="' + node.id + '" value="' + node.id + '"/>');
     });
+
+    if (noneEnabled)
+        el.append('<option data-content="<b>'+'NONE'+'</b>"/>')
 
     el.on('changed.bs.select', onSelect);
 }
