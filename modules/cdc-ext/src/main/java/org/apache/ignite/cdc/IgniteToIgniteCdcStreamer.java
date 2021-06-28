@@ -84,6 +84,9 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
 
     /** {@inheritDoc} */
     @Override public void start() {
+        if (log.isInfoEnabled())
+            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
+
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
     }
 
@@ -97,6 +100,9 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> !onlyPrimary || evt.primary(),
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
+
+            if (log.isInfoEnabled())
+                log.info("Events applied [evtsApplied=" + evtsApplied.get() + ']');
 
             return true;
         }

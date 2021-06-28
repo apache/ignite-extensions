@@ -25,6 +25,7 @@ buildNumber.properties
 .metadata
 bin/
 !/modules/performance-statistics-ext/bin
+!/modules/cdc-ext/bin
 tmp/
 *.tmp
 *.bak

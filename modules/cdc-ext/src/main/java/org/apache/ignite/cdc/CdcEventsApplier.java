@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -57,6 +58,9 @@ public abstract class CdcEventsApplier {
     /** */
     private final BooleanSupplier hasRemoves = () -> !F.isEmpty(rmvBatch);
 
+    /** */
+    protected final AtomicLong evtsApplied = new AtomicLong();
+
     /**
      * @param maxBatchSize Maximum batch size.
      */
@@ -72,6 +76,9 @@ public abstract class CdcEventsApplier {
         IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
 
         for (CdcEvent evt : evts) {
+            if (log().isDebugEnabled())
+                log().debug("Event received [key=" + evt.key() + ']');
+
             IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
                 for (String cacheName : ignite().cacheNames()) {
                     if (CU.cacheId(cacheName) == cacheId) {
@@ -109,6 +116,8 @@ public abstract class CdcEventsApplier {
                 rmvBatch.put(key,
                     new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
             }
+
+            evtsApplied.incrementAndGet();
         }
 
         if (currCache != null)

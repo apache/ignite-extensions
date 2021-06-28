@@ -24,7 +24,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
@@ -32,6 +31,7 @@ import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
@@ -41,6 +41,10 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 
+import static org.apache.ignite.internal.IgniteKernal.NL;
+import static org.apache.ignite.internal.IgniteKernal.SITE;
+import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
+import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
@@ -121,9 +125,25 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
-            IgniteLogger log = U.initLogger(igniteCfg, "kafka-ignite-streamer");
+        try {
+            runx();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+    }
 
+    /** */
+    private void runx() throws Exception {
+        U.initWorkDir(igniteCfg);
+
+        IgniteLogger log = U.initLogger(igniteCfg, "kafka-ignite-streamer");
+
+        igniteCfg.setGridLogger(log);
+
+        ackAsciiLogo(log);
+
+        try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
             AtomicBoolean stopped = new AtomicBoolean();
 
             Set<Integer> caches = null;
@@ -181,8 +201,56 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 log.warning("Kafka to Ignite streamer interrupted", e);
             }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+    }
+
+    /** */
+    private void ackAsciiLogo(IgniteLogger log) {
+        String ver = "ver. " + ACK_VER_STR;
+
+        if (log.isInfoEnabled()) {
+            log.info(NL + NL +
+                ">>>    __ _____   ______ _____     __________    __________  ________________" + NL +
+                ">>>   / //_/ _ | / __/ //_/ _ |   /_  __/ __ \\  /  _/ ___/ |/ /  _/_  __/ __/" + NL +
+                ">>>  / ,< / __ |/ _// ,< / __ |    / / / /_/ / _/ // (_ /    // /  / / / _/  " + NL +
+                ">>> /_/|_/_/ |_/_/ /_/|_/_/ |_|   /_/  \\____/ /___/\\___/_/|_/___/ /_/ /___/  " + NL +
+                ">>> " + NL +
+                ">>> " + NL +
+                ">>> " + ver + NL +
+                ">>> " + COPYRIGHT + NL +
+                ">>> " + NL +
+                ">>> Ignite documentation: " + "http://" + SITE + NL +
+                ">>> Kafka topic: " + streamerCfg.getTopic() + NL +
+                ">>> Kafka partitions: " + streamerCfg.getKafkaPartsFrom() + "-" + streamerCfg.getKafkaPartsTo() + NL
+            );
+        }
+
+        if (log.isQuiet()) {
+            U.quiet(false,
+                "   __ _____   ______ _____     __________    __________  ________________",
+                "  / //_/ _ | / __/ //_/ _ |   /_  __/ __ \\  /  _/ ___/ |/ /  _/_  __/ __/",
+                " / ,< / __ |/ _// ,< / __ |    / / / /_/ / _/ // (_ /    // /  / / / _/  ",
+                "/_/|_/_/ |_/_/ /_/|_/_/ |_|   /_/  \\____/ /___/\\___/_/|_/___/ /_/ /___/  ",
+                "",
+                ver,
+                COPYRIGHT,
+                "",
+                "Ignite documentation: " + "http://" + SITE,
+                "Kafka topic: " + streamerCfg.getTopic(),
+                "Kafka partitions: " + streamerCfg.getKafkaPartsFrom() + "-" + streamerCfg.getKafkaPartsTo(),
+                "",
+                "Quiet mode.");
+
+            String fileName = log.fileName();
+
+            if (fileName != null)
+                U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+            if (log instanceof GridLoggerProxy)
+                U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
+
+            U.quiet(false,
+                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to kafka-to-ignite.{sh|bat}",
+                "");
         }
     }
 }

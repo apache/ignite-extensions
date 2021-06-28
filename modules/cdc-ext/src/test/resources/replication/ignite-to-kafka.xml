@@ -41,7 +41,7 @@
         </property>
     </bean>
 
-    <bean id="cdc.cfg" class="org.apache.ignite.cdc.ChangeDataCaptureConfiguration">
+    <bean id="cdc.cfg" class="org.apache.ignite.cdc.CdcConfiguration">
         <property name="consumer">
             <bean class="org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer">
                 <constructor-arg name="topic" value="{TOPIC}" />
