@@ -61,8 +61,8 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
-    /** Default kafka request timeout in minutes. */
-    public static final int DFLT_REQ_TIMEOUT = 1;
+    /** Default kafka request timeout in seconds. */
+    public static final int DFLT_REQ_TIMEOUT = 5;
 
     /** Log. */
     @LoggerResource
@@ -132,14 +132,31 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         while (evts.hasNext() && futs.size() < maxBatchSize) {
             CdcEvent evt = evts.next();
 
-            if (onlyPrimary && !evt.primary())
-                continue;
+            if (log.isDebugEnabled())
+                log.debug("Event received [evt=" + evt + ']');
 
-            if (evt.version().otherClusterVersion() != null)
-                continue;
+            if (onlyPrimary && !evt.primary()) {
+                if (log.isDebugEnabled())
+                    log.debug("Event skipped because of primary flag [evt=" + evt + ']');
 
-            if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId()))
                 continue;
+            }
+
+            if (evt.version().otherClusterVersion() != null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Event skipped because of version [evt=" + evt +
+                        ", otherClusterVersion=" + evt.version().otherClusterVersion() + ']');
+                }
+
+                continue;
+            }
+
+            if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId())) {
+                if (log.isDebugEnabled())
+                    log.debug("Event skipped because of cacheId [evt=" + evt + ']');
+
+                continue;
+            }
 
             msgCnt++;
 
@@ -149,18 +166,21 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 evt.cacheId(),
                 IgniteUtils.toBytes(evt)
             )));
+
+            if (log.isDebugEnabled())
+                log.debug("Event sent asynchronously [evt=" + evt + ']');
         }
 
         try {
             for (Future<RecordMetadata> fut : futs)
-                fut.get(DFLT_REQ_TIMEOUT, TimeUnit.MINUTES);
+                fut.get(DFLT_REQ_TIMEOUT, TimeUnit.SECONDS);
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
-        if (log.isDebugEnabled())
-            log.debug("Events processed [sentMessagesCount=" + msgCnt + ']');
+        if (log.isInfoEnabled())
+            log.info("Events processed [sentMessagesCount=" + msgCnt + ']');
 
         return true;
     }
@@ -170,7 +190,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         try {
             producer = new KafkaProducer<>(kafkaProps);
 
-            log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+            if (log.isInfoEnabled())
+                log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
         }
         catch (Exception e) {
             throw new RuntimeException(e);
