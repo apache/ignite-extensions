@@ -63,6 +63,7 @@
         <module>modules/spring-tx-ext</module>
         <module>modules/spring-cache-ext</module>
         <module>modules/spring-session-ext</module>
+        <module>modules/cdc-ext</module>
     </modules>
 
     <profiles>
