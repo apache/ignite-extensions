@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,11 +30,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
-import org.junit.ClassRule;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests for kafka replication.
@@ -46,14 +47,17 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     public static final String DEST_SRC_TOPIC = "dest-source";
 
     /** */
-    @ClassRule
-    public static final EmbeddedKafkaCluster KAFKA = new EmbeddedKafkaCluster(1);
+    private static EmbeddedKafkaCluster KAFKA = null;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        KAFKA.start();
+        if (KAFKA == null) {
+            KAFKA = new EmbeddedKafkaCluster(1);
+
+            KAFKA.start();
+        }
 
         KAFKA.createTopic(DFLT_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
@@ -64,7 +68,15 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        KAFKA.deleteAllTopicsAndWait(getTestTimeout());
+        KAFKA.deleteTopic(DFLT_TOPIC);
+        KAFKA.deleteTopic(SRC_DEST_TOPIC);
+        KAFKA.deleteTopic(DEST_SRC_TOPIC);
+
+        waitForCondition(() -> {
+            Set<String> topics = KAFKA.getAllTopicsInCluster();
+
+            return !topics.contains(DFLT_TOPIC) && !topics.contains(SRC_DEST_TOPIC) && !topics.contains(DEST_SRC_TOPIC);
+        }, getTestTimeout());
     }
 
     /** {@inheritDoc} */

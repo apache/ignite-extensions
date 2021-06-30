@@ -104,7 +104,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PROPS_PATH, kafkaPropsPath);
 
         return runAsync(
-            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("replication/ignite-to-kafka.xml", params)})
+            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
         );
     }
 
@@ -131,14 +131,14 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
 
         return runAsync(
-            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig("replication/kafka-to-ignite.xml", params)})
+            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig("/replication/kafka-to-ignite.xml", params)})
         );
     }
 
     /** */
     private String prepareConfig(String path, Map<String, String> params) {
         try {
-            String cfg = new String(Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(path).toURI())));
+            String cfg = new String(Files.readAllBytes(Paths.get(CdcKafkaReplicationAppsTest.class.getResource(path).toURI())));
 
             for (String key : params.keySet()) {
                 String subst = '{' + key + '}';

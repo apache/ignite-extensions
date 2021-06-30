@@ -308,9 +308,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         for (int i = 0; i < futs.size(); i++)
             assertFalse("Fut " + i, futs.get(i).isDone());
 
-        for (IgniteInternalFuture<?> fut : futs)
-            assertFalse(fut.isDone());
-
         return res;
     }
 
