@@ -32,12 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** Tests {@link IgniteRepositoryAutoConfiguration} feature. */
 @ExtendWith(SpringExtension.class)
 public class IgniteRepositoriesAutoconfigureTest {
-
     /** Spring test application context. */
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
         .withUserConfiguration(DefaultTestConfigutation.class)
         .withConfiguration(AutoConfigurations.of(IgniteAutoConfiguration.class, IgniteRepositoryAutoConfiguration.class));
-
 
     /** Test default autoconfiguration */
     @Test
@@ -63,7 +61,6 @@ public class IgniteRepositoriesAutoconfigureTest {
         });
     }
 
-
     /** */
     @AutoConfigurationPackage
     protected static class TestConfiguration {
@@ -81,6 +78,4 @@ public class IgniteRepositoriesAutoconfigureTest {
     protected static class InvalidConfiguration {
 
     }
-
-
 }
