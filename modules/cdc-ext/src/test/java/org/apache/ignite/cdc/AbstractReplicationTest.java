@@ -109,7 +109,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static final int KEYS_CNT = 1000;
+    public static final int KEYS_CNT = 500;
 
     /** */
     protected static IgniteEx[] srcCluster;
