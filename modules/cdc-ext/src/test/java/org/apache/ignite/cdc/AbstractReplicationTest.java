@@ -76,8 +76,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL)) {
             for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
-                for (int backups = 0; backups < 2; backups++)
+                for (int backups = 0; backups < 2; backups++) {
+                    // backupCount ignored for REPLICATED caches.
+                    if (backups > 0 && mode == REPLICATED)
+                        continue;
+
                     params.add(new Object[] {atomicity, mode, backups});
+                }
             }
         }
 
