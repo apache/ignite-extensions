@@ -105,13 +105,7 @@ public class CompatibilityTest extends IgniteCompatibilityAbstractTest {
             res.add(new Dependency("core", "org.apache.ignite", "ignite-core", this.igniteVer, false));
             res.add(new Dependency("core", "org.apache.ignite", "ignite-core", this.igniteVer, true));
             res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", this.igniteVer, false));
-
             res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
-            res.add(new Dependency("spring-context", "org.springframework", "spring-context", springVer, false));
-            res.add(new Dependency("spring-beans", "org.springframework", "spring-beans", springVer, false));
-            res.add(new Dependency("spring-core", "org.springframework", "spring-core", springVer, false));
-            res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
-            res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
             return res;
         }
