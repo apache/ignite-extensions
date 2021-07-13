@@ -29,11 +29,11 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /** */
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
-    @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc() {
+    @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_PASSIVE_CACHE));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], cache));
 
         return futs;
     }

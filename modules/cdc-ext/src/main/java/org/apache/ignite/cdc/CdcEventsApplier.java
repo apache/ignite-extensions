@@ -85,7 +85,7 @@ public abstract class CdcEventsApplier {
                         // IgniteEx#cachex(String) will return null if cache not initialized with regular Ignite#cache(String) call.
                         ignite().cache(cacheName);
 
-                        return ignite().cachex(cacheName);
+                        return ignite().cachex(cacheName).keepBinary();
                     }
                 }
 
@@ -105,7 +105,12 @@ public abstract class CdcEventsApplier {
             if (evt.value() != null) {
                 applyIf(currCache, () -> isApplyBatch(updBatch, key), hasRemoves);
 
-                CacheObject val = new CacheObjectImpl(evt.value(), null);
+                CacheObject val;
+
+                if (evt.value() instanceof CacheObject)
+                    val = (CacheObject)evt.value();
+                else
+                    val = new CacheObjectImpl(evt.value(), null);
 
                 updBatch.put(key, new GridCacheDrInfo(val,
                     new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
