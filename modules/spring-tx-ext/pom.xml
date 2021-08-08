@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite.springdata.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
