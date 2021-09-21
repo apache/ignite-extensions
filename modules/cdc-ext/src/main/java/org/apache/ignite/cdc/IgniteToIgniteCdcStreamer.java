@@ -29,6 +29,8 @@ import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -57,6 +59,15 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** Destination Ignite cluster client */
     private IgniteEx dest;
 
+    /** Streamer metrics. */
+    private MetricRegistry mreg;
+
+    /** Count of sent messages.  */
+    private AtomicLongMetric msgSnt;
+
+    /** Timestamp of last sent message. */
+    private AtomicLongMetric lastMsgTs;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -83,16 +94,23 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(MetricRegistry mreg) {
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
+
+        this.mreg = mreg;
+
+        this.msgSnt = mreg.longMetric("MessagesSent", "Count of messages sent");
+        this.lastMsgTs = mreg.longMetric("LastMessageTimestamp", "Timestamp of last sent message");
     }
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         try {
+            long evtsApplied0 = evtsApplied.get();
+
             apply(() -> F.iterator(
                 evts,
                 F.identity(),
@@ -101,8 +119,14 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
 
-            if (log.isInfoEnabled())
-                log.info("Events applied [evtsApplied=" + evtsApplied.get() + ']');
+            if (evtsApplied0 != evtsApplied.get()) {
+                if (log.isInfoEnabled())
+                    log.info("Events applied [evtsApplied=" + evtsApplied.get() + ']');
+
+                msgSnt.value(evtsApplied.get());
+
+                lastMsgTs.value(System.currentTimeMillis());
+            }
 
             return true;
         }

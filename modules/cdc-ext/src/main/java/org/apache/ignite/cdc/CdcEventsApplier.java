@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -60,6 +61,9 @@ public abstract class CdcEventsApplier {
 
     /** */
     protected final AtomicLong evtsApplied = new AtomicLong();
+
+    /** Streamer metrics. */
+    private MetricRegistry mreg;
 
     /**
      * @param maxBatchSize Maximum batch size.

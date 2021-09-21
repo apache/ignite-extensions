@@ -32,6 +32,8 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -68,6 +70,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @LoggerResource
     private IgniteLogger log;
 
+    /** Streamer metrics. */
+    private MetricRegistry mreg;
+
     /** Kafka producer to stream events. */
     private KafkaProducer<Integer, byte[]> producer;
 
@@ -90,7 +95,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private final int maxBatchSize;
 
     /** Count of sent messages.  */
-    private long msgCnt;
+    private AtomicLongMetric msgSnt;
+
+    /** Count of bytes sent to the Kafka. */
+    private AtomicLongMetric bytesSnt;
+
+    /** Timestamp of last sent message. */
+    private AtomicLongMetric lastMsgTs;
 
     /**
      * @param topic Topic name.
@@ -158,13 +169,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 continue;
             }
 
-            msgCnt++;
+            msgSnt.increment();
+
+            byte[] bytes = IgniteUtils.toBytes(evt);
+
+            bytesSnt.add(bytes.length);
 
             futs.add(producer.send(new ProducerRecord<>(
                 topic,
                 evt.partition() % kafkaParts,
                 evt.cacheId(),
-                IgniteUtils.toBytes(evt)
+                bytes
             )));
 
             if (log.isDebugEnabled())
@@ -172,21 +187,25 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         }
 
         try {
-            for (Future<RecordMetadata> fut : futs)
-                fut.get(DFLT_REQ_TIMEOUT, TimeUnit.SECONDS);
+            if (!futs.isEmpty()) {
+                for (Future<RecordMetadata> fut : futs)
+                    fut.get(DFLT_REQ_TIMEOUT, TimeUnit.SECONDS);
+
+                lastMsgTs.value(System.currentTimeMillis());
+            }
         }
         catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);
         }
 
         if (log.isInfoEnabled())
-            log.info("Events processed [sentMessagesCount=" + msgCnt + ']');
+            log.info("Events processed [sentMessagesCount=" + msgSnt.value() + ']');
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(MetricRegistry mreg) {
         try {
             producer = new KafkaProducer<>(kafkaProps);
 
@@ -196,6 +215,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+        this.mreg = mreg;
+        this.msgSnt = mreg.longMetric("MessagesSent", "Count of messages sent");
+        this.bytesSnt = mreg.longMetric("BytesSent", "Count of bytes sent.");
+        this.lastMsgTs = mreg.longMetric("LastMessageTimestamp", "Timestamp of last sent message");
     }
 
     /** {@inheritDoc} */
