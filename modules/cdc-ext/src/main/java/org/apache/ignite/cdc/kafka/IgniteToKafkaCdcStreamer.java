@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -43,6 +44,10 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVENTS_COUNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVENTS_COUNT_DESCRIPTION;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_MESSAGE_TIMESTAMP;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_MESSAGE_TIMESTAMP_DESCRIPTION;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
@@ -70,9 +75,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Streamer metrics. */
-    private MetricRegistry mreg;
-
     /** Kafka producer to stream events. */
     private KafkaProducer<Integer, byte[]> producer;
 
@@ -94,14 +96,14 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Max batch size. */
     private final int maxBatchSize;
 
-    /** Count of sent messages.  */
-    private AtomicLongMetric msgSnt;
+    /** Timestamp of last sent message. */
+    private AtomicLongMetric lastMsgTs;
 
     /** Count of bytes sent to the Kafka. */
     private AtomicLongMetric bytesSnt;
 
-    /** Timestamp of last sent message. */
-    private AtomicLongMetric lastMsgTs;
+    /** Count of sent messages.  */
+    private AtomicLongMetric msgsSnt;
 
     /**
      * @param topic Topic name.
@@ -169,7 +171,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 continue;
             }
 
-            msgSnt.increment();
+            msgsSnt.increment();
 
             byte[] bytes = IgniteUtils.toBytes(evt);
 
@@ -199,7 +201,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         }
 
         if (log.isInfoEnabled())
-            log.info("Events processed [sentMessagesCount=" + msgSnt.value() + ']');
+            log.info("Events processed [sentMessagesCount=" + msgsSnt.value() + ']');
 
         return true;
     }
@@ -216,10 +218,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             throw new RuntimeException(e);
         }
 
-        this.mreg = mreg;
-        this.msgSnt = mreg.longMetric("MessagesSent", "Count of messages sent");
+        this.msgsSnt = mreg.longMetric(EVENTS_COUNT, EVENTS_COUNT_DESCRIPTION);
+        this.lastMsgTs = mreg.longMetric(LAST_MESSAGE_TIMESTAMP, LAST_MESSAGE_TIMESTAMP_DESCRIPTION);
         this.bytesSnt = mreg.longMetric("BytesSent", "Count of bytes sent.");
-        this.lastMsgTs = mreg.longMetric("LastMessageTimestamp", "Timestamp of last sent message");
     }
 
     /** {@inheritDoc} */

@@ -50,6 +50,18 @@ import org.apache.ignite.resources.LoggerResource;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcConsumer {
+    /** */
+    public static final String EVENTS_COUNT = "EventsCount";
+
+    /** */
+    public static final String EVENTS_COUNT_DESCRIPTION = "Count of messages applied to destination cluster";
+
+    /** */
+    public static final String LAST_MESSAGE_TIMESTAMP = "LastMessageTimestamp";
+
+    /** */
+    public static final String LAST_MESSAGE_TIMESTAMP_DESCRIPTION = "Timestamp of last sent message";
+
     /** Destination cluster client configuration. */
     private final IgniteConfiguration destIgniteCfg;
 
@@ -59,14 +71,11 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** Destination Ignite cluster client */
     private IgniteEx dest;
 
-    /** Streamer metrics. */
-    private MetricRegistry mreg;
-
-    /** Count of sent messages.  */
-    private AtomicLongMetric msgSnt;
-
     /** Timestamp of last sent message. */
     private AtomicLongMetric lastMsgTs;
+
+    /** Count of events applied to destination cluster. */
+    protected AtomicLongMetric msgsSnt;
 
     /** Logger. */
     @LoggerResource
@@ -100,18 +109,14 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
-        this.mreg = mreg;
-
-        this.msgSnt = mreg.longMetric("MessagesSent", "Count of messages sent");
-        this.lastMsgTs = mreg.longMetric("LastMessageTimestamp", "Timestamp of last sent message");
+        this.msgsSnt = mreg.longMetric(EVENTS_COUNT, EVENTS_COUNT_DESCRIPTION);
+        this.lastMsgTs = mreg.longMetric(LAST_MESSAGE_TIMESTAMP, LAST_MESSAGE_TIMESTAMP_DESCRIPTION);
     }
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         try {
-            long evtsApplied0 = evtsApplied.get();
-
-            apply(() -> F.iterator(
+            long msgsSnt0 = apply(() -> F.iterator(
                 evts,
                 F.identity(),
                 true,
@@ -119,13 +124,12 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
 
-            if (evtsApplied0 != evtsApplied.get()) {
-                if (log.isInfoEnabled())
-                    log.info("Events applied [evtsApplied=" + evtsApplied.get() + ']');
-
-                msgSnt.value(evtsApplied.get());
-
+            if (msgsSnt0 > 0) {
+                msgsSnt.add(msgsSnt0);
                 lastMsgTs.value(System.currentTimeMillis());
+
+                if (log.isInfoEnabled())
+                    log.info("Events applied [evtsApplied=" + msgsSnt.value() + ']');
             }
 
             return true;
