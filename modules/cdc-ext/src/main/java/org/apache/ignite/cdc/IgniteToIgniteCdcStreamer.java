@@ -51,16 +51,16 @@ import org.apache.ignite.resources.LoggerResource;
  */
 public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcConsumer {
     /** */
-    public static final String EVENTS_COUNT = "EventsCount";
+    public static final String EVTS_CNT = "EventsCount";
 
     /** */
-    public static final String EVENTS_COUNT_DESCRIPTION = "Count of messages applied to destination cluster";
+    public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
 
     /** */
-    public static final String LAST_MESSAGE_TIMESTAMP = "LastMessageTimestamp";
+    public static final String LAST_EVT_TIME = "LastEventTime";
 
     /** */
-    public static final String LAST_MESSAGE_TIMESTAMP_DESCRIPTION = "Timestamp of last sent message";
+    public static final String LAST_EVT_TIME_DESC = "Timestamp of last applied event";
 
     /** Destination cluster client configuration. */
     private final IgniteConfiguration destIgniteCfg;
@@ -72,10 +72,10 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     private IgniteEx dest;
 
     /** Timestamp of last sent message. */
-    private AtomicLongMetric lastMsgTs;
+    private AtomicLongMetric lastEvtTs;
 
     /** Count of events applied to destination cluster. */
-    protected AtomicLongMetric msgsSnt;
+    protected AtomicLongMetric evtsCnt;
 
     /** Logger. */
     @LoggerResource
@@ -109,8 +109,8 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
-        this.msgsSnt = mreg.longMetric(EVENTS_COUNT, EVENTS_COUNT_DESCRIPTION);
-        this.lastMsgTs = mreg.longMetric(LAST_MESSAGE_TIMESTAMP, LAST_MESSAGE_TIMESTAMP_DESCRIPTION);
+        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
     /** {@inheritDoc} */
@@ -125,11 +125,11 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> evt.version().otherClusterVersion() == null));
 
             if (msgsSnt0 > 0) {
-                msgsSnt.add(msgsSnt0);
-                lastMsgTs.value(System.currentTimeMillis());
+                evtsCnt.add(msgsSnt0);
+                lastEvtTs.value(System.currentTimeMillis());
 
                 if (log.isInfoEnabled())
-                    log.info("Events applied [evtsApplied=" + msgsSnt.value() + ']');
+                    log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
             }
 
             return true;

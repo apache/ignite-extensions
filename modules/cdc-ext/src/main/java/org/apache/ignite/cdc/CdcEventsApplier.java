@@ -119,8 +119,6 @@ public abstract class CdcEventsApplier {
                 rmvBatch.put(key,
                     new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
             }
-
-            evtsApplied++;
         }
 
         if (currCache != null)

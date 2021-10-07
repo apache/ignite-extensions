@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -38,11 +41,15 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -53,7 +60,18 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.cdc.CdcMain.BINARY_META_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.CDC_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.COMMITTED_SEG_OFFSET;
+import static org.apache.ignite.internal.cdc.CdcMain.CUR_SEG_IDX;
+import static org.apache.ignite.internal.cdc.CdcMain.LAST_SEG_CONSUMPTION_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.MARSHALLER_DIR;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
+import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -136,6 +154,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private byte clusterId = SRC_CLUSTER_ID;
+
+    /** */
+    protected final List<CdcMain> cdcs = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -249,9 +270,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
+            checkMetrics();
+
             IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
+
+            checkMetrics();
 
             assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
         }
@@ -287,6 +312,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             assertTrue(waitForCondition(waitForTblSz.apply(KEYS_CNT), getTestTimeout()));
 
+            checkMetrics();
 
             List<List<?>> data = executeSql(destCluster[0], "SELECT ID, NAME FROM T1 ORDER BY ID");
 
@@ -298,6 +324,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             executeSql(srcCluster[0], deleteQry);
 
             assertTrue(waitForCondition(waitForTblSz.apply(0), getTestTimeout()));
+
+            checkMetrics();
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
@@ -408,4 +436,57 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
+
+    /** */
+    protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);
+
+    /** */
+    protected void checkMetrics() {
+        for (int i = 0; i < cdcs.size(); i++) {
+            IgniteConfiguration cfg = getFieldValue(cdcs.get(i), "igniteCfg");
+
+            MetricRegistry mreg = getFieldValue(cdcs.get(i), "mreg");
+
+            assertNotNull(mreg);
+
+            checkMetrics(
+                m -> mreg.<LongMetric>findMetric(m).value(),
+                m -> mreg.<ObjectMetric<String>>findMetric(m).value()
+            );
+
+            Function<DynamicMBean, Function<String, ?>> jmxVal = mxBean -> m -> {
+                try {
+                    return mxBean.getAttribute(m);
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            };
+
+            DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
+
+            checkMetrics((Function<String, Long>)jmxVal.apply(jmxCdcReg), (Function<String, String>)jmxVal.apply(jmxCdcReg));
+
+            DynamicMBean jmxConsumerReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "cdc", "consumer");
+
+            checkConsumerMetrics((Function<String, Long>)jmxVal.apply(jmxConsumerReg));
+        }
+    }
+
+    /** */
+    private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric) {
+        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
+        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
+
+        assertTrue(committedSegIdx <= curSegIdx);
+
+        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
+        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+
+        for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
+            assertTrue(new File(strMetric.apply(m)).exists());
+
+        assertNotNull(longMetric.apply(LAST_EVT_TIME));
+        assertNotNull(longMetric.apply(EVTS_CNT));
+    }
 }

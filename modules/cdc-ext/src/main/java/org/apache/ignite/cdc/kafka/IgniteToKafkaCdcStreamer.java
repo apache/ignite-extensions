@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -44,10 +43,10 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVENTS_COUNT;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVENTS_COUNT_DESCRIPTION;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_MESSAGE_TIMESTAMP;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_MESSAGE_TIMESTAMP_DESCRIPTION;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
@@ -70,6 +69,12 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Default kafka request timeout in seconds. */
     public static final int DFLT_REQ_TIMEOUT = 5;
+
+    /** Bytes sent metric name. */
+    public static final String BYTES_SENT = "BytesSent";
+
+    /** Bytes sent metric description. */
+    public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
     /** Log. */
     @LoggerResource
@@ -171,8 +176,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 continue;
             }
 
-            msgsSnt.increment();
-
             byte[] bytes = IgniteUtils.toBytes(evt);
 
             bytesSnt.add(bytes.length);
@@ -188,20 +191,22 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 log.debug("Event sent asynchronously [evt=" + evt + ']');
         }
 
-        try {
-            if (!futs.isEmpty()) {
+        if (!futs.isEmpty()) {
+            try {
                 for (Future<RecordMetadata> fut : futs)
                     fut.get(DFLT_REQ_TIMEOUT, TimeUnit.SECONDS);
 
+                msgsSnt.add(futs.size());
+
                 lastMsgTs.value(System.currentTimeMillis());
             }
-        }
-        catch (InterruptedException | ExecutionException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+            catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
 
-        if (log.isInfoEnabled())
-            log.info("Events processed [sentMessagesCount=" + msgsSnt.value() + ']');
+            if (log.isInfoEnabled())
+                log.info("Events processed [sentMessagesCount=" + msgsSnt.value() + ']');
+        }
 
         return true;
     }
@@ -218,9 +223,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             throw new RuntimeException(e);
         }
 
-        this.msgsSnt = mreg.longMetric(EVENTS_COUNT, EVENTS_COUNT_DESCRIPTION);
-        this.lastMsgTs = mreg.longMetric(LAST_MESSAGE_TIMESTAMP, LAST_MESSAGE_TIMESTAMP_DESCRIPTION);
-        this.bytesSnt = mreg.longMetric("BytesSent", "Count of bytes sent.");
+        this.msgsSnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
     }
 
     /** {@inheritDoc} */

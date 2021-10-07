@@ -22,8 +22,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -116,6 +118,13 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         return futs;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
+        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.LAST_EVT_TIME));
+        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.EVTS_CNT));
+        assertNotNull(longMetric.apply(IgniteToKafkaCdcStreamer.BYTES_SENT));
+    }
+
     /**
      * @param igniteCfg Ignite configuration.
      * @param topic Kafka topic name.
@@ -131,7 +140,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
             cdcCfg.setConsumer(cdcCnsmr);
 
-            new CdcMain(igniteCfg, null, cdcCfg).run();
+            CdcMain cdc = new CdcMain(igniteCfg, null, cdcCfg);
+
+            cdcs.add(cdc);
+
+            cdc.run();
         });
     }
 
