@@ -66,6 +66,7 @@ public abstract class CdcEventsApplier {
 
     /**
      * @param evts Events to process.
+     * @return Number of applied events.
      * @throws IgniteCheckedException If failed.
      */
     protected int apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
@@ -133,6 +134,7 @@ public abstract class CdcEventsApplier {
      * @param cache Current cache.
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
+     * @return Number of applied events.
      * @throws IgniteCheckedException In case of error.
      */
     private int applyIf(

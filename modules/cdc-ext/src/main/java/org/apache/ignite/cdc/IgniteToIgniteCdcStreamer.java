@@ -116,7 +116,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         try {
-            long msgsSnt0 = apply(() -> F.iterator(
+            long msgsSnt = apply(() -> F.iterator(
                 evts,
                 F.identity(),
                 true,
@@ -124,8 +124,8 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
 
-            if (msgsSnt0 > 0) {
-                evtsCnt.add(msgsSnt0);
+            if (msgsSnt > 0) {
+                evtsCnt.add(msgsSnt);
                 lastEvtTs.value(System.currentTimeMillis());
 
                 if (log.isInfoEnabled())
