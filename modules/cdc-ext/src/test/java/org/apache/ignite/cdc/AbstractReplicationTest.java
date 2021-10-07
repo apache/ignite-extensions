@@ -200,6 +200,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
+        cdcs.clear();
+
         IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> cluster = setupCluster("source", "src-cluster-client", 0);
 
         srcCluster = cluster.get1();

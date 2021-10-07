@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
@@ -139,6 +140,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(cdcCnsmr);
+            cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
             CdcMain cdc = new CdcMain(igniteCfg, null, cdcCfg);
 
