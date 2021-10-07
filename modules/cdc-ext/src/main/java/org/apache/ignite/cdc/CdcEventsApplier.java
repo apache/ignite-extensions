@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -58,9 +57,6 @@ public abstract class CdcEventsApplier {
     /** */
     private final BooleanSupplier hasRemoves = () -> !F.isEmpty(rmvBatch);
 
-    /** */
-    protected final AtomicLong evtsApplied = new AtomicLong();
-
     /**
      * @param maxBatchSize Maximum batch size.
      */
@@ -70,10 +66,13 @@ public abstract class CdcEventsApplier {
 
     /**
      * @param evts Events to process.
+     * @return Number of applied events.
      * @throws IgniteCheckedException If failed.
      */
-    protected void apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
+    protected int apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
         IgniteInternalCache<BinaryObject, BinaryObject> currCache = null;
+
+        int evtsApplied = 0;
 
         for (CdcEvent evt : evts) {
             if (log().isDebugEnabled())
@@ -93,7 +92,7 @@ public abstract class CdcEventsApplier {
             });
 
             if (cache != currCache) {
-                applyIf(currCache, hasUpdates, hasRemoves);
+                evtsApplied += applyIf(currCache, hasUpdates, hasRemoves);
 
                 currCache = cache;
             }
@@ -103,7 +102,7 @@ public abstract class CdcEventsApplier {
             KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
             if (evt.value() != null) {
-                applyIf(currCache, () -> isApplyBatch(updBatch, key), hasRemoves);
+                evtsApplied += applyIf(currCache, () -> isApplyBatch(updBatch, key), hasRemoves);
 
                 CacheObject val;
 
@@ -116,17 +115,17 @@ public abstract class CdcEventsApplier {
                     new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
             }
             else {
-                applyIf(currCache, hasUpdates, () -> isApplyBatch(rmvBatch, key));
+                evtsApplied += applyIf(currCache, hasUpdates, () -> isApplyBatch(rmvBatch, key));
 
                 rmvBatch.put(key,
                     new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()));
             }
-
-            evtsApplied.incrementAndGet();
         }
 
         if (currCache != null)
-            applyIf(currCache, hasUpdates, hasRemoves);
+            evtsApplied += applyIf(currCache, hasUpdates, hasRemoves);
+
+        return evtsApplied;
     }
 
     /**
@@ -135,18 +134,23 @@ public abstract class CdcEventsApplier {
      * @param cache Current cache.
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
+     * @return Number of applied events.
      * @throws IgniteCheckedException In case of error.
      */
-    private void applyIf(
+    private int applyIf(
         IgniteInternalCache<BinaryObject, BinaryObject> cache,
         BooleanSupplier applyUpd,
         BooleanSupplier applyRmv
     ) throws IgniteCheckedException {
+        int evtsApplied = 0;
+
         if (applyUpd.getAsBoolean()) {
             if (log().isDebugEnabled())
                 log().debug("Applying put batch [cache=" + cache.name() + ']');
 
             cache.putAllConflict(updBatch);
+
+            evtsApplied += updBatch.size();
 
             updBatch.clear();
         }
@@ -157,8 +161,12 @@ public abstract class CdcEventsApplier {
 
             cache.removeAllConflict(rmvBatch);
 
+            evtsApplied += rmvBatch.size();
+
             rmvBatch.clear();
         }
+
+        return evtsApplied;
     }
 
     /** @return {@code True} if update batch should be applied. */

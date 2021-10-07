@@ -29,6 +29,8 @@ import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.resources.LoggerResource;
@@ -48,6 +50,18 @@ import org.apache.ignite.resources.LoggerResource;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcConsumer {
+    /** */
+    public static final String EVTS_CNT = "EventsCount";
+
+    /** */
+    public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
+
+    /** */
+    public static final String LAST_EVT_TIME = "LastEventTime";
+
+    /** */
+    public static final String LAST_EVT_TIME_DESC = "Timestamp of last applied event";
+
     /** Destination cluster client configuration. */
     private final IgniteConfiguration destIgniteCfg;
 
@@ -56,6 +70,12 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
 
     /** Destination Ignite cluster client */
     private IgniteEx dest;
+
+    /** Timestamp of last sent message. */
+    private AtomicLongMetric lastEvtTs;
+
+    /** Count of events applied to destination cluster. */
+    protected AtomicLongMetric evtsCnt;
 
     /** Logger. */
     @LoggerResource
@@ -83,17 +103,20 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void start(MetricRegistry mreg) {
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
+
+        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         try {
-            apply(() -> F.iterator(
+            long msgsSnt = apply(() -> F.iterator(
                 evts,
                 F.identity(),
                 true,
@@ -101,8 +124,13 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
 
-            if (log.isInfoEnabled())
-                log.info("Events applied [evtsApplied=" + evtsApplied.get() + ']');
+            if (msgsSnt > 0) {
+                evtsCnt.add(msgsSnt);
+                lastEvtTs.value(System.currentTimeMillis());
+
+                if (log.isInfoEnabled())
+                    log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
+            }
 
             return true;
         }

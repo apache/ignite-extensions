@@ -20,9 +20,11 @@ package org.apache.ignite.cdc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -51,6 +53,12 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         return futs;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
+        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.LAST_EVT_TIME));
+        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.EVTS_CNT));
+    }
+
     /**
      * @param srcCfg Ignite source node configuration.
      * @param destCfg Ignite destination cluster configuration.
@@ -62,8 +70,13 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(new IgniteToIgniteCdcStreamer(destCfg, false, Collections.singleton(cache), KEYS_CNT));
+            cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
-            new CdcMain(srcCfg, null, cdcCfg).run();
+            CdcMain cdc = new CdcMain(srcCfg, null, cdcCfg);
+
+            cdcs.add(cdc);
+
+            cdc.run();
         });
     }
 }

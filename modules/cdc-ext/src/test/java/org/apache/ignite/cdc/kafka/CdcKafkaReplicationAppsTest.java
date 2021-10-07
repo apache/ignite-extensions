@@ -135,6 +135,11 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         );
     }
 
+    /** {@inheritDoc} */
+    @Override protected void checkMetrics() {
+        // Skip metrics check.
+    }
+
     /** */
     private String prepareConfig(String path, Map<String, String> params) {
         try {
