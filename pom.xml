@@ -64,6 +64,9 @@
         <module>modules/spring-cache-ext</module>
         <module>modules/spring-session-ext</module>
         <module>modules/cdc-ext</module>
+        <module>modules/aws-ext</module>
+        <module>modules/azure-ext</module>
+        <module>modules/gce-ext</module>
     </modules>
 
     <profiles>
