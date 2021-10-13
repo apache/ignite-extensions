@@ -112,20 +112,40 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-libs</id>
                         <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>target/libs</outputDirectory>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
+                            <excludeArtifactIds>ignite-core,ignite-spring,ignite-shmem</excludeArtifactIds>
                             <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>gce-ext</id>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>assembly/gce-ext.xml</descriptor>
+                            </descriptors>
+                            <finalName>ignite-gce-ext</finalName>
+                            <attach>false</attach>
                         </configuration>
                     </execution>
                 </executions>
