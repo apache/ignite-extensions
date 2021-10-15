@@ -3,6 +3,12 @@ Apache Ignite AWS Module
 
 Apache Ignite AWS module provides S3-based implementations of checkpoint SPI and IP finder for TCP discovery.
 
+Depending on how you use Ignite, you can an extension using one of the following methods:
+
+- If you use the binary distribution, move the lib/optional/{module-dir} to the lib directory before starting the node.
+- Add libraries from lib/optional/{module-dir} to the classpath of your application.
+- Add a module as a Maven dependency to your project.
+
 Importing AWS Module In Maven Project
 -------------------------------------
 
@@ -20,7 +26,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-aws-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-aws-ext.version}</version>
         </dependency>
         ...
     </dependencies>

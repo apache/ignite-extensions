@@ -3,6 +3,12 @@ Apache Ignite Azure Module
 
 Apache Ignite Azure module provides Azure Blob Storage based implementation of IP finder for TCP discovery.
 
+Depending on how you use Ignite, you can an extension using one of the following methods:
+
+- If you use the binary distribution, move the lib/optional/{module-dir} to the lib directory before starting the node.
+- Add libraries from lib/optional/{module-dir} to the classpath of your application.
+- Add a module as a Maven dependency to your project.
+
 Importing Azure Module In Maven Project
 -------------------------------------
 
@@ -20,7 +26,7 @@ interested in):
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-azure-ext</artifactId>
-            <version>${ignite.version}</version>
+            <version>${ignite-azure-ext.version}</version>
         </dependency>
         ...
     </dependencies>
