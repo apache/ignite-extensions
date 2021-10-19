@@ -288,6 +288,65 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Replication with complex SQL key. */
+    @Test
+    public void testActivePassiveSqlDataReplicationComplexKey() throws Exception {
+        String createTbl = "CREATE TABLE IF NOT EXISTS T2(" +
+                "            ID INT NOT NULL, " +
+                "            SUBID VARCHAR NOT NULL, " +
+                "            NAME VARCHAR, " +
+                "            ORGID INT, " +
+                "            PRIMARY KEY (ID, SUBID))" +
+                "        WITH \"CACHE_NAME=T2," +
+                "KEY_TYPE=" + TestKey.class.getName() + "," +
+                "VALUE_TYPE=" + TestVal.class.getName() + "," +
+                "ATOMICITY=" + atomicity.name() + "\";";
+
+        String insertQry = "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)";
+        String deleteQry = "DELETE FROM T2";
+
+        executeSql(srcCluster[0], createTbl);
+        executeSql(destCluster[0], createTbl);
+
+        executeSql(destCluster[0], insertQry, -1, "-1", "name", -1);
+        executeSql(destCluster[0], deleteQry);
+
+        IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], insertQry, id, "SUBID", "Name" + id, id * 42));
+
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc("T2");
+
+        try {
+            Function<Integer, GridAbsPredicate> waitForTblSz = expSz -> () -> {
+                long cnt = (Long)executeSql(destCluster[0], "SELECT COUNT(*) FROM T2").get(0).get(0);
+
+                return cnt == expSz;
+            };
+
+            assertTrue(waitForCondition(waitForTblSz.apply(KEYS_CNT), getTestTimeout()));
+
+            checkMetrics();
+
+            List<List<?>> data = executeSql(destCluster[0], "SELECT ID, SUBID, NAME, ORGID FROM T2 ORDER BY ID");
+
+            for (int i = 0; i < KEYS_CNT; i++) {
+                assertEquals(i, data.get(i).get(0));
+                assertEquals("SUBID", data.get(i).get(1));
+                assertEquals("Name" + i, data.get(i).get(2));
+                assertEquals(i * 42, data.get(i).get(3));
+            }
+
+            executeSql(srcCluster[0], deleteQry);
+
+            assertTrue(waitForCondition(waitForTblSz.apply(0), getTestTimeout()));
+
+            checkMetrics();
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
     /** Active/Passive mode means changes made only in one cluster. */
     @Test
     public void testActivePassiveSqlDataReplication() throws Exception {
@@ -490,5 +549,40 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         assertNotNull(longMetric.apply(LAST_EVT_TIME));
         assertNotNull(longMetric.apply(EVTS_CNT));
+    }
+
+
+    /** */
+    private static class TestKey {
+        /** Id. */
+        private final int id;
+
+        /** Sub id. */
+        private final String subId;
+
+        /** */
+        public TestKey(int id, String subId) {
+            this.id = id;
+            this.subId = subId;
+        }
+
+        public int getId() {
+            return id;
+        }
+    }
+
+    /** */
+    private static class TestVal {
+        /** Name. */
+        private final String name;
+
+        /** Org id. */
+        private final int orgId;
+
+        /** */
+        public TestVal(String name, int orgId) {
+            this.name = name;
+            this.orgId = orgId;
+        }
     }
 }
