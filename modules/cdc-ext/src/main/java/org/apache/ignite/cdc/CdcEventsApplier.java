@@ -99,7 +99,12 @@ public abstract class CdcEventsApplier {
 
             CacheEntryVersion order = evt.version();
 
-            KeyCacheObject key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
+            KeyCacheObject key;
+
+            if (evt.key() instanceof KeyCacheObject)
+                key = (KeyCacheObject)evt.key();
+            else
+                key = new KeyCacheObjectImpl(evt.key(), null, evt.partition());
 
             if (evt.value() != null) {
                 evtsApplied += applyIf(currCache, () -> isApplyBatch(updBatch, key), hasRemoves);
