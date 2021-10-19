@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
@@ -35,7 +34,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -62,7 +60,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             KAFKA.start();
         }
 
-        KAFKA.createTopic(DFLT_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
     }
@@ -71,28 +68,38 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        KAFKA.deleteTopic(DFLT_TOPIC);
-        KAFKA.deleteTopic(SRC_DEST_TOPIC);
-        KAFKA.deleteTopic(DEST_SRC_TOPIC);
+        KAFKA.getAllTopicsInCluster().forEach(t -> {
+            try {
+                KAFKA.deleteTopic(t);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
-        waitForCondition(() -> {
-            Set<String> topics = KAFKA.getAllTopicsInCluster();
-
-            return !topics.contains(DFLT_TOPIC) && !topics.contains(SRC_DEST_TOPIC) && !topics.contains(DEST_SRC_TOPIC);
-        }, getTestTimeout());
+        waitForCondition(() -> KAFKA.getAllTopicsInCluster().isEmpty(), getTestTimeout());
     }
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
+        try {
+            KAFKA.createTopic(cache, DFLT_PARTS, 1);
+
+            waitForCondition(() -> KAFKA.getAllTopicsInCluster().contains(cache), getTestTimeout());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), DFLT_TOPIC, cache));
+            futs.add(igniteToKafka(ex.configuration(), cache, cache));
 
         for (int i = 0; i < destCluster.length; i++) {
             futs.add(kafkaToIgnite(
                 cache,
-                DFLT_TOPIC,
+                cache,
                 destClusterCliCfg[i],
                 i * (DFLT_PARTS / 2),
                 (i + 1) * (DFLT_PARTS / 2)

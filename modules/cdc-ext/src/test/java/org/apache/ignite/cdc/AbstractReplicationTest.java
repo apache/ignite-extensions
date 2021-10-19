@@ -25,7 +25,9 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -288,36 +290,53 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Replication with complex SQL key. */
+    /** Replication with complex SQL key. Data inserted via SQL. */
     @Test
-    public void testActivePassiveSqlDataReplicationComplexKey() throws Exception {
-        String createTbl = "CREATE TABLE IF NOT EXISTS T2(" +
-                "            ID INT NOT NULL, " +
-                "            SUBID VARCHAR NOT NULL, " +
-                "            NAME VARCHAR, " +
-                "            ORGID INT, " +
-                "            PRIMARY KEY (ID, SUBID))" +
-                "        WITH \"CACHE_NAME=T2," +
-                "KEY_TYPE=" + TestKey.class.getName() + "," +
-                "VALUE_TYPE=" + TestVal.class.getName() + "," +
-                "ATOMICITY=" + atomicity.name() + "\";";
+    public void testActivePassiveReplicationComplexKeyWithSQL() throws Exception {
+        doTestActivePassiveSqlDataReplicationComplexKey("T2", (ignite, id) -> executeSql(
+            ignite,
+            "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
+            id,
+            "SUBID",
+            "Name" + id,
+            id * 42
+        ));
+    }
 
-        String insertQry = "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)";
-        String deleteQry = "DELETE FROM T2";
+    /** Replication with complex SQL key. Data inserted via key-value API. */
+    @Test
+    public void testActivePassiveReplicationComplexKeyWithKeyValue() throws Exception {
+        doTestActivePassiveSqlDataReplicationComplexKey("T3", (ignite, id) -> {
+            ignite.cache("T3").put(new TestKey(id, "SUBID"), new TestVal("Name" + id, id * 42));
+        });
+    }
+
+    /** */
+    public void doTestActivePassiveSqlDataReplicationComplexKey(String name, BiConsumer<IgniteEx, Integer> addData) throws Exception {
+        String createTbl = "CREATE TABLE IF NOT EXISTS " + name + "(" +
+            "    ID INT NOT NULL, " +
+            "    SUBID VARCHAR NOT NULL, " +
+            "    NAME VARCHAR, " +
+            "    ORGID INT, " +
+            "    PRIMARY KEY (ID, SUBID))" +
+            "    WITH \"CACHE_NAME=" + name + "," +
+            "KEY_TYPE=" + TestKey.class.getName() + "," +
+            "VALUE_TYPE=" + TestVal.class.getName() + "," +
+            "ATOMICITY=" + atomicity.name() + "\";";
 
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
 
-        executeSql(destCluster[0], insertQry, -1, "-1", "name", -1);
-        executeSql(destCluster[0], deleteQry);
+        addData.accept(destCluster[0], -1);
+        executeSql(destCluster[0], "DELETE FROM " + name);
 
-        IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], insertQry, id, "SUBID", "Name" + id, id * 42));
+        IntStream.range(0, KEYS_CNT).forEach(i -> addData.accept(srcCluster[0], i));
 
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc("T2");
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(name);
 
         try {
             Function<Integer, GridAbsPredicate> waitForTblSz = expSz -> () -> {
-                long cnt = (Long)executeSql(destCluster[0], "SELECT COUNT(*) FROM T2").get(0).get(0);
+                long cnt = (Long)executeSql(destCluster[0], "SELECT COUNT(*) FROM " + name).get(0).get(0);
 
                 return cnt == expSz;
             };
@@ -326,7 +345,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             checkMetrics();
 
-            List<List<?>> data = executeSql(destCluster[0], "SELECT ID, SUBID, NAME, ORGID FROM T2 ORDER BY ID");
+            List<List<?>> data = executeSql(destCluster[0], "SELECT ID, SUBID, NAME, ORGID FROM " + name + " ORDER BY ID");
 
             for (int i = 0; i < KEYS_CNT; i++) {
                 assertEquals(i, data.get(i).get(0));
@@ -335,7 +354,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                 assertEquals(i * 42, data.get(i).get(3));
             }
 
-            executeSql(srcCluster[0], deleteQry);
+            executeSql(srcCluster[0], "DELETE FROM " + name);
 
             assertTrue(waitForCondition(waitForTblSz.apply(0), getTestTimeout()));
 
