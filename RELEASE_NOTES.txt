@@ -5,7 +5,6 @@ Apache Ignite Spring Cache Module 1.0
 -------------------------------------
 
 * Added the ability to connect to the Ignite cluster through the Ignite thin client
-* Fixed cache creation by IgniteClientSpringCacheManager with invalid name
 
 The following integration was migrated to the Apache Ignite Extensions repository:
 * Spring Cache extension
