@@ -1,6 +1,26 @@
 Apache Ignite Extensions Release Notes
 ===========================
 
+Apache Ignite Spring Cache Module 1.0
+-------------------------------------
+
+* Added the ability to connect to the Ignite cluster through the Ignite thin client
+* Fixed cache creation by IgniteClientSpringCacheManager with invalid name
+
+The following integration was migrated to the Apache Ignite Extensions repository:
+* Spring Cache extension
+
+
+Apache Ignite Spring Transactions Module 1.0
+--------------------------------------------
+
+* Added the ability to connect to the Ignite cluster through the Ignite thin client
+* Migrated CacheSpringStoreSessionListener
+
+The following integration was migrated to the Apache Ignite Extensions repository:
+* Spring Transactions extension
+
+
 Apache Ignite Performance Statistics Module 1.0
 -------------------------------------
 
@@ -18,15 +38,6 @@ The following integrations were migrated to the Apache Ignite Extensions reposit
 * Spring Data 2.2 extension
 * Spring Data 2.0 extension
 * Spring Data extension
-
-
-Apache Ignite Spring Transactions Module 1.0
--------------------------------------
-
-* Added the ability to connect to the Ignite cluster through the Ignite thin client
-
-The following integration was migrated to the Apache Ignite Extensions repository:
-* Spring Transactions extension
 
 
 Apache Ignite Streamer Extension Modules 1.0
