@@ -30,6 +30,8 @@
     </parent>
 
     <artifactId>ignite-spring-session-ext</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <url>http://ignite.apache.org</url>
 
     <properties>
         <ignite.version>2.10.0</ignite.version>
