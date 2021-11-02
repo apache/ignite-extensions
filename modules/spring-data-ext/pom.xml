@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-spring-data-ext</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>${ignite-spring-data-ext.version}</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${project.version}</version>
+            <version>${ignite-spring-data-commons.version}</version>
         </dependency>
 
         <dependency>
