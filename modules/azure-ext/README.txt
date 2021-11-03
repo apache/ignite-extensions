@@ -9,6 +9,16 @@ Depending on how you use Ignite, you can an extension using one of the following
 - Add libraries from lib/optional/{module-dir} to the classpath of your application.
 - Add a module as a Maven dependency to your project.
 
+
+Building Azure Module And Running Tests
+---------------------------------------
+
+To build and run Azure extension use the command below with the right credentials to the Azure service:
+
+mvn clean package -pl modules/azure-ext -Dtest.azure.account.name=uname -Dtest.azure.account.key=key
+-Dtest.azure.endpoint=http://127.0.0.1:10000/devstoreaccount
+
+
 Importing Azure Module In Maven Project
 -------------------------------------
 

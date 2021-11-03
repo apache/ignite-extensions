@@ -89,7 +89,7 @@ public class IgniteS3TestSuite {
      * @return Bucket name.
      */
     public static String getBucketName(final String dfltBucketName) {
-        String val = System.getenv("test.s3.bucket.name");
+        String val = System.getProperty("test.s3.bucket.name");
 
         return val == null ? dfltBucketName : val;
     }
@@ -99,7 +99,7 @@ public class IgniteS3TestSuite {
      * @return Environment variable value.
      */
     private static String getRequiredEnvVar(String name) {
-        String key = System.getenv(name);
+        String key = System.getProperty(name);
 
         assert key != null : String.format("Environment variable '%s' is not set", name);
 

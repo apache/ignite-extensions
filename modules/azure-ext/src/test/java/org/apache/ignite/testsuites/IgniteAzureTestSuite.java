@@ -30,7 +30,7 @@ public class IgniteAzureTestSuite {
      * @return Account Name
      */
     public static String getAccountName() {
-        String id = System.getenv("test.azure.account.name");
+        String id = System.getProperty("test.azure.account.name");
 
         assert id != null : "Environment variable 'test.azure.account.name' is not set";
 
@@ -41,7 +41,7 @@ public class IgniteAzureTestSuite {
      * @return Account Key
      */
     public static String getAccountKey() {
-        String path = System.getenv("test.azure.account.key");
+        String path = System.getProperty("test.azure.account.key");
 
         assert path != null : "Environment variable 'test.azure.account.key' is not set";
 
@@ -52,7 +52,7 @@ public class IgniteAzureTestSuite {
      * @return Endpoint
      */
     public static String getEndpoint() {
-        String name = System.getenv("test.azure.endpoint");
+        String name = System.getProperty("test.azure.endpoint");
 
         assert name != null : "Environment variable 'test.azure.endpoint' is not set";
 

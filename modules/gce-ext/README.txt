@@ -9,6 +9,15 @@ Depending on how you use Ignite, you can an extension using one of the following
 - Add libraries from lib/optional/{module-dir} to the classpath of your application.
 - Add a module as a Maven dependency to your project.
 
+
+Building GCE Module And Running Tests
+---------------------------------------
+
+To build and run GCE extension use the command below with the right credentials to the GCE service:
+
+mvn clean package -pl modules/gce-ext -Dtest.gce.account.id=id -Dtest.gce.p12.path=path -Dtest.gce.project.name=name
+
+
 Importing GCE Module In Maven Project
 -------------------------------------
 
