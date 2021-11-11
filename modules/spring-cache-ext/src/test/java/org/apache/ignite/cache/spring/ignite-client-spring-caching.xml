@@ -44,6 +44,30 @@
     <bean id="ignite" class="org.apache.ignite.IgniteSpringBean">
         <property name="configuration">
             <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+                <property name="localHost" value="127.0.0.1"/>
+
+                <property name="discoverySpi">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                        <property name="ipFinder">
+                            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                                <property name="addresses">
+                                    <list>
+                                        <value>127.0.0.1:47500..47509</value>
+                                    </list>
+                                </property>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+
+                <property name="peerClassLoadingEnabled" value="true"/>
+
+                <property name="binaryConfiguration">
+                    <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                        <property name="compactFooter" value="true"/>
+                    </bean>
+                </property>
+
                 <property name="clientConnectorConfiguration">
                     <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
                         <property name="host" value="127.0.0.1"/>
