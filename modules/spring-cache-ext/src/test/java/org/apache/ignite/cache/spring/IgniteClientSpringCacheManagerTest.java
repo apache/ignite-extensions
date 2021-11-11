@@ -133,7 +133,7 @@ public class IgniteClientSpringCacheManagerTest extends GridSpringCacheManagerAb
             IgniteClient cli = mgr.getClientInstance();
 
             assertNotNull(cli);
-            assertEquals(1, cli.cluster().nodes().size());
+            assertEquals(2, cli.cluster().nodes().size());
 
             ClientCacheConfiguration cfg = mgr.getDynamicCacheConfiguration();
 
