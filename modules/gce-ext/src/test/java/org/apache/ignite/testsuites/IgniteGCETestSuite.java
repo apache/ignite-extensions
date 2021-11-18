@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinderSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -31,7 +32,7 @@ public class IgniteGCETestSuite {
      * @return Service Account Id.
      */
     public static String getServiceAccountId() {
-        String id = System.getProperty("test.gce.account.id");
+        String id = X.getSystemOrEnv("test.gce.account.id");
 
         assert id != null : "Environment variable 'test.gce.account.id' is not set";
 
@@ -42,7 +43,7 @@ public class IgniteGCETestSuite {
      * @return Service Account p12 file path.
      */
     public static String getP12FilePath() {
-        String path = System.getProperty("test.gce.p12.path");
+        String path = X.getSystemOrEnv("test.gce.p12.path");
 
         assert path != null : "Environment variable 'test.gce.p12.path' is not set";
 
@@ -53,7 +54,7 @@ public class IgniteGCETestSuite {
      * @return GCE project name.
      */
     public static String getProjectName() {
-        String name = System.getProperty("test.gce.project.name");
+        String name = X.getSystemOrEnv("test.gce.project.name");
 
         assert name != null : "Environment variable 'test.gce.project.name' is not set";
 

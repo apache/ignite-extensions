@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
@@ -89,7 +90,7 @@ public class IgniteS3TestSuite {
      * @return Bucket name.
      */
     public static String getBucketName(final String dfltBucketName) {
-        String val = System.getProperty("test.s3.bucket.name");
+        String val = X.getSystemOrEnv("test.s3.bucket.name");
 
         return val == null ? dfltBucketName : val;
     }
@@ -99,7 +100,7 @@ public class IgniteS3TestSuite {
      * @return Environment variable value.
      */
     private static String getRequiredEnvVar(String name) {
-        String key = System.getProperty(name);
+        String key = X.getSystemOrEnv(name);
 
         assert key != null : String.format("Environment variable '%s' is not set", name);
 
