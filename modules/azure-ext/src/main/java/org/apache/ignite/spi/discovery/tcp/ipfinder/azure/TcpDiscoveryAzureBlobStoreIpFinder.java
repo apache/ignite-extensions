@@ -15,18 +15,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.InetSocketAddress;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -36,6 +24,17 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import java.io.ByteArrayInputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -121,16 +120,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         Collection<InetSocketAddress> addrs = new ArrayList<>();
         Set<String> seenBlobNames = new HashSet<>();
 
-        Iterator<BlobItem> blobItemIterator = blobContainerClient.listBlobs().iterator();
-
-        while (blobItemIterator.hasNext()) {
-            BlobItem blobItem = blobItemIterator.next();
-
-            // https://github.com/Azure/azure-sdk-for-java/issues/20515
-            if (seenBlobNames.contains(blobItem.getName())) {
-                break;
-            }
-
+        for (BlobItem blobItem : blobContainerClient.listBlobs()) {
             try {
                 if (!blobItem.isDeleted()) {
                     addrs.add(addrFromString(blobItem.getName()));

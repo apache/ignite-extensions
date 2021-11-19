@@ -9,6 +9,15 @@ Depending on how you use Ignite, you can an extension using one of the following
 - Add libraries from lib/optional/{module-dir} to the classpath of your application.
 - Add a module as a Maven dependency to your project.
 
+
+Building Module And Running Tests
+---------------------------------
+
+To build and run AWS extension use the command below with the right credentials to the AWS service:
+
+mvn clean package -pl modules/aws-ext -Dtest.amazon.access.key=<key> -Dtest.amazon.secret.key=<key>
+
+
 Importing AWS Module In Maven Project
 -------------------------------------
 
