@@ -17,6 +17,8 @@
 
 package org.apache.ignite.transactions.spring;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
@@ -46,6 +48,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.compatibility.testframework.util.MavenUtils.PROP_LOCAL_MAVEN_SETTINGS;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -84,10 +87,14 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     };
 
     /** */
+    private static final Path LOCAL_MAVEN_SETTINGS_PATH = Paths.get(
+        System.getProperty("user.dir"), "src", "test", "java", "config", "maven-settings.xml");
+
+    /** */
     private static final String TEST_CACHE_NAME = "testCache";
 
     /** */
-    @Parameterized.Parameters(name = "Ignite Version {0}, Spring Version {1}")
+    @Parameterized.Parameters(name = "IgniteVersion={0}, SpringVersion={1}")
     public static Iterable<Object[]> versions() {
         ArrayList<Object[]> testVersions = new ArrayList<>();
 
@@ -107,8 +114,25 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     @Parameterized.Parameter(1)
     public String springVer;
 
+    /** */
+    private String savedLocMavenSettingsProp;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        savedLocMavenSettingsProp = System.getProperty(PROP_LOCAL_MAVEN_SETTINGS);
+
+        System.setProperty(PROP_LOCAL_MAVEN_SETTINGS, LOCAL_MAVEN_SETTINGS_PATH.toString());
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        if (savedLocMavenSettingsProp != null)
+            System.setProperty(PROP_LOCAL_MAVEN_SETTINGS, savedLocMavenSettingsProp);
+        else
+            System.clearProperty(PROP_LOCAL_MAVEN_SETTINGS);
+
         super.afterTest();
 
         stopAllGrids();
@@ -116,29 +140,28 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
     /** {@inheritDoc} */
     @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
-        if (F.isEmpty(igniteVer)) {
-            Collection<Dependency> res = new ArrayList<>();
+        if (!F.isEmpty(igniteVer))
+            return super.getDependencies(igniteVer);
 
-            String ver = toDependencyVersion(this.igniteVer);
+        Collection<Dependency> res = new ArrayList<>();
 
-            res.add(new Dependency("core", "org.apache.ignite", "ignite-core", ver, false));
-            res.add(new Dependency("core", "org.apache.ignite", "ignite-core", ver, true));
-            res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", ver, false));
+        String igniteDepVer = toDependencyVersion(this.igniteVer);
 
-            res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
-            res.add(new Dependency("spring-context", "org.springframework", "spring-context", springVer, false));
-            res.add(new Dependency("spring-beans", "org.springframework", "spring-beans", springVer, false));
-            res.add(new Dependency("spring-core", "org.springframework", "spring-core", springVer, false));
-            res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
-            res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, true));
+        res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", igniteDepVer, false));
 
-            if (this.igniteVer.compareTo(VER_2_11_0) <= 0)
-                res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
+        res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
+        res.add(new Dependency("spring-context", "org.springframework", "spring-context", springVer, false));
+        res.add(new Dependency("spring-beans", "org.springframework", "spring-beans", springVer, false));
+        res.add(new Dependency("spring-core", "org.springframework", "spring-core", springVer, false));
+        res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
+        res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
-            return res;
-        }
+        if (this.igniteVer.compareTo(VER_2_11_0) <= 0)
+            res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
 
-        return super.getDependencies(igniteVer);
+        return res;
     }
 
     /** */
