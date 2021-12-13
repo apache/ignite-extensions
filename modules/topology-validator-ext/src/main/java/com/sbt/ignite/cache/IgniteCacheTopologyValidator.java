@@ -47,7 +47,7 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
 
     /** {@inheritDoc} */
     @Override public boolean validate(Collection<ClusterNode> nodes) {
-        if (ignite.cluster().localNode().isClient())
+        if (ignite.context().clientNode())
             return true;
 
         boolean isValid = segResolver.isValidSegment();
@@ -63,7 +63,7 @@ public class IgniteCacheTopologyValidator implements TopologyValidator, Lifecycl
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (ignite.cluster().localNode().isClient())
+        if (ignite.context().clientNode())
             return;
 
         PluggableSegmentationResolver[] segResolvers = ignite.context().plugins().extensions(PluggableSegmentationResolver.class);
