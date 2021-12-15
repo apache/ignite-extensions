@@ -22,10 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import com.sbt.ignite.plugin.segmentation.SegmentationResolverPluginProvider;
+import com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,7 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
 
-import static com.sbt.ignite.plugin.segmentation.IgnitePluggableSegmentationResolver.SEG_RESOLVER_ENABLED_PROP_NAME;
+import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_ENABLED_PROP_NAME;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -51,7 +50,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.GridCacheM
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -81,7 +79,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
             .setUserAttributes(singletonMap(IDX_ATTR, idx));
 
         if (configureSegmentationResolverPlugin)
-            cfg.setPluginProviders(new SegmentationResolverPluginProvider());
+            cfg.setPluginProviders(new CacheTopologyValidatorPluginProvider());
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi())
             .setIpFinder(sharedStaticIpFinder)
@@ -122,7 +120,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         startGrid(1);
 
         assertTrue(waitForCondition(
-            () -> !(Boolean)grid(1).context().distributedConfiguration().property(SEG_RESOLVER_ENABLED_PROP_NAME).get(),
+            () -> !(Boolean)grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).get(),
             getTestTimeout()
         ));
 
@@ -131,7 +129,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         connectNodeToSegment(3, false, 1);
 
         assertTrue(waitForCondition(
-            () -> !(Boolean)grid(3).context().distributedConfiguration().property(SEG_RESOLVER_ENABLED_PROP_NAME).get(),
+            () -> !(Boolean)grid(3).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).get(),
             getTestTimeout()
         ));
     }
@@ -147,7 +145,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
             log,
             () -> startGrid(getConfiguration(getTestIgniteInstanceName(1), false)),
             IgniteSpiException.class,
-            "The Segmentation Resolver plugin is not configured for the server node that is trying to join the cluster."
+            "The Topology Validator plugin is not configured for the server node that is trying to join the cluster."
         );
 
         startClientGrid(getConfiguration(getTestIgniteInstanceName(2), false));
@@ -155,32 +153,6 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         assertEquals(2, srv.cluster().nodes().size());
 
         checkPutGet(G.allGrids(), true);
-    }
-
-    /** */
-    @Test
-    @SuppressWarnings("ThrowableNotThrown")
-    public void testCacheCreationWithSegmentationResolverMissedOnServer() throws Exception {
-        IgniteEx srv = startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
-
-        assertThrowsWithCause(
-            () -> srv.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setTopologyValidator(new IgniteCacheTopologyValidator())),
-            IgniteCheckedException.class
-        );
-
-        assertNotNull(srv.createCache(DEFAULT_CACHE_NAME));
-    }
-
-    /** */
-    @Test
-    public void testCacheCreationWithSegmentationResolverMissedOnClient() throws Exception {
-        startGrid(0);
-
-        IgniteEx cli = startClientGrid(getConfiguration(getTestIgniteInstanceName(1), false));
-
-        assertNotNull(cli.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setTopologyValidator(new IgniteCacheTopologyValidator())));
     }
 
     /** */
@@ -354,7 +326,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         createCaches();
 
-        grid(1).context().distributedConfiguration().property(SEG_RESOLVER_ENABLED_PROP_NAME).propagate(false);
+        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).propagate(false);
 
         splitAndWait();
 
@@ -367,7 +339,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         unsplit();
 
-        grid(1).context().distributedConfiguration().property(SEG_RESOLVER_ENABLED_PROP_NAME).propagate(true);
+        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).propagate(true);
 
         failNode(1, Collections.singleton(grid(3)));
 
@@ -425,7 +397,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
                 log,
                 () -> startGrid(3),
                 IgniteSpiException.class,
-                "Node join request will be rejected due to concurrent node left process handling"
+                "Node join request was rejected due to concurrent node left process handling"
             );
         }
         finally {
@@ -476,9 +448,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
             grid(0).createCache(new CacheConfiguration<>()
                 .setName(cacheName(cacheIdx))
                 .setCacheMode(REPLICATED)
-                .setReadFromBackup(false)
-                .setTopologyValidator(new IgniteCacheTopologyValidator())
-            );
+                .setReadFromBackup(false));
         }
 
         checkPutGet(G.allGrids(), true);

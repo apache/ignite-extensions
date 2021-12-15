@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.sbt.ignite.plugin.segmentation;
+package com.sbt.ignite.plugin.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -23,13 +23,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -40,8 +40,18 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.CachePluginContext;
+import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.IgnitePlugin;
+import org.apache.ignite.plugin.PluggableCacheTopologyValidator;
+import org.apache.ignite.plugin.PluginConfiguration;
+import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.plugin.PluginValidationException;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.thread.OomExceptionHandler;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -54,12 +64,12 @@ import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.s
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UNDEFINED;
 
 /** */
-public class IgnitePluggableSegmentationResolver implements PluggableSegmentationResolver {
+public class CacheTopologyValidatorPluginProvider implements PluginProvider<PluginConfiguration> {
     /** */
-    public static final String SEG_RESOLVER_ENABLED_PROP_NAME = "org.apache.ignite.segmentation.resolver.enabled";
+    public static final String TOP_VALIDATOR_ENABLED_PROP_NAME = "org.apache.ignite.topology.validator.enabled";
 
     /** */
-    private static final String SEG_RESOLVER_THREAD_PREFIX = "segmentation-resolver";
+    private static final String TOP_VALIDATOR_THREAD_PREFIX = "topology-validator-plugin";
 
     /** */
     private static final int[] TOP_CHANGED_EVTS = new int[] {
@@ -70,18 +80,18 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
 
     /** */
     private final SimpleDistributedProperty<Boolean> segResolverEnabledProp = new SimpleDistributedProperty<>(
-        SEG_RESOLVER_ENABLED_PROP_NAME,
+        TOP_VALIDATOR_ENABLED_PROP_NAME,
         Boolean::parseBoolean
     );
 
     /** Ignite kernel context. */
-    private final GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** Ignite logger. */
-    private final IgniteLogger log;
+    private IgniteLogger log;
 
     /** */
-    private final IgniteThreadPoolExecutor stateChangeExec;
+    private IgniteThreadPoolExecutor stateChangeExec;
 
     /** */
     private long lastCheckedTopVer;
@@ -89,14 +99,55 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
     /** */
     private volatile State state;
 
-    /** @param ctx Ignite kernel context. */
-    public IgnitePluggableSegmentationResolver(GridKernalContext ctx) {
-        this.ctx = ctx;
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return "Topology Validator";
+    }
+
+    /** {@inheritDoc} */
+    @Override public String version() {
+        return "1.0.0";
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends IgnitePlugin> T plugin() {
+        return (T) new IgnitePlugin() {
+            // No-op.
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public String copyright() {
+        return "";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void initExtensions(PluginContext pluginCtx, ExtensionRegistry registry) {
+        ctx = ((IgniteEx)pluginCtx.grid()).context();
+
+        if (!ctx.clientNode())
+            registry.registerExtension(PluggableCacheTopologyValidator.class, new IgnitePluggableTopologyValidator());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(PluginContext pluginCtx) {
+        if (ctx.clientNode())
+            return;
 
         log = ctx.log(getClass());
 
         stateChangeExec = new IgniteThreadPoolExecutor(
-            SEG_RESOLVER_THREAD_PREFIX,
+            TOP_VALIDATOR_THREAD_PREFIX,
             ctx.igniteInstanceName(),
             1,
             1,
@@ -106,17 +157,6 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
             new OomExceptionHandler(ctx));
 
         stateChangeExec.allowCoreThreadTimeOut(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isValidSegment() {
-        return isDisabled() || state != State.INVALID;
-    }
-
-    /** */
-    public void start() {
-        if (ctx.clientNode())
-            return;
 
         onGlobalClusterStateChanged(ctx.state().clusterState().state());
 
@@ -133,8 +173,8 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         });
 
         ctx.state().baselineConfiguration().listenAutoAdjustEnabled((name, oldVal, newVal) -> {
-           if (newVal != null)
-               checkBaselineAutoAdjustConfiguration(newVal, ctx.state().baselineAutoAdjustTimeout());
+            if (newVal != null)
+                checkBaselineAutoAdjustConfiguration(newVal, ctx.state().baselineAutoAdjustTimeout());
         });
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
@@ -151,8 +191,8 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
                     Boolean segResolverEnabled = segResolverEnabledProp.get();
 
                     if (segResolverEnabled == null && !isLocNodeCrd || FALSE.equals(segResolverEnabled)) {
-                        U.warn(log, "Segmentation Resolver will be disabled because it is not configured for the" +
-                            " cluster the current node joined. Make sure the Segmentation Resolver plugin is" +
+                        U.warn(log, "Topology Validator will be disabled because it is not configured for the" +
+                            " cluster the current node joined. Make sure the Topology Validator plugin is" +
                             " configured on all cluster nodes.");
                     }
 
@@ -161,45 +201,64 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
             });
     }
 
-    /** @return Discovery data. */
-    public Serializable provideDiscoveryData() {
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIgniteStart() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIgniteStop(boolean cancel) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Serializable provideDiscoveryData(UUID nodeId) {
         return state;
     }
 
-    /**
-     * @param data Discovery data.
-     * @param joiningNodeId ID of the joining node.
-     */
-    public void onDiscoveryDataReceived(UUID joiningNodeId, Serializable data) {
-        if (ctx.localNodeId().equals(joiningNodeId))
+    /** {@inheritDoc} */
+    @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
+        if (ctx.localNodeId().equals(nodeId))
             state = (State)data;
     }
 
-    /**
-     * @param node Joining node.
-     * @param data Joining node discovery data.
-     */
-    public void validateNewNode(ClusterNode node, Serializable data) {
+    /** {@inheritDoc} */
+    @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateNewNode(ClusterNode node, Serializable data) throws PluginValidationException {
         if (node.isClient())
             return;
 
         if (data == null) {
-            throw new IgniteException("The Segmentation Resolver plugin is not configured for the server node that is" +
-                " trying to join the cluster. Since the Segmentation Resolver is only applicable if all server nodes" +
-                " in the cluster have one, node join request will be rejected [rejectedNodeId=" + node.id() + ']');
+            String msg = "The Topology Validator plugin is not configured for the server node that is" +
+                " trying to join the cluster. Since the Topology Validator is only applicable if all server nodes" +
+                " in the cluster have one, node join request will be rejected [rejectedNodeId=" + node.id() + ']';
+
+            throw new PluginValidationException(msg, msg, node.id());
         }
 
         // If the new node is joining but some node failed/left events has not been handled by
         // {@linkTopologyChangedEventListener} yet, we cannot guarantee that the {@link state} on the joining node will
-        // be consistent with one on the cluster nodes.
+        // be consistent with one that on the cluster nodes.
         if (state == State.VALID) {
             DiscoCache discoCache = ctx.discovery().discoCache(new AffinityTopologyVersion(lastCheckedTopVer, 0));
 
             if (discoCache != null) {
                 for (ClusterNode srv : discoCache.serverNodes()) {
-                    if (!ctx.discovery().alive(srv))
-                        throw new IgniteException("Node join request will be rejected due to concurrent node left" +
-                            " process handling [rejectedNodeId=" + node.id() + ']');
+                    if (!ctx.discovery().alive(srv)) {
+                        String msg =  "Node join request was rejected due to concurrent node left" +
+                            " process handling [rejectedNodeId=" + node.id() + ']';
+
+                        throw new PluginValidationException(msg, msg, node.id());
+                    }
                 }
             }
         }
@@ -225,7 +284,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
             return false;
 
         if (enabled && timeout == 0L) {
-            U.warn(log, "Segmentation Resolver is currently skipping validation of topology changes because" +
+            U.warn(log, "Topology Validator is currently skipping validation of topology changes because" +
                 " Baseline Auto Adjustment with zero timeout is configured for the cluster. Configure" +
                 " Baseline Nodes explicitly or set Baseline Auto Adjustment Timeout to greater than zero.");
 
@@ -310,6 +369,24 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         }
     }
 
+    /** */
+    private class IgnitePluggableTopologyValidator implements PluggableCacheTopologyValidator {
+        /** {@inheritDoc} */
+        @Override public boolean validate(String cacheName, Collection<ClusterNode> nodes) {
+            assert state != null;
+
+            boolean res = isDisabled() || state != State.INVALID;
+
+            if (!res) {
+                U.warn(log, "Cache validation failed - current node belongs to segmented part of the cluster." +
+                    " Cache operation are limited to read-only [cacheName=" + cacheName + ", localNodeId=" +
+                    ctx.localNodeId() + ']');
+            }
+
+            return res;
+        }
+    }
+
     /** Represents possible states of the current segment. */
     private enum State {
         /** Cluster is in the valida state. No segmentation have happened, or it has been successfully resolved. */
@@ -322,7 +399,7 @@ public class IgnitePluggableSegmentationResolver implements PluggableSegmentatio
         INVALID,
 
         /**
-         *  Cluster state is set to {@link ClusterState#INACTIVE} or {@link ClusterState#ACTIVE_READ_ONLY}. So no cache
+         *  Cluster state is set to {@link ClusterState#INACTIVE} or {@link ClusterState#ACTIVE_READ_ONLY}. So cache
          *  writes are not available and hence nothing we should worry about.
          */
         CLUSTER_WRITE_BLOCKED
