@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -42,9 +43,9 @@ import org.apache.ignite.internal.processors.configuration.distributed.SimpleDis
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
-import org.apache.ignite.plugin.PluggableCacheTopologyValidator;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
@@ -79,7 +80,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     };
 
     /** */
-    private final SimpleDistributedProperty<Boolean> segResolverEnabledProp = new SimpleDistributedProperty<>(
+    private final SimpleDistributedProperty<Boolean> topValidatorEnabledProp = new SimpleDistributedProperty<>(
         TOP_VALIDATOR_ENABLED_PROP_NAME,
         Boolean::parseBoolean
     );
@@ -125,8 +126,14 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     @Override public void initExtensions(PluginContext pluginCtx, ExtensionRegistry registry) {
         ctx = ((IgniteEx)pluginCtx.grid()).context();
 
-        if (!ctx.clientNode())
-            registry.registerExtension(PluggableCacheTopologyValidator.class, new IgnitePluggableTopologyValidator());
+        if (!ctx.clientNode()) {
+            registry.registerExtension(CacheTopologyValidatorProvider.class, new CacheTopologyValidatorProvider() {
+                /** {@inheritDoc} */
+                @Override public TopologyValidator topologyValidator(String cacheName) {
+                    return new IgniteTopologyValidator(cacheName);
+                }
+            });
+        }
     }
 
     /** {@inheritDoc} */
@@ -181,22 +188,22 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             new DistributedConfigurationLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    dispatcher.registerProperty(segResolverEnabledProp);
+                    dispatcher.registerProperty(topValidatorEnabledProp);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onReadyToWrite() {
                     boolean isLocNodeCrd = U.isLocalNodeCoordinator(ctx.discovery());
 
-                    Boolean segResolverEnabled = segResolverEnabledProp.get();
+                    Boolean topValidatorEnabled = topValidatorEnabledProp.get();
 
-                    if (segResolverEnabled == null && !isLocNodeCrd || FALSE.equals(segResolverEnabled)) {
+                    if (topValidatorEnabled == null && !isLocNodeCrd || FALSE.equals(topValidatorEnabled)) {
                         U.warn(log, "Topology Validator will be disabled because it is not configured for the" +
                             " cluster the current node joined. Make sure the Topology Validator plugin is" +
                             " configured on all cluster nodes.");
                     }
 
-                    setDefaultValue(segResolverEnabledProp, isLocNodeCrd, log);
+                    setDefaultValue(topValidatorEnabledProp, isLocNodeCrd, log);
                 }
             });
     }
@@ -266,7 +273,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
     /** */
     private boolean isDisabled() {
-        return !segResolverEnabledProp.getOrDefault(false);
+        return !topValidatorEnabledProp.getOrDefault(false);
     }
 
     /** */
@@ -370,9 +377,20 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     }
 
     /** */
-    private class IgnitePluggableTopologyValidator implements PluggableCacheTopologyValidator {
+    private class IgniteTopologyValidator implements TopologyValidator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final String cacheName;
+
+        /** */
+        private IgniteTopologyValidator(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
         /** {@inheritDoc} */
-        @Override public boolean validate(String cacheName, Collection<ClusterNode> nodes) {
+        @Override public boolean validate(Collection<ClusterNode> nodes) {
             assert state != null;
 
             boolean res = isDisabled() || state != State.INVALID;
