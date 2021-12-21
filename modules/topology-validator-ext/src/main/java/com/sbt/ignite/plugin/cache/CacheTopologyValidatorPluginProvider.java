@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -50,27 +50,21 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UNDEFINED;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /** */
 public class CacheTopologyValidatorPluginProvider implements PluginProvider<PluginConfiguration> {
     /** */
     public static final String TOP_VALIDATOR_ENABLED_PROP_NAME = "org.apache.ignite.topology.validator.enabled";
-
-    /** */
-    private static final String TOP_VALIDATOR_THREAD_PREFIX = "topology-validator-plugin";
 
     /** */
     private static final int[] TOP_CHANGED_EVTS = new int[] {
@@ -90,9 +84,6 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
     /** Ignite logger. */
     private IgniteLogger log;
-
-    /** */
-    private IgniteThreadPoolExecutor stateChangeExec;
 
     /** */
     private long lastCheckedTopVer;
@@ -152,18 +143,6 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             return;
 
         log = ctx.log(getClass());
-
-        stateChangeExec = new IgniteThreadPoolExecutor(
-            TOP_VALIDATOR_THREAD_PREFIX,
-            ctx.igniteInstanceName(),
-            1,
-            1,
-            DFLT_THREAD_KEEP_ALIVE_TIME,
-            new LinkedBlockingQueue<>(),
-            UNDEFINED,
-            new OomExceptionHandler(ctx));
-
-        stateChangeExec.allowCoreThreadTimeOut(true);
 
         onGlobalClusterStateChanged(ctx.state().clusterState().state());
 
@@ -322,24 +301,25 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                 if (baselineNodes != null && aliveBaselineNodes(baselineNodes) < baselineNodes.size() / 2 + 1) {
                     locStateCopy = State.INVALID;
 
-                    // The dedicated thread pool is used here to avoid execution of any blocking operation inside
-                    // the discovery worker.
-                    stateChangeExec.execute(() -> {
-                        try {
-                            ctx.cluster().get().state(ACTIVE_READ_ONLY);
-                        }
-                        catch (Throwable e) {
-                            U.error(
-                                log,
-                                "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
-                                    " mode. Cache writes were already restricted for all configured caches, but this" +
-                                    " step is still required in order to be able to unlock cache writes in the future." +
-                                    " Retry this operation manually, if possible [segmentedNodes=" +
-                                    formatTopologyNodes(discoCache.allNodes()) + "]",
-                                e
-                            );
-                        }
-                    });
+                    try {
+                        ctx.closure().runLocal(new GridPlainRunnable() {
+                            @Override public void run() {
+                                try {
+                                    ctx.cluster().get().state(ACTIVE_READ_ONLY);
+                                }
+                                catch (Throwable e) {
+                                    U.error(log,
+                                        "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
+                                        " mode. Cache writes were already restricted for all configured caches, but this" +
+                                        " step is still required in order to be able to unlock cache writes in the future." +
+                                        " Retry this operation manually, if possible [segmentedNodes=" +
+                                        formatTopologyNodes(discoCache.allNodes()) + "]", e);
+                                }
+                            }
+                        }, PUBLIC_POOL);
+                    } catch (Throwable e) {
+                        U.error(log, "Failed to schedule cluster state change to the READ-ONLY mode.", e);
+                    }
 
                     U.warn(log, "Cluster segmentation was detected [segmentedNodes=" +
                         formatTopologyNodes(discoCache.allNodes()) + ']');
