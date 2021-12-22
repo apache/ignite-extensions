@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.s
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
 /** */
-public class CacheTopologyValidatorPluginProvider implements PluginProvider<PluginConfiguration> {
+public class CacheTopologyValidatorPluginProvider implements PluginProvider<PluginConfiguration>, TopologyValidator {
     /** */
     public static final String TOP_VALIDATOR_ENABLED_PROP_NAME = "org.apache.ignite.topology.validator.enabled";
 
@@ -121,7 +121,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             registry.registerExtension(CacheTopologyValidatorProvider.class, new CacheTopologyValidatorProvider() {
                 /** {@inheritDoc} */
                 @Override public TopologyValidator topologyValidator(String cacheName) {
-                    return new IgniteTopologyValidator(cacheName);
+                    return CacheTopologyValidatorPluginProvider.this;
                 }
             });
         }
@@ -250,6 +250,13 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean validate(Collection<ClusterNode> nodes) {
+        assert state != null;
+
+        return isDisabled() || state != State.INVALID;
+    }
+
     /** */
     private boolean isDisabled() {
         return !topValidatorEnabledProp.getOrDefault(false);
@@ -321,8 +328,8 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                         U.error(log, "Failed to schedule cluster state change to the READ-ONLY mode.", e);
                     }
 
-                    U.warn(log, "Cluster segmentation was detected [segmentedNodes=" +
-                        formatTopologyNodes(discoCache.allNodes()) + ']');
+                    U.warn(log, "Cluster segmentation was detected. Write to all user caches were blocked" +
+                        " [segmentedNodes=" + formatTopologyNodes(discoCache.allNodes()) + ']');
                 }
             }
 
@@ -353,35 +360,6 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
         /** @return String representation of the specified cluster node collection. */
         private String formatTopologyNodes(Collection<ClusterNode> nodes) {
             return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
-        }
-    }
-
-    /** */
-    private class IgniteTopologyValidator implements TopologyValidator {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final String cacheName;
-
-        /** */
-        private IgniteTopologyValidator(String cacheName) {
-            this.cacheName = cacheName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean validate(Collection<ClusterNode> nodes) {
-            assert state != null;
-
-            boolean res = isDisabled() || state != State.INVALID;
-
-            if (!res) {
-                U.warn(log, "Cache validation failed - current node belongs to segmented part of the cluster." +
-                    " Cache operation are limited to read-only [cacheName=" + cacheName + ", localNodeId=" +
-                    ctx.localNodeId() + ']');
-            }
-
-            return res;
         }
     }
 
