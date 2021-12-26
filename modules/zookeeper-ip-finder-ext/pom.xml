@@ -171,7 +171,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>zookeeper-ip-finder-ext.xml</id>
+                        <id>zookeeper-ip-finder-ext</id>
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -181,7 +181,7 @@
                             <descriptors>
                                 <descriptor>assembly/zookeeper-ip-finder-ext.xml</descriptor>
                             </descriptors>
-                            <finalName>ignite-zookeeper-ip-finder-ext.xml</finalName>
+                            <finalName>ignite-zookeeper-ip-finder-ext</finalName>
                             <attach>false</attach>
                         </configuration>
                     </execution>
