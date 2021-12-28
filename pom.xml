@@ -67,6 +67,7 @@
         <module>modules/aws-ext</module>
         <module>modules/azure-ext</module>
         <module>modules/gce-ext</module>
+        <module>modules/zookeeper-ip-finder-ext</module>
     </modules>
 
     <profiles>
