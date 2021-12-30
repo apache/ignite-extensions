@@ -210,7 +210,7 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteAllById(Iterable<K> ids) {
+    @Override public void deleteAllById(Iterable<? extends K> ids) {
         if (ids instanceof Set) {
             cache.removeAll((Set<K>)ids);
             return;

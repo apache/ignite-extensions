@@ -19,7 +19,10 @@ package org.apache.ignite.springdata;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.compoundkey.City;
 import org.apache.ignite.springdata.compoundkey.CityKey;
@@ -90,6 +93,17 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Clear data
+     * */
+    @Override protected void afterTest() throws Exception {
+        repo.deleteAll();
+
+        assertEquals(0, repo.count());
+
+        super.afterTest();
+    }
+
+    /**
      * Performs context destroy after tests.
      */
     @Override protected void afterTestsStopped() {
@@ -123,6 +137,20 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         assertEquals(Optional.of(KABUL), repo.findById(new CityKey(KABUL_ID, AFG)));
         assertEquals(AFG_COUNT, repo.findByCountryCode(AFG).size());
         assertEquals(QUANDAHAR, repo.findById(QUANDAHAR_ID));
+    }
+
+    /** Test */
+    @Test
+    public void deleteAllById() {
+        Set<CityKey> keys = new HashSet<>();
+        keys.add(new CityKey(1, "AFG"));
+        keys.add(new CityKey(2, "AFG"));
+        keys.add(new CityKey(3, "AFG"));
+        keys.add(new CityKey(4, "AFG"));
+        keys.add(new CityKey(5, "NLD"));
+
+        repo.deleteAllById(keys);
+        assertEquals(0, repo.count());
     }
 
     /** */
