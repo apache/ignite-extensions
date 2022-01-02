@@ -71,6 +71,12 @@
     </modules>
 
     <profiles>
+        <profile>
+            <id>examples</id>
+            <modules>
+                <module>modules/zookeeper-ip-finder-ext/examples</module>
+            </modules>
+        </profile>
 
         <profile>
             <id>test</id>

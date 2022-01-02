@@ -44,6 +44,7 @@
         <ignite-spring-data-commons.version>1.2.0-SNAPSHOT</ignite-spring-data-commons.version>
         <ignite-spring-data-ext.version>1.1.0-SNAPSHOT</ignite-spring-data-ext.version>
         <ignite-spring-tx-ext.version>1.1.0-SNAPSHOT</ignite-spring-tx-ext.version>
+        <ignite-zookeeper-ip-finder-ext.version>1.0.0-SNAPSHOT</ignite-zookeeper-ip-finder-ext.version>
 
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
