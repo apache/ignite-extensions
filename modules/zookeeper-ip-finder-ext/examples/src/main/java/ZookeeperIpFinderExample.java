@@ -30,16 +30,16 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFi
  * To start the example, you should:
  * <ol>
  *  <li>Start Apache ZooKeeper. See <a href="https://zookeeper.apache.org">Apache ZooKeeper</a>.</li>
- *  <li>Make sure that Apache ZooKeeper connection string is correct. See {@link ZK_CONNECT_STRING}.</li>
+ *  <li>Make sure that the Apache ZooKeeper connection string is correct. See {@link ZK_CONNECT_STRING}.</li>
  *  <li>Start example using {@link ZookeeperIpFinderExample}.</li>
  * </ol>
  */
 public class ZookeeperIpFinderExample {
-    /** Comma separated host:port pairs, each corresponding to a zk server. */
+    /** The Apache ZooKeeper connection string. Comma separated host:port pairs, each corresponding to a zk server. */
     private static final String ZK_CONNECT_STRING = "localhost:2181";
 
     /**
-     * Start up an empty node with example compute configuration.
+     * Start example.
      *
      * @param args Command line arguments, none required.
      */
