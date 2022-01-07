@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache.spring;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
@@ -46,7 +44,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static org.apache.ignite.compatibility.testframework.util.MavenUtils.PROP_LOCAL_MAVEN_SETTINGS;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -72,10 +69,6 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
     };
 
     /** */
-    private static final Path LOCAL_MAVEN_SETTINGS_PATH = Paths.get(
-        System.getProperty("user.dir"), "src", "test", "java", "config", "maven-settings.xml");
-
-    /** */
     private static final String TEST_CACHE_NAME = "testCache";
 
     /** */
@@ -99,25 +92,8 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
     @Parameterized.Parameter(1)
     public String springVer;
 
-    /** */
-    private String savedLocMavenSettingsProp;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        savedLocMavenSettingsProp = System.getProperty(PROP_LOCAL_MAVEN_SETTINGS);
-
-        System.setProperty(PROP_LOCAL_MAVEN_SETTINGS, LOCAL_MAVEN_SETTINGS_PATH.toString());
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        if (savedLocMavenSettingsProp != null)
-            System.setProperty(PROP_LOCAL_MAVEN_SETTINGS, savedLocMavenSettingsProp);
-        else
-            System.clearProperty(PROP_LOCAL_MAVEN_SETTINGS);
-
         super.afterTest();
 
         stopAllGrids();

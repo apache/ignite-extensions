@@ -99,6 +99,14 @@
         </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>maven-redhat-repo-id</id>
+            <name>maven-redhat-repo-name</name>
+            <url>https://origin-maven.repository.redhat.com/ga</url>
+        </repository>
+    </repositories>
+
     <build>
         <testResources>
             <testResource>
