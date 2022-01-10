@@ -38,12 +38,15 @@
 
         <ignite.version>2.12.0-SNAPSHOT</ignite.version>
 
+        <ignite-spring-boot-autoconfigure-ext.version>1.1.0-SNAPSHOT</ignite-spring-boot-autoconfigure-ext.version>
+        <ignite-spring-boot-thin-client-autoconfigure-ext.version>1.1.0-SNAPSHOT</ignite-spring-boot-thin-client-autoconfigure-ext.version>
         <ignite-spring-cache-ext.version>1.1.0-SNAPSHOT</ignite-spring-cache-ext.version>
         <ignite-spring-data-2.0-ext.version>1.1.0-SNAPSHOT</ignite-spring-data-2.0-ext.version>
         <ignite-spring-data-2.2-ext.version>1.1.0-SNAPSHOT</ignite-spring-data-2.2-ext.version>
         <ignite-spring-data-commons.version>1.2.0-SNAPSHOT</ignite-spring-data-commons.version>
         <ignite-spring-data-ext.version>1.1.0-SNAPSHOT</ignite-spring-data-ext.version>
         <ignite-spring-tx-ext.version>1.1.0-SNAPSHOT</ignite-spring-tx-ext.version>
+        <ignite-zookeeper-ip-finder-ext.version>1.0.0-SNAPSHOT</ignite-zookeeper-ip-finder-ext.version>
 
         <ignite.edition>apache-ignite</ignite.edition>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

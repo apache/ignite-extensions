@@ -10,6 +10,9 @@ Depending on how you use Ignite, you can an extension using one of the following
 - Add libraries from lib/optional/{module-dir} to the classpath of your application.
 - Add a module as a Maven dependency to your project.
 
+The module depends on third-party libraries that use the slf4j facade for logging.
+You can set up an underlying logging framework yourself.
+
 Importing Apache Ignite ZooKeeper IpFinder Module In Maven Project
 ---------------------------------------------------------
 
