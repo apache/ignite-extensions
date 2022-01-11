@@ -23,12 +23,8 @@
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.springframework.org/schema/util
-        http://www.springframework.org/schema/util/spring-util.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!-- Enable client mode. -->
         <property name="clientMode" value="true"/>
@@ -37,21 +33,13 @@
 
         <property name="peerClassLoadingEnabled" value="true"/>
 
-        <!-- Enable cache events. -->
-        <property name="includeEventTypes">
-            <list>
-                <!-- Cache events (only EVT_CACHE_OBJECT_PUT for tests). -->
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT"/>
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ"/>
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED"/>
-            </list>
-        </property>
-
         <property name="binaryConfiguration">
             <bean class="org.apache.ignite.configuration.BinaryConfiguration">
                 <property name="compactFooter" value="true"/>
             </bean>
         </property>
+
+        <property name="localHost" value="127.0.0.1"/>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
