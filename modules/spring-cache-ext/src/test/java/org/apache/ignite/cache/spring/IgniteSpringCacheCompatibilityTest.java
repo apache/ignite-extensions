@@ -53,13 +53,13 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
     /** */
     private static final String VER_2_11_0 = "2.11.0";
 
-    /**  */
+    /** */
     private static final String[] TEST_IGNITE_VERSIONS = new String[] {
         VER_2_11_0,
         IgniteVersionUtils.VER_STR
     };
 
-    /**  */
+    /** */
     private static final String[] TEST_SPRING_VERSIONS = new String[] {
         "4.3.0.RELEASE",
         "5.0.0.RELEASE",
@@ -100,15 +100,15 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
-        if (!F.isEmpty(igniteVer))
-            return super.getDependencies(igniteVer);
+    @Override protected @NotNull Collection<Dependency> getDependencies(String ver) {
+        if (!F.isEmpty(ver))
+            return super.getDependencies(ver);
 
         Collection<Dependency> res = new ArrayList<>();
 
-        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", this.igniteVer, false));
-        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", this.igniteVer, true));
-        res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", this.igniteVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteVer, true));
+        res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", igniteVer, false));
 
         res.add(new Dependency("spring-context", "org.springframework", "spring-context", springVer, false));
         res.add(new Dependency("spring-beans", "org.springframework", "spring-beans", springVer, false));
@@ -116,7 +116,7 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
         res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
         res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
-        if (this.igniteVer.equals(VER_2_11_0)) {
+        if (VER_2_11_0.equals(igniteVer)) {
             res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
         }

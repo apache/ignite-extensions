@@ -53,28 +53,19 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 @RunWith(Parameterized.class)
 public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** Version 2.8.0. */
-    private static final IgniteProductVersion VER_2_8_0 = IgniteProductVersion.fromString("2.8.0");
-
-    /** Version 2.9.0. */
-    private static final IgniteProductVersion VER_2_9_0 = IgniteProductVersion.fromString("2.9.0");
-
-    /** Version 2.10.0. */
-    private static final IgniteProductVersion VER_2_10_0 = IgniteProductVersion.fromString("2.10.0");
-
     /** Version 2.11.0. */
     private static final IgniteProductVersion VER_2_11_0 = IgniteProductVersion.fromString("2.11.0");
 
-    /**  */
+    /** */
     private static final IgniteProductVersion[] TEST_IGNITE_VERSIONS = new IgniteProductVersion[] {
-        VER_2_8_0,
-        VER_2_9_0,
-        VER_2_10_0,
+        IgniteProductVersion.fromString("2.8.0"),
+        IgniteProductVersion.fromString("2.9.0"),
+        IgniteProductVersion.fromString("2.10.0"),
         VER_2_11_0,
         IgniteVersionUtils.VER,
     };
 
-    /**  */
+    /** */
     private static final String[] TEST_SPRING_VERSIONS = new String[] {
         "4.3.0.RELEASE",
         "5.0.0.RELEASE",
@@ -115,13 +106,13 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     }
 
     /** {@inheritDoc} */
-    @Override protected @NotNull Collection<Dependency> getDependencies(String igniteVer) {
-        if (!F.isEmpty(igniteVer))
-            return super.getDependencies(igniteVer);
+    @Override protected @NotNull Collection<Dependency> getDependencies(String ver) {
+        if (!F.isEmpty(ver))
+            return super.getDependencies(ver);
 
         Collection<Dependency> res = new ArrayList<>();
 
-        String igniteDepVer = toDependencyVersion(this.igniteVer);
+        String igniteDepVer = toString(igniteVer);
 
         res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, false));
         res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, true));
@@ -134,7 +125,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
         res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
         res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
-        if (this.igniteVer.compareTo(VER_2_11_0) <= 0)
+        if (igniteVer.compareTo(VER_2_11_0) <= 0)
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
 
         return res;
@@ -158,7 +149,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     /** */
     @Test
     public void testCompatibility() throws Exception {
-        startGrid(1, toDependencyVersion(igniteVer), this::processNodeConfiguration, ignite -> {});
+        startGrid(1, toString(igniteVer), this::processNodeConfiguration, ignite -> {});
 
         GridJavaProcess proc = GridJavaProcess.exec(
             TestRunner.class.getName(),
@@ -296,10 +287,11 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     }
 
     /** */
-    private static String toDependencyVersion(IgniteProductVersion ver) {
-        return ver.equals(IgniteVersionUtils.VER)
-            ? IgniteVersionUtils.VER_STR
-            : ver.major() + "." + ver.minor() + "." + ver.maintenance();
+    private static String toString(IgniteProductVersion ver) {
+        String res = ver.toString();
+
+        // Here we cut off revision and hash.
+        return res.substring(0, res.indexOf("#"));
     }
 }
 
