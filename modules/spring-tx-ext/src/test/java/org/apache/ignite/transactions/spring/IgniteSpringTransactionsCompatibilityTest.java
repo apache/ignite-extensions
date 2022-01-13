@@ -279,6 +279,9 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
     /** */
     private static String toString(IgniteProductVersion ver) {
+        if (ver.equals(IgniteVersionUtils.VER))
+            return IgniteVersionUtils.VER_STR;
+
         String res = ver.toString();
 
         // Here we cut off revision and hash.
