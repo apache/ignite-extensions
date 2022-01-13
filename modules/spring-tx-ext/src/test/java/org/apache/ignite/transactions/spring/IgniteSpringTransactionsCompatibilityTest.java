@@ -54,15 +54,15 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** Version 2.11.0. */
-    private static final IgniteProductVersion VER_2_11_0 = IgniteProductVersion.fromString("2.11.0");
+    private static final String VER_2_11_0 = "2.11.0";
 
     /** */
-    private static final IgniteProductVersion[] TEST_IGNITE_VERSIONS = new IgniteProductVersion[] {
-        IgniteProductVersion.fromString("2.8.0"),
-        IgniteProductVersion.fromString("2.9.0"),
-        IgniteProductVersion.fromString("2.10.0"),
+    private static final String[] TEST_IGNITE_VERSIONS = new String[] {
+        "2.8.0",
+        "2.9.0",
+        "2.10.0",
         VER_2_11_0,
-        IgniteVersionUtils.VER,
+        IgniteVersionUtils.VER_STR,
     };
 
     /** */
@@ -82,7 +82,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     public static Iterable<Object[]> versions() {
         ArrayList<Object[]> testVersions = new ArrayList<>();
 
-        for (IgniteProductVersion igniteVer : TEST_IGNITE_VERSIONS) {
+        for (String igniteVer : TEST_IGNITE_VERSIONS) {
             for (String springVer : TEST_SPRING_VERSIONS)
                 testVersions.add(new Object[]{igniteVer, springVer});
         }
@@ -92,7 +92,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
     /** */
     @Parameterized.Parameter
-    public IgniteProductVersion igniteVer;
+    public String igniteVer;
 
     /** */
     @Parameterized.Parameter(1)
@@ -112,11 +112,9 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
         Collection<Dependency> res = new ArrayList<>();
 
-        String igniteDepVer = toString(igniteVer);
-
-        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, false));
-        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteDepVer, true));
-        res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", igniteDepVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteVer, false));
+        res.add(new Dependency("core", "org.apache.ignite", "ignite-core", igniteVer, true));
+        res.add(new Dependency("spring", "org.apache.ignite", "ignite-spring", igniteVer, false));
 
         res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
         res.add(new Dependency("spring-context", "org.springframework", "spring-context", springVer, false));
@@ -125,7 +123,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
         res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
         res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
-        if (igniteVer.compareTo(VER_2_11_0) <= 0)
+        if (IgniteProductVersion.fromString(igniteVer).compareTo(IgniteProductVersion.fromString(VER_2_11_0)) <= 0)
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
 
         return res;
@@ -140,7 +138,7 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
     /** */
     @Test
     public void testCompatibility() throws Exception {
-        startGrid(1, toString(igniteVer), this::processNodeConfiguration, ignite -> {});
+        startGrid(1, igniteVer, this::processNodeConfiguration, ignite -> {});
 
         GridJavaProcess proc = GridJavaProcess.exec(
             TestRunner.class.getName(),
@@ -275,17 +273,6 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
                 return mgr;
             }
         }
-    }
-
-    /** */
-    private static String toString(IgniteProductVersion ver) {
-        if (ver.equals(IgniteVersionUtils.VER))
-            return IgniteVersionUtils.VER_STR;
-
-        String res = ver.toString();
-
-        // Here we cut off revision and hash.
-        return res.substring(0, res.indexOf("#"));
     }
 }
 
