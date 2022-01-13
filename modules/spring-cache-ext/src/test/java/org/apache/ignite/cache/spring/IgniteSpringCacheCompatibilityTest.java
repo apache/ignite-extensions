@@ -124,15 +124,6 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override protected Collection<String> getProcessProxyJvmArgs(String ver) throws Exception {
-        Collection<String> jvmArgs = super.getProcessProxyJvmArgs(ver);
-
-        jvmArgs.add("-DIGNITE_HOME=" + System.getProperty("user.dir"));
-
-        return jvmArgs;
-    }
-
     /** */
     protected void processNodeConfiguration(IgniteConfiguration cfg) {
         cfg.setCacheConfiguration(new CacheConfiguration<>(TEST_CACHE_NAME))

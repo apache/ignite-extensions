@@ -137,15 +137,6 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
             .setAtomicityMode(TRANSACTIONAL));
     }
 
-    /** {@inheritDoc} */
-    @Override protected Collection<String> getProcessProxyJvmArgs(String ver) throws Exception {
-        Collection<String> jvmArgs = super.getProcessProxyJvmArgs(ver);
-
-        jvmArgs.add("-DIGNITE_HOME=" + System.getProperty("user.dir"));
-
-        return jvmArgs;
-    }
-
     /** */
     @Test
     public void testCompatibility() throws Exception {
