@@ -22,7 +22,6 @@ import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.compoundkey.City;
 import org.apache.ignite.springdata.compoundkey.CityKey;
