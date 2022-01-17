@@ -62,7 +62,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     private static final String AFG = "AFG";
 
     /** test city Kabul */
-    private static final City KABUL = new City("Kabul", "Kabol", 1780000);
+    protected static final City KABUL = new City("Kabul", "Kabol", 1780000);
 
     /** test city Quandahar */
     private static final City QUANDAHAR = new City("Qandahar","Qandahar", 237500);
@@ -88,7 +88,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
 
         loadData();
 
-        assertEquals(TOTAL_COUNT, repo.count());
+        assertEquals(getTotalCount(), repo.count());
     }
 
     /**
@@ -109,7 +109,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         ctx.close();
     }
 
-    /** load data*/
+    /** Load data. */
     public void loadData() throws Exception {
         Ignite ignite = ignite();
 
@@ -138,7 +138,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         assertEquals(QUANDAHAR, repo.findById(QUANDAHAR_ID));
     }
 
-    /** Test */
+    /** Test. */
     @Test
     public void deleteAllById() {
         Set<CityKey> keys = new HashSet<>();
@@ -155,5 +155,10 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     /** */
     protected Ignite ignite() {
         return ctx.getBean(Ignite.class);
+    }
+
+    /** Total count of entries after load data. */
+    protected int getTotalCount() {
+        return TOTAL_COUNT;
     }
 }

@@ -19,30 +19,35 @@ package org.apache.ignite.springdata.compoundkey;
 
 import java.util.Objects;
 
-/** Extended city compound key */
+/** Extended city compound key. */
 public class CityKeyExt extends CityKey {
 
-    /** city extended identifier */
+    /** City extended identifier. */
     private long idExt;
 
+    /**
+     * @param id city identifier
+     * @param countryCode city countrycode
+     * @param idExt city extended identifier
+     * */
     public CityKeyExt(int id, String countryCode, long idExt) {
         super(id, countryCode);
         this.idExt = idExt;
     }
 
-    /**
-     * @return city extended identifier
-     * */
-    public long getIdExt() {
-        return idExt;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        if (!super.equals(o))
+            return false;
+
         CityKeyExt that = (CityKeyExt) o;
+
         return idExt == that.idExt;
     }
 
@@ -53,8 +58,6 @@ public class CityKeyExt extends CityKey {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CityKeyExt{" +
-                "idExt=" + idExt +
-                "} " + super.toString();
+        return idExt + "|" + super.toString();
     }
 }

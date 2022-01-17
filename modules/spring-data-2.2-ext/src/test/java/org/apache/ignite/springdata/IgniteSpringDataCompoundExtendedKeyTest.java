@@ -17,103 +17,51 @@
 package org.apache.ignite.springdata;
 
 import org.apache.ignite.springdata.compoundkey.City;
-import org.apache.ignite.springdata.compoundkey.CityKey;
 import org.apache.ignite.springdata.compoundkey.CityKeyExt;
-import org.apache.ignite.springdata.compoundkey.CityRepository;
-import org.apache.ignite.springdata.compoundkey.CompoundKeyApplicationConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * Test with using conpoud key in spring-data
- * */
-public class IgniteSpringDataCompoundExtendedKeyTest extends GridCommonAbstractTest {
-    /** Application context */
-    protected static AnnotationConfigApplicationContext ctx;
+ * Test with using ext compound key in spring-data.
+ */
+public class IgniteSpringDataCompoundExtendedKeyTest extends IgniteSpringDataCompoundKeyTest {
 
-    /** City repository */
-    protected static CityRepository repo;
-
-    /** Cities count */
+    /**
+     * Cities count.
+     */
     private static final int TOTAL_COUNT = 6;
 
-    /** Zimbabwe county code */
-    private static final String ZW = "ZW";
-
-    /** test city Kabul */
-    private static final City KABUL = new City("Kabul", "Kabol", 1780000);
-
-    /** test city Harare */
+    /**
+     * Test city Harare.
+     */
     private static final City HARARE = new City("Harare", "Harare", 3120917);
 
     /**
-     * Performs context initialization before tests.
+     * Load data.
      */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ctx = new AnnotationConfigApplicationContext();
-        ctx.register(CompoundKeyApplicationConfiguration.class);
-        ctx.refresh();
-
-        repo = ctx.getBean(CityRepository.class);
-    }
-
-    /**
-     * Load data
-     * */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        loadData();
-
-        assertEquals(TOTAL_COUNT, repo.count());
-    }
-
-    /**
-     * Clear data
-     * */
-    @Override protected void afterTest() throws Exception {
-        repo.deleteAll();
-
-        assertEquals(0, repo.count());
-
-        super.afterTest();
-    }
-
-    /**
-     * Performs context destroy after tests.
-     */
-    @Override protected void afterTestsStopped() {
-        ctx.close();
-    }
-
-    /** load data*/
     public void loadData() {
-        repo.save(new CityKeyExt(1, "AFG", 11), new City("Kabul", "Kabol",1780000));
-        repo.save(new CityKeyExt(2, "AFG", 12), new City("Qandahar", "Qandahar",237500));
-        repo.save(new CityKeyExt(3, "AFG", 13), new City("Herat", "Herat",186800));
-        repo.save(new CityKeyExt(4, "AFG", 14), new City("Mazar-e-Sharif", "Balkh",127800));
-        repo.save(new CityKeyExt(5, "NLD", 25), new City("Amsterdam", "Noord-Holland",731200));
+        repo.save(new CityKeyExt(1, "AFG", 11), new City("Kabul", "Kabol", 1780000));
+        repo.save(new CityKeyExt(2, "AFG", 12), new City("Qandahar", "Qandahar", 237500));
+        repo.save(new CityKeyExt(3, "AFG", 13), new City("Herat", "Herat", 186800));
+        repo.save(new CityKeyExt(4, "AFG", 14), new City("Mazar-e-Sharif", "Balkh", 127800));
+        repo.save(new CityKeyExt(5, "NLD", 25), new City("Amsterdam", "Noord-Holland", 731200));
         repo.save(new CityKeyExt(6, "ZW", 36), new City("Harare", "Harare", 3120917));
     }
 
-    /** Test */
+    /** Test. */
     @Test
     public void test() {
         assertEquals(Optional.of(KABUL), repo.findById(new CityKeyExt(1, "AFG", 11)));
         assertEquals(Optional.of(HARARE), repo.findById(new CityKeyExt(6, "ZW", 36)));
     }
 
-    /** Test */
+    /** Test. */
     @Test
     public void deleteAllById() {
-        Set<CityKey> keys = new HashSet<>();
+        Set<CityKeyExt> keys = new HashSet<>();
         keys.add(new CityKeyExt(1, "AFG", 11));
         keys.add(new CityKeyExt(2, "AFG", 12));
         keys.add(new CityKeyExt(3, "AFG", 13));
@@ -123,5 +71,10 @@ public class IgniteSpringDataCompoundExtendedKeyTest extends GridCommonAbstractT
 
         repo.deleteAllById(keys);
         assertEquals(0, repo.count());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int getTotalCount() {
+        return TOTAL_COUNT;
     }
 }
