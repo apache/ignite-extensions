@@ -19,7 +19,9 @@ package org.apache.ignite.springdata;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.springdata.compoundkey.City;
 import org.apache.ignite.springdata.compoundkey.CityKey;
@@ -60,7 +62,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     private static final String AFG = "AFG";
 
     /** test city Kabul */
-    private static final City KABUL = new City("Kabul", "Kabol", 1780000);
+    protected static final City KABUL = new City("Kabul", "Kabol", 1780000);
 
     /** test city Quandahar */
     private static final City QUANDAHAR = new City("Qandahar","Qandahar", 237500);
@@ -86,7 +88,18 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
 
         loadData();
 
-        assertEquals(TOTAL_COUNT, repo.count());
+        assertEquals(getTotalCount(), repo.count());
+    }
+
+    /**
+     * Clear data
+     * */
+    @Override protected void afterTest() throws Exception {
+        repo.deleteAll();
+
+        assertEquals(0, repo.count());
+
+        super.afterTest();
     }
 
     /**
@@ -96,7 +109,7 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         ctx.close();
     }
 
-    /** load data*/
+    /** Load data. */
     public void loadData() throws Exception {
         Ignite ignite = ignite();
 
@@ -125,8 +138,27 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
         assertEquals(QUANDAHAR, repo.findById(QUANDAHAR_ID));
     }
 
+    /** Test. */
+    @Test
+    public void deleteAllById() {
+        Set<CityKey> keys = new HashSet<>();
+        keys.add(new CityKey(1, "AFG"));
+        keys.add(new CityKey(2, "AFG"));
+        keys.add(new CityKey(3, "AFG"));
+        keys.add(new CityKey(4, "AFG"));
+        keys.add(new CityKey(5, "NLD"));
+
+        repo.deleteAllById(keys);
+        assertEquals(0, repo.count());
+    }
+
     /** */
     protected Ignite ignite() {
         return ctx.getBean(Ignite.class);
+    }
+
+    /** Total count of entries after load data. */
+    protected int getTotalCount() {
+        return TOTAL_COUNT;
     }
 }
