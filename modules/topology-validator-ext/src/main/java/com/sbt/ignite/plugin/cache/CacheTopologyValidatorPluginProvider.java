@@ -53,7 +53,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.Boolean.FALSE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -64,9 +63,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 
 /** */
 public class CacheTopologyValidatorPluginProvider implements PluginProvider<PluginConfiguration>, TopologyValidator {
-    /** */
-    public static final String TOP_VALIDATOR_ENABLED_PROP_NAME = "org.apache.ignite.topology.validator.enabled";
-
     /** */
     public static final String TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME =
         "org.apache.ignite.topology.validator.deactivation.threshold";
@@ -82,20 +78,14 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     };
 
     /** */
-    private final SimpleDistributedProperty<Boolean> enabledProp = new SimpleDistributedProperty<>(
-        TOP_VALIDATOR_ENABLED_PROP_NAME,
-        Boolean::parseBoolean
-    );
-
-    /** */
     private final SimpleDistributedProperty<Float> deactivateThresholdProp = new SimpleDistributedProperty<>(
         TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME,
         str -> {
             float res = Float.parseFloat(str);
 
-            if (res < 0.5F || res >= 1) {
+            if ((res < 0.5F || res >= 1F) && res != 0F) {
                 throw new IgniteException("Topology validator cluster deactivation threshold must be a decimal" +
-                    " fraction in the range from 0.5 (inclusively) to 1.");
+                    " fraction in the range from 0.5 (inclusively) to 1 or 0 if validation should be disabled.");
             }
 
             return res;
@@ -190,24 +180,22 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             new DistributedConfigurationLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    dispatcher.registerProperty(enabledProp);
                     dispatcher.registerProperty(deactivateThresholdProp);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onReadyToWrite() {
-                    boolean isLocNodeCrd = U.isLocalNodeCoordinator(ctx.discovery());
+                    float deactivationThreshold = U.isLocalNodeCoordinator(ctx.discovery())
+                        ? DFLT_DEACTIVATION_THRESHOLD
+                        : deactivateThresholdProp.getOrDefault(0F);
 
-                    Boolean topValidatorEnabled = enabledProp.get();
-
-                    if (topValidatorEnabled == null && !isLocNodeCrd || FALSE.equals(topValidatorEnabled)) {
+                    if (deactivationThreshold == 0F) {
                         U.warn(log, "Topology Validator will be disabled because it is not configured for the" +
                             " cluster the current node joined. Make sure the Topology Validator plugin is" +
                             " configured on all cluster nodes.");
                     }
 
-                    setDefaultValue(enabledProp, isLocNodeCrd, log);
-                    setDefaultValue(deactivateThresholdProp, DFLT_DEACTIVATION_THRESHOLD, log);
+                    setDefaultValue(deactivateThresholdProp, deactivationThreshold, log);
                 }
             });
     }
@@ -282,7 +270,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
     /** */
     private boolean isDisabled() {
-        return !enabledProp.getOrDefault(false);
+        return deactivateThresholdProp.getOrDefault(0F) == 0F;
     }
 
     /** */

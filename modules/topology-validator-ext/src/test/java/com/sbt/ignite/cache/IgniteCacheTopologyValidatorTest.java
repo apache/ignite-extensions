@@ -47,7 +47,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
-import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_ENABLED_PROP_NAME;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -155,7 +154,10 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         pinBaseline();
 
         assertTrue(waitForCondition(
-            () -> !(Boolean)grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).get(),
+            () -> 0F == (Float)grid(1).context()
+                .distributedConfiguration()
+                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+                .get(),
             getTestTimeout()
         ));
 
@@ -164,7 +166,10 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         connectNodeToSegment(3, false, 1);
 
         assertTrue(waitForCondition(
-            () -> !(Boolean)grid(3).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).get(),
+            () -> 0F == (Float)grid(3).context()
+                .distributedConfiguration()
+                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+                .get(),
             getTestTimeout()
         ));
     }
@@ -348,7 +353,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
     /** */
     @Test
-    public void testThresholdProperty() throws Exception {
+    public void testDeactivationThreshold() throws Exception {
         prepareCluster(5);
 
         grid(0).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
@@ -378,10 +383,11 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
     /** */
     @Test
-    public void testEnableProperty() throws Exception {
+    public void testValidationDisabled() throws Exception {
         prepareCluster(4);
 
-        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).propagate(false);
+        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+            .propagate(0F);
 
         splitAndWait();
 
@@ -394,7 +400,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         unsplit();
 
-        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).propagate(true);
+        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+            .propagate(0.5F);
 
         failNode(1, Collections.singleton(grid(3)));
 
@@ -598,10 +605,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
     /** */
     private void prepareCluster(int nodes) throws Exception {
-        if (nodes == 1)
-            startGrid(0);
-        else
-            startGridsMultiThreaded(nodes);
+        startGridsMultiThreaded(nodes);
 
         pinBaseline();
 
