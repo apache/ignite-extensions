@@ -17,6 +17,8 @@
 
 package com.sbt.ignite.cache;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -37,8 +41,12 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
+import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
 import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_ENABLED_PROP_NAME;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
@@ -53,6 +61,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
+@RunWith(Parameterized.class)
 public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAbstractTest {
     /** */
     private static final String LOCAL_HOST = "localhost";
@@ -62,6 +71,16 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
     /** */
     public static final int CACHE_CNT = 2;
+
+    /** */
+    @Parameterized.Parameter
+    public boolean isPersistenceEnabled;
+
+    /** */
+    @Parameterized.Parameters(name = "isPersistenceEnabled={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -87,7 +106,21 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
             .setLocalPort(discoPort(idx))
             .setConnectionRecoveryTimeout(0);
 
+        if (isPersistenceEnabled) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setInitialSize(10L * 1024 * 1024)
+                    .setPersistenceEnabled(true)));
+        }
+
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -119,6 +152,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         startGrid(1);
 
+        pinBaseline();
+
         assertTrue(waitForCondition(
             () -> !(Boolean)grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).get(),
             getTestTimeout()
@@ -137,9 +172,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testIncompatibleNodeConnection() throws Exception {
-        IgniteEx srv = startGrid(0);
-
-        createCaches();
+        prepareCluster(1);
 
         assertThrowsAnyCause(
             log,
@@ -150,7 +183,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         startClientGrid(getConfiguration(getTestIgniteInstanceName(2), false));
 
-        assertEquals(2, srv.cluster().nodes().size());
+        assertEquals(2, grid(0).cluster().nodes().size());
 
         checkPutGet(G.allGrids(), true);
     }
@@ -158,11 +191,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testConnectionToSegmentedCluster() throws Exception {
-        startGridsMultiThreaded(6);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(6);
 
         stopGrid(4);
         stopGrid(5);
@@ -173,10 +202,12 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         connectNodeToSegment(4, false, 0);
         connectNodeToSegment(6, true, 0);
+
         checkPutGet(0, false);
 
         connectNodeToSegment(5, false, 1);
         connectNodeToSegment(7, true, 1);
+
         checkPutGet(1, false);
 
         stopSegmentNodes(1);
@@ -193,6 +224,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     public void testRegularNodeStartStop() throws Exception {
         startGrid(0);
 
+        pinBaseline();
+
         createCaches();
 
         checkPutGetAfter(() -> startGrid(1));
@@ -203,7 +236,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         startGrid(1);
 
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
 
         checkPutGetAfter(() -> startGrid(3));
         checkPutGetAfter(() -> stopGrid(3));
@@ -217,22 +250,24 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testClientNodeSegmentationIgnored() throws Exception {
-        IgniteEx srv = startGrid(0);
+        startGrid(0);
 
         startClientGrid(1);
 
-        srv.cluster().baselineAutoAdjustEnabled(false);
+        pinBaseline();
 
         createCaches();
 
-        failNode(1, Collections.singleton(srv));
+        failNode(1, Collections.singleton(grid(0)));
 
-        checkPutGet(Collections.singleton(srv), true);
+        checkPutGet(Collections.singleton(grid(0)), true);
     }
 
     /** */
     @Test
     public void testSplitWithoutBaseline() throws Exception {
+        Assume.assumeFalse(isPersistenceEnabled);
+
         startGridsMultiThreaded(4);
 
         createCaches();
@@ -245,11 +280,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testSplitWithBaseline() throws Exception {
-        startGridsMultiThreaded(3);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(3);
 
         startGrid(3);
 
@@ -273,6 +304,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
 
+        awaitPartitionMapExchange(true, true, null);
+
         splitAndWait();
 
         checkPutGet(G.allGrids(), false);
@@ -289,11 +322,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testConsequentSegmentationResolving() throws Exception {
-        startGridsMultiThreaded(4);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(4);
 
         splitAndWait();
 
@@ -319,12 +348,38 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
     /** */
     @Test
+    public void testThresholdProperty() throws Exception {
+        prepareCluster(5);
+
+        grid(0).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+            .propagate(0.8F);
+
+        Collection<Ignite> segment = new ArrayList<>(G.allGrids());
+
+        segment.remove(grid(0));
+
+        failNode(0, segment);
+
+        checkPutGet(segment, false);
+
+        stopGrid(0);
+
+        grid(1).cluster().state(ACTIVE);
+
+        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+            .propagate(0.5F);
+
+        segment.remove(grid(4));
+
+        failNode(4, segment);
+
+        checkPutGet(segment, true);
+    }
+
+    /** */
+    @Test
     public void testEnableProperty() throws Exception {
-        startGridsMultiThreaded(4);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(4);
 
         grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_ENABLED_PROP_NAME).propagate(false);
 
@@ -349,11 +404,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testNodeJoinWithHalfBaselineNodesLeft() throws Exception {
-        startGridsMultiThreaded(4);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(4);
 
         stopGrid(0);
         stopGrid(1);
@@ -369,21 +420,19 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testNodeJoinConcurrentWithLeftRejected() throws Exception {
-        IgniteEx srv = startGrids(2);
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
+        prepareCluster(2);
 
         CountDownLatch discoveryWorkerBlockedLatch = new CountDownLatch(1);
 
         try {
-            srv.events().localListen(evt -> {
+            grid(0).events().localListen(evt -> {
                 try {
                     discoveryWorkerBlockedLatch.await();
                 }
                 catch (InterruptedException e) {
                     U.error(log, e);
+
+                    Thread.currentThread().interrupt();
                 }
 
                 return true;
@@ -395,7 +444,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
             assertThrowsAnyCause(
                 log,
-                () -> startGrid(3),
+                () -> startGrid(1),
                 IgniteSpiException.class,
                 "Node join request was rejected due to concurrent node left process handling"
             );
@@ -408,6 +457,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testPreconfiguredClusterState() throws Exception {
+        Assume.assumeFalse(isPersistenceEnabled);
+
         startGrid(0);
 
         startGrid(getConfiguration(getTestIgniteInstanceName(1)).setClusterStateOnStart(ACTIVE_READ_ONLY));
@@ -508,9 +559,18 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     }
 
     /** */
-    private void stopSegmentNodes(int segment) {
-        for (IgniteEx node : segmentNodes(segment, true))
-            stopGrid(node.name());
+    private void stopSegmentNodes(int segment) throws Exception {
+        for (IgniteEx node : segmentNodes(segment, true)) {
+            if (isPersistenceEnabled) {
+                String pdsFolder = node.context().pdsFolderResolver().resolveFolders().folderName();
+
+                stopGrid(node.name());
+
+                cleanPersistenceDir(pdsFolder);
+            }
+            else
+                stopGrid(node.name());
+        }
     }
 
     /** */
@@ -534,5 +594,25 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
             .filter(ignite -> segment(ignite.cluster().localNode()) == segment)
             .map(ignite -> (IgniteEx)ignite)
             .collect(Collectors.toList());
+    }
+
+    /** */
+    private void prepareCluster(int nodes) throws Exception {
+        if (nodes == 1)
+            startGrid(0);
+        else
+            startGridsMultiThreaded(nodes);
+
+        pinBaseline();
+
+        createCaches();
+    }
+
+    /** */
+    private void pinBaseline() {
+        if (isPersistenceEnabled)
+            grid(0).cluster().state(ACTIVE);
+        else
+            grid(0).cluster().baselineAutoAdjustEnabled(false);
     }
 }

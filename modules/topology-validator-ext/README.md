@@ -8,12 +8,14 @@ independent Ignite cluster. Let's call this scenario cluster segmentation.
 Cluster segmentation can lead to cache data inconsistency across different segments because each segment can continue 
 to handle cache update requests independently.
 
-Apache Ignite allows the user to provide custom validation logic during cache configuration that will be applied to 
+Apache Ignite allows the user to provide custom validation logic for Ignite caches that will be applied to 
 each topology change, and if the validation fails, writes to the corresponding cache will be blocked. The mentioned 
-validation logic can be passed to Ignite cache configuration as an Ignite TopologyValidation interface implementation.
+validation logic is passed to Ignite as an TopologyValidation interface implementation. It can be done through cache
+configuration or through Ignite plugin extensions mechanism (see CacheTopologyValidatorProvider interface). 
 
-This module represents an implementation of the Ignite TopologyValidator interface which provides the guarantee that 
-after cluster segmentation, no more than one segment can process write requests to the caches.
+This module represents an implementation of the Ignite plugin that provides the guarantee that 
+after cluster segmentation, no more than one segment can process write requests to all caches. This is achieved by
+providing implementation of the TopologyValidation interface as mentioned above. 
 
 The current implementation of TopologyValidation uses remaining Ignite baseline nodes in the topology to determine 
 segmentation.
@@ -23,36 +25,38 @@ segmentation.
 The following rules are used to determine which segment can process cache write requests after segmentation and which 
 cannot:
 
-1. The segment is allowed to process cache writes requests after segmentation if and only if more than half of the 
-baseline nodes remain in the segment, otherwise all writes to the cache will be blocked.
+1. The segment is allowed to process cache writes requests after segmentation if and only if more than configured
+fraction of the baseline nodes remain in the segment, otherwise all writes to the cache will be blocked.
 2. If the cluster is split into two equal segments, writing to both of them will be blocked. 
-3. Since Ignite treats segmentation as sequential node failures, even a single node failure in a cluster in which only 
-half of the baseline nodes are alive is considered as segmentation and results in write blocks for all caches.
+3. Since Ignite treats segmentation as sequential node failures, even a single node failure in an active cluster in
+which alive baseline nodes count is less or equals to segmentation threshold  is considered as segmentation and results
+in write block for all caches.
 
 #Configuration
 
-1. Configure SegmentationResolverPluginProvider on each server node:
+1. Configure CacheTopologyValidatorPluginProvider on each server node:
 
    ```
    new IgniteConfiguration() 
        ... 
-       .setPluginProviders(new SegmentationResolverPluginProvider());
+       .setPluginProviders(new CacheTopologyValidatorPluginProvider());
    ```
 
-2. Configure IgniteCacheTopologyValidator for each cache:
-
-   ```
-   new CacheConfiguration()
-       ...
-       .setTopologyValidator(new IgniteCacheTopologyValidator());
-   ```
-
-3. Configure baseline nodes explicitly, or configure baseline nodes auto adjustment with a timeout that significantly 
+2. Configure baseline nodes explicitly, or configure baseline nodes auto adjustment with a timeout that significantly 
 exceeds the node failure detection timeout. It can be done through Java Api or through control script. 
 See [1] and [2] for more info.
 
 Note that it is illegal to use baseline nodes auto adjustment with a zero timeout along with current 
 TopologyValidator implementation.
+
+3. Configure deactivation threshold.
+The deactivation threshold is a fraction of nodes that determines how many nodes must remain in the base topology in 
+order to this segment was considered valid and continued to accept write requests after segmentation.
+This value must be in range from 0.5 (inclusively) to 1. Default value is 0.5. If the default value suits you, nothing
+to do is required.
+
+To set up custom deactivation threshold value set the `org.apache.ignite.topology.validator.deactivation.threshold` 
+distributed configuration property via control script (see https://ignite.apache.org/docs/latest/tools/control-script#working-with-cluster-properties) 
 
 #Manual Segmentation resolving
 

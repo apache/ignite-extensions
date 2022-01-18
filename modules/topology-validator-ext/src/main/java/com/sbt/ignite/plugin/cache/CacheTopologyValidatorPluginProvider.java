@@ -19,9 +19,8 @@ package com.sbt.ignite.plugin.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,6 +39,8 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -67,6 +68,13 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     public static final String TOP_VALIDATOR_ENABLED_PROP_NAME = "org.apache.ignite.topology.validator.enabled";
 
     /** */
+    public static final String TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME =
+        "org.apache.ignite.topology.validator.deactivation.threshold";
+
+    /** */
+    public static final float DFLT_DEACTIVATION_THRESHOLD = 0.5F;
+
+    /** */
     private static final int[] TOP_CHANGED_EVTS = new int[] {
         EVT_NODE_LEFT,
         EVT_NODE_JOINED,
@@ -74,9 +82,24 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     };
 
     /** */
-    private final SimpleDistributedProperty<Boolean> topValidatorEnabledProp = new SimpleDistributedProperty<>(
+    private final SimpleDistributedProperty<Boolean> enabledProp = new SimpleDistributedProperty<>(
         TOP_VALIDATOR_ENABLED_PROP_NAME,
         Boolean::parseBoolean
+    );
+
+    /** */
+    private final SimpleDistributedProperty<Float> deactivateThresholdProp = new SimpleDistributedProperty<>(
+        TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME,
+        str -> {
+            float res = Float.parseFloat(str);
+
+            if (res < 0.5F || res >= 1) {
+                throw new IgniteException("Topology validator cluster deactivation threshold must be a decimal" +
+                    " fraction in the range from 0.5 (inclusively) to 1.");
+            }
+
+            return res;
+        }
     );
 
     /** Ignite kernel context. */
@@ -88,8 +111,11 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     /** */
     private long lastCheckedTopVer;
 
-    /** */
-    private volatile State state;
+    /**
+     * {@code null} value means that segmentation happened, cache writes were blocked and cluster is in process of
+     * switching its state to READ-ONLY mode.
+     */
+    private volatile ClusterState state;
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -144,37 +170,35 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
         log = ctx.log(getClass());
 
-        onGlobalClusterStateChanged(ctx.state().clusterState().state());
+        state = ctx.state().clusterState().state();
 
         ctx.event().addDiscoveryEventListener(new TopologyChangedEventListener(), TOP_CHANGED_EVTS);
 
         ctx.discovery().setCustomEventListener(
             ChangeGlobalStateFinishMessage.class,
-            (topVer, snd, msg) -> onGlobalClusterStateChanged(msg.state())
+            (topVer, snd, msg) -> state = msg.state()
         );
 
-        ctx.state().baselineConfiguration().listenAutoAdjustTimeout((name, oldVal, newVal) -> {
-            if (newVal != null)
-                checkBaselineAutoAdjustConfiguration(ctx.state().isBaselineAutoAdjustEnabled(), newVal);
-        });
+        ctx.state().baselineConfiguration().listenAutoAdjustTimeout((name, oldVal, newVal) ->
+            validateBaselineConfiguration(ctx.state().isBaselineAutoAdjustEnabled(), newVal));
 
-        ctx.state().baselineConfiguration().listenAutoAdjustEnabled((name, oldVal, newVal) -> {
-            if (newVal != null)
-                checkBaselineAutoAdjustConfiguration(newVal, ctx.state().baselineAutoAdjustTimeout());
-        });
+        ctx.state().baselineConfiguration().listenAutoAdjustEnabled((name, oldVal, newVal) ->
+            validateBaselineConfiguration(newVal, ctx.state().baselineAutoAdjustTimeout())
+        );
 
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 /** {@inheritDoc} */
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    dispatcher.registerProperty(topValidatorEnabledProp);
+                    dispatcher.registerProperty(enabledProp);
+                    dispatcher.registerProperty(deactivateThresholdProp);
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onReadyToWrite() {
                     boolean isLocNodeCrd = U.isLocalNodeCoordinator(ctx.discovery());
 
-                    Boolean topValidatorEnabled = topValidatorEnabledProp.get();
+                    Boolean topValidatorEnabled = enabledProp.get();
 
                     if (topValidatorEnabled == null && !isLocNodeCrd || FALSE.equals(topValidatorEnabled)) {
                         U.warn(log, "Topology Validator will be disabled because it is not configured for the" +
@@ -182,7 +206,8 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                             " configured on all cluster nodes.");
                     }
 
-                    setDefaultValue(topValidatorEnabledProp, isLocNodeCrd, log);
+                    setDefaultValue(enabledProp, isLocNodeCrd, log);
+                    setDefaultValue(deactivateThresholdProp, DFLT_DEACTIVATION_THRESHOLD, log);
                 }
             });
     }
@@ -210,7 +235,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
     /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID nodeId, Serializable data) {
         if (ctx.localNodeId().equals(nodeId))
-            state = (State)data;
+            state = (ClusterState)data;
     }
 
     /** {@inheritDoc} */
@@ -232,9 +257,9 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
         }
 
         // If the new node is joining but some node failed/left events has not been handled by
-        // {@linkTopologyChangedEventListener} yet, we cannot guarantee that the {@link state} on the joining node will
+        // {@link TopologyChangedEventListener} yet, we cannot guarantee that the {@code state} on the joining node will
         // be consistent with one that on the cluster nodes.
-        if (state == State.VALID) {
+        if (state == ACTIVE) {
             DiscoCache discoCache = ctx.discovery().discoCache(new AffinityTopologyVersion(lastCheckedTopVer, 0));
 
             if (discoCache != null) {
@@ -252,19 +277,40 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
     /** {@inheritDoc} */
     @Override public boolean validate(Collection<ClusterNode> nodes) {
-        assert state != null;
-
-        return isDisabled() || state != State.INVALID;
+        return isDisabled() || state != null;
     }
 
     /** */
     private boolean isDisabled() {
-        return !topValidatorEnabledProp.getOrDefault(false);
+        return !enabledProp.getOrDefault(false);
     }
 
     /** */
-    private void onGlobalClusterStateChanged(ClusterState clusterState) {
-        state = clusterState == ACTIVE ? State.VALID : State.CLUSTER_WRITE_BLOCKED;
+    private boolean isValidTopology(Collection<? extends BaselineNode> baselineNodes) {
+        int aliveBaselineNodes = F.size(baselineNodes, n -> !(n instanceof DetachedClusterNode));
+
+        if (aliveBaselineNodes == 0)
+            return true;
+
+        float threshold = deactivateThresholdProp.getOrDefault(DFLT_DEACTIVATION_THRESHOLD);
+
+        assert threshold >= 0.5F && threshold < 1;
+
+        // Actually Ignite considers segmentation as the sequential node failures. So we detect segmentation
+        // even if the single node fails and less than half of baseline nodes are alive.
+        return aliveBaselineNodes >= ((int)(baselineNodes.size() * threshold)) + 1;
+    }
+
+    /** */
+    private void validateBaselineConfiguration(Boolean enabled, Long autoAdjustmentTimeout) {
+        if (isDisabled() || enabled == null || autoAdjustmentTimeout == null)
+            return;
+
+        if (!isBaselineConfigurationCompatible(enabled, autoAdjustmentTimeout)) {
+            LT.warn(log, "Topology Validator is currently skipping validation of topology changes because" +
+                " Baseline Auto Adjustment with zero timeout is configured for the cluster. Configure Baseline Nodes" +
+                " explicitly or set Baseline Auto Adjustment Timeout to greater than zero.");
+        }
     }
 
     /**
@@ -272,65 +318,53 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
      * If baseline auto adjustment is configured with zero timeout - baseline is updated on each topology change
      * and the comparison described above makes no sense.
      */
-    private boolean checkBaselineAutoAdjustConfiguration(boolean enabled, long timeout) {
-        if (isDisabled())
-            return false;
-
-        if (enabled && timeout == 0L) {
-            U.warn(log, "Topology Validator is currently skipping validation of topology changes because" +
-                " Baseline Auto Adjustment with zero timeout is configured for the cluster. Configure" +
-                " Baseline Nodes explicitly or set Baseline Auto Adjustment Timeout to greater than zero.");
-
-            return false;
-        }
-
-        return true;
+    private boolean isBaselineConfigurationCompatible(boolean enabled, long autoAdjustmentTimeout) {
+        return !(enabled && autoAdjustmentTimeout == 0L);
     }
 
     /** */
     private class TopologyChangedEventListener implements DiscoveryEventListener, HighPriorityListener {
         /** {@inheritDoc} */
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-            State locStateCopy = state;
+            ClusterState locStateCopy = state;
 
             lastCheckedTopVer = evt.topologyVersion();
 
-            boolean skipTopChangeCheck = !checkBaselineAutoAdjustConfiguration(
-                ctx.state().isBaselineAutoAdjustEnabled(),
-                ctx.state().baselineAutoAdjustTimeout()
-            );
+            boolean isTopValidationApplicable =
+                !isDisabled() &&
+                state == ACTIVE &&
+                evt.type() == EVT_NODE_FAILED  &&
+                isBaselineConfigurationCompatible(
+                    ctx.state().isBaselineAutoAdjustEnabled(),
+                    ctx.state().baselineAutoAdjustTimeout()
+                );
 
-            if (!skipTopChangeCheck && state == State.VALID && evt.type() == EVT_NODE_FAILED) {
-                List<? extends BaselineNode> baselineNodes = discoCache.baselineNodes();
+            if (isTopValidationApplicable && !isValidTopology(discoCache.baselineNodes())) {
+                locStateCopy = null;
 
-                // Actually Ignite considers segmentation as the sequential node failures. So we detect segmentation
-                // even if the single node fails and less than half of baseline nodes are alive.
-                if (baselineNodes != null && aliveBaselineNodes(baselineNodes) < baselineNodes.size() / 2 + 1) {
-                    locStateCopy = State.INVALID;
-
-                    try {
-                        ctx.closure().runLocal(new GridPlainRunnable() {
-                            @Override public void run() {
-                                try {
-                                    ctx.cluster().get().state(ACTIVE_READ_ONLY);
-                                }
-                                catch (Throwable e) {
-                                    U.error(log,
-                                        "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
-                                        " mode. Cache writes were already restricted for all configured caches, but this" +
-                                        " step is still required in order to be able to unlock cache writes in the future." +
-                                        " Retry this operation manually, if possible [segmentedNodes=" +
-                                        formatTopologyNodes(discoCache.allNodes()) + "]", e);
-                                }
+                try {
+                    ctx.closure().runLocal(new GridPlainRunnable() {
+                        @Override public void run() {
+                            try {
+                                ctx.cluster().get().state(ACTIVE_READ_ONLY);
                             }
-                        }, PUBLIC_POOL);
-                    } catch (Throwable e) {
-                        U.error(log, "Failed to schedule cluster state change to the READ-ONLY mode.", e);
-                    }
-
-                    U.warn(log, "Cluster segmentation was detected. Write to all user caches were blocked" +
-                        " [segmentedNodes=" + formatTopologyNodes(discoCache.allNodes()) + ']');
+                            catch (Throwable e) {
+                                U.error(log,
+                                "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
+                                    " mode. Cache writes were already restricted for all configured caches, but this" +
+                                    " step is still required in order to be able to unlock cache writes in the future." +
+                                    " Retry this operation manually, if possible [segmentedNodes=" +
+                                    F.viewReadOnly(discoCache.allNodes(), F.node2id()) + "]", e);
+                            }
+                        }
+                    }, PUBLIC_POOL);
                 }
+                catch (Throwable e) {
+                    U.error(log, "Failed to schedule cluster state change to the READ-ONLY mode.", e);
+                }
+
+                U.warn(log, "Cluster segmentation was detected. Write to all user caches were blocked" +
+                    " [segmentedNodes=" + F.viewReadOnly(discoCache.allNodes(), F.node2id()) + ']');
             }
 
             state = locStateCopy;
@@ -340,44 +374,5 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
         @Override public int order() {
             return 0;
         }
-
-        /**
-         * @return Count of alive baseline nodes.
-         * Note that the following implementation is tied to how {@link DiscoCache#baselineNodes()} collection is
-         * populated.
-         */
-        private int aliveBaselineNodes(Collection<? extends BaselineNode> baselineNodes) {
-            int res = 0;
-
-            for (BaselineNode node : baselineNodes) {
-                if (!(node instanceof DetachedClusterNode))
-                    ++res;
-            }
-
-            return res;
-        }
-
-        /** @return String representation of the specified cluster node collection. */
-        private String formatTopologyNodes(Collection<ClusterNode> nodes) {
-            return nodes.stream().map(n -> n.id().toString()).collect(Collectors.joining(", "));
-        }
-    }
-
-    /** Represents possible states of the current segment. */
-    private enum State {
-        /** Cluster is in the valida state. No segmentation have happened, or it has been successfully resolved. */
-        VALID,
-
-        /**
-         * This state is applied during a period of time when cluster segmentation had been detected locally but global
-         * cluster state wasn't changed to {@link ClusterState#ACTIVE_READ_ONLY} yet.
-         */
-        INVALID,
-
-        /**
-         *  Cluster state is set to {@link ClusterState#INACTIVE} or {@link ClusterState#ACTIVE_READ_ONLY}. So cache
-         *  writes are not available and hence nothing we should worry about.
-         */
-        CLUSTER_WRITE_BLOCKED
     }
 }
