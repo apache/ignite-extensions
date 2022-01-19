@@ -34,10 +34,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <ignite.groupId>org.apache.ignite</ignite.groupId>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${ignite.groupId}</groupId>

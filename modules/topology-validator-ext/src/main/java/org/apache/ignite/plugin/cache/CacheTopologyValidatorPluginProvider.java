@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.sbt.ignite.plugin.cache;
+package org.apache.ignite.plugin.cache;
 
 import java.io.Serializable;
 import java.util.Collection;

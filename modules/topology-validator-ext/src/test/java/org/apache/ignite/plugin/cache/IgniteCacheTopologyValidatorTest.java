@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.sbt.ignite.cache;
+package org.apache.ignite.plugin.cache;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider;
+import org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,7 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.sbt.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
+import static org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;

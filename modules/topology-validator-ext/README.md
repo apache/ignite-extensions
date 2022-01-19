@@ -51,14 +51,14 @@ TopologyValidator implementation.
 
 3. Configure deactivation threshold.
 The deactivation threshold is a fraction of nodes that determines how many nodes must remain in the baseline topology in 
-order to this segment was considered valid and continued to accept write requests after segmentation.
+order to this segment was considered valid and continued to accept write requests.
 This value must be in range from 0.5 (inclusively) to 1. Default value is 0.5. If the default value suits you, nothing
 to do is required.
 
 To set up custom deactivation threshold value set the `org.apache.ignite.topology.validator.deactivation.threshold` 
 distributed configuration property via control script (see https://ignite.apache.org/docs/latest/tools/control-script#working-with-cluster-properties) 
 
-#Manual Segmentation resolving
+#Manual segmentation resolving
 
 The state of each segment for which cache writes were blocked will be eventually switched to the READ-ONLY mode. 
 Manually switching the cluster state back to ACTIVE mode will restore cache write availability. It can be done through 
