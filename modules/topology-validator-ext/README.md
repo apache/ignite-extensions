@@ -50,7 +50,7 @@ Note that it is illegal to use baseline nodes auto adjustment with a zero timeou
 TopologyValidator implementation.
 
 3. Configure deactivation threshold.
-The deactivation threshold is a fraction of nodes that determines how many nodes must remain in the base topology in 
+The deactivation threshold is a fraction of nodes that determines how many nodes must remain in the baseline topology in 
 order to this segment was considered valid and continued to accept write requests after segmentation.
 This value must be in range from 0.5 (inclusively) to 1. Default value is 0.5. If the default value suits you, nothing
 to do is required.
