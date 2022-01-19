@@ -32,7 +32,6 @@
 
     <properties>
         <kafka.version>2.7.0</kafka.version>
-        <slf4j.version>1.7.30</slf4j.version>
     </properties>
 
     <artifactId>ignite-cdc-ext</artifactId>
@@ -110,6 +109,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
