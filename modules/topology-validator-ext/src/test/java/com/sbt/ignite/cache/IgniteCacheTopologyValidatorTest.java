@@ -151,7 +151,10 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         startGrid(1);
 
-        pinBaseline();
+        if (isPersistenceEnabled)
+            grid(0).cluster().state(ACTIVE);
+        else
+            grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         assertTrue(waitForCondition(
             () -> 0F == (Float)grid(1).context()
@@ -227,11 +230,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testRegularNodeStartStop() throws Exception {
-        startGrid(0);
-
-        pinBaseline();
-
-        createCaches();
+        prepareCluster(1);
 
         checkPutGetAfter(() -> startGrid(1));
         checkPutGetAfter(() -> stopGrid(1));
@@ -255,13 +254,9 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Test
     public void testClientNodeSegmentationIgnored() throws Exception {
-        startGrid(0);
+        prepareCluster(1);
 
         startClientGrid(1);
-
-        pinBaseline();
-
-        createCaches();
 
         failNode(1, Collections.singleton(grid(0)));
 
@@ -607,16 +602,11 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     private void prepareCluster(int nodes) throws Exception {
         startGridsMultiThreaded(nodes);
 
-        pinBaseline();
-
-        createCaches();
-    }
-
-    /** */
-    private void pinBaseline() {
         if (isPersistenceEnabled)
             grid(0).cluster().state(ACTIVE);
         else
             grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        createCaches();
     }
 }
