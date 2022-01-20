@@ -78,7 +78,12 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     /** */
     @Parameterized.Parameters(name = "isPersistenceEnabled={0}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[]{true}, new Object[]{false});
+        List<Object[]> res = new ArrayList<>();
+
+        for (int i = 0; i < 80; i++)
+            res.add(new Object[]{i % 2 == 0});
+
+        return res;
     }
 
     /** */
@@ -145,137 +150,137 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     }
 
     /** */
-    @Test
-    public void testConnectionToIncompatibleCluster() throws Exception {
-        startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
-
-        startGrid(1);
-
-        if (isPersistenceEnabled)
-            grid(0).cluster().state(ACTIVE);
-        else
-            grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        assertTrue(waitForCondition(
-            () -> 0F == (Float)grid(1).context()
-                .distributedConfiguration()
-                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-                .get(),
-            getTestTimeout()
-        ));
-
-        splitAndWait();
-
-        connectNodeToSegment(3, false, 1);
-
-        assertTrue(waitForCondition(
-            () -> 0F == (Float)grid(3).context()
-                .distributedConfiguration()
-                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-                .get(),
-            getTestTimeout()
-        ));
-    }
-
-    /** */
-    @Test
-    public void testIncompatibleNodeConnection() throws Exception {
-        prepareCluster(1);
-
-        assertThrowsAnyCause(
-            log,
-            () -> startGrid(getConfiguration(getTestIgniteInstanceName(1), false)),
-            IgniteSpiException.class,
-            "The Topology Validator plugin is not configured for the server node that is trying to join the cluster."
-        );
-
-        startClientGrid(getConfiguration(getTestIgniteInstanceName(2), false));
-
-        assertEquals(2, grid(0).cluster().nodes().size());
-
-        checkPutGet(G.allGrids(), true);
-    }
-
-    /** */
-    @Test
-    public void testConnectionToSegmentedCluster() throws Exception {
-        prepareCluster(6);
-
-        stopGrid(4);
-        stopGrid(5);
-
-        splitAndWait();
-
-        checkPutGet(G.allGrids(), false);
-
-        connectNodeToSegment(4, false, 0);
-        connectNodeToSegment(6, true, 0);
-
-        checkPutGet(0, false);
-
-        connectNodeToSegment(5, false, 1);
-        connectNodeToSegment(7, true, 1);
-
-        checkPutGet(1, false);
-
-        stopSegmentNodes(1);
-
-        unsplit();
-
-        startGrid(1);
-
-        checkPutGet(G.allGrids(), false);
-    }
-
-    /** */
-    @Test
-    public void testRegularNodeStartStop() throws Exception {
-        prepareCluster(1);
-
-        checkPutGetAfter(() -> startGrid(1));
-        checkPutGetAfter(() -> stopGrid(1));
-
-        checkPutGetAfter(() -> startClientGrid(2));
-        checkPutGetAfter(() -> stopGrid(2));
-
-        startGrid(1);
-
-        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
-
-        checkPutGetAfter(() -> startGrid(3));
-        checkPutGetAfter(() -> stopGrid(3));
-
-        checkPutGetAfter(() -> stopGrid(1));
-
-        checkPutGetAfter(() -> startClientGrid(2));
-        checkPutGetAfter(() -> stopGrid(2));
-    }
-
-    /** */
-    @Test
-    public void testClientNodeSegmentationIgnored() throws Exception {
-        prepareCluster(1);
-
-        startClientGrid(1);
-
-        failNode(1, Collections.singleton(grid(0)));
-
-        checkPutGet(Collections.singleton(grid(0)), true);
-    }
-
-    /** */
-    @Test
-    public void testSplitWithoutBaseline() throws Exception {
-        Assume.assumeFalse(isPersistenceEnabled);
-
-        startGridsMultiThreaded(4);
-
-        createCaches();
-
-        splitAndWait();
-
-        checkPutGet(G.allGrids(), true);
-    }
+//    @Test
+//    public void testConnectionToIncompatibleCluster() throws Exception {
+//        startGrid(getConfiguration(getTestIgniteInstanceName(0), false));
+//
+//        startGrid(1);
+//
+//        if (isPersistenceEnabled)
+//            grid(0).cluster().state(ACTIVE);
+//        else
+//            grid(0).cluster().baselineAutoAdjustEnabled(false);
+//
+//        assertTrue(waitForCondition(
+//            () -> 0F == (Float)grid(1).context()
+//                .distributedConfiguration()
+//                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//                .get(),
+//            getTestTimeout()
+//        ));
+//
+//        splitAndWait();
+//
+//        connectNodeToSegment(3, false, 1);
+//
+//        assertTrue(waitForCondition(
+//            () -> 0F == (Float)grid(3).context()
+//                .distributedConfiguration()
+//                .property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//                .get(),
+//            getTestTimeout()
+//        ));
+//    }
+//
+//    /** */
+//    @Test
+//    public void testIncompatibleNodeConnection() throws Exception {
+//        prepareCluster(1);
+//
+//        assertThrowsAnyCause(
+//            log,
+//            () -> startGrid(getConfiguration(getTestIgniteInstanceName(1), false)),
+//            IgniteSpiException.class,
+//            "The Topology Validator plugin is not configured for the server node that is trying to join the cluster."
+//        );
+//
+//        startClientGrid(getConfiguration(getTestIgniteInstanceName(2), false));
+//
+//        assertEquals(2, grid(0).cluster().nodes().size());
+//
+//        checkPutGet(G.allGrids(), true);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testConnectionToSegmentedCluster() throws Exception {
+//        prepareCluster(6);
+//
+//        stopGrid(4);
+//        stopGrid(5);
+//
+//        splitAndWait();
+//
+//        checkPutGet(G.allGrids(), false);
+//
+//        connectNodeToSegment(4, false, 0);
+//        connectNodeToSegment(6, true, 0);
+//
+//        checkPutGet(0, false);
+//
+//        connectNodeToSegment(5, false, 1);
+//        connectNodeToSegment(7, true, 1);
+//
+//        checkPutGet(1, false);
+//
+//        stopSegmentNodes(1);
+//
+//        unsplit();
+//
+//        startGrid(1);
+//
+//        checkPutGet(G.allGrids(), false);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testRegularNodeStartStop() throws Exception {
+//        prepareCluster(1);
+//
+//        checkPutGetAfter(() -> startGrid(1));
+//        checkPutGetAfter(() -> stopGrid(1));
+//
+//        checkPutGetAfter(() -> startClientGrid(2));
+//        checkPutGetAfter(() -> stopGrid(2));
+//
+//        startGrid(1);
+//
+//        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+//
+//        checkPutGetAfter(() -> startGrid(3));
+//        checkPutGetAfter(() -> stopGrid(3));
+//
+//        checkPutGetAfter(() -> stopGrid(1));
+//
+//        checkPutGetAfter(() -> startClientGrid(2));
+//        checkPutGetAfter(() -> stopGrid(2));
+//    }
+//
+//    /** */
+//    @Test
+//    public void testClientNodeSegmentationIgnored() throws Exception {
+//        prepareCluster(1);
+//
+//        startClientGrid(1);
+//
+//        failNode(1, Collections.singleton(grid(0)));
+//
+//        checkPutGet(Collections.singleton(grid(0)), true);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testSplitWithoutBaseline() throws Exception {
+//        Assume.assumeFalse(isPersistenceEnabled);
+//
+//        startGridsMultiThreaded(4);
+//
+//        createCaches();
+//
+//        splitAndWait();
+//
+//        checkPutGet(G.allGrids(), true);
+//    }
 
     /** */
     @Test
@@ -319,160 +324,160 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         checkPutGet(1, false);
     }
 
-    /** */
-    @Test
-    public void testConsequentSegmentationResolving() throws Exception {
-        prepareCluster(4);
-
-        splitAndWait();
-
-        checkPutGet(G.allGrids(), false);
-
-        grid(1).cluster().state(ACTIVE);
-
-        checkPutGet(0, false);
-        checkPutGet(1, true);
-
-        stopSegmentNodes(0);
-
-        unsplit();
-
-        failNode(1, Collections.singleton(grid(3)));
-
-        checkPutGet(Collections.singleton(grid(3)), false);
-
-        grid(3).cluster().state(ACTIVE);
-
-        checkPutGet(Collections.singleton(grid(3)), true);
-    }
-
-    /** */
-    @Test
-    public void testDeactivationThreshold() throws Exception {
-        prepareCluster(5);
-
-        grid(0).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-            .propagate(0.8F);
-
-        Collection<Ignite> segment = new ArrayList<>(G.allGrids());
-
-        segment.remove(grid(0));
-
-        failNode(0, segment);
-
-        checkPutGet(segment, false);
-
-        stopGrid(0);
-
-        grid(1).cluster().state(ACTIVE);
-
-        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-            .propagate(0.5F);
-
-        segment.remove(grid(4));
-
-        failNode(4, segment);
-
-        checkPutGet(segment, true);
-    }
-
-    /** */
-    @Test
-    public void testValidationDisabled() throws Exception {
-        prepareCluster(4);
-
-        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-            .propagate(0F);
-
-        splitAndWait();
-
-        connectNodeToSegment(4, true, 0);
-        connectNodeToSegment(5, true, 1);
-
-        checkPutGet(G.allGrids(), true);
-
-        stopSegmentNodes(0);
-
-        unsplit();
-
-        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
-            .propagate(0.5F);
-
-        failNode(1, Collections.singleton(grid(3)));
-
-        checkPutGet(Collections.singleton(grid(3)), false);
-    }
-
-    /** */
-    @Test
-    public void testNodeJoinWithHalfBaselineNodesLeft() throws Exception {
-        prepareCluster(4);
-
-        stopGrid(0);
-        stopGrid(1);
-        stopGrid(2);
-
-        checkPutGet(G.allGrids(), true);
-
-        startGrid(0);
-
-        checkPutGet(G.allGrids(), true);
-    }
-
-    /** */
-    @Test
-    public void testNodeJoinConcurrentWithLeftRejected() throws Exception {
-        prepareCluster(2);
-
-        CountDownLatch discoveryWorkerBlockedLatch = new CountDownLatch(1);
-
-        try {
-            grid(0).events().localListen(evt -> {
-                try {
-                    discoveryWorkerBlockedLatch.await();
-                }
-                catch (InterruptedException e) {
-                    U.error(log, e);
-
-                    Thread.currentThread().interrupt();
-                }
-
-                return true;
-            }, EVT_NODE_JOINED);
-
-            startGrid(2);
-
-            stopGrid(1);
-
-            assertThrowsAnyCause(
-                log,
-                () -> startGrid(1),
-                IgniteSpiException.class,
-                "Node join request was rejected due to concurrent node left process handling"
-            );
-        }
-        finally {
-            discoveryWorkerBlockedLatch.countDown();
-        }
-    }
-
-    /** */
-    @Test
-    public void testPreconfiguredClusterState() throws Exception {
-        Assume.assumeFalse(isPersistenceEnabled);
-
-        startGrid(0);
-
-        startGrid(getConfiguration(getTestIgniteInstanceName(1)).setClusterStateOnStart(ACTIVE_READ_ONLY));
-
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
-
-        createCaches();
-
-        splitAndWait();
-
-        checkPutGet(G.allGrids(), false);
-    }
+//    /** */
+//    @Test
+//    public void testConsequentSegmentationResolving() throws Exception {
+//        prepareCluster(4);
+//
+//        splitAndWait();
+//
+//        checkPutGet(G.allGrids(), false);
+//
+//        grid(1).cluster().state(ACTIVE);
+//
+//        checkPutGet(0, false);
+//        checkPutGet(1, true);
+//
+//        stopSegmentNodes(0);
+//
+//        unsplit();
+//
+//        failNode(1, Collections.singleton(grid(3)));
+//
+//        checkPutGet(Collections.singleton(grid(3)), false);
+//
+//        grid(3).cluster().state(ACTIVE);
+//
+//        checkPutGet(Collections.singleton(grid(3)), true);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testDeactivationThreshold() throws Exception {
+//        prepareCluster(5);
+//
+//        grid(0).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//            .propagate(0.8F);
+//
+//        Collection<Ignite> segment = new ArrayList<>(G.allGrids());
+//
+//        segment.remove(grid(0));
+//
+//        failNode(0, segment);
+//
+//        checkPutGet(segment, false);
+//
+//        stopGrid(0);
+//
+//        grid(1).cluster().state(ACTIVE);
+//
+//        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//            .propagate(0.5F);
+//
+//        segment.remove(grid(4));
+//
+//        failNode(4, segment);
+//
+//        checkPutGet(segment, true);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testValidationDisabled() throws Exception {
+//        prepareCluster(4);
+//
+//        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//            .propagate(0F);
+//
+//        splitAndWait();
+//
+//        connectNodeToSegment(4, true, 0);
+//        connectNodeToSegment(5, true, 1);
+//
+//        checkPutGet(G.allGrids(), true);
+//
+//        stopSegmentNodes(0);
+//
+//        unsplit();
+//
+//        grid(1).context().distributedConfiguration().property(TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME)
+//            .propagate(0.5F);
+//
+//        failNode(1, Collections.singleton(grid(3)));
+//
+//        checkPutGet(Collections.singleton(grid(3)), false);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testNodeJoinWithHalfBaselineNodesLeft() throws Exception {
+//        prepareCluster(4);
+//
+//        stopGrid(0);
+//        stopGrid(1);
+//        stopGrid(2);
+//
+//        checkPutGet(G.allGrids(), true);
+//
+//        startGrid(0);
+//
+//        checkPutGet(G.allGrids(), true);
+//    }
+//
+//    /** */
+//    @Test
+//    public void testNodeJoinConcurrentWithLeftRejected() throws Exception {
+//        prepareCluster(2);
+//
+//        CountDownLatch discoveryWorkerBlockedLatch = new CountDownLatch(1);
+//
+//        try {
+//            grid(0).events().localListen(evt -> {
+//                try {
+//                    discoveryWorkerBlockedLatch.await();
+//                }
+//                catch (InterruptedException e) {
+//                    U.error(log, e);
+//
+//                    Thread.currentThread().interrupt();
+//                }
+//
+//                return true;
+//            }, EVT_NODE_JOINED);
+//
+//            startGrid(2);
+//
+//            stopGrid(1);
+//
+//            assertThrowsAnyCause(
+//                log,
+//                () -> startGrid(1),
+//                IgniteSpiException.class,
+//                "Node join request was rejected due to concurrent node left process handling"
+//            );
+//        }
+//        finally {
+//            discoveryWorkerBlockedLatch.countDown();
+//        }
+//    }
+//
+//    /** */
+//    @Test
+//    public void testPreconfiguredClusterState() throws Exception {
+//        Assume.assumeFalse(isPersistenceEnabled);
+//
+//        startGrid(0);
+//
+//        startGrid(getConfiguration(getTestIgniteInstanceName(1)).setClusterStateOnStart(ACTIVE_READ_ONLY));
+//
+//        grid(0).cluster().baselineAutoAdjustEnabled(false);
+//
+//        createCaches();
+//
+//        splitAndWait();
+//
+//        checkPutGet(G.allGrids(), false);
+//    }
 
     /** */
     private IgniteEx connectNodeToSegment(int nodeIdx, boolean isClient, int segment) throws Exception {
