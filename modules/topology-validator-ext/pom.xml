@@ -36,14 +36,14 @@
 
     <dependencies>
         <dependency>
-            <groupId>${ignite.groupId}</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>${ignite.groupId}</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
             <type>test-jar</type>
@@ -51,14 +51,14 @@
         </dependency>
 
         <dependency>
-            <groupId>${ignite.groupId}</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>${ignite.groupId}</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
             <scope>test</scope>
