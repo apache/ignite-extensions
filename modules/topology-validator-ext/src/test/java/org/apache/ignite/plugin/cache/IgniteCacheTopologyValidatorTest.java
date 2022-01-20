@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -40,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Assume;
 import org.junit.Test;
@@ -311,6 +315,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         awaitPartitionMapExchange(true, true, null);
 
+        checkPutGet(G.allGrids(), true);
+
         splitAndWait();
 
         checkPutGet(G.allGrids(), false);
@@ -505,6 +511,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
             grid(0).createCache(new CacheConfiguration<>()
                 .setName(cacheName(cacheIdx))
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setCacheMode(REPLICATED)
                 .setReadFromBackup(false));
         }
