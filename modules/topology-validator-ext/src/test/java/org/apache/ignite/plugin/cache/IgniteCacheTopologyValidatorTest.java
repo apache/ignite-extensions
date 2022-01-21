@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
-import org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,14 +45,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
+import static org.apache.ignite.plugin.cache.CacheTopologyValidatorPluginProvider.TOP_VALIDATOR_DEACTIVATION_THRESHOLD_PROP_NAME;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -108,7 +108,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         if (isPersistenceEnabled) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setInitialSize(10L * 1024 * 1024)
+                    .setInitialSize(100L * 1024 * 1024)
+                    .setMaxSize(200L * 1024 * 1024)
                     .setPersistenceEnabled(true)));
         }
 
@@ -306,6 +307,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         awaitPartitionMapExchange(true, true, null);
 
+        checkPutGet(G.allGrids(), true);
+
         splitAndWait();
 
         checkPutGet(G.allGrids(), false);
@@ -500,6 +503,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
             grid(0).createCache(new CacheConfiguration<>()
                 .setName(cacheName(cacheIdx))
+                .setWriteSynchronizationMode(FULL_SYNC)
                 .setCacheMode(REPLICATED)
                 .setReadFromBackup(false));
         }
