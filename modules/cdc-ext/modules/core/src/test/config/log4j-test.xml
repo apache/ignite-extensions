@@ -48,14 +48,6 @@
         <level value="INFO"/>
     </category>
 
-    <category name="org.apache.ignite.cdc">
-        <level value="DEBUG"/>
-    </category>
-
-    <category name="org.apache.ignite.internal.cdc">
-        <level value="DEBUG"/>
-    </category>
-
     <root>
         <level value="INFO"/>
 
