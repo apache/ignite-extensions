@@ -55,10 +55,10 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        cctx.logger(this.getClass()).info("Conflict resolver created[" +
+        cctx.logger(this.getClass()).info("Conflict resolver created [" +
             "cache=" + cctx.name() +
             ", clusterId=" +  clusterId +
-            ", conflictResolveField=" + conflictResolveField
+            ", conflictResolveField=" + conflictResolveField + ']'
         );
 
         IgniteLogger log = cctx.logger(CacheVersionConflictResolverImpl.class);

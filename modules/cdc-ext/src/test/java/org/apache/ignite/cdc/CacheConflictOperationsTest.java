@@ -115,14 +115,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         cache[ATOMIC.ordinal()] = client.createCache(
             new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME + ATOMIC).setAtomicityMode(ATOMIC));
-
         cache[TRANSACTIONAL.ordinal()] = client.createCache(
             new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME + TRANSACTIONAL).setAtomicityMode(TRANSACTIONAL));
 
         cachex = new IgniteInternalCache[CacheAtomicityMode.values().length];
 
         cachex[ATOMIC.ordinal()] = client.cachex(DEFAULT_CACHE_NAME + ATOMIC);
-
         cachex[TRANSACTIONAL.ordinal()] = client.cachex(DEFAULT_CACHE_NAME + TRANSACTIONAL);
     }
 

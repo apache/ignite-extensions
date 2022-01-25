@@ -75,7 +75,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name + "[clusterId=" + clusterId + ", conflictResolveField=" +  conflictResolveField + ", caches=" + caches + ']';
+        return name + " [clusterId=" + clusterId + ", conflictResolveField=" +  conflictResolveField + ", caches=" + caches + ']';
     }
 
     /** {@inheritDoc} */
@@ -100,12 +100,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
         if (caches.contains(cacheName)) {
-            log.info("ConflictResolver provider set for cache[cacheName=" + cacheName + ']');
+            log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
         }
 
-        log.info("Skip ConflictResolver provider for cache[cacheName=" + cacheName + ']');
+        log.info("Skip ConflictResolver provider for cache [cacheName=" + cacheName + ']');
 
         return null;
     }

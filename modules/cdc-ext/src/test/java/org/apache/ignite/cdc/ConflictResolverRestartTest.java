@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/** Check conflict resolver restore conflict resolve on node restart. */
+/** Check conflict resolver restored on node restart. */
 public class ConflictResolverRestartTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
