@@ -30,6 +30,12 @@ import org.apache.ignite.lang.IgniteFuture;
  * @see CacheVersionConflictResolver
  */
 public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictResolutionManager<K, V> {
+    /** Logger. */
+    private IgniteLogger log;
+
+    /** Logger for {@link CacheVersionConflictResolverImpl}. */
+    private IgniteLogger conflictResolverLog;
+
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
@@ -55,32 +61,32 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        cctx.logger(this.getClass()).info("Conflict resolver created [" +
+        log.info("Conflict resolver created [" +
             "cache=" + cctx.name() +
             ", clusterId=" +  clusterId +
             ", conflictResolveField=" + conflictResolveField + ']'
         );
 
-        IgniteLogger log = cctx.logger(CacheVersionConflictResolverImpl.class);
-
-        if (log.isDebugEnabled()) {
+        if (conflictResolverLog.isDebugEnabled()) {
             return new DebugCacheVersionConflictResolverImpl(
                 clusterId,
                 conflictResolveField,
-                log
+                conflictResolverLog
             );
         }
 
         return new CacheVersionConflictResolverImpl(
             clusterId,
             conflictResolveField,
-            log
+            conflictResolverLog
         );
     }
 
     /** {@inheritDoc} */
     @Override public void start(GridCacheContext<K, V> cctx) {
         this.cctx = cctx;
+        this.log = cctx.logger(CacheConflictResolutionManagerImpl.class);
+        this.conflictResolverLog = cctx.logger(CacheVersionConflictResolverImpl.class);
     }
 
     /** {@inheritDoc} */
