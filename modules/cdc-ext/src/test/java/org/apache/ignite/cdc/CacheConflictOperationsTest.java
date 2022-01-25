@@ -18,8 +18,8 @@
 package org.apache.ignite.cdc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +57,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** Cache mode. */
     @Parameterized.Parameter
-    public CacheAtomicityMode mode;
+    public CacheAtomicityMode cacheMode;
 
     /** Other cluster id. */
     @Parameterized.Parameter(1)
@@ -76,10 +76,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static IgniteCache<String, ConflictResolvableTestData>[] cache;
+    private static IgniteCache<String, ConflictResolvableTestData> cache;
 
     /** */
-    private static IgniteInternalCache<BinaryObject, BinaryObject>[] cachex;
+    private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
 
     /** */
     private static IgniteEx client;
@@ -98,7 +98,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
 
         pluginCfg.setClusterId(SECOND_CLUSTER_ID);
-        pluginCfg.setCaches(new HashSet<>(Arrays.asList(DEFAULT_CACHE_NAME + ATOMIC, DEFAULT_CACHE_NAME + TRANSACTIONAL)));
+        pluginCfg.setCaches(new HashSet<>(Collections.singleton(DEFAULT_CACHE_NAME)));
         pluginCfg.setConflictResolveField(conflictResolveField());
 
         return super.getConfiguration(igniteInstanceName).setPluginProviders(pluginCfg);
@@ -109,18 +109,21 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         startGrid(1);
 
         client = startClientGrid(2);
+    }
 
-        cache = new IgniteCache[CacheAtomicityMode.values().length];
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        cache[ATOMIC.ordinal()] = client.createCache(
-            new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME + ATOMIC).setAtomicityMode(ATOMIC));
-        cache[TRANSACTIONAL.ordinal()] = client.createCache(
-            new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME + TRANSACTIONAL).setAtomicityMode(TRANSACTIONAL));
+        if (cachex == null || cachex.configuration().getAtomicityMode() != cacheMode) {
+            if (cachex != null)
+                client.cache(DEFAULT_CACHE_NAME).destroy();
 
-        cachex = new IgniteInternalCache[CacheAtomicityMode.values().length];
+            cache = client.createCache(new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(cacheMode));
 
-        cachex[ATOMIC.ordinal()] = client.cachex(DEFAULT_CACHE_NAME + ATOMIC);
-        cachex[TRANSACTIONAL.ordinal()] = client.cachex(DEFAULT_CACHE_NAME + TRANSACTIONAL);
+            cachex = client.cachex(DEFAULT_CACHE_NAME);
+        }
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
@@ -245,14 +248,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private void put(String key) {
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache[mode.ordinal()].getEntry(key);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(key);
 
-        cache[mode.ordinal()].put(key, newVal);
+        cache.put(key, newVal);
 
-        CacheEntry<String, ConflictResolvableTestData> newEntry = cache[mode.ordinal()].getEntry(key);
+        CacheEntry<String, ConflictResolvableTestData> newEntry = cache.getEntry(key);
 
         assertNull(((CacheEntryVersion)newEntry.version()).otherClusterVersion());
-        assertEquals(newVal, cache[mode.ordinal()].get(key));
+        assertEquals(newVal, cache.get(key));
 
         if (oldEntry != null)
             assertTrue(((CacheEntryVersion)oldEntry.version()).order() < ((CacheEntryVersion)newEntry.version()).order());
@@ -265,30 +268,30 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache[mode.ordinal()].getEntry(k);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
-        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex[mode.ordinal()].context().affinity().partition(k));
+        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
 
-        cachex[mode.ordinal()].putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
+        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
 
         if (success) {
-            assertEquals(newVer, ((GridCacheVersion)cache[mode.ordinal()].getEntry(k).version()).conflictVersion());
-            assertEquals(newVal, cache[mode.ordinal()].get(k));
+            assertEquals(newVer, ((GridCacheVersion)cache.getEntry(k).version()).conflictVersion());
+            assertEquals(newVal, cache.get(k));
         } else if (oldEntry != null) {
-            assertEquals(oldEntry.getValue(), cache[mode.ordinal()].get(k));
-            assertEquals(oldEntry.version(), cache[mode.ordinal()].getEntry(k).version());
+            assertEquals(oldEntry.getValue(), cache.get(k));
+            assertEquals(oldEntry.version(), cache.getEntry(k).version());
         }
     }
 
     /** */
     private void remove(String key) {
-        assertTrue(cache[mode.ordinal()].containsKey(key));
+        assertTrue(cache.containsKey(key));
 
-        cache[mode.ordinal()].remove(key);
+        cache.remove(key);
 
-        assertFalse(cache[mode.ordinal()].containsKey(key));
+        assertFalse(cache.containsKey(key));
     }
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
@@ -298,25 +301,25 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
     private void removeConflict(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
-        assertTrue(cache[mode.ordinal()].containsKey(k));
+        assertTrue(cache.containsKey(k));
 
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache[mode.ordinal()].getEntry(k);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
 
-        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex[mode.ordinal()].context().affinity().partition(k));
+        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
 
-        cachex[mode.ordinal()].removeAllConflict(singletonMap(key, ver));
+        cachex.removeAllConflict(singletonMap(key, ver));
 
         if (success)
-            assertFalse(cache[mode.ordinal()].containsKey(k));
+            assertFalse(cache.containsKey(k));
         else if (oldEntry != null) {
-            assertEquals(oldEntry.getValue(), cache[mode.ordinal()].get(k));
-            assertEquals(oldEntry.version(), cache[mode.ordinal()].getEntry(k).version());
+            assertEquals(oldEntry.getValue(), cache.get(k));
+            assertEquals(oldEntry.version(), cache.getEntry(k).version());
         }
     }
 
     /** */
     private String key(String key, byte otherClusterId) {
-        return key + otherClusterId + mode;
+        return key + otherClusterId + cacheMode;
     }
 
     /** */
