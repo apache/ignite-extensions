@@ -41,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * @see CacheVersionConflictResolver
  */
 public class CacheVersionConflictResolverPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
-    /** Plugin context. */
-    private PluginContext ctx;
-
     /** Cluster id. */
     private byte clusterId;
 
@@ -90,7 +87,6 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-        this.ctx = ctx;
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId);
     }
