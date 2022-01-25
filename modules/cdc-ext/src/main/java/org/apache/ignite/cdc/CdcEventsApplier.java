@@ -76,7 +76,7 @@ public abstract class CdcEventsApplier {
 
         for (CdcEvent evt : evts) {
             if (log().isDebugEnabled())
-                log().debug("Event received [evt=" + evt + ", key=" + evt.key() + ']');
+                log().debug("Event received [evt=" + evt + ']');
 
             IgniteInternalCache<BinaryObject, BinaryObject> cache = ignCaches.computeIfAbsent(evt.cacheId(), cacheId -> {
                 for (String cacheName : ignite().cacheNames()) {

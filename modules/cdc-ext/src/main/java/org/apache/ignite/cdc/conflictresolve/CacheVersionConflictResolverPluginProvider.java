@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.conflictresolve;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -49,6 +50,9 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Cache names. */
     private Set<String> caches;
 
+    /** Plugin name. */
+    private String name = "Cache version conflict resolver";
+
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
@@ -61,6 +65,9 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Cache plugin provider. */
     private CachePluginProvider<?> provider;
 
+    /** Log. */
+    private IgniteLogger log;
+
     /** */
     public CacheVersionConflictResolverPluginProvider() {
         // No-op.
@@ -68,7 +75,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Cache version conflict resolver";
+        return name + "[clusterId=" + clusterId + ", conflictResolveField=" +  conflictResolveField + ", caches=" + caches + ']';
     }
 
     /** {@inheritDoc} */
@@ -84,14 +91,22 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.ctx = ctx;
+        this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
 
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId);
     }
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        if (caches.contains(ctx.igniteCacheConfiguration().getName()))
+        String cacheName = ctx.igniteCacheConfiguration().getName();
+
+        if (caches.contains(cacheName)) {
+            log.info("ConflictResolver provider set for cache[cacheName=" + cacheName + ']');
+
             return provider;
+        }
+
+        log.info("Skip ConflictResolver provider for cache[cacheName=" + cacheName + ']');
 
         return null;
     }
@@ -121,6 +136,11 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** @param conflictResolveField Field to resolve conflicts. */
     public void setConflictResolveField(String conflictResolveField) {
         this.conflictResolveField = conflictResolveField;
+    }
+
+    /** @param name Plugin name. */
+    public void setName(String name) {
+        this.name = name;
     }
 
     /** {@inheritDoc} */

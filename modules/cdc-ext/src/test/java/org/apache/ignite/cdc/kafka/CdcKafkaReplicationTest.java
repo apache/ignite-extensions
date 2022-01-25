@@ -111,17 +111,17 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc(String cache) {
+    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, cache));
+            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE));
 
         for (IgniteEx ex : destCluster)
-            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, cache));
+            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE));
 
-        futs.add(kafkaToIgnite(cache, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
-        futs.add(kafkaToIgnite(cache, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
 
         return futs;
     }

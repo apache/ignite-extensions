@@ -43,7 +43,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /**
      * Cluster id.
      */
-    private final byte clusterId;
+    protected final byte clusterId;
 
     /**
      * Field for conflict resolve.
@@ -56,10 +56,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     private final String conflictResolveField;
 
     /** Logger. */
-    private final IgniteLogger log;
+    protected final IgniteLogger log;
 
     /** If {@code true} then conflict resolving with the value field enabled. */
-    private final boolean conflictResolveFieldEnabled;
+    protected final boolean conflictResolveFieldEnabled;
 
     /**
      * @param clusterId Data center id.
@@ -100,7 +100,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @return {@code True} is should use new entry.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private <K, V> boolean isUseNew(
+    protected  <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
@@ -119,20 +119,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             Object newVal = newEntry.value(ctx);
 
             if (oldVal != null && newVal != null) {
-                Comparable oldResolveField;
-                Comparable newResolveField;
-
                 try {
-                    if (oldVal instanceof BinaryObject) {
-                        oldResolveField = ((BinaryObject)oldVal).field(conflictResolveField);
-                        newResolveField = ((BinaryObject)newVal).field(conflictResolveField);
-                    }
-                    else {
-                        oldResolveField = U.field(oldVal, conflictResolveField);
-                        newResolveField = U.field(newVal, conflictResolveField);
-                    }
-
-                    return oldResolveField.compareTo(newResolveField) < 0;
+                    return value(oldVal).compareTo(value(newVal)) < 0;
                 }
                 catch (Exception e) {
                     log.error(
@@ -148,5 +136,12 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         // Ignoring update.
         return false;
+    }
+
+    /** @return Conflict resolve field value. */
+    protected Comparable value(Object val) {
+        return (val instanceof BinaryObject)
+            ? ((BinaryObject)val).field(conflictResolveField)
+            : U.field(val, conflictResolveField);
     }
 }

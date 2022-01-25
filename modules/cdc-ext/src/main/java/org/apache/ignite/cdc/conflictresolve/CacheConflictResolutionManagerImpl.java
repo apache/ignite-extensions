@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.conflictresolve;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -54,10 +55,26 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
+        cctx.logger(this.getClass()).info("Conflict resolver created[" +
+            "cache=" + cctx.name() +
+            ", clusterId=" +  clusterId +
+            ", conflictResolveField=" + conflictResolveField
+        );
+
+        IgniteLogger log = cctx.logger(CacheVersionConflictResolverImpl.class);
+
+        if (log.isDebugEnabled()) {
+            return new DebugCacheVersionConflictResolverImpl(
+                clusterId,
+                conflictResolveField,
+                log
+            );
+        }
+
         return new CacheVersionConflictResolverImpl(
             clusterId,
             conflictResolveField,
-            cctx.logger(CacheVersionConflictResolverImpl.class)
+            log
         );
     }
 
