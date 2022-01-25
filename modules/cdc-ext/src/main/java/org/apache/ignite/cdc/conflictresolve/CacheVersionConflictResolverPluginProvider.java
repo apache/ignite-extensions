@@ -112,9 +112,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
-        IgniteEx ign = (IgniteEx)ctx.grid();
-
-        ign.context().cache().context().versions().dataCenterId(clusterId);
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -144,7 +142,9 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        // No-op.
+        IgniteEx ign = (IgniteEx)ctx.grid();
+
+        ign.context().cache().context().versions().dataCenterId(clusterId);
     }
 
     /** {@inheritDoc} */
