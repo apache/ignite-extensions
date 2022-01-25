@@ -126,35 +126,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         cachex[TRANSACTIONAL.ordinal()] = client.cachex(DEFAULT_CACHE_NAME + TRANSACTIONAL);
     }
 
-    /** Tests {@code clusterId} value set correctly after node restart. */
-    @Test
-    public void testClusterIdAfterRestart() throws Exception {
-        checkSetup();
-
-        stopAllGrids();
-
-        beforeTestsStarted();
-
-        checkSetup();
-    }
-
-    /** */
-    private void checkSetup() {
-        IgniteEx srv = grid(1);
-
-        assertNotNull(srv);
-
-        assertEquals(SECOND_CLUSTER_ID, srv.context().cache().context().versions().dataCenterId());
-
-        assertTrue(srv.context().cache().cache(DEFAULT_CACHE_NAME + mode).context().conflictNeedResolve());
-
-        assertEquals(
-            SECOND_CLUSTER_ID,
-            (byte)GridTestUtils.getFieldValue(srv.context().cache().cache(DEFAULT_CACHE_NAME + mode).context(), "conflictRslvr", "clusterId")
-        );
-    }
-
-
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
     @Test
     public void testSimpleUpdates() {

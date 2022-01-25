@@ -33,7 +33,8 @@ import org.junit.runners.Suite;
     CdcIgniteToIgniteReplicationTest.class,
     KafkaToIgniteLoaderTest.class,
     CdcKafkaReplicationTest.class,
-    CdcKafkaReplicationAppsTest.class
+    CdcKafkaReplicationAppsTest.class,
+    ConflictResolverRestartTest.class
 })
 public class IgniteCdcTestSuite {
 }
