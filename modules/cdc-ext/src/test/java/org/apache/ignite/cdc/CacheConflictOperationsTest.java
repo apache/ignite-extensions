@@ -306,7 +306,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         cachex[mode.ordinal()].putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
 
         if (success) {
-            assertEquals(newVer, ((CacheEntryVersion)cache[mode.ordinal()].getEntry(k).version()).otherClusterVersion());
+            assertEquals(newVer, ((GridCacheVersion)cache[mode.ordinal()].getEntry(k).version()).conflictVersion());
             assertEquals(newVal, cache[mode.ordinal()].get(k));
         } else if (oldEntry != null) {
             assertEquals(oldEntry.getValue(), cache[mode.ordinal()].get(k));

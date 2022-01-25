@@ -55,7 +55,7 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
             ", newVer=" + newEntry.version() +
             ", old=" + oldVal +
             ", new=" + newVal +
-            ", res=" + res);
+            ", res=" + res + ']');
 
         return res;
     }
