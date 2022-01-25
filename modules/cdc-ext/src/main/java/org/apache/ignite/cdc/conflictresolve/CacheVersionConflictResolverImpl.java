@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -43,6 +45,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /**
      * Cluster id.
      */
+    @GridToStringInclude
     protected final byte clusterId;
 
     /**
@@ -53,12 +56,14 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      *
      * @see CacheVersionConflictResolverImpl
      */
+    @GridToStringInclude
     private final String conflictResolveField;
 
     /** Logger. */
     protected final IgniteLogger log;
 
     /** If {@code true} then conflict resolving with the value field enabled. */
+    @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
     /**
@@ -143,5 +148,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         return (val instanceof BinaryObject)
             ? ((BinaryObject)val).field(conflictResolveField)
             : U.field(val, conflictResolveField);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheVersionConflictResolverImpl.class, this);
     }
 }

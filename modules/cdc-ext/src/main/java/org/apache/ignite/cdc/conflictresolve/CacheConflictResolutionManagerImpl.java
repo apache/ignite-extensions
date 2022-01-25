@@ -61,25 +61,26 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        log.info("Conflict resolver created [" +
-            "cache=" + cctx.name() +
-            ", clusterId=" +  clusterId +
-            ", conflictResolveField=" + conflictResolveField + ']'
-        );
+        CacheVersionConflictResolver rslvr;
 
         if (conflictResolverLog.isDebugEnabled()) {
-            return new DebugCacheVersionConflictResolverImpl(
+            rslvr = new DebugCacheVersionConflictResolverImpl(
+                clusterId,
+                conflictResolveField,
+                conflictResolverLog
+            );
+        }
+        else {
+            rslvr = new CacheVersionConflictResolverImpl(
                 clusterId,
                 conflictResolveField,
                 conflictResolverLog
             );
         }
 
-        return new CacheVersionConflictResolverImpl(
-            clusterId,
-            conflictResolveField,
-            conflictResolverLog
-        );
+        log.info("Conflict resolver created [rslvr=" + rslvr + ']');
+
+        return rslvr;
     }
 
     /** {@inheritDoc} */

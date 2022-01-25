@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.conflictresolve;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Debug aware resolver. */
 public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictResolverImpl {
@@ -58,5 +59,10 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
             ", res=" + res + ']');
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheVersionConflictResolverImpl.class, this);
     }
 }
