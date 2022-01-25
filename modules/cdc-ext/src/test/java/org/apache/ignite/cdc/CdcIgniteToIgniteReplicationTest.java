@@ -41,14 +41,14 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
+    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc(String cache) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], cache));
 
         for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], cache));
 
         return futs;
     }

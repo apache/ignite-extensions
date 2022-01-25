@@ -38,20 +38,24 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
      */
     private final String conflictResolveField;
 
+    /** CLuster Id. */
+    private final byte clusterId;
+
     /** Grid cache context. */
     private GridCacheContext<K, V> cctx;
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
      */
-    public CacheConflictResolutionManagerImpl(String conflictResolveField) {
+    public CacheConflictResolutionManagerImpl(String conflictResolveField, byte clusterId) {
         this.conflictResolveField = conflictResolveField;
+        this.clusterId = clusterId;
     }
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
         return new CacheVersionConflictResolverImpl(
-            cctx.versions().dataCenterId(),
+            clusterId,
             conflictResolveField,
             cctx.logger(CacheVersionConflictResolverImpl.class)
         );

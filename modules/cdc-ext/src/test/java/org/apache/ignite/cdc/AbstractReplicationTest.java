@@ -26,8 +26,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -152,10 +152,10 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected static IgniteConfiguration[] destClusterCliCfg;
 
     /** */
-    private int discoPort = TcpDiscoverySpi.DFLT_PORT;
+    private int discoPort;
 
     /** */
-    private byte clusterId = SRC_CLUSTER_ID;
+    private byte clusterId;
 
     /** */
     protected final List<CdcMain> cdcs = Collections.synchronizedList(new ArrayList<>());
@@ -176,13 +176,17 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             cfgPlugin1.setCaches(new HashSet<>(Arrays.asList(ACTIVE_PASSIVE_CACHE, ACTIVE_ACTIVE_CACHE)));
             cfgPlugin1.setConflictResolveField("reqId");
 
-            CacheVersionConflictResolverPluginProvider<?> cfgPlugin2 = new CacheVersionConflictResolverPluginProvider<>();
+            CacheVersionConflictResolverPluginProvider<?> cfgPlugin2 = new CacheVersionConflictResolverPluginProvider() {
+                @Override public String name() {
+                    return super.name() + "2";
+                }
+            };
 
             cfgPlugin2.setClusterId(clusterId);
-            cfgPlugin2.setCaches(new HashSet<>(Arrays.asList("T1")));
-            cfgPlugin2.setConflictResolveField("ID");
+            cfgPlugin2.setCaches(new HashSet<>(Arrays.asList("T1", "T4Cache")));
+            cfgPlugin2.setConflictResolveField("Name");
 
-            cfg.setPluginProviders(cfgPlugin1);
+            cfg.setPluginProviders(cfgPlugin1, cfgPlugin2);
 
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -203,6 +207,14 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         cdcs.clear();
+
+        setupClusters();
+    }
+
+    /** */
+    private void setupClusters() throws Exception {
+        clusterId = SRC_CLUSTER_ID;
+        discoPort = TcpDiscoverySpi.DFLT_PORT;
 
         IgniteBiTuple<IgniteEx[], IgniteConfiguration[]> cluster = setupCluster("source", "src-cluster-client", 0);
 
@@ -293,14 +305,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Replication with complex SQL key. Data inserted via SQL. */
     @Test
     public void testActivePassiveReplicationComplexKeyWithSQL() throws Exception {
-        doTestActivePassiveSqlDataReplicationComplexKey("T2", (ignite, id) -> executeSql(
-            ignite,
-            "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
-            id,
-            "SUBID",
-            "Name" + id,
-            id * 42
-        ));
+        doTestActivePassiveSqlDataReplicationComplexKey("T2", (ignite, id) -> insertRow(ignite, id, "T2"));
     }
 
     /** Replication with complex SQL key. Data inserted via key-value API. */
@@ -312,20 +317,74 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void doTestActivePassiveSqlDataReplicationComplexKey(String name, BiConsumer<IgniteEx, Integer> addData) throws Exception {
-        String createTbl = "CREATE TABLE IF NOT EXISTS " + name + "(" +
-            "    ID INT NOT NULL, " +
-            "    SUBID VARCHAR NOT NULL, " +
-            "    NAME VARCHAR, " +
-            "    ORGID INT, " +
-            "    PRIMARY KEY (ID, SUBID))" +
-            "    WITH \"CACHE_NAME=" + name + "," +
-            "KEY_TYPE=" + TestKey.class.getName() + "," +
-            "VALUE_TYPE=" + TestVal.class.getName() + "," +
-            "ATOMICITY=" + atomicity.name() + "\";";
+    @Test
+    public void testReplicationNotCycledWithSqlDelete() throws Exception {
+        createSqlTable("T4", "T4Cache");
 
-        executeSql(srcCluster[0], createTbl);
-        executeSql(destCluster[0], createTbl);
+        checkSetup();
+
+        for (IgniteEx ex : srcCluster)
+            ex.close();
+
+        for (IgniteEx ex : destCluster)
+            ex.close();
+
+        setupClusters();
+
+        insertRow(srcCluster[0], 1, "T4");
+        insertRow(destCluster[0], 2, "T4");
+
+        checkSetup();
+
+        List<IgniteInternalFuture<?>> futs = startActiveActiveCdc("T4Cache");
+
+        try {
+            BiFunction<IgniteEx, Integer, GridAbsPredicate> waitForTblSz = (ignite, expSz) -> () -> {
+                long cnt = (Long)executeSql(ignite, "SELECT COUNT(*) FROM T4").get(0).get(0);
+
+                return cnt == expSz;
+            };
+
+            assertTrue(waitForCondition(waitForTblSz.apply(srcCluster[0], 2), getTestTimeout()));
+            assertTrue(waitForCondition(waitForTblSz.apply(destCluster[0], 2), getTestTimeout()));
+
+            executeSql(srcCluster[0], "DELETE FROM T4 WHERE ID = 1");
+
+            assertTrue(waitForCondition(waitForTblSz.apply(srcCluster[0], 1), getTestTimeout()));
+            assertTrue(waitForCondition(waitForTblSz.apply(destCluster[0], 1), getTestTimeout()));
+
+            checkMetrics();
+
+            //TODO: add checks that replication stops and no new messages appear in CDC.
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
+    /** */
+    private void checkSetup() {
+        assertTrue(srcCluster[0].context().cache().cache("T4Cache").context().conflictNeedResolve());
+        assertTrue(destCluster[0].context().cache().cache("T4Cache").context().conflictNeedResolve());
+
+        assertEquals(
+            SRC_CLUSTER_ID,
+            (byte)getFieldValue(srcCluster[0].context().cache().cache("T4Cache").context(), "conflictRslvr", "clusterId")
+        );
+
+        assertEquals(
+            DEST_CLUSTER_ID,
+            (byte)getFieldValue(destCluster[0].context().cache().cache("T4Cache").context(), "conflictRslvr", "clusterId")
+        );
+
+        assertEquals(SRC_CLUSTER_ID, srcCluster[0].context().cache().context().versions().dataCenterId());
+        assertEquals(DEST_CLUSTER_ID, destCluster[0].context().cache().context().versions().dataCenterId());
+    }
+
+    /** */
+    public void doTestActivePassiveSqlDataReplicationComplexKey(String name, BiConsumer<IgniteEx, Integer> addData) throws Exception {
+        createSqlTable(name, name);
 
         addData.accept(destCluster[0], -1);
         executeSql(destCluster[0], "DELETE FROM " + name);
@@ -364,6 +423,35 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             for (IgniteInternalFuture<?> fut : futs)
                 fut.cancel();
         }
+    }
+
+    /** */
+    private List<List<?>> insertRow(IgniteEx ignite, Integer id, String tblName) {
+        return executeSql(
+            ignite,
+            "INSERT INTO " + tblName + " (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
+            id,
+            "SUBID",
+            "Name" + id,
+            id * 42
+        );
+    }
+
+    /** */
+    private void createSqlTable(String name, String cacheName) {
+        String createTbl = "CREATE TABLE IF NOT EXISTS " + name + "(" +
+            "    ID INT NOT NULL, " +
+            "    SUBID VARCHAR NOT NULL, " +
+            "    NAME VARCHAR, " +
+            "    ORGID INT, " +
+            "    PRIMARY KEY (ID, SUBID))" +
+            "    WITH \"CACHE_NAME=" + cacheName + "," +
+            "KEY_TYPE=" + TestKey.class.getName() + "," +
+            "VALUE_TYPE=" + TestVal.class.getName() + "," +
+            "ATOMICITY=" + atomicity.name() + "\";";
+
+        executeSql(srcCluster[0], createTbl);
+        executeSql(destCluster[0], createTbl);
     }
 
     /** Active/Passive mode means changes made only in one cluster. */
@@ -427,7 +515,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 
-        List<IgniteInternalFuture<?>> futs = startActiveActiveCdc();
+        List<IgniteInternalFuture<?>> futs = startActiveActiveCdc(ACTIVE_ACTIVE_CACHE);
 
         try {
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
@@ -515,7 +603,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache);
 
     /** */
-    protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
+    protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc(String cache);
 
     /** */
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);

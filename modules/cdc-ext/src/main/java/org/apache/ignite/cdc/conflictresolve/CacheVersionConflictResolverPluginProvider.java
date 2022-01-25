@@ -85,7 +85,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.ctx = ctx;
 
-        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField);
+        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId);
     }
 
     /** {@inheritDoc} */
