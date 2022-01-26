@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,7 +31,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -44,29 +44,24 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_11_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
 public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** */
-    private static final String VER_2_11_0 = "2.11.0";
-
-    /** */
-    private static final String[] TEST_IGNITE_VERSIONS = new String[] {
-        VER_2_11_0,
-        IgniteVersionUtils.VER_STR
-    };
-
-    /** */
-    private static final String[] TEST_SPRING_VERSIONS = new String[] {
+    private static final Collection<String> TEST_SPRING_VERSIONS = Arrays.asList(
         "4.3.0.RELEASE",
         "5.0.0.RELEASE",
         "5.1.0.RELEASE",
         "5.2.0.RELEASE",
         "5.3.0"
-    };
+    );
 
     /** */
     private static final String TEST_CACHE_NAME = "testCache";
@@ -74,14 +69,7 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
     /** */
     @Parameterized.Parameters(name = "Ignite Version {0}, Spring Version {1}")
     public static Iterable<Object[]> versions() {
-        ArrayList<Object[]> testVersions = new ArrayList<>();
-
-        for (String igniteVer : TEST_IGNITE_VERSIONS) {
-            for (String springVer : TEST_SPRING_VERSIONS)
-                testVersions.add(new Object[]{igniteVer, springVer});
-        }
-
-        return testVersions;
+        return cartesianProduct(F.concat(true, VER_STR, since(VER_2_11_0)), TEST_SPRING_VERSIONS);
     }
 
     /** */
@@ -116,7 +104,7 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
         res.add(new Dependency("spring-aop", "org.springframework", "spring-aop", springVer, false));
         res.add(new Dependency("spring-expression", "org.springframework", "spring-expression", springVer, false));
 
-        if (VER_2_11_0.equals(igniteVer)) {
+        if (VER_2_11_0.toString().equals(igniteVer)) {
             res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
         }
