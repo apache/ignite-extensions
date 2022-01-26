@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.conflictresolve;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -40,14 +41,14 @@ import org.jetbrains.annotations.Nullable;
  * @see CacheVersionConflictResolver
  */
 public class CacheVersionConflictResolverPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
-    /** Plugin context. */
-    private PluginContext ctx;
-
     /** Cluster id. */
     private byte clusterId;
 
     /** Cache names. */
     private Set<String> caches;
+
+    /** Plugin name. */
+    private String name = "Cache version conflict resolver";
 
     /**
      * Field for conflict resolve.
@@ -61,6 +62,9 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Cache plugin provider. */
     private CachePluginProvider<?> provider;
 
+    /** Log. */
+    private IgniteLogger log;
+
     /** */
     public CacheVersionConflictResolverPluginProvider() {
         // No-op.
@@ -68,7 +72,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Cache version conflict resolver";
+        return name + " [clusterId=" + clusterId + ", conflictResolveField=" +  conflictResolveField + ", caches=" + caches + ']';
     }
 
     /** {@inheritDoc} */
@@ -83,24 +87,28 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-        this.ctx = ctx;
-
-        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField);
+        this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
+        this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId);
     }
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        if (caches.contains(ctx.igniteCacheConfiguration().getName()))
+        String cacheName = ctx.igniteCacheConfiguration().getName();
+
+        if (caches.contains(cacheName)) {
+            log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
+
             return provider;
+        }
+
+        log.info("Skip ConflictResolver provider for cache [cacheName=" + cacheName + ']');
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
-        IgniteEx ign = (IgniteEx)ctx.grid();
-
-        ign.context().cache().context().versions().dataCenterId(clusterId);
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -123,9 +131,14 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
         this.conflictResolveField = conflictResolveField;
     }
 
+    /** @param name Plugin name. */
+    public void setName(String name) {
+        this.name = name;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        // No-op.
+        ((IgniteEx)ctx.grid()).context().cache().context().versions().dataCenterId(clusterId);
     }
 
     /** {@inheritDoc} */

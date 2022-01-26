@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.conflictresolve;
 
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -29,6 +30,12 @@ import org.apache.ignite.lang.IgniteFuture;
  * @see CacheVersionConflictResolver
  */
 public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictResolutionManager<K, V> {
+    /** Logger. */
+    private IgniteLogger log;
+
+    /** Logger for {@link CacheVersionConflictResolverImpl}. */
+    private IgniteLogger conflictResolverLog;
+
     /**
      * Field for conflict resolve.
      * Value of this field will be used to compare two entries in case of conflicting changes.
@@ -38,28 +45,49 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
      */
     private final String conflictResolveField;
 
+    /** CLuster Id. */
+    private final byte clusterId;
+
     /** Grid cache context. */
     private GridCacheContext<K, V> cctx;
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
      */
-    public CacheConflictResolutionManagerImpl(String conflictResolveField) {
+    public CacheConflictResolutionManagerImpl(String conflictResolveField, byte clusterId) {
         this.conflictResolveField = conflictResolveField;
+        this.clusterId = clusterId;
     }
 
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
-        return new CacheVersionConflictResolverImpl(
-            cctx.versions().dataCenterId(),
-            conflictResolveField,
-            cctx.logger(CacheVersionConflictResolverImpl.class)
-        );
+        CacheVersionConflictResolver rslvr;
+
+        if (conflictResolverLog.isDebugEnabled()) {
+            rslvr = new DebugCacheVersionConflictResolverImpl(
+                clusterId,
+                conflictResolveField,
+                conflictResolverLog
+            );
+        }
+        else {
+            rslvr = new CacheVersionConflictResolverImpl(
+                clusterId,
+                conflictResolveField,
+                conflictResolverLog
+            );
+        }
+
+        log.info("Conflict resolver created [rslvr=" + rslvr + ']');
+
+        return rslvr;
     }
 
     /** {@inheritDoc} */
     @Override public void start(GridCacheContext<K, V> cctx) {
         this.cctx = cctx;
+        this.log = cctx.logger(CacheConflictResolutionManagerImpl.class);
+        this.conflictResolverLog = cctx.logger(CacheVersionConflictResolverImpl.class);
     }
 
     /** {@inheritDoc} */

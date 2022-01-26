@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -43,7 +45,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /**
      * Cluster id.
      */
-    private final byte clusterId;
+    @GridToStringInclude
+    protected final byte clusterId;
 
     /**
      * Field for conflict resolve.
@@ -53,13 +56,15 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      *
      * @see CacheVersionConflictResolverImpl
      */
+    @GridToStringInclude
     private final String conflictResolveField;
 
     /** Logger. */
-    private final IgniteLogger log;
+    protected final IgniteLogger log;
 
     /** If {@code true} then conflict resolving with the value field enabled. */
-    private final boolean conflictResolveFieldEnabled;
+    @GridToStringInclude
+    protected final boolean conflictResolveFieldEnabled;
 
     /**
      * @param clusterId Data center id.
@@ -100,7 +105,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @return {@code True} is should use new entry.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private <K, V> boolean isUseNew(
+    protected  <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
@@ -119,20 +124,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             Object newVal = newEntry.value(ctx);
 
             if (oldVal != null && newVal != null) {
-                Comparable oldResolveField;
-                Comparable newResolveField;
-
                 try {
-                    if (oldVal instanceof BinaryObject) {
-                        oldResolveField = ((BinaryObject)oldVal).field(conflictResolveField);
-                        newResolveField = ((BinaryObject)newVal).field(conflictResolveField);
-                    }
-                    else {
-                        oldResolveField = U.field(oldVal, conflictResolveField);
-                        newResolveField = U.field(newVal, conflictResolveField);
-                    }
-
-                    return oldResolveField.compareTo(newResolveField) < 0;
+                    return value(oldVal).compareTo(value(newVal)) < 0;
                 }
                 catch (Exception e) {
                     log.error(
@@ -143,10 +136,22 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             }
         }
 
-        log.error("Conflict can't be resolved, update ignored [key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId()
-            + ", toCluster=" + oldEntry.dataCenterId() + ']');
+        log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
+            "[key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId() + ", toCluster=" + oldEntry.dataCenterId() + ']');
 
         // Ignoring update.
         return false;
+    }
+
+    /** @return Conflict resolve field value. */
+    protected Comparable value(Object val) {
+        return (val instanceof BinaryObject)
+            ? ((BinaryObject)val).field(conflictResolveField)
+            : U.field(val, conflictResolveField);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheVersionConflictResolverImpl.class, this);
     }
 }

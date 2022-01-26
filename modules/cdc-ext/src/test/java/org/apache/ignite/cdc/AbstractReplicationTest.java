@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
@@ -175,12 +174,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             cfgPlugin1.setClusterId(clusterId);
             cfgPlugin1.setCaches(new HashSet<>(Arrays.asList(ACTIVE_PASSIVE_CACHE, ACTIVE_ACTIVE_CACHE)));
             cfgPlugin1.setConflictResolveField("reqId");
-
-            CacheVersionConflictResolverPluginProvider<?> cfgPlugin2 = new CacheVersionConflictResolverPluginProvider<>();
-
-            cfgPlugin2.setClusterId(clusterId);
-            cfgPlugin2.setCaches(new HashSet<>(Arrays.asList("T1")));
-            cfgPlugin2.setConflictResolveField("ID");
 
             cfg.setPluginProviders(cfgPlugin1);
 

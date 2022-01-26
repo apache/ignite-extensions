@@ -109,9 +109,28 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         startGrid(1);
 
         client = startClientGrid(2);
+    }
 
-        cache = client.createCache(new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME).setAtomicityMode(cacheMode));
-        cachex = client.cachex(DEFAULT_CACHE_NAME);
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        cache = null;
+        cachex = null;
+        client = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        if (cachex == null || cachex.configuration().getAtomicityMode() != cacheMode) {
+            if (cachex != null)
+                client.cache(DEFAULT_CACHE_NAME).destroy();
+
+            cache = client.createCache(new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(cacheMode));
+
+            cachex = client.cachex(DEFAULT_CACHE_NAME);
+        }
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
@@ -265,7 +284,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
 
         if (success) {
-            assertEquals(newVer, ((CacheEntryVersion)cache.getEntry(k).version()).otherClusterVersion());
+            assertEquals(newVer, ((GridCacheVersion)cache.getEntry(k).version()).conflictVersion());
             assertEquals(newVal, cache.get(k));
         } else if (oldEntry != null) {
             assertEquals(oldEntry.getValue(), cache.get(k));
