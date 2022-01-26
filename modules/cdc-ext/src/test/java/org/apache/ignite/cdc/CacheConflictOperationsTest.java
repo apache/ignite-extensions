@@ -112,6 +112,13 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        cache = null;
+        cachex = null;
+        client = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
