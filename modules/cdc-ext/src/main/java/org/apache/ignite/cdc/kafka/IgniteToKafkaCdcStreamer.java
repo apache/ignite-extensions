@@ -243,12 +243,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         producer.close();
     }
 
-    /** */
+    /** @return Whether entries only from primary nodes should be handled. */
     public boolean isOnlyPrimary() {
         return onlyPrimary;
     }
 
-    /** */
+    /**
+     * Sets whether entries only from primary nodes should be handled.
+     *
+     * @param onlyPrimary Kafka whether entries only from primary nodes should be handled.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
         assert producer == null;
 
@@ -257,12 +262,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return Topic that is used to send data to Kafka. */
     public String getTopic() {
         return topic;
     }
 
-    /** */
+    /**
+     * Sets topic that is used to send data to Kafka.
+     *
+     * @param topic Kafka topic.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setTopic(String topic) {
         assert producer == null;
 
@@ -271,12 +281,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return Number of Kafka partitions. */
     public int getKafkaPartitions() {
         return kafkaParts;
     }
 
-    /** */
+    /**
+     * Sets number of Kafka partitions.
+     *
+     * @param kafkaParts Number of Kafka partitions.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setKafkaPartitions(int kafkaParts) {
         assert producer == null;
 
@@ -285,12 +300,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return Cache names that participate in CDC. */
     public Collection<String> getCaches() {
         return cacheNames;
     }
 
-    /** */
+    /**
+     * Sets cache names that participate in CDC. If is not set all caches are included.
+     *
+     * @param caches Cache names..
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
         assert producer == null;
 
@@ -299,12 +319,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return Maximum batch size. */
     public int getMaxBatchSize() {
         return maxBatchSize;
     }
 
-    /** */
+    /**
+     * Sets maximum batch size.
+     *
+     * @param maxBatchSize Maximum batch size.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSize) {
         assert producer == null;
 
@@ -313,12 +338,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return Properties that are used to initiate connection to Kafka. */
     public Properties getKafkaProperties() {
         return kafkaProps;
     }
 
-    /** */
+    /**
+     * Sets properties that are used to initiate connection to Kafka.
+     *
+     * @param kafkaProps Properties that are used to initiate connection to Kafka.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setKafkaProperties(Properties kafkaProps) {
         assert producer == null;
 
@@ -327,12 +357,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** */
+    /** @return The maximum time to complete Kafka related requests, in seconds. */
     public int getKafkaRequestTimeout() {
         return kafkaReqTimeout;
     }
 
-    /** */
+    /**
+     * Sets the maximum time to complete Kafka related requests, in seconds.
+     * 
+     * @param kafkaReqTimeout Timeout value.
+     * @return {@code this} for chaining.
+     */
     public IgniteToKafkaCdcStreamer setKafkaRequestTimeout(int kafkaReqTimeout) {
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
