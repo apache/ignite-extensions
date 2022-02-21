@@ -20,6 +20,8 @@ package org.apache.ignite.cdc.kafka;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Configuration of {@link KafkaToIgniteCdcStreamer} application.
@@ -27,7 +29,11 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
  * @see KafkaToIgniteCdcStreamer
  * @see KafkaToIgniteLoader
  */
+@IgniteExperimental
 public class KafkaToIgniteCdcStreamerConfiguration {
+    /** Default maximum time to complete Kafka related requests, in seconds. */
+    public static final int DFLT_KAFKA_REQ_TIMEOUT = 3;
+
     /** Default {@link #kafkaPartsTo} value. */
     public static final int DFLT_PARTS = 16;
 
@@ -48,6 +54,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** Kafka partitions higher bound (exclusive). */
     private int kafkaPartsTo = DFLT_PARTS;
+
+    /** The maximum time to complete Kafka related requests, in seconds. */
+    private int kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -120,5 +129,17 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
+    }
+
+    /** */
+    public int getKafkaRequestTimeout() {
+        return kafkaReqTimeout;
+    }
+
+    /** */
+    public void setKafkaRequestTimeout(int kafkaReqTimeout) {
+        A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
+
+        this.kafkaReqTimeout = kafkaReqTimeout;
     }
 }

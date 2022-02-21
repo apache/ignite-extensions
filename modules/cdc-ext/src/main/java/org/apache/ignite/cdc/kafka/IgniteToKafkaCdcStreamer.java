@@ -18,6 +18,8 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -35,7 +37,9 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -47,6 +51,9 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_TOPIC;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
@@ -66,9 +73,16 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see KafkaToIgniteCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
+@IgniteExperimental
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Default kafka request timeout in seconds. */
     public static final int DFLT_REQ_TIMEOUT = 5;
+
+    /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
+    public static final boolean DFLT_IS_ONLY_PRIMARY = false;
+
+    /** Default caches. */
+    public static final Collection<String> DFLT_CACHES = Collections.emptySet();
 
     /** Bytes sent metric name. */
     public static final String BYTES_SENT = "BytesSent";
@@ -84,22 +98,28 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private KafkaProducer<Integer, byte[]> producer;
 
     /** Handle only primary entry flag. */
-    private final boolean onlyPrimary;
+    private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
     /** Topic name. */
-    private final String topic;
+    private String topic = DFLT_TOPIC;
 
     /** Kafka topic partitions count. */
-    private final int kafkaParts;
+    private int kafkaParts = DFLT_PARTS;
 
     /** Kafka properties. */
-    private final Properties kafkaProps;
+    private Properties kafkaProps;
 
     /** Cache IDs. */
-    private final Set<Integer> cachesIds;
+    private Set<Integer> cachesIds;
+
+    /** Cache names. */
+    private Collection<String> cacheNames = DFLT_CACHES;
 
     /** Max batch size. */
-    private final int maxBatchSize;
+    private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
+
+    /** The maximum time to complete Kafka related requests, in seconds. */
+    private int kafkaReqTimeout = DFLT_REQ_TIMEOUT;
 
     /** Timestamp of last sent message. */
     private AtomicLongMetric lastMsgTs;
@@ -110,37 +130,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of sent messages.  */
     private AtomicLongMetric msgsSnt;
 
+    /** */
+    public IgniteToKafkaCdcStreamer() {
+        // No-op.
+    }
+
     /**
-     * @param topic Topic name.
-     * @param kafkaParts Kafka partitions count.
-     * @param caches Cache names.
-     * @param maxBatchSize Maximum size of records concurrently sent to Kafka.
-     * @param onlyPrimary If {@code true} then stream only events from primaries.
      * @param kafkaProps Kafka properties.
      */
-    public IgniteToKafkaCdcStreamer(
-        String topic,
-        int kafkaParts,
-        Set<String> caches,
-        int maxBatchSize,
-        boolean onlyPrimary,
-        Properties kafkaProps
-    ) {
-        assert caches != null && !caches.isEmpty();
-
-        this.topic = topic;
-        this.kafkaParts = kafkaParts;
-        this.onlyPrimary = onlyPrimary;
+    public IgniteToKafkaCdcStreamer(Properties kafkaProps) {
         this.kafkaProps = kafkaProps;
-        this.maxBatchSize = maxBatchSize;
 
-        cachesIds = caches.stream()
-            .mapToInt(CU::cacheId)
-            .boxed()
-            .collect(Collectors.toSet());
-
-        kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-        kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
     }
 
     /** {@inheritDoc} */
@@ -194,7 +194,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         if (!futs.isEmpty()) {
             try {
                 for (Future<RecordMetadata> fut : futs)
-                    fut.get(DFLT_REQ_TIMEOUT, TimeUnit.SECONDS);
+                    fut.get(kafkaReqTimeout, TimeUnit.SECONDS);
 
                 msgsSnt.add(futs.size());
 
@@ -213,6 +213,16 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
+        if (kafkaProps == null)
+            throw new IllegalStateException("The Kafka properties must be set in order to initiate a connection.");
+
+        kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
+        kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
+
+        cachesIds = cacheNames.stream()
+            .map(CU::cacheId)
+            .collect(Collectors.toSet());
+
         try {
             producer = new KafkaProducer<>(kafkaProps);
 
@@ -231,5 +241,105 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void stop() {
         producer.close();
+    }
+
+    /** */
+    public boolean isOnlyPrimary() {
+        return onlyPrimary;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
+        assert producer == null;
+
+        this.onlyPrimary = onlyPrimary;
+
+        return this;
+    }
+
+    /** */
+    public String getTopic() {
+        return topic;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setTopic(String topic) {
+        assert producer == null;
+
+        this.topic = topic;
+
+        return this;
+    }
+
+    /** */
+    public int getKafkaPartitions() {
+        return kafkaParts;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setKafkaPartitions(int kafkaParts) {
+        assert producer == null;
+
+        this.kafkaParts = kafkaParts;
+
+        return this;
+    }
+
+    /** */
+    public Collection<String> getCaches() {
+        return cacheNames;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
+        assert producer == null;
+
+        this.cacheNames = caches;
+
+        return this;
+    }
+
+    /** */
+    public int getMaxBatchSize() {
+        return maxBatchSize;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSize) {
+        assert producer == null;
+
+        this.maxBatchSize = maxBatchSize;
+
+        return this;
+    }
+
+    /** */
+    public Properties getKafkaProperties() {
+        return kafkaProps;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setKafkaProperties(Properties kafkaProps) {
+        assert producer == null;
+
+        this.kafkaProps = kafkaProps;
+
+        return this;
+    }
+
+    /** */
+    public int getKafkaRequestTimeout() {
+        return kafkaReqTimeout;
+    }
+
+    /** */
+    public IgniteToKafkaCdcStreamer setKafkaRequestTimeout(int kafkaReqTimeout) {
+        A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
+
+        assert producer == null;
+
+        this.kafkaReqTimeout = kafkaReqTimeout;
+
+        return this;
     }
 }

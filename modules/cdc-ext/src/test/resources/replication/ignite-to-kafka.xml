@@ -44,18 +44,19 @@
     <bean id="cdc.cfg" class="org.apache.ignite.cdc.CdcConfiguration">
         <property name="consumer">
             <bean class="org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer">
-                <constructor-arg name="topic" value="{TOPIC}" />
-                <constructor-arg name="kafkaParts" value="{PARTS}" />
-                <constructor-arg name="caches">
+                <property name="topic" value="{TOPIC}" />
+                <property name="kafkaPartitions" value="{PARTS}" />
+                <property name="caches">
                     <util:list>
                         <bean class="java.lang.String">
                             <constructor-arg type="String" value="{REPLICATED_CACHE}" />
                         </bean>
                     </util:list>
-                </constructor-arg>
-                <constructor-arg name="maxBatchSize" value="{MAX_BATCH_SIZE}" />
-                <constructor-arg name="onlyPrimary" value="false" />
-                <constructor-arg name="kafkaProps" ref="kafkaProperties" />
+                </property>
+                <property name="maxBatchSize" value="{MAX_BATCH_SIZE}" />
+                <property name="onlyPrimary" value="false" />
+                <property name="kafkaProperties" ref="kafkaProperties" />
+                <property name="kafkaRequestTimeout" value="{KAFKA_REQ_TIMEOUT}" />
             </bean>
         </property>
     </bean>
