@@ -111,7 +111,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** The maximum time to complete Kafka related requests, in seconds. */
+    /** The maximum time to complete Kafka related requests, in milliseconds */
     private final int kafkaReqTimeout;
 
     /**
@@ -184,7 +184,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         finally {
             for (KafkaConsumer<Integer, byte[]> consumer : cnsmrs) {
                 try {
-                    consumer.close(Duration.ofSeconds(kafkaReqTimeout));
+                    consumer.close(Duration.ofMillis(kafkaReqTimeout));
                 }
                 catch (Exception e) {
                     log.warning("Close error!", e);
@@ -203,7 +203,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param cnsmr Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofSeconds(kafkaReqTimeout));
+        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
         if (log.isDebugEnabled()) {
             log.debug(
@@ -213,7 +213,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
 
         apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
 
-        cnsmr.commitSync(Duration.ofSeconds(kafkaReqTimeout));
+        cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
 
     /**

@@ -31,14 +31,11 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public class KafkaToIgniteCdcStreamerConfiguration {
-    /** Default maximum time to complete Kafka related requests, in seconds. */
-    public static final int DFLT_KAFKA_REQ_TIMEOUT = 3;
+    /** Default maximum time to complete Kafka related requests, in milliseconds. */
+    public static final int DFLT_KAFKA_REQ_TIMEOUT = 3_000;
 
     /** Default {@link #kafkaPartsTo} value. */
     public static final int DFLT_PARTS = 16;
-
-    /** Default {@link #topic} value. */
-    public static final String DFLT_TOPIC = "ignite";
 
     /** Default {@link #maxBatchSize} value. */
     public static final int DFLT_MAX_BATCH_SIZE = 1024;
@@ -47,7 +44,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     private int threadCnt = DFLT_PARTS;
 
     /** Topic name. */
-    private String topic = DFLT_TOPIC;
+    private String topic;
 
     /** Kafka partitions lower bound (inclusive). */
     private int kafkaPartsFrom = 0;
@@ -55,7 +52,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Kafka partitions higher bound (exclusive). */
     private int kafkaPartsTo = DFLT_PARTS;
 
-    /** The maximum time to complete Kafka related requests, in seconds. */
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
     private int kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /**

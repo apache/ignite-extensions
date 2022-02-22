@@ -36,7 +36,9 @@
         </property>
     </bean>
 
-    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration" />
+    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
+        <property name="topic" value="ignite" />
+    </bean>
 
     <util:properties id="kafkaProperties" location="loader/kafka.properties" />
 </beans>

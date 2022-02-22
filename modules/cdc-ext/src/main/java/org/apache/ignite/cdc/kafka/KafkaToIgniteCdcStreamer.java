@@ -35,6 +35,7 @@ import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -111,6 +112,8 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         Properties kafkaProps,
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
+        A.notNull(streamerCfg.getTopic(), "Kafka topic");
+
         this.igniteCfg = igniteCfg;
         this.kafkaProps = kafkaProps;
         this.streamerCfg = streamerCfg;
