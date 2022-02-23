@@ -128,12 +128,16 @@ public class KafkaToIgniteCdcStreamerConfiguration {
         this.caches = caches;
     }
 
-    /** */
+    /** @return The maximum time to complete Kafka related requests, in milliseconds. */
     public int getKafkaRequestTimeout() {
         return kafkaReqTimeout;
     }
 
-    /** */
+    /**
+     * Sets the maximum time to complete Kafka related requests, in milliseconds.
+     *
+     * @param kafkaReqTimeout Timeout value.
+     */
     public void setKafkaRequestTimeout(int kafkaReqTimeout) {
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 

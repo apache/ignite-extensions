@@ -19,7 +19,6 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -152,7 +151,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 continue;
             }
 
-            if (!cachesIds.isEmpty() && !cachesIds.contains(evt.cacheId())) {
+            if (!cachesIds.contains(evt.cacheId())) {
                 if (log.isDebugEnabled())
                     log.debug("Event skipped because of cacheId [evt=" + evt + ']');
 
@@ -198,15 +197,15 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
+        A.notEmpty(cacheNames, "caches");
+        A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        cachesIds = cacheNames == null
-            ? Collections.emptySet()
-            : cacheNames.stream()
-                .map(CU::cacheId)
-                .collect(Collectors.toSet());
+        cachesIds = cacheNames.stream()
+            .map(CU::cacheId)
+            .collect(Collectors.toSet());
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -285,14 +284,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
-     * Sets cache names that participate in CDC. If is not set all caches are included.
+     * Sets cache names that participate in CDC.
      *
      * @param caches Cache names.
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
-        A.notEmpty(caches, "caches");
-
         this.cacheNames = caches;
 
         return this;
@@ -344,8 +341,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setKafkaRequestTimeout(int kafkaReqTimeout) {
-        A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
-
         this.kafkaReqTimeout = kafkaReqTimeout;
 
         return this;
