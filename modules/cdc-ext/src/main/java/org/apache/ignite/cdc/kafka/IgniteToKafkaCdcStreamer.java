@@ -198,6 +198,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
         A.notEmpty(cacheNames, "caches");
+        A.ensure(kafkaParts >= 0, "The number of Kafka partitions cannot be negative.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
