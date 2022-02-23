@@ -33,7 +33,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -150,7 +149,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
                 .setMaxBatchSize(KEYS_CNT)
                 .setOnlyPrimary(false)
                 .setKafkaProperties(kafkaProperties())
-                .setKafkaRequestTimeout(DFLT_REQ_TIMEOUT);
+                .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
             CdcConfiguration cdcCfg = new CdcConfiguration();
 

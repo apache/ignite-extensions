@@ -50,6 +50,7 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -73,9 +74,6 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  */
 @IgniteExperimental
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
-    /** Default kafka request timeout in milliseconds. */
-    public static final int DFLT_REQ_TIMEOUT = 5_000;
-
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
@@ -114,7 +112,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private int kafkaReqTimeout = DFLT_REQ_TIMEOUT;
+    private int kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /** Timestamp of last sent message. */
     private AtomicLongMetric lastMsgTs;
@@ -198,7 +196,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
         A.notEmpty(cacheNames, "caches");
-        A.ensure(kafkaParts >= 0, "The number of Kafka partitions cannot be negative.");
+        A.ensure(kafkaParts > 0, "The number of Kafka partitions must be greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
