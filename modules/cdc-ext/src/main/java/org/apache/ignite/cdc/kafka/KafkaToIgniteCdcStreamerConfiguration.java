@@ -32,7 +32,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default maximum time to complete Kafka related requests, in milliseconds. */
-    public static final int DFLT_KAFKA_REQ_TIMEOUT = 3_000;
+    public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
     /** Default {@link #kafkaPartsTo} value. */
     public static final int DFLT_PARTS = 16;
@@ -53,7 +53,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     private int kafkaPartsTo = DFLT_PARTS;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private int kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
+    private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -129,7 +129,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /** @return The maximum time to complete Kafka related requests, in milliseconds. */
-    public int getKafkaRequestTimeout() {
+    public long getKafkaRequestTimeout() {
         return kafkaReqTimeout;
     }
 
@@ -138,7 +138,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      *
      * @param kafkaReqTimeout Timeout value.
      */
-    public void setKafkaRequestTimeout(int kafkaReqTimeout) {
+    public void setKafkaRequestTimeout(long kafkaReqTimeout) {
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         this.kafkaReqTimeout = kafkaReqTimeout;

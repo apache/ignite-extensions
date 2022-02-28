@@ -111,8 +111,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** The maximum time to complete Kafka related requests, in milliseconds */
-    private final int kafkaReqTimeout;
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private final long kafkaReqTimeout;
 
     /**
      * @param ign Ignite instance.
@@ -124,6 +124,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param stopped Stopped flag.
+     * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
      */
     public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
@@ -135,7 +136,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         Set<Integer> caches,
         int maxBatchSize,
         AtomicBoolean stopped,
-        int kafkaReqTimeout
+        long kafkaReqTimeout
     ) {
         super(maxBatchSize);
 

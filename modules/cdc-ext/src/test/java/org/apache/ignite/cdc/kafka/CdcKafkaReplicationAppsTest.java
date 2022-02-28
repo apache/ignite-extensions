@@ -106,7 +106,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS, Integer.toString(DFLT_PARTS));
         params.put(MAX_BATCH_SIZE, Integer.toString(KEYS_CNT));
         params.put(PROPS_PATH, kafkaPropsPath);
-        params.put(KAFKA_REQ_TIMEOUT, Integer.toString(DFLT_KAFKA_REQ_TIMEOUT));
+        params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
             () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
@@ -134,7 +134,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS_FROM, Integer.toString(partFrom));
         params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
-        params.put(KAFKA_REQ_TIMEOUT, Integer.toString(DFLT_KAFKA_REQ_TIMEOUT));
+        params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
             () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig("/replication/kafka-to-ignite.xml", params)})

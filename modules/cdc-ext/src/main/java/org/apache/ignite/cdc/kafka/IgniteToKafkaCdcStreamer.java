@@ -97,7 +97,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private String topic;
 
     /** Kafka topic partitions count. */
-    private int kafkaParts = DFLT_PARTS;
+    private int kafkaParts;
 
     /** Kafka properties. */
     private Properties kafkaProps;
@@ -112,7 +112,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private int kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
+    private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /** Timestamp of last sent message. */
     private AtomicLongMetric lastMsgTs;
@@ -196,7 +196,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
         A.notEmpty(cacheNames, "caches");
-        A.ensure(kafkaParts > 0, "The number of Kafka partitions must be greater than zero.");
+        A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
@@ -226,11 +226,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         producer.close();
     }
 
-    /** @return Whether entries only from primary nodes should be handled. */
-    public boolean isOnlyPrimary() {
-        return onlyPrimary;
-    }
-
     /**
      * Sets whether entries only from primary nodes should be handled.
      *
@@ -241,11 +236,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.onlyPrimary = onlyPrimary;
 
         return this;
-    }
-
-    /** @return Topic that is used to send data to Kafka. */
-    public String getTopic() {
-        return topic;
     }
 
     /**
@@ -260,11 +250,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** @return Number of Kafka partitions. */
-    public int getKafkaPartitions() {
-        return kafkaParts;
-    }
-
     /**
      * Sets number of Kafka partitions.
      *
@@ -275,11 +260,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.kafkaParts = kafkaParts;
 
         return this;
-    }
-
-    /** @return Cache names that participate in CDC. */
-    public Collection<String> getCaches() {
-        return cacheNames;
     }
 
     /**
@@ -294,11 +274,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** @return Maximum batch size. */
-    public int getMaxBatchSize() {
-        return maxBatchSize;
-    }
-
     /**
      * Sets maximum batch size.
      *
@@ -309,11 +284,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.maxBatchSize = maxBatchSize;
 
         return this;
-    }
-
-    /** @return Properties that are used to initiate connection to Kafka. */
-    public Properties getKafkaProperties() {
-        return kafkaProps;
     }
 
     /**
@@ -328,18 +298,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         return this;
     }
 
-    /** @return The maximum time to complete Kafka related requests, in milliseconds. */
-    public int getKafkaRequestTimeout() {
-        return kafkaReqTimeout;
-    }
-
     /**
      * Sets the maximum time to complete Kafka related requests, in milliseconds.
      * 
      * @param kafkaReqTimeout Timeout value.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setKafkaRequestTimeout(int kafkaReqTimeout) {
+    public IgniteToKafkaCdcStreamer setKafkaRequestTimeout(long kafkaReqTimeout) {
         this.kafkaReqTimeout = kafkaReqTimeout;
 
         return this;
