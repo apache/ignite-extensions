@@ -34,7 +34,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -47,6 +46,9 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** */
     public static final String DEST_SRC_TOPIC = "dest-source";
+
+    /** */
+    public static final int DFLT_PARTS = 16;
 
     /** */
     private static EmbeddedKafkaCluster KAFKA = null;
@@ -106,7 +108,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
                 (i + 1) * (DFLT_PARTS / 2)
             ));
         }
-
 
         return futs;
     }

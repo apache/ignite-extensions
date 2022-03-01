@@ -96,7 +96,7 @@ public class CacheVersionConflictResolverCachePluginProvider<K, V, C extends Cac
     }
 
     /** {@inheritDoc} */
-    @Nullable public <T, K2, V2> T unwrapCacheEntry(Cache.Entry<K2, V2> entry, Class<T> cls) {
+    @Nullable @Override public <T, K2, V2> T unwrapCacheEntry(Cache.Entry<K2, V2> entry, Class<T> cls) {
         return null;
     }
 }

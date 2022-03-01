@@ -167,7 +167,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     }
 
     /** {@inheritDoc} */
-    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+    @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 }

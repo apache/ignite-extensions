@@ -113,6 +113,20 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         A.notNull(streamerCfg.getTopic(), "Kafka topic");
+        A.ensure(
+            streamerCfg.getKafkaPartsFrom() >= 0,
+            "The Kafka partitions lower bound must be explicitly set to a value greater than or equals to zero.");
+        A.ensure(
+            streamerCfg.getKafkaPartsTo() > 0,
+            "The Kafka partitions upper bound must be explicitly set to a value greater than zero.");
+        A.ensure(
+            streamerCfg.getKafkaPartsTo() > streamerCfg.getKafkaPartsFrom(),
+            "The Kafka partitions upper bound must be greater than lower bound.");
+        A.ensure(streamerCfg.getKafkaRequestTimeout() >= 0, "The Kafka request timeout cannot be negative.");
+        A.ensure(streamerCfg.getThreadCount() > 0, "Threads count value must me greater than zero.");
+        A.ensure(
+            streamerCfg.getKafkaPartsTo() - streamerCfg.getKafkaPartsFrom() >= streamerCfg.getThreadCount(),
+            "Threads count must be less or equals to the total Kafka partitions count.");
 
         this.igniteCfg = igniteCfg;
         this.kafkaProps = kafkaProps;
@@ -162,9 +176,6 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
             int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
             int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
             int threadCnt = streamerCfg.getThreadCount();
-
-            assert kafkaParts >= threadCnt
-                : "Threads count bigger then kafka partitions count [kafkaParts=" + kafkaParts + ",threadCount=" + threadCnt + ']';
 
             int partPerApplier = kafkaParts / threadCnt;
 
