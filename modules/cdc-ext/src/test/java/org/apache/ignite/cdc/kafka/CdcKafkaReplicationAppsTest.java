@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -69,6 +69,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String MAX_BATCH_SIZE = "MAX_BATCH_SIZE";
 
     /** */
+    public static final String KAFKA_REQ_TIMEOUT = "KAFKA_REQ_TIMEOUT";
+
+    /** */
     public static final String PROPS_PATH = "PROPS_PATH";
 
     /** */
@@ -102,6 +105,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS, Integer.toString(DFLT_PARTS));
         params.put(MAX_BATCH_SIZE, Integer.toString(KEYS_CNT));
         params.put(PROPS_PATH, kafkaPropsPath);
+        params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
             () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
@@ -129,6 +133,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS_FROM, Integer.toString(partFrom));
         params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
+        params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
             () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig("/replication/kafka-to-ignite.xml", params)})

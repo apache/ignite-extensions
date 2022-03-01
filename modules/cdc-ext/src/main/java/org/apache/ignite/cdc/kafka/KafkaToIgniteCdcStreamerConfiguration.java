@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.kafka;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Configuration of {@link KafkaToIgniteCdcStreamer} application.
@@ -27,27 +28,31 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
  * @see KafkaToIgniteCdcStreamer
  * @see KafkaToIgniteLoader
  */
+@IgniteExperimental
 public class KafkaToIgniteCdcStreamerConfiguration {
-    /** Default {@link #kafkaPartsTo} value. */
-    public static final int DFLT_PARTS = 16;
+    /** Default maximum time to complete Kafka related requests, in milliseconds. */
+    public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
-    /** Default {@link #topic} value. */
-    public static final String DFLT_TOPIC = "ignite";
+    /** Default {@link #threadCnt} value. */
+    public static final int DFLT_THREAD_CNT = 16;
 
     /** Default {@link #maxBatchSize} value. */
     public static final int DFLT_MAX_BATCH_SIZE = 1024;
 
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
-    private int threadCnt = DFLT_PARTS;
+    private int threadCnt = DFLT_THREAD_CNT;
 
     /** Topic name. */
-    private String topic = DFLT_TOPIC;
+    private String topic;
 
     /** Kafka partitions lower bound (inclusive). */
-    private int kafkaPartsFrom = 0;
+    private int kafkaPartsFrom = -1;
 
     /** Kafka partitions higher bound (exclusive). */
-    private int kafkaPartsTo = DFLT_PARTS;
+    private int kafkaPartsTo;
+
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -120,5 +125,19 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
+    }
+
+    /** @return The maximum time to complete Kafka related requests, in milliseconds. */
+    public long getKafkaRequestTimeout() {
+        return kafkaReqTimeout;
+    }
+
+    /**
+     * Sets the maximum time to complete Kafka related requests, in milliseconds.
+     *
+     * @param kafkaReqTimeout Timeout value.
+     */
+    public void setKafkaRequestTimeout(long kafkaReqTimeout) {
+        this.kafkaReqTimeout = kafkaReqTimeout;
     }
 }

@@ -81,9 +81,6 @@ import org.apache.kafka.common.errors.WakeupException;
  * @see CacheEntryVersion
  */
 class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnable, AutoCloseable {
-    /** */
-    public static final int DFLT_REQ_TIMEOUT = 3;
-
     /** Ignite instance. */
     private final IgniteEx ign;
 
@@ -114,6 +111,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private final long kafkaReqTimeout;
+
     /**
      * @param ign Ignite instance.
      * @param log Logger.
@@ -124,6 +124,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param stopped Stopped flag.
+     * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
      */
     public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
@@ -134,7 +135,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         int kafkaPartTo,
         Set<Integer> caches,
         int maxBatchSize,
-        AtomicBoolean stopped
+        AtomicBoolean stopped,
+        long kafkaReqTimeout
     ) {
         super(maxBatchSize);
 
@@ -146,6 +148,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.caches = caches;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
+        this.kafkaReqTimeout = kafkaReqTimeout;
     }
 
     /** {@inheritDoc} */
@@ -182,7 +185,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         finally {
             for (KafkaConsumer<Integer, byte[]> consumer : cnsmrs) {
                 try {
-                    consumer.close(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+                    consumer.close(Duration.ofMillis(kafkaReqTimeout));
                 }
                 catch (Exception e) {
                     log.warning("Close error!", e);
@@ -201,7 +204,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param cnsmr Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
         if (log.isDebugEnabled()) {
             log.debug(
@@ -211,7 +214,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
 
         apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
 
-        cnsmr.commitSync(Duration.ofSeconds(DFLT_REQ_TIMEOUT));
+        cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
 
     /**

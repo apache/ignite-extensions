@@ -33,7 +33,7 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_PARTS;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -46,6 +46,9 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** */
     public static final String DEST_SRC_TOPIC = "dest-source";
+
+    /** */
+    public static final int DFLT_PARTS = 16;
 
     /** */
     private static EmbeddedKafkaCluster KAFKA = null;
@@ -106,7 +109,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             ));
         }
 
-
         return futs;
     }
 
@@ -141,8 +143,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
      */
     protected IgniteInternalFuture<?> igniteToKafka(IgniteConfiguration igniteCfg, String topic, String cache) {
         return runAsync(() -> {
-            IgniteToKafkaCdcStreamer cdcCnsmr =
-                new IgniteToKafkaCdcStreamer(topic, DFLT_PARTS, Collections.singleton(cache), KEYS_CNT, false, kafkaProperties());
+            IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
+                .setTopic(topic)
+                .setKafkaPartitions(DFLT_PARTS)
+                .setCaches(Collections.singleton(cache))
+                .setMaxBatchSize(KEYS_CNT)
+                .setOnlyPrimary(false)
+                .setKafkaProperties(kafkaProperties())
+                .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
@@ -177,6 +185,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);
+        cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
         return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
     }

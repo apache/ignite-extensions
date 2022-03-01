@@ -55,6 +55,7 @@
         <property name="kafkaPartsFrom" value="{PARTS_FROM}"/>
         <property name="kafkaPartsTo" value="{PARTS_TO}"/>
         <property name="threadCount" value="{THREAD_CNT}"/>
+        <property name="kafkaRequestTimeout" value="{KAFKA_REQ_TIMEOUT}"/>
     </bean>
 
     <util:properties id="kafkaProperties" location="{PROPS_PATH}" />
