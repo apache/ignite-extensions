@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public abstract class CdcEventsApplier {
     /** Maximum batch size. */
-    private final int maxBatchSize;
+    protected int maxBatchSize;
 
     /** Caches. */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
