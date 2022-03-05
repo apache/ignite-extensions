@@ -159,7 +159,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     }
 
     /**
-     * Sets Ignite client node configuration thats will connect to destination cluster.
+     * Sets Ignite client node configuration that will connect to destination cluster.
      * @param destIgniteCfg Ignite client node configuration that will connect to destination cluster.
      * @return {@code this} for chaining.
      */
