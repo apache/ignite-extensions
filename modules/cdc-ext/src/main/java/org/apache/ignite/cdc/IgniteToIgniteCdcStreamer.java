@@ -172,7 +172,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /**
      * Sets whether entries only from primary nodes should be handled.
      *
-     * @param onlyPrimary Kafka whether entries only from primary nodes should be handled.
+     * @param onlyPrimary Whether entries only from primary nodes should be handled.
      * @return {@code this} for chaining.
      */
     public IgniteToIgniteCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
@@ -194,7 +194,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     }
 
     /**
-     * Sets maximum batch size that will be applied to destination cluster..
+     * Sets maximum batch size that will be applied to destination cluster.
      *
      * @param maxBatchSize Maximum batch size.
      * @return {@code this} for chaining.
