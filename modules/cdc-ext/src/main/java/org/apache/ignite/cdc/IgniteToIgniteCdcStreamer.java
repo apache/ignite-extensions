@@ -32,8 +32,13 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
+
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 
 /**
  * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.
@@ -49,6 +54,7 @@ import org.apache.ignite.resources.LoggerResource;
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
+@IgniteExperimental
 public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcConsumer {
     /** */
     public static final String EVTS_CNT = "EventsCount";
@@ -63,13 +69,19 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     public static final String LAST_EVT_TIME_DESC = "Timestamp of last applied event";
 
     /** Destination cluster client configuration. */
-    private final IgniteConfiguration destIgniteCfg;
+    private IgniteConfiguration destIgniteCfg;
 
     /** Handle only primary entry flag. */
-    private final boolean onlyPrimary;
+    private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
     /** Destination Ignite cluster client */
     private IgniteEx dest;
+
+    /** Cache names. */
+    private Set<String> caches;
+
+    /** Cache IDs. */
+    private Set<Integer> cachesIds;
 
     /** Timestamp of last sent message. */
     private AtomicLongMetric lastEvtTs;
@@ -81,31 +93,23 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     @LoggerResource
     private IgniteLogger log;
 
-    /** Cache IDs. */
-    private final Set<Integer> cachesIds;
+    /** */
+    public IgniteToIgniteCdcStreamer() {
+        super(DFLT_MAX_BATCH_SIZE);
+    }
 
-    /**
-     * @param destIgniteCfg Configuration of the destination Ignite node.
-     * @param onlyPrimary Only primary flag.
-     * @param caches Cache names.
-     * @param maxBatchSize Maximum batch size.
-     */
-    public IgniteToIgniteCdcStreamer(IgniteConfiguration destIgniteCfg, boolean onlyPrimary, Set<String> caches, int maxBatchSize) {
-        super(maxBatchSize);
+    /** {@inheritDoc} */
+    @Override public void start(MetricRegistry mreg) {
+        A.notNull(destIgniteCfg, "Destination ignite configuration");
+        A.notEmpty(caches, "caches");
 
-        this.destIgniteCfg = destIgniteCfg;
-        this.onlyPrimary = onlyPrimary;
+        if (log.isInfoEnabled())
+            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
             .boxed()
             .collect(Collectors.toSet());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
-        if (log.isInfoEnabled())
-            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
@@ -152,5 +156,52 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override protected IgniteLogger log() {
         return log;
+    }
+
+    /**
+     * Sets Ignite client node configuration that will connect to destination cluster.
+     * @param destIgniteCfg Ignite client node configuration that will connect to destination cluster.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToIgniteCdcStreamer setDestinationIgniteConfiguration(IgniteConfiguration destIgniteCfg) {
+        this.destIgniteCfg = destIgniteCfg;
+
+        return this;
+    }
+
+    /**
+     * Sets whether entries only from primary nodes should be handled.
+     *
+     * @param onlyPrimary Whether entries only from primary nodes should be handled.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToIgniteCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
+        this.onlyPrimary = onlyPrimary;
+
+        return this;
+    }
+
+    /**
+     * Sets cache names that participate in CDC.
+     *
+     * @param caches Cache names.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToIgniteCdcStreamer setCaches(Set<String> caches) {
+        this.caches = caches;
+
+        return this;
+    }
+
+    /**
+     * Sets maximum batch size that will be applied to destination cluster.
+     *
+     * @param maxBatchSize Maximum batch size.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToIgniteCdcStreamer setMaxBatchSize(int maxBatchSize) {
+        this.maxBatchSize = maxBatchSize;
+
+        return this;
     }
 }

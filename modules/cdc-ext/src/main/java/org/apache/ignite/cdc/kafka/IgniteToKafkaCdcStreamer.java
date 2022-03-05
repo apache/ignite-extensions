@@ -105,7 +105,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private Set<Integer> cachesIds;
 
     /** Cache names. */
-    private Collection<String> cacheNames;
+    private Collection<String> caches;
 
     /** Max batch size. */
     private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
@@ -194,14 +194,14 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
-        A.notEmpty(cacheNames, "caches");
+        A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        cachesIds = cacheNames.stream()
+        cachesIds = caches.stream()
             .map(CU::cacheId)
             .collect(Collectors.toSet());
 
@@ -228,7 +228,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /**
      * Sets whether entries only from primary nodes should be handled.
      *
-     * @param onlyPrimary Kafka whether entries only from primary nodes should be handled.
+     * @param onlyPrimary Whether entries only from primary nodes should be handled.
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
@@ -268,7 +268,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
-        this.cacheNames = caches;
+        this.caches = caches;
 
         return this;
     }
