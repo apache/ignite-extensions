@@ -179,11 +179,11 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+                    .setPersistenceEnabled(true)
+                    .setCdcEnabled(true)));
 
             cfg.getDataStorageConfiguration()
-                .setWalForceArchiveTimeout(5_000)
-                .setCdcEnabled(true);
+                .setWalForceArchiveTimeout(5_000);
 
             cfg.setConsistentId(igniteInstanceName);
         }
