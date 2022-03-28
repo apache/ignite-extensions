@@ -34,7 +34,6 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <ignite.version>2.10.0</ignite.version>
         <spring.version>5.3.8</spring.version>
         <spring.session.version>2.5.0</spring.session.version>
         <spring.security.version>5.5.0</spring.security.version>
