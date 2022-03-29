@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -141,6 +142,32 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypes(Iterator<BinaryType> types) {
+        //TODO: add metrics.
+        types.forEachRemaining(t -> dest.context().cacheObjects().addMeta(t.typeId(), t, false));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        //TODO: add metrics.
+        mappings.forEachRemaining(m -> {
+            assert m.platform().ordinal() <= Byte.MAX_VALUE;
+
+            try {
+                dest.context().marshallerContext().registerClassName(
+                    (byte)m.platform().ordinal(),
+                    m.typeId(),
+                    m.typeName(),
+                    false
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        });
     }
 
     /** {@inheritDoc} */
