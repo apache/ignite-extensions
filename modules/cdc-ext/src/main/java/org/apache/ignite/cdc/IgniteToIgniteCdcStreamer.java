@@ -61,7 +61,19 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     public static final String EVTS_CNT = "EventsCount";
 
     /** */
+    public static final String TYPES_CNT = "TypesCount";
+
+    /** */
+    public static final String MAPPINGS_CNT = "MappingsCount";
+
+    /** */
     public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
+
+    /** */
+    public static final String TYPES_CNT_DESC = "Count of binary types applied to destination cluster";
+
+    /** */
+    public static final String MAPPINGS_CNT_DESC = "Count of mappings applied to destination cluster";
 
     /** */
     public static final String LAST_EVT_TIME = "LastEventTime";
@@ -90,6 +102,12 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** Count of events applied to destination cluster. */
     protected AtomicLongMetric evtsCnt;
 
+    /** Count of binary types applied to destination cluster. */
+    protected AtomicLongMetric typesCnt;
+
+    /** Count of mappings applied to destination cluster. */
+    protected AtomicLongMetric mappingsCnt;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -115,6 +133,8 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
         this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
         this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
@@ -146,13 +166,16 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        //TODO: add metrics.
-        types.forEachRemaining(t -> dest.context().cacheObjects().addMeta(t.typeId(), t, false));
+        types.forEachRemaining(t -> {
+            dest.context().cacheObjects().addMeta(t.typeId(), t, false);
+
+            typesCnt.increment();
+
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        //TODO: add metrics.
         mappings.forEachRemaining(m -> {
             assert m.platform().ordinal() <= Byte.MAX_VALUE;
 
@@ -163,6 +186,8 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                     m.typeName(),
                     false
                 );
+
+                mappingsCnt.increment();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

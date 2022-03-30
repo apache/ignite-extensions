@@ -88,14 +88,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Kafka producer to stream events. */
+    /** Kafka producer. */
     private KafkaProducer<Integer, byte[]> producer;
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
-    /** Topic name. */
+    /** Topic to send data. */
     private String topic;
+
+    /** Topic to send metadata. */
+    private String metadataTopic;
 
     /** Kafka topic partitions count. */
     private int kafkaParts;
@@ -206,6 +209,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(topic, "Kafka topic");
+        A.notNull(metadataTopic, "Kafka metadata topic");
         A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
@@ -220,8 +224,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         try {
             producer = new KafkaProducer<>(kafkaProps);
 
-            if (log.isInfoEnabled())
-                log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+            if (log.isInfoEnabled()) {
+                log.info("CDC Ignite To Kafka started [topic=" + topic + ", metadataTopic = " + metadataTopic +
+                    ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+            }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -262,9 +268,21 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
-     * Sets number of Kafka partitions.
+     * Sets topic that is used to send metadata to Kafka.
      *
-     * @param kafkaParts Number of Kafka partitions.
+     * @param metadataTopic Metadata topic.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setMetadataTopic(String metadataTopic) {
+        this.metadataTopic = metadataTopic;
+
+        return this;
+    }
+
+    /**
+     * Sets number of Kafka partitions for data topic.
+     *
+     * @param kafkaParts Number of Kafka partitions for data topic.
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setKafkaPartitions(int kafkaParts) {
