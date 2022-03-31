@@ -51,6 +51,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String TOPIC = "TOPIC";
 
     /** */
+    public static final String METADATA_TOPIC = "METADATA_TOPIC";
+
+    /** */
     public static final String CONSISTENT_ID = "CONSISTENT_ID";
 
     /** */
@@ -95,12 +98,18 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<?> igniteToKafka(IgniteConfiguration igniteCfg, String topic, String cache) {
+    @Override protected IgniteInternalFuture<?> igniteToKafka(
+        IgniteConfiguration igniteCfg,
+        String topic,
+        String metadataTopic,
+        String cache
+    ) {
         Map<String, String> params = new HashMap<>();
 
         params.put(INSTANCE_NAME, igniteCfg.getIgniteInstanceName());
         params.put(REPLICATED_CACHE, cache);
         params.put(TOPIC, topic);
+        params.put(METADATA_TOPIC, metadataTopic);
         params.put(CONSISTENT_ID, String.valueOf(igniteCfg.getConsistentId()));
         params.put(PARTS, Integer.toString(DFLT_PARTS));
         params.put(MAX_BATCH_SIZE, Integer.toString(KEYS_CNT));
@@ -116,6 +125,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     @Override protected IgniteInternalFuture<?> kafkaToIgnite(
         String cacheName,
         String topic,
+        String metadataTopic,
         IgniteConfiguration igniteCfg,
         int partFrom,
         int partTo
@@ -129,6 +139,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
         params.put(REPLICATED_CACHE, cacheName);
         params.put(TOPIC, topic);
+        params.put(METADATA_TOPIC, topic);
         params.put(PROPS_PATH, kafkaPropsPath);
         params.put(PARTS_FROM, Integer.toString(partFrom));
         params.put(PARTS_TO, Integer.toString(partTo));

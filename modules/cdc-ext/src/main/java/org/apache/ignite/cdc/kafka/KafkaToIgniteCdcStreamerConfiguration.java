@@ -42,8 +42,11 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
 
-    /** Topic name. */
+    /** Events topic name. */
     private String topic;
+
+    /** Metadata topic name. */
+    private String metadataTopic;
 
     /** Kafka partitions lower bound (inclusive). */
     private int kafkaPartsFrom = -1;
@@ -139,5 +142,21 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setKafkaRequestTimeout(long kafkaReqTimeout) {
         this.kafkaReqTimeout = kafkaReqTimeout;
+    }
+
+    /**
+     * @return Metadata topic name.
+     */
+    public String getMetadataTopic() {
+        return metadataTopic;
+    }
+
+    /**
+     * Sets metadata topic name.
+     *
+     * @param metadataTopic Metadata topic name.
+     */
+    public void setMetadataTopic(String metadataTopic) {
+        this.metadataTopic = metadataTopic;
     }
 }

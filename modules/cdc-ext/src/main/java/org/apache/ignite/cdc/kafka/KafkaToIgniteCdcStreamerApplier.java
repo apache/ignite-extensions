@@ -33,10 +33,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -207,9 +209,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
         if (log.isDebugEnabled()) {
-            log.debug(
-                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']'
-            );
+            log.debug("Polled from consumer [assignments=" + cnsmr.assignment() +
+                ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
         }
 
         apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
@@ -223,11 +224,25 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      */
     private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-            return (CdcEvent)is.readObject();
+            CdcEvent evt = (CdcEvent)is.readObject();
+
+            updateTypesIfUnknown(evt.key());
+            updateTypesIfUnknown(evt.value());
+
+            return evt;
         }
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** Update binary metadata if type of {@code val} unknown. */
+    private void updateTypesIfUnknown(Object val) {
+        if (!(val instanceof BinaryObject))
+            return;
+
+        int typeId = ((BinaryObject)val).type().typeId();
+        //TODO: check if one of BinaryObject fields has unknown type.
     }
 
     /** {@inheritDoc} */

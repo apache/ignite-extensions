@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -34,13 +35,17 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -52,6 +57,10 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT_DESC;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT_DESC;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -87,6 +96,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
+
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private IgniteEx fakeIgnite;
 
     /** Kafka producer. */
     private KafkaProducer<Integer, byte[]> producer;
@@ -124,8 +137,14 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of bytes sent to the Kafka. */
     private AtomicLongMetric bytesSnt;
 
-    /** Count of sent messages.  */
+    /** Count of sent messages. */
     private AtomicLongMetric msgsSnt;
+
+    /** Count of binary types applied to destination cluster. */
+    protected AtomicLongMetric typesCnt;
+
+    /** Count of mappings applied to destination cluster. */
+    protected AtomicLongMetric mappingsCnt;
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -181,7 +200,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                     fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
 
                 msgsSnt.add(futs.size());
-
                 lastMsgTs.value(System.currentTimeMillis());
             }
             catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -197,12 +215,49 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        //TODO: implement me.
+        sendAllToMetadataTopic(F.iterator(types, t -> ((BinaryTypeImpl)t).metadata(), true), typesCnt);
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        //TODO: implement me.
+        sendAllToMetadataTopic(mappings, mappingsCnt);
+    }
+
+    /** Send all iterator data to {@link #metadataTopic}. */
+    private void sendAllToMetadataTopic(Iterator<? extends Serializable> data, AtomicLongMetric cnt) {
+        List<Future<RecordMetadata>> futs = new ArrayList<>();
+
+        while (data.hasNext()) {
+            Serializable item = data.next();
+
+            byte[] bytes;
+
+            if (item instanceof byte[])
+                bytes = (byte[])item;
+            else
+                bytes = IgniteUtils.toBytes(item);
+
+            futs.add(producer.send(new ProducerRecord<>(metadataTopic, bytes)));
+
+            if (log.isDebugEnabled())
+                log.debug("Sent asynchronously [item=" + item + ']');
+        }
+
+        if (!futs.isEmpty()) {
+            try {
+                for (Future<RecordMetadata> fut : futs)
+                    fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
+
+                cnt.add(futs.size());
+                lastMsgTs.value(System.currentTimeMillis());
+            }
+            catch (InterruptedException | ExecutionException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Items processed [count=" + cnt.value() + ']');
+        }
     }
 
     /** {@inheritDoc} */
@@ -236,6 +291,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.msgsSnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
         this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
         this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
     }
 
     /** {@inheritDoc} */

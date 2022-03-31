@@ -170,7 +170,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
             dest.context().cacheObjects().addMeta(t.typeId(), t, false);
 
             typesCnt.increment();
-
+            lastEvtTs.value(System.currentTimeMillis());
         });
     }
 
@@ -188,6 +188,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
                 );
 
                 mappingsCnt.increment();
+                lastEvtTs.value(System.currentTimeMillis());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
