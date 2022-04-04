@@ -33,7 +33,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_TYPE;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_TYPE_HEADER;
 
 public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
     /** Ignite instance. */
@@ -107,7 +107,7 @@ public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
             }
 
             for (ConsumerRecord<Void, byte[]> rec : recs) {
-                byte[] bytes = rec.headers().lastHeader(META_TYPE).value();
+                byte[] bytes = rec.headers().lastHeader(META_TYPE_HEADER).value();
 
                 assert bytes != null;
 

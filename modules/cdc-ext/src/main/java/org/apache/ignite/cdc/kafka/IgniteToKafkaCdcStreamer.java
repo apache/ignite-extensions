@@ -96,8 +96,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Bytes sent metric description. */
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
-    /** Metadata type header name. */
-    public static final String META_TYPE = "META_TYPE";
+    /**
+     * Metadata type header name.
+     * @see ProducerRecord#headers()
+     */
+    public static final String META_TYPE_HEADER = "META_TYPE";
 
     /** Metadata types enum. */
     public enum MetaType {
@@ -249,7 +252,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
             ProducerRecord<Integer, byte[]> rec = new ProducerRecord<>(metadataTopic, bytes);
 
-            rec.headers().add(META_TYPE, type.name().getBytes(UTF_8));
+            rec.headers().add(META_TYPE_HEADER, type.name().getBytes(UTF_8));
 
             futs.add(producer.send(rec));
 
