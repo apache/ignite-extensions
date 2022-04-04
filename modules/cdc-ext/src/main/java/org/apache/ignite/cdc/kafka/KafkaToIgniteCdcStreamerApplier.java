@@ -33,12 +33,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -107,14 +105,14 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** Caches ids to read. */
     private final Set<Integer> caches;
 
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private final long kafkaReqTimeout;
+
     /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
-
-    /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private final long kafkaReqTimeout;
 
     /**
      * @param ign Ignite instance.
@@ -125,8 +123,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
-     * @param stopped Stopped flag.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
+     * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
@@ -137,8 +135,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         int kafkaPartTo,
         Set<Integer> caches,
         int maxBatchSize,
-        AtomicBoolean stopped,
-        long kafkaReqTimeout
+        long kafkaReqTimeout,
+        AtomicBoolean stopped
     ) {
         super(maxBatchSize);
 
@@ -148,9 +146,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
+        this.kafkaReqTimeout = kafkaReqTimeout;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
-        this.kafkaReqTimeout = kafkaReqTimeout;
     }
 
     /** {@inheritDoc} */
@@ -209,8 +207,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
         if (log.isDebugEnabled()) {
-            log.debug("Polled from consumer [assignments=" + cnsmr.assignment() +
-                ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
+            log.debug(
+                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']'
+            );
         }
 
         apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
@@ -224,25 +223,11 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      */
     private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
-            CdcEvent evt = (CdcEvent)is.readObject();
-
-            updateTypesIfUnknown(evt.key());
-            updateTypesIfUnknown(evt.value());
-
-            return evt;
+            return (CdcEvent)is.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /** Update binary metadata if type of {@code val} unknown. */
-    private void updateTypesIfUnknown(Object val) {
-        if (!(val instanceof BinaryObject))
-            return;
-
-        int typeId = ((BinaryObject)val).type().typeId();
-        //TODO: check if one of BinaryObject fields has unknown type.
     }
 
     /** {@inheritDoc} */

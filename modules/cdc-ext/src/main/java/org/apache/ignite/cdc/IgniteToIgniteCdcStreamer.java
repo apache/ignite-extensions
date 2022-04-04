@@ -29,6 +29,7 @@ import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -167,7 +168,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
         types.forEachRemaining(t -> {
-            dest.context().cacheObjects().addMeta(t.typeId(), t, false);
+            CdcUtils.registerBinaryMeta(dest, ((BinaryTypeImpl)t).metadata());
 
             typesCnt.increment();
             lastEvtTs.value(System.currentTimeMillis());
@@ -177,22 +178,10 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         mappings.forEachRemaining(m -> {
-            assert m.platform().ordinal() <= Byte.MAX_VALUE;
+            CdcUtils.registerMapping(dest, m);
 
-            try {
-                dest.context().marshallerContext().registerClassName(
-                    (byte)m.platform().ordinal(),
-                    m.typeId(),
-                    m.typeName(),
-                    false
-                );
-
-                mappingsCnt.increment();
-                lastEvtTs.value(System.currentTimeMillis());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            mappingsCnt.increment();
+            lastEvtTs.value(System.currentTimeMillis());
         });
     }
 

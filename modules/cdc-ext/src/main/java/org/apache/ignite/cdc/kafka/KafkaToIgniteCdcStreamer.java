@@ -100,7 +100,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     private final Thread[] runners;
 
     /** Appliers. */
-    private final List<KafkaToIgniteCdcStreamerApplier> appliers;
+    private final List<AutoCloseable> appliers;
 
     /**
      * @param igniteCfg Ignite configuration.
@@ -132,8 +132,9 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         this.kafkaProps = kafkaProps;
         this.streamerCfg = streamerCfg;
 
-        appliers = new ArrayList<>(streamerCfg.getThreadCount());
-        runners = new Thread[streamerCfg.getThreadCount()];
+        // Extra thread for metadata updater.
+        appliers = new ArrayList<>(streamerCfg.getThreadCount() + 1);
+        runners = new Thread[streamerCfg.getThreadCount() + 1];
 
         if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
             throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
@@ -195,19 +196,25 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     kafkaPartsFrom + to,
                     caches,
                     streamerCfg.getMaxBatchSize(),
-                    stopped,
-                    streamerCfg.getKafkaRequestTimeout()
+                    streamerCfg.getKafkaRequestTimeout(),
+                    stopped
                 );
 
-                appliers.add(applier);
-
-                runners[i] = new Thread(applier, "applier-thread-" + i);
-
-                runners[i].start();
+                addAndStart("applier-thread-" + i, i, applier);
             }
 
+            addAndStart("meta-applier-thread", threadCnt, new KafkaToIgniteMetadataApplier(
+                ign,
+                log,
+                kafkaProps,
+                streamerCfg.getMetadataTopic(),
+                streamerCfg.getKafkaRequestTimeout(),
+                streamerCfg.getMetaUpdateInterval(),
+                stopped
+            ));
+
             try {
-                for (int i = 0; i < threadCnt; i ++)
+                for (int i = 0; i < threadCnt + 1; i ++)
                     runners[i].join();
             }
             catch (InterruptedException e) {
@@ -218,6 +225,14 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 log.warning("Kafka to Ignite streamer interrupted", e);
             }
         }
+    }
+
+    /** Adds applier to {@link #appliers} and starts thread with it. */
+    private <T extends AutoCloseable & Runnable> void addAndStart(String threadName, int i, T applier) {
+        appliers.add(applier);
+
+        runners[i] = new Thread(applier, threadName);
+        runners[i].start();
     }
 
     /** */

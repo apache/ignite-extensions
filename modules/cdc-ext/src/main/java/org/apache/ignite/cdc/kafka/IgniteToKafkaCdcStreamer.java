@@ -53,6 +53,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
@@ -61,6 +62,8 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT_DESC;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType.BINARY;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType.MAPPINGS;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -92,6 +95,18 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Bytes sent metric description. */
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
+
+    /** Metadata type header name. */
+    public static final String META_TYPE = "META_TYPE";
+
+    /** Metadata types enum. */
+    public enum MetaType {
+        /** Binary type metadata. */
+        BINARY,
+
+        /** Mappings metadata */
+        MAPPINGS;
+    }
 
     /** Log. */
     @LoggerResource
@@ -215,29 +230,28 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        sendAllToMetadataTopic(F.iterator(types, t -> ((BinaryTypeImpl)t).metadata(), true), typesCnt);
+        sendAllToMetadataTopic(F.iterator(types, t -> ((BinaryTypeImpl)t).metadata(), true), BINARY, typesCnt);
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        sendAllToMetadataTopic(mappings, mappingsCnt);
+        sendAllToMetadataTopic(mappings, MAPPINGS, mappingsCnt);
     }
 
     /** Send all iterator data to {@link #metadataTopic}. */
-    private void sendAllToMetadataTopic(Iterator<? extends Serializable> data, AtomicLongMetric cnt) {
+    private void sendAllToMetadataTopic(Iterator<? extends Serializable> data, MetaType type, AtomicLongMetric cnt) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
         while (data.hasNext()) {
             Serializable item = data.next();
 
-            byte[] bytes;
+            byte[] bytes = IgniteUtils.toBytes(item);
 
-            if (item instanceof byte[])
-                bytes = (byte[])item;
-            else
-                bytes = IgniteUtils.toBytes(item);
+            ProducerRecord<Integer, byte[]> rec = new ProducerRecord<>(metadataTopic, bytes);
 
-            futs.add(producer.send(new ProducerRecord<>(metadataTopic, bytes)));
+            rec.headers().add(META_TYPE, type.name().getBytes(UTF_8));
+
+            futs.add(producer.send(rec));
 
             if (log.isDebugEnabled())
                 log.debug("Sent asynchronously [item=" + item + ']');
