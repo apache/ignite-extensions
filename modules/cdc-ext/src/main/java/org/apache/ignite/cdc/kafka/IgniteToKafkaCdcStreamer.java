@@ -62,8 +62,6 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT_DESC;
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType.BINARY;
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType.MAPPINGS;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -108,7 +106,30 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         BINARY,
 
         /** Mappings metadata. */
-        MAPPINGS
+        MAPPINGS;
+
+        /** Headers. */
+        Iterable<Header> headers;
+
+        /** */
+        MetaType() {
+            this.headers = metaHeaders(this.name().getBytes(UTF_8));
+        }
+
+        /** */
+        private static Iterable<Header> metaHeaders(final byte[] val) {
+            return Collections.singleton(new Header() {
+                /** {@inheritDoc} */
+                @Override public String key() {
+                    return META_TYPE_HEADER;
+                }
+
+                /** {@inheritDoc} */
+                @Override public byte[] value() {
+                    return val;
+                }
+            });
+        }
     }
 
     /** Log. */
@@ -159,12 +180,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
-
-    /** Binary headers. */
-    private static final Iterable<Header> BINARY_HDRS = metaHeaders(BINARY.name().getBytes(UTF_8));
-
-    /** Mappings headers. */
-    private static final Iterable<Header> MAPPING_HEADERS = metaHeaders(MAPPINGS.name().getBytes(UTF_8));
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -224,7 +239,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 null,
                 null,
                 IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata()),
-                BINARY_HDRS
+                MetaType.BINARY.headers
             ),
             Long.MAX_VALUE,
             typesCnt
@@ -240,7 +255,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 null,
                 null,
                 IgniteUtils.toBytes(m),
-                MAPPING_HEADERS
+                MetaType.MAPPINGS.headers
             ),
             Long.MAX_VALUE,
             mappingsCnt
@@ -424,20 +439,5 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.kafkaReqTimeout = kafkaReqTimeout;
 
         return this;
-    }
-
-    /** */
-    private static Iterable<Header> metaHeaders(final byte[] val) {
-        return Collections.singleton(new Header() {
-            /** {@inheritDoc} */
-            @Override public String key() {
-                return META_TYPE_HEADER;
-            }
-
-            /** {@inheritDoc} */
-            @Override public byte[] value() {
-                return val;
-            }
-        });
     }
 }
