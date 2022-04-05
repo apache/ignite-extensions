@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CdcUtils;
+import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType;
 import org.apache.ignite.internal.IgniteEx;
@@ -138,19 +138,19 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
                     case BINARY:
                         BinaryMetadata meta = IgniteUtils.fromBytes(rec.value());
 
-                        CdcUtils.registerBinaryMeta(ign, meta);
+                        CdcEventsApplier.registerBinaryMeta(ign, meta);
 
                         if (log.isInfoEnabled())
                             log.info("BinaryMeta[meta=" + meta + ']');
 
                         break;
                     case MAPPINGS:
-                        TypeMapping mapping = IgniteUtils.fromBytes(rec.value());
+                        TypeMapping m = IgniteUtils.fromBytes(rec.value());
 
-                        CdcUtils.registerMapping(ign, mapping);
+                        CdcEventsApplier.registerMapping(ign, m);
 
                         if (log.isInfoEnabled())
-                            log.info("Mapping[mapping=" + mapping + ']');
+                            log.info("Mapping[mapping=" + m + ']');
 
                         break;
                     default:

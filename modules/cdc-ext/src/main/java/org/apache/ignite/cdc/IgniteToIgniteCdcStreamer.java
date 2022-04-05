@@ -29,6 +29,7 @@ import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -168,7 +169,12 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
         types.forEachRemaining(t -> {
-            CdcUtils.registerBinaryMeta(dest, ((BinaryTypeImpl)t).metadata());
+            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
+
+            registerBinaryMeta(dest, meta);
+
+            if (log.isInfoEnabled())
+                log.info("BinaryMeta[meta=" + meta + ']');
 
             typesCnt.increment();
             lastEvtTs.value(System.currentTimeMillis());
@@ -178,7 +184,10 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         mappings.forEachRemaining(m -> {
-            CdcUtils.registerMapping(dest, m);
+            registerMapping(dest, m);
+
+            if (log.isInfoEnabled())
+                log.info("Mapping[mapping=" + m + ']');
 
             mappingsCnt.increment();
             lastEvtTs.value(System.currentTimeMillis());

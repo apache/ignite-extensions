@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -28,11 +29,14 @@ import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteMetadataUpdater;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -248,6 +252,45 @@ public abstract class CdcEventsApplier {
     /** @return {@code True} if update batch should be applied. */
     private boolean isApplyBatch(Map<KeyCacheObject, ?> map, KeyCacheObject key) {
         return map.size() >= maxBatchSize || map.containsKey(key);
+    }
+
+    /**
+     * Register {@code meta} inside {@code ign} instance.
+     *
+     * @param ign Ignite instance.
+     * @param meta Binary metadata to register.
+     */
+    public static void registerBinaryMeta(IgniteEx ign, BinaryMetadata meta) {
+        ign.context().cacheObjects().addMeta(
+            meta.typeId(),
+            new BinaryTypeImpl(
+                ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext(),
+                meta
+            ),
+            false
+        );
+    }
+
+    /**
+     * Register {@code mapping} inside {@code ign} instance.
+     *
+     * @param ign Ignite instance.
+     * @param mapping Type mapping to register.
+     */
+    public static void registerMapping(IgniteEx ign, TypeMapping mapping) {
+        assert mapping.platform().ordinal() <= Byte.MAX_VALUE;
+
+        try {
+            ign.context().marshallerContext().registerClassName(
+                (byte)mapping.platform().ordinal(),
+                mapping.typeId(),
+                mapping.typeName(),
+                false
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Update metadata if possible. */
