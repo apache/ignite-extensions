@@ -171,10 +171,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
         types.forEachRemaining(t -> {
             BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
 
-            registerBinaryMeta(dest, meta);
-
-            if (log.isInfoEnabled())
-                log.info("BinaryMeta[meta=" + meta + ']');
+            registerBinaryMeta(dest, log, meta);
 
             typesCnt.increment();
             lastEvtTs.value(System.currentTimeMillis());
@@ -184,10 +181,7 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         mappings.forEachRemaining(m -> {
-            registerMapping(dest, m);
-
-            if (log.isInfoEnabled())
-                log.info("Mapping[mapping=" + m + ']');
+            registerMapping(dest, log, m);
 
             mappingsCnt.increment();
             lastEvtTs.value(System.currentTimeMillis());

@@ -258,9 +258,10 @@ public abstract class CdcEventsApplier {
      * Register {@code meta} inside {@code ign} instance.
      *
      * @param ign Ignite instance.
+     * @param log Logger.
      * @param meta Binary metadata to register.
      */
-    public static void registerBinaryMeta(IgniteEx ign, BinaryMetadata meta) {
+    public static void registerBinaryMeta(IgniteEx ign, IgniteLogger log, BinaryMetadata meta) {
         ign.context().cacheObjects().addMeta(
             meta.typeId(),
             new BinaryTypeImpl(
@@ -269,15 +270,19 @@ public abstract class CdcEventsApplier {
             ),
             false
         );
+
+        if (log.isInfoEnabled())
+            log.info("BinaryMeta[meta=" + meta + ']');
     }
 
     /**
      * Register {@code mapping} inside {@code ign} instance.
      *
      * @param ign Ignite instance.
+     * @param log Logger.
      * @param mapping Type mapping to register.
      */
-    public static void registerMapping(IgniteEx ign, TypeMapping mapping) {
+    public static void registerMapping(IgniteEx ign, IgniteLogger log, TypeMapping mapping) {
         assert mapping.platform().ordinal() <= Byte.MAX_VALUE;
 
         try {
@@ -287,6 +292,9 @@ public abstract class CdcEventsApplier {
                 mapping.typeName(),
                 false
             );
+
+            if (log.isInfoEnabled())
+                log.info("Mapping[mapping=" + mapping + ']');
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

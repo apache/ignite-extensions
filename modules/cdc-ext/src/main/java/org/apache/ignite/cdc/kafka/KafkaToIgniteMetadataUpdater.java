@@ -138,19 +138,13 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
                     case BINARY:
                         BinaryMetadata meta = IgniteUtils.fromBytes(rec.value());
 
-                        CdcEventsApplier.registerBinaryMeta(ign, meta);
-
-                        if (log.isInfoEnabled())
-                            log.info("BinaryMeta[meta=" + meta + ']');
+                        CdcEventsApplier.registerBinaryMeta(ign, log, meta);
 
                         break;
                     case MAPPINGS:
                         TypeMapping m = IgniteUtils.fromBytes(rec.value());
 
-                        CdcEventsApplier.registerMapping(ign, m);
-
-                        if (log.isInfoEnabled())
-                            log.info("Mapping[mapping=" + m + ']');
+                        CdcEventsApplier.registerMapping(ign, log, m);
 
                         break;
                     default:
