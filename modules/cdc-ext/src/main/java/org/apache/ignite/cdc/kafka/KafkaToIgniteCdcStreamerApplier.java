@@ -35,7 +35,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcEventsApplier;
+import org.apache.ignite.cdc.CdcEventsIgniteApplier;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -80,7 +80,7 @@ import org.apache.kafka.common.errors.WakeupException;
  * @see CdcEvent
  * @see CacheEntryVersion
  */
-class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnable, AutoCloseable {
+class KafkaToIgniteCdcStreamerApplier extends CdcEventsIgniteApplier implements Runnable, AutoCloseable {
     /** Ignite instance. */
     private final IgniteEx ign;
 
@@ -138,7 +138,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         AtomicBoolean stopped,
         long kafkaReqTimeout
     ) {
-        super(maxBatchSize);
+        super(ign, maxBatchSize, log);
 
         this.ign = ign;
         this.kafkaProps = kafkaProps;
@@ -235,16 +235,6 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         log.warning("Close applier!");
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx ignite() {
-        return ign;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteLogger log() {
-        return log;
     }
 
     /** {@inheritDoc} */

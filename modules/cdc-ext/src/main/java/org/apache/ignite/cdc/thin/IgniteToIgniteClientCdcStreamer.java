@@ -15,52 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.thin;
 
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cdc.IgniteToCdcStreamerAdapter;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.
+ * Change Data Consumer that streams all data changes to destination cluster through Ignite thin client.
+ * <p/>
  * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
  * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka unavailability or network issues.
- *
+ * <p/>
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
  * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
  *
+ * @see IgniteClient
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
 @IgniteExperimental
-public class IgniteToIgniteCdcStreamer extends IgniteToCdcStreamerAdapter<IgniteToIgniteCdcStreamer> {
-    /** Destination cluster client configuration. */
-    private IgniteConfiguration destIgniteCfg;
+public class IgniteToIgniteClientCdcStreamer extends IgniteToCdcStreamerAdapter<IgniteToIgniteClientCdcStreamer> {
+    /** Ignite thin client configuration. */
+    private ClientConfiguration destClientCfg;
 
-    /** Destination Ignite cluster client */
-    private IgniteEx dest;
+    /** Ignite thin client. */
+    private IgniteClient dest;
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
         super.start(mreg);
 
-        A.notNull(destIgniteCfg, "Destination ignite configuration");
+        A.notNull(destClientCfg, "Destination thin client configuration");
 
         if (log.isInfoEnabled())
-            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
+            log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesIds + ']');
 
-        dest = (IgniteEx)Ignition.start(destIgniteCfg);
+        dest = Ignition.startClient(destClientCfg);
 
-        applier(new CdcEventsIgniteApplier(dest, maxBatchSize, log));
+        applier(new CdcEventsIgniteClientApplier(dest, maxBatchSize, log));
     }
 
     /** {@inheritDoc} */
@@ -69,12 +72,13 @@ public class IgniteToIgniteCdcStreamer extends IgniteToCdcStreamerAdapter<Ignite
     }
 
     /**
-     * Sets Ignite client node configuration that will connect to destination cluster.
-     * @param destIgniteCfg Ignite client node configuration that will connect to destination cluster.
+     * Sets Ignite thin client configuration that will connect to destination cluster.
+     *
+     * @param destClientCfg Ignite thin client configuration that will connect to destination cluster.
      * @return {@code this} for chaining.
      */
-    public IgniteToIgniteCdcStreamer setDestinationIgniteConfiguration(IgniteConfiguration destIgniteCfg) {
-        this.destIgniteCfg = destIgniteCfg;
+    public IgniteToIgniteClientCdcStreamer setDestinationIgniteConfiguration(ClientConfiguration destClientCfg) {
+        this.destClientCfg = destClientCfg;
 
         return this;
     }
