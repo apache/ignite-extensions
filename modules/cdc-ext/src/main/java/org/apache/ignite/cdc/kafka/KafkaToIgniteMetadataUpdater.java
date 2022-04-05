@@ -20,22 +20,31 @@ package org.apache.ignite.cdc.kafka;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcUtils;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.VoidDeserializer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_TYPE_HEADER;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
+import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
-public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
+public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
     /** Ignite instance. */
     private final IgniteEx ign;
 
@@ -45,19 +54,14 @@ public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
     /** Closed flag. Shared between all appliers. */
     private final AtomicBoolean stopped;
 
-    /** Kafka properties. */
-    private final Properties kafkaProps;
-
-    /** Topic to read. */
-    private final String topic;
-
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long metaUpdInterval;
 
-    private KafkaConsumer<Void, byte[]> cnsmr;
+    /** */
+    private final KafkaConsumer<Void, byte[]> cnsmr;
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
@@ -65,69 +69,43 @@ public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
     /**
      * @param ign Ignite instance.
      * @param log Logger.
-     * @param kafkaProps Kafka properties.
-     * @param topic Topic name.
-     * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
-     * @param metaUpdTimeout Amount of time between two polling.
+     * @param initProps Kafka properties.
+     * @param streamerCfg Streamer configuration.
      * @param stopped Stopped flag.
      */
-    public KafkaToIgniteMetadataApplier(
+    public KafkaToIgniteMetadataUpdater(
         IgniteEx ign,
         IgniteLogger log,
-        Properties kafkaProps,
-        String topic,
-        long kafkaReqTimeout,
-        long metaUpdTimeout,
+        Properties initProps,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
         AtomicBoolean stopped
     ) {
         this.ign = ign;
-        this.kafkaProps = kafkaProps;
-        this.topic = topic;
-        this.kafkaReqTimeout = kafkaReqTimeout;
-        this.metaUpdInterval = metaUpdTimeout;
+        this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
+        this.metaUpdInterval = streamerCfg.getMetaUpdateInterval();
         this.stopped = stopped;
-        this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
+        this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
+
+        Properties kafkaProps = new Properties();
+
+        kafkaProps.putAll(initProps);
+        kafkaProps.put(KEY_DESERIALIZER_CLASS_CONFIG, VoidDeserializer.class.getName());
+        kafkaProps.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        kafkaProps.put(GROUP_ID_CONFIG, streamerCfg.getMetaConsumerGroup() != null
+            ? streamerCfg.getMetaConsumerGroup()
+            : ("ignite-metadata-update-" + ThreadLocalRandom.current().nextInt()));
+
+        cnsmr = new KafkaConsumer<>(kafkaProps);
+
+        cnsmr.subscribe(Collections.singletonList(streamerCfg.getMetadataTopic()));
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
         U.setCurrentIgniteName(ign.name());
 
-        //TODO: add group.id and serde check for kafkaprops.
-        cnsmr = new KafkaConsumer<>(kafkaProps);
-
-        cnsmr.subscribe(Collections.singletonList(topic));
-
         while (!stopped.get()) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
-
-            if (log.isDebugEnabled()) {
-                log.debug("Polled from meta consumer [assignments=" + cnsmr.assignment() +
-                    ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
-            }
-
-            for (ConsumerRecord<Void, byte[]> rec : recs) {
-                byte[] bytes = rec.headers().lastHeader(META_TYPE_HEADER).value();
-
-                assert bytes != null;
-
-                MetaType type = MetaType.valueOf(new String(bytes, UTF_8));
-
-                switch (type) {
-                    case BINARY:
-                        CdcUtils.registerBinaryMeta(ign, IgniteUtils.fromBytes(rec.value()));
-
-                        break;
-                    case MAPPINGS:
-                        CdcUtils.registerMapping(ign, IgniteUtils.fromBytes(rec.value()));
-
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown meta type[type=" + type + ']');
-                }
-            }
-
-            cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
+            updateMetadata();
 
             try {
                 Thread.sleep(metaUpdInterval);
@@ -138,10 +116,61 @@ public class KafkaToIgniteMetadataApplier implements AutoCloseable, Runnable {
         }
     }
 
+    /** Polls all available records from metadata topic and applies it to Ignite. */
+    public synchronized void updateMetadata() {
+        while (true) {
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+
+            if (recs.count() == 0)
+                return;
+
+            if (log.isInfoEnabled())
+                log.info("Polled from meta topic [rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
+
+            for (ConsumerRecord<Void, byte[]> rec : recs) {
+                byte[] bytes = rec.headers().lastHeader(META_TYPE_HEADER).value();
+
+                assert bytes != null;
+
+                MetaType type = MetaType.valueOf(new String(bytes, UTF_8));
+
+                switch (type) {
+                    case BINARY:
+                        BinaryMetadata meta = IgniteUtils.fromBytes(rec.value());
+
+                        CdcUtils.registerBinaryMeta(ign, meta);
+
+                        if (log.isInfoEnabled())
+                            log.info("BinaryMeta[meta=" + meta + ']');
+
+                        break;
+                    case MAPPINGS:
+                        TypeMapping mapping = IgniteUtils.fromBytes(rec.value());
+
+                        CdcUtils.registerMapping(ign, mapping);
+
+                        if (log.isInfoEnabled())
+                            log.info("Mapping[mapping=" + mapping + ']');
+
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown meta type[type=" + type + ']');
+                }
+            }
+
+            cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
         log.warning("Close applier!");
 
         cnsmr.wakeup();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(KafkaToIgniteMetadataUpdater.class, this);
     }
 }

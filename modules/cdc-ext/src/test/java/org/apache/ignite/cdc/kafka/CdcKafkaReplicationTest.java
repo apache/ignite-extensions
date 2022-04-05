@@ -71,8 +71,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
-        KAFKA.createTopic(SRC_DEST_META_TOPIC, DFLT_PARTS, 1);
-        KAFKA.createTopic(DEST_SRC_META_TOPIC, DFLT_PARTS, 1);
+        KAFKA.createTopic(SRC_DEST_META_TOPIC, 1, 1);
+        KAFKA.createTopic(DEST_SRC_META_TOPIC, 1, 1);
     }
 
     /** {@inheritDoc} */

@@ -108,6 +108,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
+    /** Metadata updater. */
+    private final KafkaToIgniteMetadataUpdater metaUpdr;
+
     /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
 
@@ -124,6 +127,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
+     * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
@@ -136,6 +140,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         Set<Integer> caches,
         int maxBatchSize,
         long kafkaReqTimeout,
+        KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
         super(maxBatchSize);
@@ -147,6 +152,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
         this.kafkaReqTimeout = kafkaReqTimeout;
+        this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
     }
@@ -228,6 +234,11 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void updateMetadata() {
+        metaUpdr.updateMetadata();
     }
 
     /** {@inheritDoc} */
