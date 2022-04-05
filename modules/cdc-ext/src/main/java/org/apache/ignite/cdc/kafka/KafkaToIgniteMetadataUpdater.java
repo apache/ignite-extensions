@@ -20,7 +20,6 @@ package org.apache.ignite.cdc.kafka;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -93,7 +92,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
         kafkaProps.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
         kafkaProps.put(GROUP_ID_CONFIG, streamerCfg.getMetadataConsumerGroup() != null
             ? streamerCfg.getMetadataConsumerGroup()
-            : ("ignite-metadata-update-" + ThreadLocalRandom.current().nextInt()));
+            : ("ignite-metadata-update-" + streamerCfg.getKafkaPartsFrom() + "-" + streamerCfg.getKafkaPartsTo()));
 
         cnsmr = new KafkaConsumer<>(kafkaProps);
 
