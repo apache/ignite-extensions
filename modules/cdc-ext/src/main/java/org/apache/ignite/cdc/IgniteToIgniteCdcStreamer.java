@@ -174,8 +174,9 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
             registerBinaryMeta(dest, log, meta);
 
             typesCnt.increment();
-            lastEvtTs.value(System.currentTimeMillis());
         });
+
+        lastEvtTs.value(System.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
@@ -184,8 +185,9 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
             registerMapping(dest, log, m);
 
             mappingsCnt.increment();
-            lastEvtTs.value(System.currentTimeMillis());
         });
+
+        lastEvtTs.value(System.currentTimeMillis());
     }
 
     /** {@inheritDoc} */

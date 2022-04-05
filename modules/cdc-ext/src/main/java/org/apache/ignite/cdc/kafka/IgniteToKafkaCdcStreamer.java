@@ -19,6 +19,7 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -48,6 +49,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
@@ -158,6 +160,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
 
+    /** Binary headers. */
+    private static final Iterable<Header> BINARY_HDRS = metaHeaders(BINARY.name().getBytes(UTF_8));
+
+    /** Mappings headers. */
+    private static final Iterable<Header> MAPPING_HEADERS = metaHeaders(MAPPINGS.name().getBytes(UTF_8));
+
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
         Iterator<CdcEvent> filtered = F.iterator(evts, e -> e, true, evt -> {
@@ -211,14 +219,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onTypes(Iterator<BinaryType> types) {
         sendBatch(
             types,
-            t -> {
-                ProducerRecord<Integer, byte[]> rec =
-                    new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata()));
-
-                rec.headers().add(META_TYPE_HEADER, BINARY.name().getBytes(UTF_8));
-
-                return rec;
-            },
+            t -> new ProducerRecord<Integer, byte[]>(
+                metadataTopic,
+                null,
+                null,
+                IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata()),
+                BINARY_HDRS
+            ),
             Long.MAX_VALUE,
             typesCnt
         );
@@ -228,13 +235,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         sendBatch(
             mappings,
-            m -> {
-                ProducerRecord<Integer, byte[]> rec = new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m));
-
-                rec.headers().add(META_TYPE_HEADER, MAPPINGS.name().getBytes(UTF_8));
-
-                return rec;
-            },
+            m -> new ProducerRecord<Integer, byte[]>(
+                metadataTopic,
+                null,
+                null,
+                IgniteUtils.toBytes(m),
+                MAPPING_HEADERS
+            ),
             Long.MAX_VALUE,
             mappingsCnt
         );
@@ -245,7 +252,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         Iterator<T> data,
         Function<T, ProducerRecord<Integer, byte[]>> toRec,
         long batchSz,
-        AtomicLongMetric cnt
+        AtomicLongMetric cntr
     ) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
@@ -267,7 +274,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 for (Future<RecordMetadata> fut : futs)
                     fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
 
-                cnt.add(futs.size());
+                cntr.add(futs.size());
                 lastMsgTs.value(System.currentTimeMillis());
             }
             catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -275,7 +282,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             }
 
             if (log.isInfoEnabled())
-                log.info("Items processed [count=" + cnt.value() + ']');
+                log.info("Items processed [count=" + cntr.value() + ']');
         }
     }
 
@@ -417,5 +424,20 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.kafkaReqTimeout = kafkaReqTimeout;
 
         return this;
+    }
+
+    /** */
+    private static Iterable<Header> metaHeaders(final byte[] val) {
+        return Collections.singleton(new Header() {
+            /** {@inheritDoc} */
+            @Override public String key() {
+                return META_TYPE_HEADER;
+            }
+
+            /** {@inheritDoc} */
+            @Override public byte[] value() {
+                return val;
+            }
+        });
     }
 }
