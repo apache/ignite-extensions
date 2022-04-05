@@ -150,8 +150,6 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
             runx();
         }
         catch (Exception e) {
-            e.printStackTrace();
-
             throw new IgniteException(e);
         }
     }

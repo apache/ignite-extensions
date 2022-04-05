@@ -299,8 +299,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             producer = new KafkaProducer<>(kafkaProps);
 
             if (log.isInfoEnabled()) {
-                log.info("CDC Ignite To Kafka started [topic=" + topic + ", metadataTopic = " + metadataTopic +
-                    ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+                log.info("CDC Ignite To Kafka started [" +
+                    "topic=" + topic +
+                    ", metadataTopic = " + metadataTopic +
+                    ", onlyPrimary=" + onlyPrimary +
+                    ", cacheIds=" + cachesIds + ']'
+                );
             }
         }
         catch (Exception e) {
