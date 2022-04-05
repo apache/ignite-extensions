@@ -218,7 +218,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);
         cfg.setMetadataTopic(metadataTopic);
-        cfg.setMetaConsumerGroup("meta-consumer-" + fromPart + "-" + toPart);
+        cfg.setMetadataConsumerGroup("meta-consumer-" + fromPart + "-" + toPart);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
         return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));

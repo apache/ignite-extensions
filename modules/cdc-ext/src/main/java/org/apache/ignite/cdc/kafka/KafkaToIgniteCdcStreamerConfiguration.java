@@ -64,7 +64,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     private long metaUpdInterval = DFLT_META_UPD_INTERVAL;
 
     /** Metadata consumer group. */
-    private String metaCnsmrGrp;
+    private String metadataCnsmrGrp;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -188,8 +188,8 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /**
      * @return Consumer group to read metadata topic.
      */
-    public String getMetaConsumerGroup() {
-        return metaCnsmrGrp;
+    public String getMetadataConsumerGroup() {
+        return metadataCnsmrGrp;
     }
 
     /**
@@ -197,7 +197,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      *
      * @param metaCnsmrGrp Consumer group to read metadata topic.
      */
-    public void setMetaConsumerGroup(String metaCnsmrGrp) {
-        this.metaCnsmrGrp = metaCnsmrGrp;
+    public void setMetadataConsumerGroup(String metaCnsmrGrp) {
+        this.metadataCnsmrGrp = metaCnsmrGrp;
     }
 }

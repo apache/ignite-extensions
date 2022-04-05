@@ -91,8 +91,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
         kafkaProps.putAll(initProps);
         kafkaProps.put(KEY_DESERIALIZER_CLASS_CONFIG, VoidDeserializer.class.getName());
         kafkaProps.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-        kafkaProps.put(GROUP_ID_CONFIG, streamerCfg.getMetaConsumerGroup() != null
-            ? streamerCfg.getMetaConsumerGroup()
+        kafkaProps.put(GROUP_ID_CONFIG, streamerCfg.getMetadataConsumerGroup() != null
+            ? streamerCfg.getMetadataConsumerGroup()
             : ("ignite-metadata-update-" + ThreadLocalRandom.current().nextInt()));
 
         cnsmr = new KafkaConsumer<>(kafkaProps);
