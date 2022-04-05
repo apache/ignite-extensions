@@ -38,7 +38,7 @@ import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.
  *
  * @see CdcEventsApplierAdapter
  */
-public abstract class IgniteToCdcStreamerAdapter<T> implements CdcConsumer {
+public abstract class IgniteToCdcStreamerAdapter<T extends IgniteToCdcStreamerAdapter> implements CdcConsumer {
     /** */
     public static final String EVTS_CNT = "EventsCount";
 
