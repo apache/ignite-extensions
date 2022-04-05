@@ -51,18 +51,6 @@ public abstract class CdcEventsApplier {
     /** Maximum batch size. */
     protected int maxBatchSize;
 
-    /**
-     * Update closure.
-     * @see #applyWithRetry(IgniteInClosureX, IgniteInternalCache)
-     */
-    private final UpdateClosure updClo = new UpdateClosure();
-
-    /**
-     * Remove closure.
-     * @see #applyWithRetry(IgniteInClosureX, IgniteInternalCache)
-     */
-    private final RemoveClosure rmvClo = new RemoveClosure();
-
     /** Caches. */
     private final Map<Integer, IgniteInternalCache<BinaryObject, BinaryObject>> ignCaches = new HashMap<>();
 
@@ -77,6 +65,34 @@ public abstract class CdcEventsApplier {
 
     /** */
     private final BooleanSupplier hasRemoves = () -> !F.isEmpty(rmvBatch);
+
+    /**
+     * Update closure.
+     * @see #applyWithRetry(IgniteInClosureX, IgniteInternalCache)
+     */
+    private final IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>> updClo =
+        new IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(
+                IgniteInternalCache<BinaryObject, BinaryObject> cache
+            ) throws IgniteCheckedException {
+                cache.putAllConflict(updBatch);
+            }
+        };
+
+    /**
+     * Remove closure.
+     * @see #applyWithRetry(IgniteInClosureX, IgniteInternalCache)
+     */
+    private final IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>> rmvClo =
+        new IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(
+                IgniteInternalCache<BinaryObject, BinaryObject> cache
+            ) throws IgniteCheckedException {
+                cache.removeAllConflict(rmvBatch);
+            }
+        };
 
     /**
      * @param maxBatchSize Maximum batch size.
@@ -226,26 +242,6 @@ public abstract class CdcEventsApplier {
             updateMetadata();
 
             clo.apply(cache);
-        }
-    }
-
-    /** Update closure. */
-    private class UpdateClosure extends IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>> {
-        /** {@inheritDoc} */
-        @Override public void applyx(
-            IgniteInternalCache<BinaryObject, BinaryObject> cache
-        ) throws IgniteCheckedException {
-            cache.putAllConflict(updBatch);
-        }
-    }
-
-    /** Remove closure. */
-    private class RemoveClosure extends IgniteInClosureX<IgniteInternalCache<BinaryObject, BinaryObject>> {
-        /** {@inheritDoc} */
-        @Override public void applyx(
-            IgniteInternalCache<BinaryObject, BinaryObject> cache
-        ) throws IgniteCheckedException {
-            cache.removeAllConflict(rmvBatch);
         }
     }
 
