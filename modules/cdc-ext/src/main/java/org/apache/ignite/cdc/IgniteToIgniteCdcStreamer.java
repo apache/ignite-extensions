@@ -72,10 +72,10 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
 
     /** */
-    public static final String TYPES_CNT_DESC = "Count of binary types applied to destination cluster";
+    public static final String TYPES_CNT_DESC = "Count of received binary types events";
 
     /** */
-    public static final String MAPPINGS_CNT_DESC = "Count of mappings applied to destination cluster";
+    public static final String MAPPINGS_CNT_DESC = "Count of received mappings events";
 
     /** */
     public static final String LAST_EVT_TIME = "LastEventTime";
