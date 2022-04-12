@@ -53,6 +53,7 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
     /**
      * @param conflictResolveField Field to resolve conflicts.
+     * @param clusterId Cluster id.
      */
     public CacheConflictResolutionManagerImpl(String conflictResolveField, byte clusterId) {
         this.conflictResolveField = conflictResolveField;

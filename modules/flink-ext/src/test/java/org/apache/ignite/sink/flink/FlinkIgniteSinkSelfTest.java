@@ -45,6 +45,7 @@ public class FlinkIgniteSinkSelfTest {
         Ignition.stopAll(true);
     }
 
+    /** */
     @Test
     public void testIgniteSink() throws Exception {
         Configuration configuration = new Configuration();
@@ -68,6 +69,7 @@ public class FlinkIgniteSinkSelfTest {
         assertEquals("testValue", igniteSink.getIgnite().getOrCreateCache(TEST_CACHE).get("testData"));
     }
 
+    /** */
     @Test
     public void testIgniteSinkStreamExecution() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();

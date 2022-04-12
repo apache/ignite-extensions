@@ -41,7 +41,7 @@ public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> impleme
     private static final String IGNITE_CONFIG_BEAN_NAME = "igniteCfg";
 
     /** Name of the bean that stores the Spring configuration path to instantiate the Ignite client. */
-    private static final String IGNITE_SPRING_CONFIG_PATH_BEAN_NAME= "igniteSpringCfgPath";
+    private static final String IGNITE_SPRING_CONFIG_PATH_BEAN_NAME = "igniteSpringCfgPath";
 
     /** Spring application context. */
     private ApplicationContext ctx;

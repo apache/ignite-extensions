@@ -25,14 +25,18 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>2.13.0-SNAPSHOT</version>
+        <relativePath/>
     </parent>
 
     <artifactId>ignite-spring-data-ext</artifactId>
-    <version>${ignite-spring-data-ext.version}</version>
+    <version>1.1.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <spring.data.version>1.13.23.RELEASE</spring.data.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -52,7 +56,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${ignite-spring-data-commons.version}</version>
+            <version>1.1.0</version>
         </dependency>
 
         <dependency>

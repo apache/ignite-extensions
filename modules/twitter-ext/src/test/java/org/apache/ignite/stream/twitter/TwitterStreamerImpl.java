@@ -17,11 +17,11 @@
 
 package org.apache.ignite.stream.twitter;
 
+import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import com.twitter.hbc.core.Client;
 import com.twitter.hbc.core.HttpHosts;
 import com.twitter.hbc.core.endpoint.StreamingEndpoint;
-import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
@@ -62,6 +62,7 @@ public class TwitterStreamerImpl extends TwitterStreamer<Long, String> {
      * Long, String Tweet Single Tuple Extractor.
      */
     class TwitterStreamSingleTupleExtractorImpl implements StreamSingleTupleExtractor<String, Long, String> {
+        /** {@inheritDoc} */
         @Override public Map.Entry<Long, String> extract(String tweet) {
             try {
                 Status status = TwitterObjectFactory.createStatus(tweet);

@@ -207,7 +207,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
             }
 
             try {
-                for (int i = 0; i < threadCnt; i ++)
+                for (int i = 0; i < threadCnt; i++)
                     runners[i].join();
             }
             catch (InterruptedException e) {

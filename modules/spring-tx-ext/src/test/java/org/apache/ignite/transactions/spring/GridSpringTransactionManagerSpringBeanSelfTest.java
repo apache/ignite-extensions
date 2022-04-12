@@ -23,18 +23,20 @@ import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
+/** */
 public class GridSpringTransactionManagerSpringBeanSelfTest extends GridSpringTransactionManagerAbstractTest {
-
     /** */
     private Ignite ignite;
 
     /** */
     private GridSpringTransactionService service;
 
+    /** {@inheritDoc} */
     @Override public IgniteCacheProxy<Integer, String> cache() {
         return new IgniteNodeCacheProxy<>(ignite.cache(CACHE_NAME));
     }
 
+    /** {@inheritDoc} */
     @Override public GridSpringTransactionService service() {
         return service;
     }
@@ -52,6 +54,7 @@ public class GridSpringTransactionManagerSpringBeanSelfTest extends GridSpringTr
         service = (GridSpringTransactionService)appCtx.getBean("gridSpringTransactionService");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
         stopAllGrids();

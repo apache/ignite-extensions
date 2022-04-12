@@ -72,35 +72,46 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     /** */
     private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers;
 
-    /** */
+    /**
+     * @return Session repository.
+     */
     @Bean
     public SessionRepository<?> sessionRepository() {
         return createIgniteIndexedSessionRepository();
     }
 
-    /** */
+    /**
+     * @param maxInactiveIntervalInSeconds Maximum inactive interval in sec.
+     */
     public void setMaxInactiveIntervalInSeconds(int maxInactiveIntervalInSeconds) {
         this.maxInactiveIntervalInSeconds = maxInactiveIntervalInSeconds;
     }
 
-    /** */
+    /**
+     * @param sessionMapName Session map name.
+     */
     public void setSessionMapName(String sessionMapName) {
         this.sessionMapName = sessionMapName;
     }
 
     /**
-     *
+     * @param flushMode Flush mode.
      */
     public void setFlushMode(FlushMode flushMode) {
         this.flushMode = flushMode;
     }
 
-    /** */
+    /**
+     * @param saveMode Save mode.
+     */
     public void setSaveMode(SaveMode saveMode) {
         this.saveMode = saveMode;
     }
 
-    /** */
+    /**
+     * @param springSessionIgnite Ignite session.
+     * @param ignite Ignite instance provider.
+     */
     @Autowired
     public void setIgnite(@SpringSessionIgnite ObjectProvider<Ignite> springSessionIgnite,
                           ObjectProvider<Ignite> ignite) {
@@ -111,26 +122,34 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.ignite = igniteToUse;
     }
 
-    /** */
+    /**
+     * @param applicationEventPublisher Application event publisher.
+     */
     @Autowired
     public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
     }
 
-    /** */
+    /**
+     * @param indexResolver Index resolver.
+     */
     @Autowired(required = false)
     public void setIndexResolver(IndexResolver<Session> indexResolver) {
         this.indexResolver = indexResolver;
     }
 
-    /** */
+    /**
+     * @param sessionRepositoryCustomizers Session repository customizer.
+     */
     @Autowired(required = false)
     public void setSessionRepositoryCustomizer(
             ObjectProvider<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers) {
         this.sessionRepositoryCustomizers = sessionRepositoryCustomizers.orderedStream().collect(Collectors.toList());
     }
 
-    /** */
+    /**
+     * @param importMetadata Annotation metadata.
+     */
     @Override @SuppressWarnings("deprecation") public void setImportMetadata(AnnotationMetadata importMetadata) {
         Map<String, Object> attributeMap = importMetadata
                 .getAnnotationAttributes(EnableIgniteHttpSession.class.getName());

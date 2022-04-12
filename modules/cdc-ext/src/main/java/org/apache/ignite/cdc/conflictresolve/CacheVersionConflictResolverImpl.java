@@ -105,7 +105,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @return {@code True} is should use new entry.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    protected  <K, V> boolean isUseNew(
+    protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry

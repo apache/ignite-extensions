@@ -18,11 +18,10 @@ package org.apache.ignite.spring.sessions;
  */
 
 import java.time.Duration;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,8 +29,6 @@ import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.session.FindByIndexNameSessionRepository;
-
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -162,6 +159,7 @@ abstract class AbstractIgniteIndexedSessionRepositoryITest {
         this.repository.deleteById(toSave.getId());
     }
 
+    /** */
     @Test
     void attemptToUpdateSessionAfterDelete() {
         IgniteSession session = this.repository.createSession();

@@ -27,8 +27,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
+/** */
 public abstract class GridSpringTransactionManagerAbstractTest extends GridCommonAbstractTest {
-
     /** */
     protected static final String CACHE_NAME = "testCache";
 

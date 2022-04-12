@@ -28,9 +28,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        EmbeddedIgniteIndexedSessionRepositoryITest.class,
-        IgniteHttpSessionConfigurationTest.class,
-        IgniteIndexedSessionRepositoryTest.class
+    EmbeddedIgniteIndexedSessionRepositoryITest.class,
+    IgniteHttpSessionConfigurationTest.class,
+    IgniteIndexedSessionRepositoryTest.class
 })
 public class IgniteSpringSessionTestSuite {
 }

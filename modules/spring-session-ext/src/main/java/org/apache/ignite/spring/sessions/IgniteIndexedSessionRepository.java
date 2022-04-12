@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -39,7 +38,6 @@ import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.expiry.TouchedExpiryPolicy;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.Ignite;
@@ -49,7 +47,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridDirectTransient;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.session.DelegatingIndexResolver;
 import org.springframework.session.FindByIndexNameSessionRepository;
@@ -168,7 +165,7 @@ public class IgniteIndexedSessionRepository
 
         this.listenerConfiguration = new CacheEntryListenerConfiguration<String, IgniteSession>() {
             @Override public Factory<CacheEntryListener<? super String, ? super IgniteSession>> getCacheEntryListenerFactory() {
-                return (Factory<CacheEntryListener<? super String, ? super IgniteSession>>) () -> IgniteIndexedSessionRepository.this;
+                return (Factory<CacheEntryListener<? super String, ? super IgniteSession>>)() -> IgniteIndexedSessionRepository.this;
             }
 
             @Override public boolean isOldValueRequired() {
@@ -315,10 +312,11 @@ public class IgniteIndexedSessionRepository
         final List<List<?>> sessions = cursor.getAll();
 
         Map<String, IgniteSession> sessionMap = new HashMap<>(sessions.size());
+
         sessions.forEach((List<?> res) -> {
-            final MapSession session = (MapSession) res.get(0);
+            final MapSession session = (MapSession)res.get(0);
             final IgniteSession value = new IgniteSession(session, false);
-            value.principal = (String) res.get(1);
+            value.principal = (String)res.get(1);
             sessionMap.put(session.getId(), value);
         });
 
@@ -340,9 +338,8 @@ public class IgniteIndexedSessionRepository
     }
 
     /** */
-    @Override
-    public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
-            throws CacheEntryListenerException {
+    @Override public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
+        throws CacheEntryListenerException {
         events.forEach((event) -> {
             if (logger.isDebugEnabled())
                 logger.debug("Session expired with id: " + event.getOldValue().getId());
@@ -421,13 +418,17 @@ public class IgniteIndexedSessionRepository
         @QuerySqlField(index = true)
         private String principal;
 
+        /**
+         * @param cached Map session.
+         * @param isNew Is new flag.
+         */
         IgniteSession(MapSession cached, boolean isNew) {
             this.delegate = cached;
             this.isNew = isNew;
             this.originalId = cached.getId();
             if (this.isNew || (IgniteIndexedSessionRepository.this.saveMode == SaveMode.ALWAYS))
                 getAttributeNames()
-                        .forEach((attributeName) -> this.delta.put(attributeName, cached.getAttribute(attributeName)));
+                    .forEach((attributeName) -> this.delta.put(attributeName, cached.getAttribute(attributeName)));
 
         }
 
@@ -543,7 +544,7 @@ public class IgniteIndexedSessionRepository
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            IgniteSession session = (IgniteSession) o;
+            IgniteSession session = (IgniteSession)o;
             return this.delegate.equals(session.delegate);
         }
 

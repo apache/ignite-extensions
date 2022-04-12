@@ -46,10 +46,12 @@ public class GridSpringTransactionManagerSelfTest extends GridSpringTransactionM
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteCacheProxy<Integer, String> cache() {
         return new IgniteNodeCacheProxy<>(grid().cache(CACHE_NAME));
     }
 
+    /** {@inheritDoc} */
     @Override public GridSpringTransactionService service() {
         return service;
     }

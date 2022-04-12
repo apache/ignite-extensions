@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Query {
     /**
-     * SQL query text string.
+     * @return SQL query text string.
      */
     String value() default "";
 }

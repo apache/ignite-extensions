@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -286,7 +285,7 @@ public class IgniteHttpSessionConfigurationTest {
     /** */
     @Configuration
     static class CustomSessionMapNameSetConfiguration extends IgniteHttpSessionConfiguration {
-
+        /** */
         CustomSessionMapNameSetConfiguration() {
             setSessionMapName(MAP_NAME);
         }
@@ -296,7 +295,7 @@ public class IgniteHttpSessionConfigurationTest {
     /** */
     @Configuration
     static class CustomMaxInactiveIntervalInSecondsSetConfiguration extends IgniteHttpSessionConfiguration {
-
+        /** */
         CustomMaxInactiveIntervalInSecondsSetConfiguration() {
             setMaxInactiveIntervalInSeconds(MAX_INACTIVE_INTERVAL_IN_SECONDS);
         }
@@ -313,7 +312,7 @@ public class IgniteHttpSessionConfigurationTest {
     /** */
     @Configuration
     static class CustomFlushImmediatelySetConfiguration extends IgniteHttpSessionConfiguration {
-
+        /** */
         CustomFlushImmediatelySetConfiguration() {
             setFlushMode(FlushMode.IMMEDIATE);
         }
@@ -329,7 +328,7 @@ public class IgniteHttpSessionConfigurationTest {
     /** */
     @Configuration
     static class CustomSaveModeExpressionSetterConfiguration extends IgniteHttpSessionConfiguration {
-
+        /** */
         CustomSaveModeExpressionSetterConfiguration() {
             setSaveMode(SaveMode.ALWAYS);
         }

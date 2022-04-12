@@ -31,10 +31,10 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
-
     /**
      * @param mtd Method.
      * @param metadata Metadata.
+     * @return Ignite query.
      */
     @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts;
@@ -97,6 +97,7 @@ public class IgniteQueryGenerator {
      *
      * @param sql SQL text string.
      * @param sort Sort method.
+     * @return String builder.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
         if (sort != null) {

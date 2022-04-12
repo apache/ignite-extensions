@@ -17,13 +17,13 @@
 
 package org.apache.ignite.stream.twitter;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.twitter.hbc.core.HttpHosts;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -116,7 +116,7 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             Map<String, String> params = new HashMap<>();
 
             params.put("track", "apache, twitter");
-            params.put("follow", "3004445758");// @ApacheIgnite id.
+            params.put("follow", "3004445758"); // @ApacheIgnite id.
 
             streamer.setApiParams(params);
             streamer.setEndpointUrl(MOCK_TWEET_PATH);

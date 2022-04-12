@@ -72,7 +72,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name + " [clusterId=" + clusterId + ", conflictResolveField=" +  conflictResolveField + ", caches=" + caches + ']';
+        return name + " [clusterId=" + clusterId + ", conflictResolveField=" + conflictResolveField + ", caches=" + caches + ']';
     }
 
     /** {@inheritDoc} */

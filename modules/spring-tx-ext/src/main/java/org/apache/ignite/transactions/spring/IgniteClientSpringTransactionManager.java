@@ -70,7 +70,11 @@ public class IgniteClientSpringTransactionManager extends AbstractSpringTransact
         return cli;
     }
 
-    /** Sets thin client instance that is used for accessing the Ignite cluster. */
+    /**
+     * Sets thin client instance that is used for accessing the Ignite cluster.
+     *
+     * @param cli Ignite client.
+     */
     public void setClientInstance(IgniteClient cli) {
         this.cli = cli;
     }

@@ -161,12 +161,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder()
+            .setAddresses(Collections.singleton("127.0.0.1:" + discoPort + ".." + (discoPort + DFLT_PORT_RANGE)));
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setDiscoverySpi(new TcpDiscoverySpi()
                 .setLocalPort(discoPort)
-                .setIpFinder(new TcpDiscoveryVmIpFinder() {{
-                    setAddresses(Collections.singleton("127.0.0.1:" + discoPort + ".." + (discoPort + DFLT_PORT_RANGE)));
-                }}));
+                .setIpFinder(finder));
 
         if (!cfg.isClientMode()) {
             CacheVersionConflictResolverPluginProvider<?> cfgPlugin1 = new CacheVersionConflictResolverPluginProvider<>();
@@ -563,7 +564,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         assertNotNull(longMetric.apply(EVTS_CNT));
     }
 
-
     /** */
     private static class TestKey {
         /** Id. */
@@ -578,6 +578,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             this.subId = subId;
         }
 
+        /** */
         public int getId() {
             return id;
         }

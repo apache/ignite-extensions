@@ -44,12 +44,16 @@ public @interface EnableIgniteRepositories {
      * Alias for the {@link #basePackages()} attribute. Allows for more concise annotation declarations e.g.:
      * {@code @EnableIgniteRepositories("org.my.pkg")} instead of
      * {@code @EnableIgniteRepositories(basePackages="org.my.pkg")}.
+     *
+     * @return Base packages.
      */
     String[] value() default {};
 
     /**
      * Base packages to scan for annotated components. {@link #value()} is an alias for (and mutually exclusive with)
      * this attribute. Use {@link #basePackageClasses()} for a type-safe alternative to String-based package names.
+     *
+     * @return Base packages.
      */
     String[] basePackages() default {};
 
@@ -57,11 +61,15 @@ public @interface EnableIgniteRepositories {
      * Type-safe alternative to {@link #basePackages()} for specifying the packages to scan for annotated components.
      * The package of each class specified will be scanned. Consider creating a special no-op marker class or interface
      * in each package that serves no purpose other than being referenced by this attribute.
+     *
+     * @return Base class.
      */
     Class<?>[] basePackageClasses() default {};
 
     /**
      * Specifies which types are not eligible for component scanning.
+     *
+     * @return Filters.
      */
     Filter[] excludeFilters() default {};
 
@@ -69,6 +77,8 @@ public @interface EnableIgniteRepositories {
      * Specifies which types are eligible for component scanning. Further narrows the set of candidate components from
      * everything in {@link #basePackages()} to everything in the base packages that matches the given filter or
      * filters.
+     *
+     * @return Filters.
      */
     Filter[] includeFilters() default {};
 
@@ -114,6 +124,8 @@ public @interface EnableIgniteRepositories {
     /**
      * Configures whether nested repository-interfaces (e.g. defined as inner classes) should be discovered by the
      * repositories infrastructure.
+     *
+     * @return {@code True} search through nested repositories.
      */
     boolean considerNestedRepositories() default false;
 }

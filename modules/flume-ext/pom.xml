@@ -25,14 +25,18 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <artifactId>ignite-parent</artifactId>
+        <version>2.13.0-SNAPSHOT</version>
+        <relativePath/>
     </parent>
 
     <artifactId>ignite-flume-ext</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <flume.ng.version>1.7.0</flume.ng.version>
+    </properties>
 
     <dependencies>
         <dependency>

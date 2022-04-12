@@ -48,6 +48,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Number of entries to store */
     protected static int CACHE_SIZE = 1000;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

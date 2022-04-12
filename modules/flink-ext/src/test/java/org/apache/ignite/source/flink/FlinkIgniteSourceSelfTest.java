@@ -119,7 +119,7 @@ public class FlinkIgniteSourceSelfTest {
                 catch (Throwable e) {
                     igniteSrc.cancel();
 
-                   throw new AssertionError("Unexpected failure.", e);
+                    throw new AssertionError("Unexpected failure.", e);
                 }
             }
         });
