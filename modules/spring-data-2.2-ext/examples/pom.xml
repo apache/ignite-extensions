@@ -27,20 +27,20 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
-        <version>1</version>
-        <relativePath>../../../parent</relativePath>
+        <artifactId>ignite-spring-data-2.2-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-spring-data-2.2-ext-examples</artifactId>
-    <version>${ignite-spring-data-2.2-ext.version}</version>
-    <url>http://ignite.apache.org</url>
+
+    <url>https://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-2.2-ext</artifactId>
-            <version>${ignite-spring-data-2.2-ext.version}</version>
+            <version>${revision}</version>
         </dependency>
 
         <dependency>

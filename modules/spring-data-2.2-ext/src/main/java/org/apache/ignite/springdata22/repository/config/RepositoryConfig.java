@@ -50,12 +50,16 @@ public @interface RepositoryConfig {
     /**
      * Name of the Spring Bean that must provide {@link Ignite} or {@link IgniteClient} instance for accessing the
      * Ignite cluster.
+     *
+     * @return Ignite instance name.
      */
     String igniteInstance() default "igniteInstance";
 
     /**
      * Name of the Spring Bean that must provide {@link IgniteConfiguration} or {@link ClientConfiguration} that is used
      * for instantination of Ignite node or Ignite thin client respectively for accessing the Ignite cluster.
+     *
+     * @return Ignite configuration.
      */
     String igniteCfg() default "igniteCfg";
 

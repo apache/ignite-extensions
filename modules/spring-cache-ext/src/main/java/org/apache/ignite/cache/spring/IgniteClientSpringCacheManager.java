@@ -120,12 +120,15 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
     /** Flag that indicates whether Ignite client instance was set explicitly. */
     private boolean externalCliInstance;
 
-    /** Gets Ignite client instance. */
+    /** @return Gets Ignite client instance. */
     public IgniteClient getClientInstance() {
         return cli;
     }
 
-    /** Sets Ignite client instance. */
+    /**
+     * @param cli Ignite client instance.
+     * @return Ignite Client Cache Manager.
+     */
     public IgniteClientSpringCacheManager setClientInstance(IgniteClient cli) {
         A.notNull(cli, "cli");
 
@@ -136,19 +139,22 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
         return this;
     }
 
-    /** Gets Ignite client configuration. */
+    /** @return Gets Ignite client configuration. */
     public ClientConfiguration getClientConfiguration() {
         return cliCfg;
     }
 
-    /** Sets Ignite client configuration that will be used to start the client instance by the manager. */
+    /**
+     * @param cliCfg Ignite client configuration that will be used to start the client instance by the manager.
+     * @return Ignite Client Cache Manager.
+     */
     public IgniteClientSpringCacheManager setClientConfiguration(ClientConfiguration cliCfg) {
         this.cliCfg = cliCfg;
 
         return this;
     }
 
-    /** Gets dynamic Ignite cache configuration template. */
+    /** @return Gets dynamic Ignite cache configuration template. */
     public ClientCacheConfiguration getDynamicCacheConfiguration() {
         return dynamicCacheCfg;
     }
@@ -157,6 +163,9 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
      * Sets the Ignite cache configurations template that will be used to start the Ignite cache with the name
      * requested by the Spring Cache Framework if one does not exist. Note that provided cache name will be erased and
      * replaced with requested one.
+     *
+     * @param dynamicCacheCfg Client configuration.
+     * @return Ignite Spring Cache Manager.
      */
     public IgniteClientSpringCacheManager setDynamicCacheConfiguration(ClientCacheConfiguration dynamicCacheCfg) {
         this.dynamicCacheCfg = dynamicCacheCfg;

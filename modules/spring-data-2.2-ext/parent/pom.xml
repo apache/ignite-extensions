@@ -17,12 +17,9 @@
   limitations under the License.
 -->
 
-<!--
-    POM file.
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -32,16 +29,28 @@
         <relativePath/>
     </parent>
 
-    <artifactId>ignite-spring-data-commons</artifactId>
-    <version>1.2.0-SNAPSHOT</version>
+    <artifactId>ignite-spring-data-2.2-parent</artifactId>
+    <packaging>pom</packaging>
+    <version>${revision}</version>
+
     <url>https://ignite.apache.org</url>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
+    <properties>
+        <revision>1.1.0-SNAPSHOT</revision>
+        <ignite-spring-data-commons.version>1.1.0</ignite-spring-data-commons.version>
+        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version><!-- don't forget to update spring-data-2.2 version -->
+        <spring.data-2.2.version>2.2.3.RELEASE</spring.data-2.2.version> <!-- don't forget to update spring-5.2 version -->
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

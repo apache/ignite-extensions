@@ -83,11 +83,11 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
                 "lastName" + Integer.toHexString((i + 16) % 256)));
         }
 
-        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
     }
 
     /** {@inheritDoc} */
@@ -181,7 +181,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         repo.deleteById(0);
 
         assertEquals(CACHE_SIZE - 1, repo.count());
-        assertEquals(Optional.empty(),repo.findById(0));
+        assertEquals(Optional.empty(), repo.findById(0));
 
         try {
             repo.delete(new Person("", ""));
@@ -356,7 +356,8 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter(PersonProjection.class, "uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
 
-        List<FullNameProjection> personFullName = repo.queryByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
+        List<FullNameProjection> personFullName =
+            repo.queryByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
         assertEquals(personFullName.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
     }
 
@@ -383,7 +384,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, cnt);
 
-        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedIndexedParameter("notUsed","uniquePerson");
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedIndexedParameter("notUsed", "uniquePerson");
         assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName3");
     }
 

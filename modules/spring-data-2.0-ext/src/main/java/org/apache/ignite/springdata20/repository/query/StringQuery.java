@@ -642,6 +642,7 @@ class StringQuery implements DeclaredQuery {
          * (non-Javadoc)
          * @see org.springframework.data.jpa.repository.query.StringQuery.ParameterBinding#prepare(java.lang.Object)
          */
+        /** {@inheritDoc} */
         @Override public Object prepare(@Nullable Object value) {
             if (!ObjectUtils.isArray(value))
                 return value;

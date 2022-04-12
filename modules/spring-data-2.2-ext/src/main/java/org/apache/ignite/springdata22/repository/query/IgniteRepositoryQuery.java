@@ -47,10 +47,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.apache.ignite.springdata22.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata22.repository.query.StringQuery.ParameterBinding;
 import org.jetbrains.annotations.Nullable;
@@ -137,7 +137,8 @@ import static org.apache.ignite.springdata22.repository.support.IgniteRepository
  * <li> Supports dynamic query and tuning at runtime by using {@link DynamicQueryConfig} method parameter. Examples:
  * <pre>
  * {@code @Query}(value = "SELECT * from #{#entityName} where email = :email")
- * User searchUserByEmailWithQueryTuning({@code @Param}("email") String email, {@code @Param}("ignoredUsedAsQueryTuning") DynamicQueryConfig config);
+ * User searchUserByEmailWithQueryTuning({@code @Param}("email") String email,
+ *     {@code @Param}("ignoredUsedAsQueryTuning") DynamicQueryConfig config);
  *
  * {@code @Query}(dynamicQuery = true)
  * List<User> searchUsersByCityWithDynamicQuery({@code @Param}("country") String country, {@code @Param}("city") String city,
@@ -147,7 +148,8 @@ import static org.apache.ignite.springdata22.repository.support.IgniteRepository
  * DynamicQueryConfig onlyTunning = new DynamicQueryConfig().setCollocated(true);
  * repo.searchUserByEmailWithQueryTuning("user@mail.com", onlyTunning);
  *
- * DynamicQueryConfig withDynamicQuery = new DynamicQueryConfig().value("SELECT * from #{#entityName} where country = ?#{[0] and city = ?#{[1]}").setForceFieldsQuery(true).setLazy(true).setCollocated(true);
+ * DynamicQueryConfig withDynamicQuery = new DynamicQueryConfig().value("SELECT * from #{#entityName} where
+ *     country = ?#{[0] and city = ?#{[1]}").setForceFieldsQuery(true).setLazy(true).setCollocated(true);
  * repo.searchUsersByCityWithDynamicQuery("Spain", "Madrid", withDynamicQuery, new PageRequest(0, 100));
  *
  * </pre>
@@ -261,7 +263,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         @Nullable IgniteQuery staticQuery,
         Method mtd,
         ProjectionFactory factory,
-        IgniteCacheProxy<? ,?> cache,
+        IgniteCacheProxy<?, ?> cache,
         @Nullable DynamicQueryConfig staticQueryConfiguration,
         QueryMethodEvaluationContextProvider queryMethodEvaluationContextProvider) {
         this.metadata = metadata;
@@ -363,6 +365,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return new QueryMethod(mtd, metadata, factory);
     }
 
+    /** */
     private <T extends Parameter> int getDynamicQueryConfigurationIndex(QueryMethod method) {
         Iterator<T> it = (Iterator<T>)method.getParameters().iterator();
         int i = 0;

@@ -81,11 +81,11 @@ public class IgniteSpringDataCrudSelfExpressionTest extends GridCommonAbstractTe
                 "lastName" + Integer.toHexString((i + 16) % 256)));
         }
 
-        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
-        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int)repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
     }
 
     /** {@inheritDoc} */

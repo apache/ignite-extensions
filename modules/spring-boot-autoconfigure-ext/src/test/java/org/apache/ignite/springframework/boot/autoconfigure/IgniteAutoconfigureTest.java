@@ -151,9 +151,7 @@ public class IgniteAutoconfigureTest {
         ApplicationContextRunner runner = contextRunner
             .withPropertyValues("ignite.consistentId=from-property-id")
             .withBean(IgniteConfigurer.class,
-            () -> cfg -> {
-                cfg.setIgniteInstanceName(instanceName).setConsistentId("test-id");
-            });
+                () -> cfg -> cfg.setIgniteInstanceName(instanceName).setConsistentId("test-id"));
 
         runner.run((context) -> {
             assertThat(context).hasSingleBean(IgniteConfiguration.class);

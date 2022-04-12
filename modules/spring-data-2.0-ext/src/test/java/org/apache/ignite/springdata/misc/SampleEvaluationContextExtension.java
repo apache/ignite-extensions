@@ -85,6 +85,7 @@ public class SampleEvaluationContextExtension extends EvaluationContextExtension
     /** */
     public static class SamplePassParamExtension {
         // just return same param
+        /** */
         public Object transformParam(Object param) {
             return param;
         }

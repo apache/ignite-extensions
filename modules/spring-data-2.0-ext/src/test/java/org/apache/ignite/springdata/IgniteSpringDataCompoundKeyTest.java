@@ -62,8 +62,10 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
     /** test city Kabul */
     private static final City KABUL = new City("Kabul", "Kabol", 1780000);
 
-    /** test city Quandahar */
-    private static final City QUANDAHAR = new City("Qandahar","Qandahar", 237500);
+    /**
+     * test city Quandahar
+     */
+    private static final City QUANDAHAR = new City("Qandahar", "Qandahar", 237500);
 
     /**
      * Performs context initialization before tests.
@@ -107,7 +109,9 @@ public class IgniteSpringDataCompoundKeyTest extends GridCommonAbstractTest {
             Statement st = conn.createStatement();
 
             st.execute("DROP TABLE IF EXISTS City");
-            st.execute("CREATE TABLE City (ID INT, Name VARCHAR, CountryCode CHAR(3), District VARCHAR, Population INT, PRIMARY KEY (ID, CountryCode)) WITH \"template=partitioned, backups=1, affinityKey=CountryCode, CACHE_NAME=City, KEY_TYPE=org.apache.ignite.springdata.compoundkey.CityKey, VALUE_TYPE=org.apache.ignite.springdata.compoundkey.City\"");
+            st.execute("CREATE TABLE City (ID INT, Name VARCHAR, CountryCode CHAR(3), District VARCHAR, Population INT, PRIMARY KEY " +
+                "(ID, CountryCode)) WITH \"template=partitioned, backups=1, affinityKey=CountryCode, CACHE_NAME=City, " +
+                "KEY_TYPE=org.apache.ignite.springdata.compoundkey.CityKey, VALUE_TYPE=org.apache.ignite.springdata.compoundkey.City\"");
             st.execute("SET STREAMING ON;");
             st.execute("INSERT INTO City(ID, Name, CountryCode, District, Population) VALUES (1,'Kabul','AFG','Kabol',1780000)");
             st.execute("INSERT INTO City(ID, Name, CountryCode, District, Population) VALUES (2,'Qandahar','AFG','Qandahar',237500)");

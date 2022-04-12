@@ -34,6 +34,8 @@ public @interface Query {
     /**
      * Query text string. If not provided, Ignite query generator for Spring Data framework will be used to generate one
      * (only if textQuery = false (default))
+     *
+     * @return Query text string.
      */
     String value() default "";
 
@@ -42,12 +44,15 @@ public @interface Query {
      * {@link IgniteClient} is used for accessing the Ignite cluster, use {@link Ignite} node instance instead.
      *
      * @see RepositoryConfig#igniteInstance()
+     * @return {@code True} if repository method must use TextQuery search.
      */
     boolean textQuery() default false;
 
     /**
      * Force SqlFieldsQuery type, deactivating auto-detection based on SELECT statement. Useful for non SELECT
      * statements or to not return hidden fields on SELECT * statements.
+     *
+     * @return {@code True} if force SqlFieldsQuery.
      */
     boolean forceFieldsQuery() default false;
 
@@ -62,6 +67,8 @@ public @interface Query {
      *
      * <p>
      * Only applicable to SqlFieldsQuery
+     *
+     * @return {@code True} if query is collocated.
      */
     boolean collocated() default false;
 
@@ -71,6 +78,8 @@ public @interface Query {
      *
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
+     *
+     * @return Query timeout in milliseconds.
      */
     int timeout() default 0;
 
@@ -83,6 +92,8 @@ public @interface Query {
      *
      * <p>
      * Only applicable to SqlFieldsQuery
+     *
+     * @return {@code True} if flag to enforce join order of tables in the query is set.
      */
     boolean enforceJoinOrder() default false;
 
@@ -90,6 +101,8 @@ public @interface Query {
      * Specify if distributed joins are enabled for this query.
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
+     *
+     * @return {@code True} if distributed joins specified.
      */
     boolean distributedJoins() default false;
 
@@ -107,11 +120,15 @@ public @interface Query {
      * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
      * <p>
      * Only applicable to SqlFieldsQuery
+     *
+     * @return {@code True} if flag is set.
      */
     boolean lazy() default false;
 
     /**
      * Sets whether this query should be executed on local node only.
+     *
+     * @return {@code True} if local flag is set.
      */
     boolean local() default false;
 
@@ -122,6 +139,8 @@ public @interface Query {
      * Note what passed array'll be sorted in place for performance reasons, if it wasn't sorted yet.
      * <p>
      * Only applicable to SqlFieldsQuery and SqlQuery
+     *
+     * @return Array partitions for a query.
      */
     int[] parts() default {};
 
@@ -131,11 +150,15 @@ public @interface Query {
      * <p>
      * Please, note that  {@link DynamicQueryConfig#textQuery()} annotation parameters will be ignored in favor of those
      * defined in {@link DynamicQueryConfig} parameter if present (runtime ignite query tuning).
+     *
+     * @return {@code True} if dynamic query is set.
      */
     boolean dynamicQuery() default false;
 
     /**
      * Sets limit to response records count for TextQuery. If 0 or less, considered to be no limit.
+     *
+     * @return Limit of records for TextQuery.
      */
     int limit() default 0;
 }

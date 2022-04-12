@@ -81,7 +81,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             ". Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
             " annotation to map this repository to the underlying cache.");
 
-       cache = cfg.autoCreateCache() ? ignite.getOrCreateCache(cacheName) : ignite.cache(cacheName);
+        cache = cfg.autoCreateCache() ? ignite.getOrCreateCache(cacheName) : ignite.cache(cacheName);
 
         if (cache == null) {
             throw new IllegalArgumentException(

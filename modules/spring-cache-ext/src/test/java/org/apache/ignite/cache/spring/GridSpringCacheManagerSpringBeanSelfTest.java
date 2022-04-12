@@ -25,10 +25,10 @@ import org.springframework.context.support.GenericXmlApplicationContext;
  * Spring cache test.
  */
 public class GridSpringCacheManagerSpringBeanSelfTest extends GridSpringCacheManagerAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ApplicationContext appCtx = new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching-ignite-spring-bean.xml");
+        ApplicationContext appCtx =
+            new ClassPathXmlApplicationContext("org/apache/ignite/cache/spring/spring-caching-ignite-spring-bean.xml");
 
         // To produce multiple calls of ApplicationListener::onApplicationEvent
         GenericXmlApplicationContext child = new GenericXmlApplicationContext();

@@ -25,7 +25,9 @@ public class IgniteClientProxy implements IgniteProxy {
     /** {@link IgniteClient} instance to which operations are delegated.  */
     protected final IgniteClient cli;
 
-    /** */
+    /**
+     * @param cli Ignite client.
+     */
     public IgniteClientProxy(IgniteClient cli) {
         this.cli = cli;
     }

@@ -46,7 +46,7 @@ public class CityKeyExt extends CityKey {
         if (!super.equals(o))
             return false;
 
-        CityKeyExt that = (CityKeyExt) o;
+        CityKeyExt that = (CityKeyExt)o;
 
         return idExt == that.idExt;
     }

@@ -16,19 +16,17 @@
  */
 package org.apache.ignite.springdata;
 
-import org.apache.ignite.springdata.compoundkey.City;
-import org.apache.ignite.springdata.compoundkey.CityKeyExt;
-import org.junit.Test;
-
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.ignite.springdata.compoundkey.City;
+import org.apache.ignite.springdata.compoundkey.CityKeyExt;
+import org.junit.Test;
 
 /**
  * Test with using ext compound key in spring-data.
  */
 public class IgniteSpringDataCompoundExtendedKeyTest extends IgniteSpringDataCompoundKeyTest {
-
     /**
      * Cities count.
      */
