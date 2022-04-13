@@ -68,6 +68,15 @@
         </dependencies>
     </dependencyManagement>
 
+    <dependencies>
+        <!-- The TestSuiteAwareTestsetReporter added to classpath for the maven-surefire-plugin. -->
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
