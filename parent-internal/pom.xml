@@ -50,6 +50,9 @@
             <id>releases</id>
             <name>Apache Release Repository</name>
             <url>https://repository.apache.org/service/local/staging/deploy/maven2</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
         </repository>
         <repository>
             <id>snapshots</id>
