@@ -74,6 +74,13 @@
 
     <profiles>
         <profile>
+            <id>use-ignite-src</id>
+            <modules>
+                <module>../ignite</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>examples</id>
             <modules>
                 <module>modules/spring-boot-autoconfigure-ext/examples</module>
