@@ -36,7 +36,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <ignite.version>2.13.0-SNAPSHOT</ignite.version>
+        <ignite.version>2.14.0-SNAPSHOT</ignite.version>
 
         <ignite-spring-boot-autoconfigure-ext.version>1.1.0-SNAPSHOT</ignite-spring-boot-autoconfigure-ext.version>
         <ignite-spring-boot-thin-client-autoconfigure-ext.version>1.1.0-SNAPSHOT</ignite-spring-boot-thin-client-autoconfigure-ext.version>
