@@ -38,7 +38,6 @@
     <properties>
         <revision>1.1.0-SNAPSHOT</revision>
         <xstream.version>1.4.8</xstream.version>
-        <ignite-spring-data-commons.version>1.1.0</ignite-spring-data-commons.version>
     </properties>
 
     <build>
