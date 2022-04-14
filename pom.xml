@@ -28,6 +28,7 @@
 
     <modules>
         <module>modules/apache-license-gen</module>
+        <module>parent-internal</module>
         <module>modules/flink-ext</module>
         <module>modules/flume-ext</module>
         <module>modules/pub-sub-ext</module>
