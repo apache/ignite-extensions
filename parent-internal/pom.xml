@@ -43,6 +43,11 @@
 
     <repositories>
         <repository>
+            <id>releases</id>
+            <name>Apache Release Repository</name>
+            <url>https://repository.apache.org/service/local/staging/deploy/maven2</url>
+        </repository>
+        <repository>
             <id>snapshots</id>
             <name>Apache Snapshot Repository</name>
             <url>https://repository.apache.org/snapshots</url>
