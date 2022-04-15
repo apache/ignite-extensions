@@ -29,7 +29,7 @@
         <relativePath>../../../parent-internal/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-zookeeper-ip-finer-parent</artifactId>
+    <artifactId>ignite-zookeeper-ip-finder-parent</artifactId>
     <packaging>pom</packaging>
     <version>${revision}</version>
 

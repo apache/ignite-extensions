@@ -27,7 +27,7 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-zookeeper-ip-finer-parent</artifactId>
+        <artifactId>ignite-zookeeper-ip-finder-parent</artifactId>
         <version>${revision}</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
