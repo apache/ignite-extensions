@@ -46,7 +46,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     private int threadCnt = DFLT_THREAD_CNT;
 
     /** Events topic name. */
-    private String topic;
+    private String evtTopic;
 
     /** Metadata topic name. */
     private String metadataTopic;
@@ -91,12 +91,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** */
     public String getTopic() {
-        return topic;
+        return evtTopic;
     }
 
     /** */
-    public void setTopic(String topic) {
-        this.topic = topic;
+    public void setTopic(String evtTopic) {
+        this.evtTopic = evtTopic;
     }
 
     /** */

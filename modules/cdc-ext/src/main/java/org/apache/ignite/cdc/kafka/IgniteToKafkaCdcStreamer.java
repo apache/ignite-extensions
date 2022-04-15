@@ -102,7 +102,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
     /** Topic to send data. */
-    private String topic;
+    private String evtTopic;
 
     /** Topic to send metadata. */
     private String metadataTopic;
@@ -176,7 +176,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             sendBatch(
                 filtered,
                 evt -> new ProducerRecord<>(
-                    topic,
+                    evtTopic,
                     evt.partition() % kafkaParts,
                     evt.cacheId(),
                     IgniteUtils.toBytes(evt)
@@ -251,7 +251,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
-        A.notNull(topic, "Kafka topic");
+        A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
         A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
@@ -269,7 +269,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
             if (log.isInfoEnabled()) {
                 log.info("CDC Ignite To Kafka started [" +
-                    "topic=" + topic +
+                    "topic=" + evtTopic +
                     ", metadataTopic = " + metadataTopic +
                     ", onlyPrimary=" + onlyPrimary +
                     ", cacheIds=" + cachesIds + ']'
@@ -307,11 +307,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /**
      * Sets topic that is used to send data to Kafka.
      *
-     * @param topic Kafka topic.
+     * @param evtTopic Kafka topic.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setTopic(String topic) {
-        this.topic = topic;
+    public IgniteToKafkaCdcStreamer setTopic(String evtTopic) {
+        this.evtTopic = evtTopic;
 
         return this;
     }
