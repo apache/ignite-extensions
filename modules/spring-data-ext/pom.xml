@@ -42,14 +42,12 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -90,7 +88,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -98,14 +95,12 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -118,7 +113,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-tools</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
