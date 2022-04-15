@@ -56,21 +56,13 @@
         <module>modules/gce-ext</module>
         <module>modules/zookeeper-ip-finder-ext</module>
         <module>modules/topology-validator-ext</module>
+        <module>modules/spring-boot-autoconfigure-ext/examples</module>
+        <module>modules/spring-boot-thin-client-autoconfigure-ext/examples</module>
+        <module>modules/spring-data-2.0-ext/examples</module>
+        <module>modules/spring-data-2.2-ext/examples</module>
+        <module>modules/spring-tx-ext/examples</module>
+        <module>modules/zookeeper-ip-finder-ext/examples</module>
     </modules>
-
-    <profiles>
-        <profile>
-            <id>examples</id>
-            <modules>
-                <module>modules/spring-boot-autoconfigure-ext/examples</module>
-                <module>modules/spring-boot-thin-client-autoconfigure-ext/examples</module>
-                <module>modules/spring-data-2.0-ext/examples</module>
-                <module>modules/spring-data-2.2-ext/examples</module>
-                <module>modules/spring-tx-ext/examples</module>
-                <module>modules/zookeeper-ip-finder-ext/examples</module>
-            </modules>
-        </profile>
-    </profiles>
 
     <build>
         <plugins>

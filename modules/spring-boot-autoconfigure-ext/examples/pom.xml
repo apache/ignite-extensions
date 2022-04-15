@@ -29,7 +29,7 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-spring-boot-autoconfigure-parent</artifactId>
         <version>${revision}</version>
-        <relativePath>parent/pom.xml</relativePath>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-spring-boot-autoconfigure-ext-examples</artifactId>
