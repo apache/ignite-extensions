@@ -32,7 +32,7 @@
 
     <artifactId>ignite-parent-ext-internal</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.0</version>
+    <version>1</version>
 
     <properties>
         <commons.release.version>1.1.0</commons.release.version>
@@ -46,14 +46,6 @@
     </scm>
 
     <repositories>
-        <repository>
-            <id>releases</id>
-            <name>Apache Release Repository</name>
-            <url>https://repository.apache.org/service/local/staging/deploy/maven2</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
         <repository>
             <id>snapshots</id>
             <name>Apache Snapshot Repository</name>
