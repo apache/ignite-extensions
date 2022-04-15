@@ -19,7 +19,6 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -49,11 +48,9 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
@@ -93,44 +90,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Bytes sent metric description. */
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
-
-    /**
-     * Metadata type header name.
-     * @see ProducerRecord#headers()
-     */
-    public static final String META_TYPE_HEADER = "META_TYPE";
-
-    /** Metadata types enum. */
-    public enum MetaType {
-        /** Binary type metadata. */
-        BINARY,
-
-        /** Mappings metadata. */
-        MAPPINGS;
-
-        /** Headers. */
-        final Iterable<Header> headers;
-
-        /** */
-        MetaType() {
-            this.headers = metaHeaders(this.name().getBytes(UTF_8));
-        }
-
-        /** */
-        private static Iterable<Header> metaHeaders(final byte[] val) {
-            return Collections.singleton(new Header() {
-                /** {@inheritDoc} */
-                @Override public String key() {
-                    return META_TYPE_HEADER;
-                }
-
-                /** {@inheritDoc} */
-                @Override public byte[] value() {
-                    return val;
-                }
-            });
-        }
-    }
 
     /** Log. */
     @LoggerResource
@@ -234,13 +193,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onTypes(Iterator<BinaryType> types) {
         sendBatch(
             types,
-            t -> new ProducerRecord<Integer, byte[]>(
-                metadataTopic,
-                null,
-                null,
-                IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata()),
-                MetaType.BINARY.headers
-            ),
+            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
             Long.MAX_VALUE,
             typesCnt
         );
@@ -250,13 +203,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         sendBatch(
             mappings,
-            m -> new ProducerRecord<Integer, byte[]>(
-                metadataTopic,
-                null,
-                null,
-                IgniteUtils.toBytes(m),
-                MetaType.MAPPINGS.headers
-            ),
+            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
             Long.MAX_VALUE,
             mappingsCnt
         );

@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MetaType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -37,8 +36,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_TYPE_HEADER;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
@@ -127,28 +124,14 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
                 log.info("Polled from meta topic [rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
 
             for (ConsumerRecord<Void, byte[]> rec : recs) {
-                byte[] bytes = rec.headers().lastHeader(META_TYPE_HEADER).value();
+                Object data = IgniteUtils.fromBytes(rec.value());
 
-                assert bytes != null;
-
-                MetaType type = MetaType.valueOf(new String(bytes, UTF_8));
-
-                switch (type) {
-                    case BINARY:
-                        BinaryMetadata meta = IgniteUtils.fromBytes(rec.value());
-
-                        CdcEventsApplier.registerBinaryMeta(ign, log, meta);
-
-                        break;
-                    case MAPPINGS:
-                        TypeMapping m = IgniteUtils.fromBytes(rec.value());
-
-                        CdcEventsApplier.registerMapping(ign, log, m);
-
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown meta type[type=" + type + ']');
-                }
+                if (data instanceof BinaryMetadata)
+                    CdcEventsApplier.registerBinaryMeta(ign, log, (BinaryMetadata)data);
+                else if (data instanceof TypeMapping)
+                    CdcEventsApplier.registerMapping(ign, log, (TypeMapping)data);
+                else
+                    throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
             cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
