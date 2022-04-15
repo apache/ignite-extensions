@@ -173,7 +173,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         });
 
         while (filtered.hasNext()) {
-            sendBatch(
+            sendLimited(
                 filtered,
                 evt -> new ProducerRecord<>(
                     evtTopic,
@@ -191,34 +191,38 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        sendBatch(
-            types,
-            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-            Long.MAX_VALUE,
-            typesCnt
-        );
+        while (types.hasNext()) {
+            sendLimited(
+                types,
+                t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+                maxBatchSize,
+                typesCnt
+            );
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        sendBatch(
-            mappings,
-            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
-            Long.MAX_VALUE,
-            mappingsCnt
-        );
+        while (mappings.hasNext()) {
+            sendLimited(
+                mappings,
+                m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
+                maxBatchSize,
+                mappingsCnt
+            );
+        }
     }
 
-    /** Send batch of iterator data to Kafka. */
-    private <T> void sendBatch(
+    /** Send limited amount of data to Kafka. */
+    private <T> void sendLimited(
         Iterator<T> data,
         Function<T, ProducerRecord<Integer, byte[]>> toRec,
-        long batchSz,
+        long limit,
         AtomicLongMetric cntr
     ) {
         List<Future<RecordMetadata>> futs = new ArrayList<>();
 
-        while (data.hasNext() && futs.size() < batchSz) {
+        while (data.hasNext() && futs.size() < limit) {
             T item = data.next();
 
             if (log.isDebugEnabled())
