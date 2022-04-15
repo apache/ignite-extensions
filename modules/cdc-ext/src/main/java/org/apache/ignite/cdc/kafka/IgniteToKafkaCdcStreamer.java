@@ -109,7 +109,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         MAPPINGS;
 
         /** Headers. */
-        Iterable<Header> headers;
+        final Iterable<Header> headers;
 
         /** */
         MetaType() {
