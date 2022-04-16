@@ -120,7 +120,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private Collection<String> caches;
 
     /** Max batch size. */
-    private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
+    private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
@@ -139,6 +139,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
+
+    /** */
+    private List<Future<RecordMetadata>> futs;
+
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -181,7 +185,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                     evt.cacheId(),
                     IgniteUtils.toBytes(evt)
                 ),
-                maxBatchSize,
                 evtsCnt
             );
         }
@@ -195,7 +198,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             sendLimited(
                 types,
                 t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-                maxBatchSize,
                 typesCnt
             );
         }
@@ -207,7 +209,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             sendLimited(
                 mappings,
                 m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
-                maxBatchSize,
                 mappingsCnt
             );
         }
@@ -217,12 +218,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private <T> void sendLimited(
         Iterator<T> data,
         Function<T, ProducerRecord<Integer, byte[]>> toRec,
-        long limit,
         AtomicLongMetric cntr
     ) {
-        List<Future<RecordMetadata>> futs = new ArrayList<>();
-
-        while (data.hasNext() && futs.size() < limit) {
+        while (data.hasNext() && futs.size() < maxBatchSz) {
             T item = data.next();
 
             if (log.isDebugEnabled())
@@ -242,6 +240,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
                 cntr.add(futs.size());
                 lastMsgTs.value(System.currentTimeMillis());
+
+                futs.clear();
             }
             catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new RuntimeException(e);
@@ -289,6 +289,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
         this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
         this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+
+        futs = new ArrayList<>(maxBatchSz);
     }
 
     /** {@inheritDoc} */
@@ -359,11 +361,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /**
      * Sets maximum batch size.
      *
-     * @param maxBatchSize Maximum batch size.
+     * @param maxBatchSz Maximum batch size.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSize) {
-        this.maxBatchSize = maxBatchSize;
+    public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSz) {
+        this.maxBatchSz = maxBatchSz;
 
         return this;
     }
