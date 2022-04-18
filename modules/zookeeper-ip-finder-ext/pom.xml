@@ -175,28 +175,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>zookeeper-ip-finder-ext</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>assembly/zookeeper-ip-finder-ext.xml</descriptor>
-                            </descriptors>
-                            <finalName>ignite-zookeeper-ip-finder-ext</finalName>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
             <plugin>
                 <groupId>org.apache.felix</groupId>

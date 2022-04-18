@@ -100,27 +100,6 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <!-- Create zip archive with UI resources. -->
-                        <id>performance-statistics-report-sources</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>compile</phase>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>assembly/dependencies-performance-statistics.xml</descriptor>
-                            </descriptors>
-                            <finalName>report</finalName>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
@@ -157,53 +136,6 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
                             <includeScope>compile</includeScope>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <!-- Create release archive. -->
-                        <id>release-postprocessing</id>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <phase>install</phase>
-                        <configuration>
-                            <target>
-                                <copy todir="${project.build.directory}/${release.package}/${tool.directory}">
-                                    <fileset dir="${basedir}/bin"/>
-                                </copy>
-                                <copy todir="${project.build.directory}/${release.package}/${tool.directory}/libs">
-                                    <fileset dir="${project.build.directory}/libs"/>
-                                    <fileset dir="${project.build.directory}">
-                                        <include name="${build.finalName}.jar"/>
-                                    </fileset>
-                                </copy>
-                                <copy todir="${project.build.directory}/${release.package}">
-                                    <fileset file="${basedir}/README.txt"/>
-                                    <filelist dir="${basedir}/../../" files="LICENSE,NOTICE"/>
-                                </copy>
-
-                                <chmod dir="${project.build.directory}/${release.package}"
-                                       perm="755" includes="**/*.sh" />
-
-                                <zip destfile="${project.build.directory}/${release.package}.zip"
-                                     encoding="UTF-8">
-                                    <zipfileset dir="${project.build.directory}/${release.package}"
-                                                filemode="755">
-                                        <include name="**/*.sh" />
-                                    </zipfileset>
-                                    <zipfileset dir="${project.build.directory}/${release.package}" >
-                                        <exclude name="**/*.sh" />
-                                    </zipfileset>
-                                </zip>
-                            </target>
                         </configuration>
                     </execution>
                 </executions>
