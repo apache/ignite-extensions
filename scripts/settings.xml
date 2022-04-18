@@ -27,6 +27,9 @@
                 NOTE: This is the name of the Maven Central _staging_ repository to upload prepared artifacts to.
                 The repository is inherited from the Apache Ignite main project (see the 'ignite-parent' module)
                 through the maven parent-child relationship. Use your ASF credentials.
+
+                (!) DO NOT use you password directly, see Maven Password Encryption guide:
+                https://maven.apache.org/guides/mini/guide-encryption.html
              -->
             <id>apache.releases.https</id>
             <username>release_manager_login</username>
