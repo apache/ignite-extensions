@@ -54,9 +54,6 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String METADATA_TOPIC = "METADATA_TOPIC";
 
     /** */
-    public static final String METADATA_GROUP_ID = "METADATA_GROUP_ID";
-
-    /** */
     public static final String CONSISTENT_ID = "CONSISTENT_ID";
 
     /** */
@@ -143,7 +140,6 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(REPLICATED_CACHE, cacheName);
         params.put(TOPIC, topic);
         params.put(METADATA_TOPIC, metadataTopic);
-        params.put(METADATA_GROUP_ID, "meta-consumer-" + partFrom + "-" + partTo);
         params.put(PROPS_PATH, kafkaPropsPath);
         params.put(PARTS_FROM, Integer.toString(partFrom));
         params.put(PARTS_TO, Integer.toString(partTo));
