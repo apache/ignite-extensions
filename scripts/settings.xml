@@ -37,8 +37,8 @@
     <profiles>
         <profile>
             <!--
-                NOTE: This profile is optional. If you have a single ultimate gpg key installed it will be used
-                to sign the prepared maven artifacts, sources and binary archives.
+                NOTE: This profile is optional. If you have a single [ultimate] pgp key installed it
+                will be used to sign the prepared maven artifacts, sources and binary archives.
 
                 In case you have no pgp key, please follow instructions from the following link:
                 https://www.apache.org/dev/openpgp.html#generate-key
@@ -50,13 +50,13 @@
                 Append you key using the commands below.
                 (see Exporting a Public Key https://www.gnupg.org/gph/en/manual/x56.html)
 
-                gpg -k E38286D5 >> KEYS
-                gpg -armor -export E38286D5 >> KEYS
+                `gpg -k E38286D5 >> KEYS`
+                `gpg -armor -export E38286D5 >> KEYS`
             -->
             <id>gpg</id>
 
             <properties>
-                <!-- You can find your gpg key using the gpg list-keys command: 'gpg -k' -->
+                <!-- You can find your gpg key using the gpg list-keys command: `gpg -k` -->
                 <gpg.keyname>E38286D5</gpg.keyname>
                 <!-- Don't use the passphrase to your gpg key in any settings file. It will be prompted at the command run. -->
                 <gpg.passphrase>*</gpg.passphrase>
