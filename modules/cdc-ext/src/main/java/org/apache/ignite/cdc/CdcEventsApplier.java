@@ -279,11 +279,11 @@ public abstract class CdcEventsApplier {
      * @param mapping Type mapping to register.
      */
     public static void registerMapping(IgniteEx ign, IgniteLogger log, TypeMapping mapping) {
-        assert mapping.platform().ordinal() <= Byte.MAX_VALUE;
+        assert mapping.platformType().ordinal() <= Byte.MAX_VALUE;
 
         try {
             ign.context().marshallerContext().registerClassName(
-                (byte)mapping.platform().ordinal(),
+                (byte)mapping.platformType().ordinal(),
                 mapping.typeId(),
                 mapping.typeName(),
                 false
