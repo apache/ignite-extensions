@@ -179,14 +179,14 @@
                             </execution>
                         </executions>
                     </plugin>
-<!--                    <plugin>-->
-<!--                        <groupId>org.apache.maven.plugins</groupId>-->
-<!--                        <artifactId>maven-scm-plugin</artifactId>-->
-<!--                        <version>2.0.0-M1</version>-->
-<!--                        <configuration>-->
-<!--                            <tag>${project.artifactId}-${project.version}-rc0</tag>-->
-<!--                        </configuration>-->
-<!--                    </plugin>-->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-scm-plugin</artifactId>
+                        <version>2.0.0-M1</version>
+                        <configuration>
+                            <tag>${project.artifactId}-${project.version}-rc${project.version.rc}</tag>
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>net.nicoulaj.maven.plugins</groupId>
                         <artifactId>checksum-maven-plugin</artifactId>
