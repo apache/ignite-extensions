@@ -20,11 +20,48 @@
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
     <servers>
         <server>
+            <!--
+                NOTE: This is the name of the Maven Central _staging_ repository to upload prepared artifacts to.
+                The repository is inherited from the Apache Ignite main project (see the 'ignite-parent' module)
+                through the maven parent-child relationship. Use your ASF credentials.
+             -->
             <id>apache.releases.https</id>
             <username>release_manager_login</username>
             <password>release_manager_password</password>
         </server>
     </servers>
+
+    <profiles>
+        <profile>
+            <!--
+                NOTE: This profile is optional. If you have a single ultimate gpg key installed it will be used
+                to sign the prepared maven artifacts, sources and binary archives.
+
+                In case you have no pgp key, please follow instructions from the following link:
+                https://www.apache.org/dev/openpgp.html#generate-key
+
+                You should add your newly created public pgp key to the Apache Ignite KEYS file
+                (see https://dist.apache.org/repos/dist/release/ignite/KEYS) located in the svn
+                repository. You can update the file using your ASF credentials.
+
+                Append you key using the commands below.
+                (see Exporting a Public Key https://www.gnupg.org/gph/en/manual/x56.html)
+
+                gpg -k E38286D5 >> KEYS
+                gpg -armor -export E38286D5 >> KEYS
+            -->
+            <id>gpg</id>
+
+            <properties>
+                <!-- You can find your gpg key using the gpg list-keys command: 'gpg -k' -->
+                <gpg.keyname>E38286D5</gpg.keyname>
+                <!-- Don't use the passphrase to your gpg key in any settings file. It will be prompted at the command run. -->
+                <gpg.passphrase>*</gpg.passphrase>
+                <gpg.useagent>false</gpg.useagent>
+            </properties>
+        </profile>
+    </profiles>
 </settings>
