@@ -84,17 +84,23 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${commons.lang.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${ignite.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 

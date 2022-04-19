@@ -17,23 +17,30 @@
 
 package org.apache.ignite.springdata;
 
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
 import org.apache.ignite.springdata.misc.PersonRepository;
-import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /** Tests Spring Data CRUD operation when thin client is used for accessing the Ignite cluster. */
 public class IgniteClientSpringDataCrudSelfTest extends IgniteSpringDataCrudSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() {
+    @Override protected void beforeTestsStarted() throws Exception {
         ctx = new AnnotationConfigApplicationContext();
 
         ctx.register(IgniteClientApplicationConfiguration.class);
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
-        repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
-        ignite = ctx.getBean(IgniteEx.class);
+    }
+
+    /** Text queries are not supported when {@link IgniteClient} is used for acessing the Ignite cluster. */
+    @Override public void testUpdateQueryMixedCaseProjectionIndexedParameterLuceneTextQuery() {
+        GridTestUtils.assertThrows(log,
+            () -> repo.textQueryByFirstNameWithProjectionNamedParameter("person"), IllegalStateException.class,
+            "Query of type TextQuery is not supported by thin client. Check" +
+                " org.apache.ignite.springdata.misc.PersonRepository#textQueryByFirstNameWithProjectionNamedParameter" +
+                " method configuration or use Ignite node instance to connect to the Ignite cluster.");
     }
 }

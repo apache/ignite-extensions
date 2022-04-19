@@ -32,7 +32,7 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
-        <spring.version>5.3.8</spring.version>
+        <spring.version>5.3.19</spring.version>
         <netty.version>4.1.66.Final</netty.version>
     </properties>
 

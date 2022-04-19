@@ -21,7 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springframework.boot.autoconfigure.misc.ObjectRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

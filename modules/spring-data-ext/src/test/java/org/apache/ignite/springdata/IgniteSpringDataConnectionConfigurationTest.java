@@ -17,6 +17,7 @@
 
 package org.apache.ignite.springdata;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,12 +29,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.springdata.misc.Person;
-import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
-import org.apache.ignite.springdata.repository.support.IgniteProxyFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -67,7 +65,7 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** Tests repository configuration in case {@link IgniteConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithIgniteConfiguration() {
-        checkRepositoryConfiguration(IgniteConfigurationApplication.class);
+        checkRepositoryConfiguration(IgniteConfigurationApplication.class, IgniteConfigRepository.class);
 
         assertClientNodeIsStopped();
     }
@@ -75,41 +73,41 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     /** Tests repository configuration in case {@link ClientConfiguration} is used to access the Ignite cluster. */
     @Test
     public void testRepositoryWithClientConfiguration() {
-        checkRepositoryConfiguration(ClientConfigurationApplication.class);
+        checkRepositoryConfiguration(ClientConfigurationApplication.class, IgniteClientConfigRepository.class);
     }
 
     /** Tests repository configuration in case {@link Ignite} with non default is used to access the Ignite cluster. */
     @Test
-    public void testRepositoryWithNonDefaultIgniteBean() {
-        checkRepositoryConfiguration(NonDefaultIgniteBeanApplication.class);
+    public void testRepositoryWithoutIgniteInstanceParameter() {
+        checkRepositoryConfiguration(DefaultIgniteBeanApplication.class, IgniteRepositoryWithoutExplicitIgnite.class);
     }
 
     /** Tests repository configuration in case {@link IgniteClient} with non default name is used to access the Ignite cluster. */
     @Test
-    public void testRepositoryWithNonDefaultIgniteClientBean() {
-        checkRepositoryConfiguration(NonDefaultIgniteClientBeanApplication.class);
+    public void testRepositoryWithoutIgniteClientInstanceParameter() {
+        checkRepositoryConfiguration(DefaultIgniteClientBeanApplication.class, IgniteRepositoryWithoutExplicitIgnite.class);
     }
 
     /** Tests repository configuration in case {@link ClientConfiguration} with non default name is used to access the Ignite cluster. */
     @Test
-    public void testRepositoryWithNonDefaultIgniteClientConfigurationBean() {
-        checkRepositoryConfiguration(NonDefaultIgniteClientConfigurationBeanApplication.class);
+    public void testRepositoryWithoutIgnitClientConfigurationParameter() {
+        checkRepositoryConfiguration(DefaultIgniteClientConfigurationBeanApplication.class, IgniteRepositoryWithoutExplicitIgnite.class);
     }
 
     /** Tests repository configuration in case {@link IgniteConfiguration} with non default name is used to access the Ignite cluster. */
     @Test
-    public void testRepositoryWithNonDefaultIgniteConfigurationBean() {
-        checkRepositoryConfiguration(NonDefaultIgniteConfigurationBeanApplication.class);
+    public void testRepositoryWithoutIgniteConfigurationParameter() {
+        checkRepositoryConfiguration(DefaultIgniteConfigurationBeanApplication.class, IgniteRepositoryWithoutExplicitIgnite.class);
     }
 
     /**
      * Tests repository configuration in case {@link IgniteConfiguration} that refers to existing Ignite node instance
-     * is used to access the Ignite cluster.
+     * used to access the Ignite cluster.
      */
     @Test
     public void testRepositoryWithExistingIgniteInstance() throws Exception {
         try (Ignite ignored = startGrid(getIgniteConfiguration(CLI_NAME, true))) {
-            checkRepositoryConfiguration(IgniteConfigurationApplication.class);
+            checkRepositoryConfiguration(IgniteConfigurationApplication.class, IgniteConfigRepository.class);
 
             assertNotNull(Ignition.ignite(CLI_NAME));
         }
@@ -128,9 +126,10 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
                     return null;
                 },
                 IllegalArgumentException.class,
-                "Invalid repository configuration [name=" + InvalidCacheRepository.class.getName() + "]. Set a" +
-                    " name of an Apache Ignite cache using org.apache.ignite.springdata.repository.config.RepositoryConfig" +
-                    " annotation to map this repository to the underlying cache.");
+                "Cache 'invalidCache' not found for repository interface" +
+                    " org.apache.ignite.springdata.IgniteSpringDataConnectionConfigurationTest$InvalidCacheNameRepository." +
+                    " Please, add a cache configuration to ignite configuration or pass autoCreateCache=true to" +
+                    " org.apache.ignite.springdata.repository.config.RepositoryConfig annotation.");
         }
 
         assertClientNodeIsStopped();
@@ -159,21 +158,24 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
      * Checks that repository created based on specified Spring application configuration is properly initialized and
      * got access to the Ignite cluster.
      */
-    private void checkRepositoryConfiguration(Class<?> cfgCls) {
+    private void checkRepositoryConfiguration(
+        Class<?> cfgCls,
+        Class<? extends IgniteRepository<Object, Serializable>> repoCls
+    ) {
         try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext()) {
             ctx.register(cfgCls);
             ctx.refresh();
 
-            PersonRepository repo = ctx.getBean(PersonRepository.class);
+            IgniteRepository<Object, Serializable> repo = ctx.getBean(repoCls);
 
-            IgniteCache<Integer, Person> cache = grid(SRV_NAME).cache(CACHE_NAME);
+            IgniteCache<Object, Serializable> cache = grid(SRV_NAME).cache(CACHE_NAME);
 
             assertEquals(0, repo.count());
             assertEquals(0, cache.size());
 
             int key = 0;
 
-            repo.save(key, new Person("Domenico", "Scarlatti"));
+            repo.save(key, "1");
 
             assertEquals(1, repo.count());
             assertNotNull(cache.get(key));
@@ -185,11 +187,13 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class IgniteConfigurationApplication {
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheNameRepository.class))
+    public static class InvalidCacheNameApplication {
         /** Ignite configuration bean. */
         @Bean
-        public IgniteConfiguration igniteCfg() {
+        public IgniteConfiguration igniteConfiguration() {
             return getIgniteConfiguration(CLI_NAME, true);
         }
     }
@@ -201,11 +205,11 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     @Configuration
     @EnableIgniteRepositories(
         considerNestedRepositories = true,
-        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = InvalidCacheRepository.class))
-    public static class InvalidCacheNameApplication {
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteConfigRepository.class))
+    public static class IgniteConfigurationApplication {
         /** Ignite configuration bean. */
         @Bean
-        public IgniteConfiguration igniteCfg() {
+        public IgniteConfiguration igniteConfiguration() {
             return getIgniteConfiguration(CLI_NAME, true);
         }
     }
@@ -215,22 +219,27 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
      * for accessing the cluster.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteClientConfigRepository.class))
     public static class ClientConfigurationApplication {
         /** Ignite client configuration bean. */
         @Bean
-        public ClientConfiguration igniteCfg() {
+        public ClientConfiguration clientConfiguration() {
             return new ClientConfiguration().setAddresses(LOCAL_HOST + ':' + CLI_CONN_PORT);
         }
     }
 
     /**
-     * Spring Application configuration for repository testing in case {@link Ignite} bean with name different from
-     * {@link IgniteProxyFactory#IGNITE_INSTANCE_BEAN_NAME} is used for accessing the cluster.
+     * Spring Application configuration for repository testing in case if Ignite bean name was not provided
+     * through {@link RepositoryConfig#igniteInstance()} ()}.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class NonDefaultIgniteBeanApplication {
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteRepositoryWithoutExplicitIgnite.class)
+    )
+    public static class DefaultIgniteBeanApplication {
         /** Ignite bean. */
         @Bean
         public Ignite someIgnite() {
@@ -239,12 +248,15 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     }
 
     /**
-     * Spring Application configuration for repository testing in case {@link IgniteClient} bean with name different from
-     * {@link IgniteProxyFactory#IGNITE_INSTANCE_BEAN_NAME} is used for accessing the cluster.
+     * Spring Application configuration for repository testing in case if IgniteClient bean name was not provided
+     * through {@link RepositoryConfig#igniteInstance()} ()}.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class NonDefaultIgniteClientBeanApplication {
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteRepositoryWithoutExplicitIgnite.class)
+    )
+    public static class DefaultIgniteClientBeanApplication {
         /** Ignite client bean. */
         @Bean
         public IgniteClient someIgnite() {
@@ -253,12 +265,15 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     }
 
     /**
-     * Spring Application configuration for repository testing in case {@link ClientConfiguration} bean with name different from
-     * {@link IgniteProxyFactory#IGNITE_CONFIG_BEAN_NAME} is used for accessing the cluster.
+     * Spring Application configuration for repository testing in case if ClientConfiguration bean name was not provided
+     * through {@link RepositoryConfig#igniteCfg()}.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class NonDefaultIgniteClientConfigurationBeanApplication {
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteRepositoryWithoutExplicitIgnite.class)
+    )
+    public static class DefaultIgniteClientConfigurationBeanApplication {
         /** Ignite client configuration bean. */
         @Bean
         public ClientConfiguration someCfg() {
@@ -267,12 +282,15 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
     }
 
     /**
-     * Spring Application configuration for repository testing in case {@link IgniteConfiguration} bean with name different from
-     * {@link IgniteProxyFactory#IGNITE_CONFIG_BEAN_NAME} is used for accessing the cluster.
+     * Spring Application configuration for repository testing in case if IgniteConfiguration bean name was not provided
+     * through {@link RepositoryConfig#igniteCfg()}.
      */
     @Configuration
-    @EnableIgniteRepositories(includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = PersonRepository.class))
-    public static class NonDefaultIgniteConfigurationBeanApplication {
+    @EnableIgniteRepositories(
+        considerNestedRepositories = true,
+        includeFilters = @Filter(type = ASSIGNABLE_TYPE, classes = IgniteRepositoryWithoutExplicitIgnite.class)
+    )
+    public static class DefaultIgniteConfigurationBeanApplication {
         /** Ignite client configuration bean. */
         @Bean
         public IgniteConfiguration someCfg() {
@@ -280,9 +298,27 @@ public class IgniteSpringDataConnectionConfigurationTest extends GridCommonAbstr
         }
     }
 
-    /** Repository for testing application behavior in case the cache name is not specified in the repository configuration. */
-    @RepositoryConfig
-    interface InvalidCacheRepository extends IgniteRepository<Person, Integer> {
+    /** Repository for testing configuration approach through default ignite beans. */
+    @RepositoryConfig(cacheName = "PersonCache")
+    public interface IgniteRepositoryWithoutExplicitIgnite extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** Repository for testing configuration approach through {@link IgniteConfiguration}. */
+    @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "igniteConfiguration")
+    public interface IgniteConfigRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** Repository for testing repository configuration approach through {@link ClientConfiguration}. */
+    @RepositoryConfig(cacheName = "PersonCache", igniteCfg = "clientConfiguration")
+    public interface IgniteClientConfigRepository extends IgniteRepository<Object, Serializable> {
+        // No-op.
+    }
+
+    /** Repository for testing application behavior in case invalid cache is specified in the repository configuration. */
+    @RepositoryConfig(cacheName = "invalidCache", igniteCfg = "igniteConfiguration")
+    public interface InvalidCacheNameRepository extends IgniteRepository<Object, Serializable> {
         // No-op.
     }
 

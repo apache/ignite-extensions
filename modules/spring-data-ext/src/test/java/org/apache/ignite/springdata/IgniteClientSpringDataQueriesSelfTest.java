@@ -20,6 +20,7 @@ package org.apache.ignite.springdata;
 import org.apache.ignite.springdata.misc.IgniteClientApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonRepository;
+import org.apache.ignite.springdata.misc.PersonRepositoryOtherIgniteInstance;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -34,9 +35,12 @@ public class IgniteClientSpringDataQueriesSelfTest extends IgniteSpringDataQueri
 
         repo = ctx.getBean(PersonRepository.class);
         repo2 = ctx.getBean(PersonSecondRepository.class);
+        repoTWO = ctx.getBean(PersonRepositoryOtherIgniteInstance.class);
 
         for (int i = 0; i < CACHE_SIZE; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
+                "lastName" + Integer.toHexString((i + 16) % 256)));
+            repoTWO.save(i, new Person("TWOperson" + Integer.toHexString(i),
                 "lastName" + Integer.toHexString((i + 16) % 256)));
         }
     }

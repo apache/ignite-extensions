@@ -16,63 +16,90 @@
  */
 package org.apache.ignite.springdata.repository.support;
 
-import java.io.Serializable;
-import java.lang.reflect.Method;
+import java.util.Optional;
 import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
-import org.apache.ignite.springdata.repository.config.Query;
-import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
 import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata.repository.query.IgniteRepositoryQuery;
-import org.springframework.data.projection.ProjectionFactory;
+import org.apache.ignite.springdata.repository.config.DynamicQueryConfig;
+import org.apache.ignite.springdata.repository.config.Query;
+import org.apache.ignite.springdata.repository.config.RepositoryConfig;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.data.repository.core.EntityInformation;
-import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.AbstractEntityInformation;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
-import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
-import org.springframework.data.repository.query.RepositoryQuery;
+import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
  * Crucial for spring-data functionality class. Create proxies for repositories.
+ * <p>
+ * Supports multiple Ignite Instances on same JVM.
+ * <p>
+ * This is pretty useful working with Spring repositories bound to different Ignite intances within same application.
+ *
+ * @author Apache Ignite Team
+ * @author Manuel Núñez (manuel.nunez@hawkore.com)
  */
 public class IgniteRepositoryFactory extends RepositoryFactorySupport {
+    /** Spring application expression resolver */
+    private final StandardBeanExpressionResolver resolver = new StandardBeanExpressionResolver();
+
+    /** Spring application bean expression context */
+    private final BeanExpressionContext beanExpressionContext;
+
     /** Ignite cache proxy instance associated with the current repository. */
     private final IgniteCacheProxy<?, ?> cache;
 
+    /** Ignite proxy instance associated with the current repository. */
+    private final IgniteProxy ignite;
+
     /**
-     * Creates the factory with initialized {@link IgniteProxy} instance.
-     *
-     * @param ignite Ignite proxy instance.
+     * @param ctx Spring Application context.
      * @param repoInterface Repository interface.
      */
-    public IgniteRepositoryFactory(IgniteProxy ignite, Class<?> repoInterface) {
-        RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
+    public IgniteRepositoryFactory(ApplicationContext ctx, Class<?> repoInterface) {
+        ignite = ctx.getBean(IgniteProxy.class, repoInterface);
 
-        Assert.notNull(cfg, "Invalid repository configuration [name=" + repoInterface.getName() + "]. " +
-            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
+        beanExpressionContext = new BeanExpressionContext(
+            new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),
+            null);
 
-        String cacheName = cfg.cacheName();
+        RepositoryConfig cfg = getRepositoryConfiguration(repoInterface);
 
-        Assert.hasText(cacheName, "Invalid repository configuration [name=" + repoInterface.getName() + "]." +
-            " Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
+        String cacheName = evaluateExpression(cfg.cacheName());
+
+        Assert.hasText(cacheName, "Invalid configuration for repository " + repoInterface.getName() +
+            ". Set a name of an Apache Ignite cache using " + RepositoryConfig.class.getName() +
             " annotation to map this repository to the underlying cache.");
 
-        cache = ignite.getOrCreateCache(cacheName);
+       cache = cfg.autoCreateCache() ? ignite.getOrCreateCache(cacheName) : ignite.cache(cacheName);
+
+        if (cache == null) {
+            throw new IllegalArgumentException(
+                "Cache '" + cacheName + "' not found for repository interface " + repoInterface.getName()
+                    + ". Please, add a cache configuration to ignite configuration"
+                    + " or pass autoCreateCache=true to " + RepositoryConfig.class.getName() + " annotation.");
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public <T, ID extends Serializable> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
+    @Override public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new AbstractEntityInformation<T, ID>(domainClass) {
+            /** {@inheritDoc} */
             @Override public ID getId(T entity) {
                 return null;
             }
 
+            /** {@inheritDoc} */
             @Override public Class<ID> getIdType() {
                 return null;
             }
@@ -84,51 +111,96 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         return IgniteRepositoryImpl.class;
     }
 
-    /** {@inheritDoc} */
-    @Override protected Object getTargetRepository(RepositoryInformation metadata) {
-        return getTargetRepositoryViaReflection(metadata, cache);
+    /**
+     * Evaluate the SpEL expression
+     *
+     * @param spelExpression SpEL expression
+     * @return the result of execution of the SpEL expression
+     */
+    private String evaluateExpression(String spelExpression) {
+        return (String)resolver.evaluate(spelExpression, beanExpressionContext);
     }
 
     /** {@inheritDoc} */
-    @Override protected QueryLookupStrategy getQueryLookupStrategy(final QueryLookupStrategy.Key key,
-        EvaluationContextProvider evaluationCtxProvider) {
+    @Override protected Object getTargetRepository(RepositoryInformation metadata) {
+        return getTargetRepositoryViaReflection(metadata, ignite, cache);
+    }
 
-        return new QueryLookupStrategy() {
-            @Override public RepositoryQuery resolveQuery(final Method mtd, final RepositoryMetadata metadata,
-                final ProjectionFactory factory, NamedQueries namedQueries) {
+    /** {@inheritDoc} */
+    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
+        QueryMethodEvaluationContextProvider evaluationContextProvider) {
+        return Optional.of((mtd, metadata, factory, namedQueries) -> {
+            final Query annotation = mtd.getAnnotation(Query.class);
+            if (annotation != null && (StringUtils.hasText(annotation.value()) || annotation.textQuery() || annotation
+                .dynamicQuery())) {
 
-                final Query annotation = mtd.getAnnotation(Query.class);
+                String qryStr = annotation.value();
 
-                if (annotation != null) {
-                    String qryStr = annotation.value();
+                boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
+                    .textQuery());
 
-                    if (key != Key.CREATE && StringUtils.hasText(qryStr))
-                        return new IgniteRepositoryQuery(metadata,
-                            new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.getOptions(mtd)),
-                            mtd, factory, cache);
+                IgniteQuery query = annotatedIgniteQuery ? new IgniteQuery(qryStr,
+                    !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
+                    annotation.textQuery(), false, IgniteQueryGenerator.getOptions(mtd)) : null;
+
+                if (key != QueryLookupStrategy.Key.CREATE) {
+                    return new IgniteRepositoryQuery(metadata, query, mtd, factory, cache,
+                        annotatedIgniteQuery ? DynamicQueryConfig.fromQueryAnnotation(annotation) : null,
+                        evaluationContextProvider);
                 }
-
-                if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
-                    throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
-
-                return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
-                    factory, cache);
             }
-        };
+
+            if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY) {
+                throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass "
+                    + "a query string via org.apache.ignite.springdata.repository"
+                    + ".config.Query annotation.");
+            }
+
+            return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd, factory,
+                cache, DynamicQueryConfig.fromQueryAnnotation(annotation), evaluationContextProvider);
+        });
     }
 
     /**
      * @param qry Query string.
-     * @return {@code true} if query is SQLFieldsQuery.
+     * @return {@code true} if query is SqlFieldsQuery.
      */
-    private boolean isFieldQuery(String qry) {
-        return qry.matches("^SELECT.*") && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    public static boolean isFieldQuery(String qry) {
+        String qryUpperCase = qry.toUpperCase();
+
+        return isStatement(qryUpperCase) && !qryUpperCase.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
+    }
+
+    /**
+     * Evaluates if the query starts with a clause.<br>
+     * <code>SELECT, INSERT, UPDATE, MERGE, DELETE</code>
+     *
+     * @param qryUpperCase Query string in upper case.
+     * @return {@code true} if query is full SQL statement.
+     */
+    private static boolean isStatement(String qryUpperCase) {
+        return qryUpperCase.matches("^\\s*SELECT\\b.*") ||
+            // update
+            qryUpperCase.matches("^\\s*UPDATE\\b.*") ||
+            // delete
+            qryUpperCase.matches("^\\s*DELETE\\b.*") ||
+            // merge
+            qryUpperCase.matches("^\\s*MERGE\\b.*") ||
+            // insert
+            qryUpperCase.matches("^\\s*INSERT\\b.*");
+    }
+
+    /**
+     * @return Configuration of the specified repository.
+     * @throws IllegalArgumentException If no configuration is specified.
+     * @see RepositoryConfig
+     */
+    static RepositoryConfig getRepositoryConfiguration(Class<?> repoInterface) {
+        RepositoryConfig cfg = repoInterface.getAnnotation(RepositoryConfig.class);
+
+        Assert.notNull(cfg, "Invalid configuration for repository " + repoInterface.getName() + ". " +
+            RepositoryConfig.class.getName() + " annotation must be specified for each repository interface.");
+
+        return cfg;
     }
 }
-
-
-
-
-
-

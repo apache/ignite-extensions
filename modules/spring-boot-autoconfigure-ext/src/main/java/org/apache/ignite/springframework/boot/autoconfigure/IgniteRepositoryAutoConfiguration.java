@@ -18,10 +18,10 @@
 package org.apache.ignite.springframework.boot.autoconfigure;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.springdata22.repository.IgniteRepository;
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
-import org.apache.ignite.springdata22.repository.config.IgniteRepositoryConfigurationExtension;
-import org.apache.ignite.springdata22.repository.support.IgniteRepositoryFactoryBean;
+import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.repository.config.IgniteRepositoryConfigurationExtension;
+import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.apache.ignite.springframework.boot.autoconfigure.data.IgniteRepositoriesAutoConfigurationRegistrar;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;

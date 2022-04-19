@@ -19,5 +19,4 @@
  * <!-- Package description. -->
  * Package contains Apache Ignite Spring Data integration.
  */
-
 package org.apache.ignite.springdata.repository;

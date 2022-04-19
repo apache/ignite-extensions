@@ -18,8 +18,8 @@
 package org.apache.ignite.springframework.boot.autoconfigure.data;
 
 import java.lang.annotation.Annotation;
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
-import org.apache.ignite.springdata22.repository.config.IgniteRepositoryConfigurationExtension;
+import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.repository.config.IgniteRepositoryConfigurationExtension;
 import org.springframework.boot.autoconfigure.data.AbstractRepositoryConfigurationSourceSupport;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.data.repository.config.RepositoryConfigurationExtension;
