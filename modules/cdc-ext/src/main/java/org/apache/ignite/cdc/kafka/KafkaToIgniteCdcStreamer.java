@@ -97,10 +97,10 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
     /** Runners to run {@link KafkaToIgniteCdcStreamerApplier} instances. */
-    private final Thread[] runners;
+    private final List<Thread> runners;
 
     /** Appliers. */
-    private final List<KafkaToIgniteCdcStreamerApplier> appliers;
+    private final List<AutoCloseable> appliers;
 
     /**
      * @param igniteCfg Ignite configuration.
@@ -113,6 +113,7 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         A.notNull(streamerCfg.getTopic(), "Kafka topic");
+        A.notNull(streamerCfg.getMetadataTopic(), "Kafka metadata topic");
         A.ensure(
             streamerCfg.getKafkaPartsFrom() >= 0,
             "The Kafka partitions lower bound must be explicitly set to a value greater than or equals to zero.");
@@ -132,8 +133,9 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         this.kafkaProps = kafkaProps;
         this.streamerCfg = streamerCfg;
 
-        appliers = new ArrayList<>(streamerCfg.getThreadCount());
-        runners = new Thread[streamerCfg.getThreadCount()];
+        // Extra thread for metadata updater.
+        appliers = new ArrayList<>(streamerCfg.getThreadCount() + 1);
+        runners = new ArrayList<>(streamerCfg.getThreadCount() + 1);
 
         if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
             throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
@@ -173,6 +175,16 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     .map(CU::cacheId).collect(Collectors.toSet());
             }
 
+            KafkaToIgniteMetadataUpdater metaUpdr = new KafkaToIgniteMetadataUpdater(
+                ign,
+                log,
+                kafkaProps,
+                streamerCfg,
+                stopped
+            );
+
+            addAndStart("meta-update-thread", metaUpdr);
+
             int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
             int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
             int threadCnt = streamerCfg.getThreadCount();
@@ -195,20 +207,17 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                     kafkaPartsFrom + to,
                     caches,
                     streamerCfg.getMaxBatchSize(),
-                    stopped,
-                    streamerCfg.getKafkaRequestTimeout()
+                    streamerCfg.getKafkaRequestTimeout(),
+                    metaUpdr,
+                    stopped
                 );
 
-                appliers.add(applier);
-
-                runners[i] = new Thread(applier, "applier-thread-" + i);
-
-                runners[i].start();
+                addAndStart("applier-thread-" + i, applier);
             }
 
             try {
-                for (int i = 0; i < threadCnt; i ++)
-                    runners[i].join();
+                for (int i = 0; i < threadCnt + 1; i ++)
+                    runners.get(i).join();
             }
             catch (InterruptedException e) {
                 stopped.set(true);
@@ -218,6 +227,17 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 log.warning("Kafka to Ignite streamer interrupted", e);
             }
         }
+    }
+
+    /** Adds applier to {@link #appliers} and starts thread with it. */
+    private <T extends AutoCloseable & Runnable> void addAndStart(String threadName, T applier) {
+        appliers.add(applier);
+
+        Thread thread = new Thread(applier, threadName);
+
+        thread.start();
+
+        runners.add(thread);
     }
 
     /** */

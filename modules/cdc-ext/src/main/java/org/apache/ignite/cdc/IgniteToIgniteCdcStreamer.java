@@ -24,10 +24,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -60,7 +63,19 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     public static final String EVTS_CNT = "EventsCount";
 
     /** */
+    public static final String TYPES_CNT = "TypesCount";
+
+    /** */
+    public static final String MAPPINGS_CNT = "MappingsCount";
+
+    /** */
     public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
+
+    /** */
+    public static final String TYPES_CNT_DESC = "Count of received binary types events";
+
+    /** */
+    public static final String MAPPINGS_CNT_DESC = "Count of received mappings events";
 
     /** */
     public static final String LAST_EVT_TIME = "LastEventTime";
@@ -89,6 +104,12 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     /** Count of events applied to destination cluster. */
     protected AtomicLongMetric evtsCnt;
 
+    /** Count of binary types applied to destination cluster. */
+    protected AtomicLongMetric typesCnt;
+
+    /** Count of mappings applied to destination cluster. */
+    protected AtomicLongMetric mappingsCnt;
+
     /** Logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -114,6 +135,8 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
         this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
         this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
@@ -141,6 +164,30 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypes(Iterator<BinaryType> types) {
+        types.forEachRemaining(t -> {
+            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
+
+            registerBinaryMeta(dest, log, meta);
+
+            typesCnt.increment();
+        });
+
+        lastEvtTs.value(System.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        mappings.forEachRemaining(m -> {
+            registerMapping(dest, log, m);
+
+            mappingsCnt.increment();
+        });
+
+        lastEvtTs.value(System.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
