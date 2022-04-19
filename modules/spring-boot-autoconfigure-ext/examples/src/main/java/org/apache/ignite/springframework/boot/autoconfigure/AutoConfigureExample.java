@@ -34,12 +34,18 @@ import org.springframework.context.annotation.Bean;
 /** Example of Ignite auto configurer. */
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 public class AutoConfigureExample {
-    /** Main method of the application. */
+    /**
+     * Main method of the application.
+     * @param args Arguments.
+     */
     public static void main(String[] args) {
         SpringApplication.run(AutoConfigureExample.class, args);
     }
 
-    /** Providing configurer for the Ignite. */
+    /**
+     * Providing configurer for the Ignite.
+     * @return Ignite Configurer.
+     */
     @Bean
     public IgniteConfigurer configurer() {
         return cfg -> {
@@ -50,7 +56,10 @@ public class AutoConfigureExample {
         };
     }
 
-    /** Service using autoconfigured Ignite. */
+    /**
+     * Service using autoconfigured Ignite.
+     * @return Runner.
+     */
     @Bean
     public CommandLineRunner runner() {
         return new CommandLineRunner() {

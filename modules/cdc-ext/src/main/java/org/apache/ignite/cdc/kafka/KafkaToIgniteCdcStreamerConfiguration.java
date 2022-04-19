@@ -79,62 +79,86 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     private Collection<String> caches;
 
-    /** */
+    /**
+     * @return Thread count.
+     */
     public int getThreadCount() {
         return threadCnt;
     }
 
-    /** */
+    /**
+     * @param threadCnt Thread count.
+     */
     public void setThreadCount(int threadCnt) {
         this.threadCnt = threadCnt;
     }
 
-    /** */
+    /**
+     * @return Topic.
+     */
     public String getTopic() {
         return evtTopic;
     }
 
-    /** */
+    /**
+     * @param evtTopic Topic.
+     */
     public void setTopic(String evtTopic) {
         this.evtTopic = evtTopic;
     }
 
-    /** */
+    /**
+     * @return Kafka partitions lower bound (inclusive).
+     */
     public int getKafkaPartsFrom() {
         return kafkaPartsFrom;
     }
 
-    /** */
+    /**
+     * @param kafkaPartsFrom Kafka partitions lower bound (inclusive).
+     */
     public void setKafkaPartsFrom(int kafkaPartsFrom) {
         this.kafkaPartsFrom = kafkaPartsFrom;
     }
 
-    /** */
+    /**
+     * @return Kafka partitions higher bound (exclusive).
+     */
     public int getKafkaPartsTo() {
         return kafkaPartsTo;
     }
 
-    /** */
+    /**
+     * @param kafkaPartsTo Kafka partitions higher bound (exclusive).
+     */
     public void setKafkaPartsTo(int kafkaPartsTo) {
         this.kafkaPartsTo = kafkaPartsTo;
     }
 
-    /** */
+    /**
+     * @return Maximum batch size to apply to Ignite.
+     */
     public int getMaxBatchSize() {
         return maxBatchSize;
     }
 
-    /** */
+    /**
+     * @param maxBatchSize Maximum batch size to apply to Ignite.
+     */
     public void setMaxBatchSize(int maxBatchSize) {
         this.maxBatchSize = maxBatchSize;
     }
 
-    /** */
+    /**
+     * @return Cache names to process.
+     */
     public Collection<String> getCaches() {
         return caches;
     }
 
-    /** */
+    /**
+     * @param caches Cache names to process.
+     */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
     }

@@ -216,10 +216,9 @@ public abstract class CdcEventsApplier {
 
     /**
      * Executes closure with retry logic.
-     * Metadata update thread polls metadata asynchronously with {@link KafkaToIgniteCdcStreamerConfiguration#getMetaUpdateInterval()} interval.
-     * This means metadata updates can be seen later than data updates.
-     * In this case {@link BinaryObjectException} can point to absence of metadata.
-     * To overcome lack of metadata invoke {@link #updateMetadata()} and retry closure.
+     * Metadata update thread polls metadata asynchronously with {@link KafkaToIgniteCdcStreamerConfiguration#getMetaUpdateInterval()}
+     * interval. This means metadata updates can be seen later than data updates. In this case {@link BinaryObjectException} can point
+     * to absence of metadata. To overcome lack of metadata invoke {@link #updateMetadata()} and retry closure.
      *
      * @param clo Closure to apply.
      * @param cache Cache for closure.
