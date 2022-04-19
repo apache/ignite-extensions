@@ -31,6 +31,8 @@
     </parent>
 
     <artifactId>ignite-spring-data-2.2-ext</artifactId>
+    <version>${project.parent.version}</version>
+
     <url>https://ignite.apache.org</url>
 
     <dependencies>

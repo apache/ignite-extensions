@@ -32,6 +32,8 @@
     </parent>
 
     <artifactId>ignite-spring-boot-thin-client-autoconfigure-ext</artifactId>
+    <version>${project.parent.version}</version>
+
     <url>https://ignite.apache.org</url>
 
     <dependencies>
