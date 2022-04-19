@@ -27,9 +27,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-zookeeper-ip-finder-parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../parent/pom.xml</relativePath>
+        <artifactId>ignite-zookeeper-ip-finder-parent-ext</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-zookeeper-ip-finder-ext-examples</artifactId>
@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-zookeeper-ip-finder-ext</artifactId>
-            <version>${revision}</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

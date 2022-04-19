@@ -32,7 +32,10 @@ import org.springframework.context.annotation.Bean;
 /** Example of Ignite client auto configuration. */
 @SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
 public class AutoConfigureClientExample {
-    /** Main method of the application. */
+    /**
+     * Main method of the application.
+     * @param args Arguments.
+     */
     public static void main(String[] args) {
         //Starting Ignite server node outside of Spring Boot application so client can connect to it.
         Ignite serverNode = Ignition.start(new IgniteConfiguration());
@@ -44,15 +47,20 @@ public class AutoConfigureClientExample {
         SpringApplication.run(AutoConfigureClientExample.class);
     }
 
-    /** Providing configurer for the Ignite client. */
+    /**
+     * @return Configurer for the Ignite client.
+     */
     @Bean
     IgniteClientConfigurer configurer() {
         //Setting some property.
         //Other will come from `application.yml`
-        return cfg -> cfg.setSendBufferSize(64*1024);
+        return cfg -> cfg.setSendBufferSize(64 * 1024);
     }
 
-    /** Service using autoconfigured Ignite. */
+    /**
+     * Service using autoconfigured Ignite.
+     * @return Runner.
+     */
     @Bean
     CommandLineRunner runner() {
         return new CommandLineRunner() {

@@ -35,8 +35,8 @@
     <version>1</version>
 
     <properties>
-        <commons.release.version>1.1.0</commons.release.version>
         <sourceReleaseAssemblyDescriptor>${basedir}/assembly/src.xml</sourceReleaseAssemblyDescriptor>
+        <spring-data-commons.release.version>1.1.0</spring-data-commons.release.version>
     </properties>
 
     <scm>

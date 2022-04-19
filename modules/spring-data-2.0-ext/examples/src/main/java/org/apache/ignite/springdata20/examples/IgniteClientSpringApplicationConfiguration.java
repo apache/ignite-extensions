@@ -45,6 +45,8 @@ public class IgniteClientSpringApplicationConfiguration {
      * Note, that the name of the current bean must match value of {@link RepositoryConfig#igniteInstance}
      * property that {@link PersonRepository} is marked with. In this particular case, the default value of
      * {@link RepositoryConfig#igniteInstance} property is used.
+     *
+     * @return Ignite Client.
      */
     @Bean
     public IgniteClient igniteInstance() {

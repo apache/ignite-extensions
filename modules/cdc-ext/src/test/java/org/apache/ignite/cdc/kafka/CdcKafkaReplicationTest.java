@@ -48,6 +48,12 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     public static final String DEST_SRC_TOPIC = "dest-source";
 
     /** */
+    public static final String SRC_DEST_META_TOPIC = "source-dest-meta";
+
+    /** */
+    public static final String DEST_SRC_META_TOPIC = "dest-source-meta";
+
+    /** */
     public static final int DFLT_PARTS = 16;
 
     /** */
@@ -65,6 +71,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         KAFKA.createTopic(SRC_DEST_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
+        KAFKA.createTopic(SRC_DEST_META_TOPIC, 1, 1);
+        KAFKA.createTopic(DEST_SRC_META_TOPIC, 1, 1);
     }
 
     /** {@inheritDoc} */
@@ -97,12 +105,13 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), cache, cache));
+            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache));
 
         for (int i = 0; i < destCluster.length; i++) {
             futs.add(kafkaToIgnite(
                 cache,
                 cache,
+                SRC_DEST_META_TOPIC,
                 destClusterCliCfg[i],
                 i * (DFLT_PARTS / 2),
                 (i + 1) * (DFLT_PARTS / 2)
@@ -117,13 +126,28 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE));
 
         for (IgniteEx ex : destCluster)
-            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE));
 
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, SRC_DEST_TOPIC, destClusterCliCfg[0], 0, DFLT_PARTS));
-        futs.add(kafkaToIgnite(ACTIVE_ACTIVE_CACHE, DEST_SRC_TOPIC, srcClusterCliCfg[0], 0, DFLT_PARTS));
+        futs.add(kafkaToIgnite(
+            ACTIVE_ACTIVE_CACHE,
+            SRC_DEST_TOPIC,
+            SRC_DEST_META_TOPIC,
+            destClusterCliCfg[0],
+            0,
+            DFLT_PARTS
+        ));
+
+        futs.add(kafkaToIgnite(
+            ACTIVE_ACTIVE_CACHE,
+            DEST_SRC_TOPIC,
+            DEST_SRC_META_TOPIC,
+            srcClusterCliCfg[0],
+            0,
+            DFLT_PARTS
+        ));
 
         return futs;
     }
@@ -138,13 +162,20 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     /**
      * @param igniteCfg Ignite configuration.
      * @param topic Kafka topic name.
+     * @param metadataTopic Metadata topic name.
      * @param cache Cache name to stream to kafka.
      * @return Future for Change Data Capture application.
      */
-    protected IgniteInternalFuture<?> igniteToKafka(IgniteConfiguration igniteCfg, String topic, String cache) {
+    protected IgniteInternalFuture<?> igniteToKafka(
+        IgniteConfiguration igniteCfg,
+        String topic,
+        String metadataTopic,
+        String cache
+    ) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
                 .setTopic(topic)
+                .setMetadataTopic(metadataTopic)
                 .setKafkaPartitions(DFLT_PARTS)
                 .setCaches(Collections.singleton(cache))
                 .setMaxBatchSize(KEYS_CNT)
@@ -173,6 +204,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     protected IgniteInternalFuture<?> kafkaToIgnite(
         String cacheName,
         String topic,
+        String metadataTopic,
         IgniteConfiguration igniteCfg,
         int fromPart,
         int toPart
@@ -185,6 +217,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);
+        cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
         return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));

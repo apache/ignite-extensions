@@ -37,7 +37,9 @@ public class SpringTransactionExample {
     /** Ignite cache name. */
     public static final String ACCOUNT_CACHE_NAME = "example-account-cache";
 
-    /** */
+    /**
+     * @param args Arguments.
+     */
     public static void main(String[] args) {
         try (
             Ignite ignored = Ignition.start(); // Starts an Ignite cluster consisting of one server node.
@@ -96,13 +98,20 @@ public class SpringTransactionExample {
         /**
          * Ignite thin client instance that will be used to both initialize
          * {@link IgniteClientSpringTransactionManager} and perform transactional cache operations.
+         *
+         * @return Ignite Client.
          */
         @Bean
         public IgniteClient igniteClient() {
             return Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:" + DFLT_PORT));
         }
 
-        /** Ignite implementation of the Spring Transactions manager interface. */
+        /**
+         * Ignite implementation of the Spring Transactions manager interface.
+         *
+         * @param cli Ignite client.
+         * @return Transaction manager.
+         */
         @Bean
         public IgniteClientSpringTransactionManager transactionManager(IgniteClient cli) {
             IgniteClientSpringTransactionManager mgr = new IgniteClientSpringTransactionManager();
@@ -113,7 +122,12 @@ public class SpringTransactionExample {
             return mgr;
         }
 
-        /** Service instance that uses declarative transaction management when working with the Ignite cache. */
+        /**
+         * Service instance that uses declarative transaction management when working with the Ignite cache.
+         *
+         * @param cli Ignite client.
+         * @return Service.
+         */
         @Bean
         public IgniteClientTransactionalService transactionalService(IgniteClient cli) {
             IgniteClientTransactionalService svc = new IgniteClientTransactionalService();

@@ -162,14 +162,12 @@ public class SpringDataExample {
 
         List<Person> persons = repo.findByFirstName("John");
 
-        for (Person person: persons)
+        for (Person person : persons)
             System.out.println("   >>>   " + person);
-
 
         Cache.Entry<Long, Person> topPerson = repo.findTopByLastNameLike("Smith");
 
         System.out.println("\n>>> Top Person with surname 'Smith': " + topPerson.getValue());
-
 
         List<Long> ids = repo.selectId(1000L, PageRequest.of(0, 4));
 

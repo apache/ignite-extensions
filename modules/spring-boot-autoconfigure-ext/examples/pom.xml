@@ -27,9 +27,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-spring-boot-autoconfigure-parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../parent/pom.xml</relativePath>
+        <artifactId>ignite-spring-boot-autoconfigure-parent-ext</artifactId>
+        <version>1.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-spring-boot-autoconfigure-ext-examples</artifactId>
@@ -39,19 +39,17 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-boot-autoconfigure-ext</artifactId>
-            <version>${revision}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>

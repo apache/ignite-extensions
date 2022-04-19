@@ -25,18 +25,13 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent-ext-internal</artifactId>
-        <version>1</version>
-        <relativePath>../../parent-internal/pom.xml</relativePath>
+        <artifactId>ignite-spring-tx-parent</artifactId>
+        <version>1.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-spring-cache-ext</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
-    <url>https://ignite.apache.org</url>
-
-    <properties>
-        <xstream.version>1.4.8</xstream.version>
-    </properties>
+    <artifactId>ignite-spring-tx-ext</artifactId>
+    <version>${revision}</version>
 
     <dependencies>
         <dependency>
@@ -48,7 +43,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -59,16 +53,44 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${spring-data-commons.release.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${spring.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${spring.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>${xstream.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -81,23 +103,8 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.thoughtworks.xstream</groupId>
-            <artifactId>xstream</artifactId>
-            <version>${xstream.version}</version>
+            <artifactId>ignite-spring-data-commons</artifactId>
+            <version>${spring-data-commons.release.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -109,7 +116,7 @@
         the Maven Dependency plugin, that we use in the compatibility tests to automate test dependencies downloading,
         tries to load it.
 
-        @see IgniteSpringCacheCompatibilityTest
+        @see IgniteSpringTransactionsCompatibilityTest
     -->
     <repositories>
         <repository>

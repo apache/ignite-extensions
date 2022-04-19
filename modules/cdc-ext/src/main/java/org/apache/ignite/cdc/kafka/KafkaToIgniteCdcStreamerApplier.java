@@ -105,14 +105,17 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** Caches ids to read. */
     private final Set<Integer> caches;
 
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private final long kafkaReqTimeout;
+
+    /** Metadata updater. */
+    private final KafkaToIgniteMetadataUpdater metaUpdr;
+
     /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
-
-    /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private final long kafkaReqTimeout;
 
     /**
      * @param ign Ignite instance.
@@ -123,8 +126,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
      * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
-     * @param stopped Stopped flag.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
+     * @param metaUpdr Metadata updater.
+     * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
         IgniteEx ign,
@@ -135,8 +139,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         int kafkaPartTo,
         Set<Integer> caches,
         int maxBatchSize,
-        AtomicBoolean stopped,
-        long kafkaReqTimeout
+        long kafkaReqTimeout,
+        KafkaToIgniteMetadataUpdater metaUpdr,
+        AtomicBoolean stopped
     ) {
         super(maxBatchSize);
 
@@ -146,9 +151,10 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
+        this.kafkaReqTimeout = kafkaReqTimeout;
+        this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
-        this.kafkaReqTimeout = kafkaReqTimeout;
     }
 
     /** {@inheritDoc} */
@@ -228,6 +234,11 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void updateMetadata() {
+        metaUpdr.updateMetadata();
     }
 
     /** {@inheritDoc} */
