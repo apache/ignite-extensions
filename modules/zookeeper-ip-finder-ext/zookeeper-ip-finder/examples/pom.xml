@@ -17,38 +17,34 @@
   limitations under the License.
 -->
 
+<!--
+    POM file.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-parent-ext-internal</artifactId>
-        <version>1</version>
-        <relativePath>../../../parent-internal/pom.xml</relativePath>
+        <artifactId>ignite-zookeeper-ip-finder-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>ignite-spring-tx-parent</artifactId>
-    <packaging>pom</packaging>
-    <version>${revision}</version>
+    <artifactId>ignite-zookeeper-ip-finder-ext-examples</artifactId>
 
-    <url>https://ignite.apache.org</url>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
 
-    <properties>
-        <revision>1.1.0-SNAPSHOT</revision>
-        <xstream.version>1.4.8</xstream.version>
-    </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-zookeeper-ip-finder-ext</artifactId>
+            <version>${revision}</version>
+        </dependency>
+    </dependencies>
 </project>
