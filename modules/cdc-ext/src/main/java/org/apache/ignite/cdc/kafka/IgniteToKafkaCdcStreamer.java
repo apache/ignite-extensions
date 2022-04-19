@@ -27,15 +27,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -50,6 +55,10 @@ import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
 import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT_DESC;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT;
+import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT_DESC;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -86,14 +95,17 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Kafka producer to stream events. */
+    /** Kafka producer. */
     private KafkaProducer<Integer, byte[]> producer;
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
-    /** Topic name. */
-    private String topic;
+    /** Topic to send data. */
+    private String evtTopic;
+
+    /** Topic to send metadata. */
+    private String metadataTopic;
 
     /** Kafka topic partitions count. */
     private int kafkaParts;
@@ -108,7 +120,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     private Collection<String> caches;
 
     /** Max batch size. */
-    private int maxBatchSize = DFLT_MAX_BATCH_SIZE;
+    private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
@@ -119,16 +131,22 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of bytes sent to the Kafka. */
     private AtomicLongMetric bytesSnt;
 
-    /** Count of sent messages.  */
-    private AtomicLongMetric msgsSnt;
+    /** Count of sent events. */
+    private AtomicLongMetric evtsCnt;
+
+    /** Count of sent binary types. */
+    protected AtomicLongMetric typesCnt;
+
+    /** Count of sent mappings. */
+    protected AtomicLongMetric mappingsCnt;
+
+    /** */
+    private List<Future<RecordMetadata>> futs;
+
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
-        List<Future<RecordMetadata>> futs = new ArrayList<>();
-
-        while (evts.hasNext() && futs.size() < maxBatchSize) {
-            CdcEvent evt = evts.next();
-
+        Iterator<CdcEvent> filtered = F.iterator(evts, e -> e, true, evt -> {
             if (log.isDebugEnabled())
                 log.debug("Event received [evt=" + evt + ']');
 
@@ -136,7 +154,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 if (log.isDebugEnabled())
                     log.debug("Event skipped because of primary flag [evt=" + evt + ']');
 
-                continue;
+                return false;
             }
 
             if (evt.version().otherClusterVersion() != null) {
@@ -145,29 +163,74 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                         ", otherClusterVersion=" + evt.version().otherClusterVersion() + ']');
                 }
 
-                continue;
+                return false;
             }
 
             if (!cachesIds.contains(evt.cacheId())) {
                 if (log.isDebugEnabled())
                     log.debug("Event skipped because of cacheId [evt=" + evt + ']');
 
-                continue;
+                return false;
             }
 
-            byte[] bytes = IgniteUtils.toBytes(evt);
+            return true;
+        });
 
-            bytesSnt.add(bytes.length);
+        while (filtered.hasNext()) {
+            sendLimited(
+                filtered,
+                evt -> new ProducerRecord<>(
+                    evtTopic,
+                    evt.partition() % kafkaParts,
+                    evt.cacheId(),
+                    IgniteUtils.toBytes(evt)
+                ),
+                evtsCnt
+            );
+        }
 
-            futs.add(producer.send(new ProducerRecord<>(
-                topic,
-                evt.partition() % kafkaParts,
-                evt.cacheId(),
-                bytes
-            )));
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypes(Iterator<BinaryType> types) {
+        while (types.hasNext()) {
+            sendLimited(
+                types,
+                t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+                typesCnt
+            );
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        while (mappings.hasNext()) {
+            sendLimited(
+                mappings,
+                m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
+                mappingsCnt
+            );
+        }
+    }
+
+    /** Send limited amount of data to Kafka. */
+    private <T> void sendLimited(
+        Iterator<T> data,
+        Function<T, ProducerRecord<Integer, byte[]>> toRec,
+        AtomicLongMetric cntr
+    ) {
+        while (data.hasNext() && futs.size() < maxBatchSz) {
+            T item = data.next();
 
             if (log.isDebugEnabled())
-                log.debug("Event sent asynchronously [evt=" + evt + ']');
+                log.debug("Sent asynchronously [item=" + item + ']');
+
+            ProducerRecord<Integer, byte[]> rec = toRec.apply(item);
+
+            bytesSnt.add(rec.value().length);
+
+            futs.add(producer.send(rec));
         }
 
         if (!futs.isEmpty()) {
@@ -175,25 +238,25 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 for (Future<RecordMetadata> fut : futs)
                     fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
 
-                msgsSnt.add(futs.size());
-
+                cntr.add(futs.size());
                 lastMsgTs.value(System.currentTimeMillis());
+
+                futs.clear();
             }
             catch (InterruptedException | ExecutionException | TimeoutException e) {
                 throw new RuntimeException(e);
             }
 
             if (log.isInfoEnabled())
-                log.info("Events processed [sentMessagesCount=" + msgsSnt.value() + ']');
+                log.info("Items processed [count=" + cntr.value() + ']');
         }
-
-        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
-        A.notNull(topic, "Kafka topic");
+        A.notNull(evtTopic, "Kafka topic");
+        A.notNull(metadataTopic, "Kafka metadata topic");
         A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
@@ -208,16 +271,26 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         try {
             producer = new KafkaProducer<>(kafkaProps);
 
-            if (log.isInfoEnabled())
-                log.info("CDC Ignite To Kafka started [topic=" + topic + ", onlyPrimary=" + onlyPrimary + ", cacheIds=" + cachesIds + ']');
+            if (log.isInfoEnabled()) {
+                log.info("CDC Ignite To Kafka started [" +
+                    "topic=" + evtTopic +
+                    ", metadataTopic = " + metadataTopic +
+                    ", onlyPrimary=" + onlyPrimary +
+                    ", cacheIds=" + cachesIds + ']'
+                );
+            }
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        this.msgsSnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
         this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
         this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+
+        futs = new ArrayList<>(maxBatchSz);
     }
 
     /** {@inheritDoc} */
@@ -240,19 +313,31 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /**
      * Sets topic that is used to send data to Kafka.
      *
-     * @param topic Kafka topic.
+     * @param evtTopic Kafka topic.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setTopic(String topic) {
-        this.topic = topic;
+    public IgniteToKafkaCdcStreamer setTopic(String evtTopic) {
+        this.evtTopic = evtTopic;
 
         return this;
     }
 
     /**
-     * Sets number of Kafka partitions.
+     * Sets topic that is used to send metadata to Kafka.
      *
-     * @param kafkaParts Number of Kafka partitions.
+     * @param metadataTopic Metadata topic.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setMetadataTopic(String metadataTopic) {
+        this.metadataTopic = metadataTopic;
+
+        return this;
+    }
+
+    /**
+     * Sets number of Kafka partitions for data topic.
+     *
+     * @param kafkaParts Number of Kafka partitions for data topic.
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setKafkaPartitions(int kafkaParts) {
@@ -276,11 +361,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /**
      * Sets maximum batch size.
      *
-     * @param maxBatchSize Maximum batch size.
+     * @param maxBatchSz Maximum batch size.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSize) {
-        this.maxBatchSize = maxBatchSize;
+    public IgniteToKafkaCdcStreamer setMaxBatchSize(int maxBatchSz) {
+        this.maxBatchSz = maxBatchSz;
 
         return this;
     }

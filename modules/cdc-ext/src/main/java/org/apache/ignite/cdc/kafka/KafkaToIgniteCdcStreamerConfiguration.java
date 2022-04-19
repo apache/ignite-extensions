@@ -33,6 +33,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default maximum time to complete Kafka related requests, in milliseconds. */
     public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
+    /** Default maximum time to complete Kafka related requests, in milliseconds. */
+    public static final long DFLT_META_UPD_INTERVAL = 3_000L;
+
     /** Default {@link #threadCnt} value. */
     public static final int DFLT_THREAD_CNT = 16;
 
@@ -42,8 +45,11 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
 
-    /** Topic name. */
-    private String topic;
+    /** Events topic name. */
+    private String evtTopic;
+
+    /** Metadata topic name. */
+    private String metadataTopic;
 
     /** Kafka partitions lower bound (inclusive). */
     private int kafkaPartsFrom = -1;
@@ -53,6 +59,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
+
+    /** Amount of time between two polling of {@link #metadataTopic}, in milliseconds. */
+    private long metaUpdInterval = DFLT_META_UPD_INTERVAL;
+
+    /** Metadata consumer group. */
+    private String metadataCnsmrGrp;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -67,86 +79,62 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     private Collection<String> caches;
 
-    /**
-     * @return Thread count.
-     */
+    /** */
     public int getThreadCount() {
         return threadCnt;
     }
 
-    /**
-     * @param threadCnt Thread count.
-     */
+    /** */
     public void setThreadCount(int threadCnt) {
         this.threadCnt = threadCnt;
     }
 
-    /**
-     * @return Topic.
-     */
+    /** */
     public String getTopic() {
-        return topic;
+        return evtTopic;
     }
 
-    /**
-     * @param topic Topic.
-     */
-    public void setTopic(String topic) {
-        this.topic = topic;
+    /** */
+    public void setTopic(String evtTopic) {
+        this.evtTopic = evtTopic;
     }
 
-    /**
-     * @return Kafka partitions lower bound (inclusive).
-     */
+    /** */
     public int getKafkaPartsFrom() {
         return kafkaPartsFrom;
     }
 
-    /**
-     * @param kafkaPartsFrom Kafka partitions lower bound (inclusive).
-     */
+    /** */
     public void setKafkaPartsFrom(int kafkaPartsFrom) {
         this.kafkaPartsFrom = kafkaPartsFrom;
     }
 
-    /**
-     * @return Kafka partitions higher bound (exclusive).
-     */
+    /** */
     public int getKafkaPartsTo() {
         return kafkaPartsTo;
     }
 
-    /**
-     * @param kafkaPartsTo Kafka partitions higher bound (exclusive).
-     */
+    /** */
     public void setKafkaPartsTo(int kafkaPartsTo) {
         this.kafkaPartsTo = kafkaPartsTo;
     }
 
-    /**
-     * @return Maximum batch size to apply to Ignite.
-     */
+    /** */
     public int getMaxBatchSize() {
         return maxBatchSize;
     }
 
-    /**
-     * @param maxBatchSize Maximum batch size to apply to Ignite.
-     */
+    /** */
     public void setMaxBatchSize(int maxBatchSize) {
         this.maxBatchSize = maxBatchSize;
     }
 
-    /**
-     * @return Cache names to process.
-     */
+    /** */
     public Collection<String> getCaches() {
         return caches;
     }
 
-    /**
-     * @param caches Cache names to process.
-     */
+    /** */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
     }
@@ -163,5 +151,53 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setKafkaRequestTimeout(long kafkaReqTimeout) {
         this.kafkaReqTimeout = kafkaReqTimeout;
+    }
+
+    /**
+     * @return Metadata topic name.
+     */
+    public String getMetadataTopic() {
+        return metadataTopic;
+    }
+
+    /**
+     * Sets metadata topic name.
+     *
+     * @param metadataTopic Metadata topic name.
+     */
+    public void setMetadataTopic(String metadataTopic) {
+        this.metadataTopic = metadataTopic;
+    }
+
+    /**
+     * @return Amount of time between two polling of {@link #metadataTopic}.
+     */
+    public long getMetaUpdateInterval() {
+        return metaUpdInterval;
+    }
+
+    /**
+     * Sets amount of time between two polling of {@link #metadataTopic}.
+     *
+     * @param metaUpdateInterval Amount of time between two polling of {@link #metadataTopic}.
+     */
+    public void setMetaUpdateInterval(long metaUpdateInterval) {
+        this.metaUpdInterval = metaUpdateInterval;
+    }
+
+    /**
+     * @return Consumer group to read metadata topic.
+     */
+    public String getMetadataConsumerGroup() {
+        return metadataCnsmrGrp;
+    }
+
+    /**
+     * Sets consumer group to read metadata topic.
+     *
+     * @param metaCnsmrGrp Consumer group to read metadata topic.
+     */
+    public void setMetadataConsumerGroup(String metaCnsmrGrp) {
+        this.metadataCnsmrGrp = metaCnsmrGrp;
     }
 }
