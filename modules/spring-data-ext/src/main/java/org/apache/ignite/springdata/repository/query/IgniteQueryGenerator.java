@@ -18,7 +18,6 @@
 package org.apache.ignite.springdata.repository.query;
 
 import java.lang.reflect.Method;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mapping.PropertyPath;
@@ -31,12 +30,17 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
+    /** */
+    private IgniteQueryGenerator() {
+        // No-op.
+    }
 
     /**
-     * @param mtd Method.
+     * @param mtd      Method.
      * @param metadata Metadata.
+     * @return Generated ignite query.
      */
-    @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
+    public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts;
 
         try {
@@ -46,20 +50,26 @@ public class IgniteQueryGenerator {
             parts = new PartTree(mtd.getName(), metadata.getIdType());
         }
 
+        boolean isCountOrFieldQuery = parts.isCountProjection();
+
         StringBuilder sql = new StringBuilder();
 
-        if (parts.isDelete())
-            throw new UnsupportedOperationException("DELETE clause is not supported now.");
+        if (parts.isDelete()) {
+            sql.append("DELETE ");
+
+            // For the DML queries aside from SELECT *, they should run over SqlFieldQuery
+            isCountOrFieldQuery = true;
+        }
         else {
             sql.append("SELECT ");
 
             if (parts.isDistinct())
                 throw new UnsupportedOperationException("DISTINCT clause in not supported.");
 
-            if (parts.isCountProjection())
+            if (isCountOrFieldQuery)
                 sql.append("COUNT(1) ");
             else
-                sql.append(" * ");
+                sql.append("* ");
         }
 
         sql.append("FROM ").append(metadata.getDomainType().getSimpleName());
@@ -69,6 +79,7 @@ public class IgniteQueryGenerator {
 
             for (PartTree.OrPart orPart : parts) {
                 sql.append("(");
+
                 for (Part part : orPart) {
                     handleQueryPart(sql, part, metadata.getDomainType());
                     sql.append(" AND ");
@@ -89,17 +100,18 @@ public class IgniteQueryGenerator {
             sql.append(parts.getMaxResults().intValue());
         }
 
-        return new IgniteQuery(sql.toString(), parts.isCountProjection(), getOptions(mtd));
+        return new IgniteQuery(sql.toString(), isCountOrFieldQuery, false, true, getOptions(mtd));
     }
 
     /**
      * Add a dynamic part of query for the sorting support.
      *
-     * @param sql SQL text string.
+     * @param sql  SQL text string.
      * @param sort Sort method.
+     * @return Sorting criteria in StringBuilder.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
-        if (sort != null) {
+        if (sort != null && sort != Sort.unsorted()) {
             sql.append(" ORDER BY ");
 
             for (Sort.Order order : sort) {
@@ -107,6 +119,7 @@ public class IgniteQueryGenerator {
 
                 if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
                     sql.append(" ").append("NULL ");
+
                     switch (order.getNullHandling()) {
                         case NULLS_FIRST:
                             sql.append("FIRST");
@@ -114,6 +127,7 @@ public class IgniteQueryGenerator {
                         case NULLS_LAST:
                             sql.append("LAST");
                             break;
+                        default:
                     }
                 }
                 sql.append(", ");
@@ -128,13 +142,13 @@ public class IgniteQueryGenerator {
     /**
      * Add a dynamic part of a query for the pagination support.
      *
-     * @param sql Builder instance.
+     * @param sql      Builder instance.
      * @param pageable Pageable instance.
      * @return Builder instance.
      */
     public static StringBuilder addPaging(StringBuilder sql, Pageable pageable) {
-        if (pageable.getSort() != null)
-            addSorting(sql, pageable.getSort());
+
+        addSorting(sql, pageable.getSort());
 
         sql.append(" LIMIT ").append(pageable.getPageSize()).append(" OFFSET ").append(pageable.getOffset());
 
@@ -151,7 +165,6 @@ public class IgniteQueryGenerator {
         IgniteQuery.Option option = IgniteQuery.Option.NONE;
 
         Class<?>[] types = mtd.getParameterTypes();
-
         if (types.length > 0) {
             Class<?> type = types[types.length - 1];
 
@@ -163,6 +176,7 @@ public class IgniteQueryGenerator {
 
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];
+
             if (tp == Sort.class || tp == Pageable.class)
                 throw new AssertionError("Sort and Pageable parameters are allowed only in the last position");
         }
@@ -183,7 +197,7 @@ public class IgniteQueryGenerator {
     }
 
     /**
-     * Transform part to sql expression
+     * Transform part to qryStr expression
      */
     private static void handleQueryPart(StringBuilder sql, Part part, Class<?> domainType) {
         sql.append("(");
@@ -224,15 +238,13 @@ public class IgniteQueryGenerator {
             case TRUE:
                 sql.append(" = TRUE");
                 break;
+            //TODO: review this legacy code, LIKE should be -> LIKE ?
+            case LIKE:
             case CONTAINING:
                 sql.append(" LIKE '%' || ? || '%'");
                 break;
             case NOT_CONTAINING:
-                sql.append(" NOT LIKE '%' || ? || '%'");
-                break;
-            case LIKE:
-                sql.append(" LIKE '%' || ? || '%'");
-                break;
+                //TODO: review this legacy code, NOT_LIKE should be -> NOT LIKE ?
             case NOT_LIKE:
                 sql.append(" NOT LIKE '%' || ? || '%'");
                 break;
@@ -262,4 +274,3 @@ public class IgniteQueryGenerator {
         sql.append(")");
     }
 }
-

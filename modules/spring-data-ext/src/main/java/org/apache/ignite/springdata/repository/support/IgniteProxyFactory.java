@@ -17,59 +17,100 @@
 
 package org.apache.ignite.springdata.repository.support;
 
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.AbstractFactoryBean;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.BeanExpressionResolver;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 
 /**
- * Represents factory for obtaining instance of {@link IgniteProxy} that provide client-independent connection to the
+ * Represents factory for obtaining instances of {@link IgniteProxy} that provide client-independent connection to the
  * Ignite cluster.
  */
-public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> implements ApplicationContextAware {
-    /** Name of the bean that stores Ignite client instance to access the Ignite cluster. */
-    private static final String IGNITE_INSTANCE_BEAN_NAME = "igniteInstance";
+public class IgniteProxyFactory implements ApplicationContextAware, DisposableBean {
+    /** Spring application expression resolver. */
+    private final BeanExpressionResolver expressionResolver = new StandardBeanExpressionResolver();
 
-    /** Name of the bean that stores the configuration to instantiate the Ignite client. */
-    private static final String IGNITE_CONFIG_BEAN_NAME = "igniteCfg";
-
-    /** Name of the bean that stores the Spring configuration path to instantiate the Ignite client. */
-    private static final String IGNITE_SPRING_CONFIG_PATH_BEAN_NAME= "igniteSpringCfgPath";
+    /** Repositories associated with Ignite proxy. */
+    private final Map<Class<?>, IgniteProxy> igniteProxies = new ConcurrentHashMap<>();
 
     /** Spring application context. */
     private ApplicationContext ctx;
 
+    /** Spring application bean expression context. */
+    private BeanExpressionContext beanExpressionCtx;
+
+    /**
+     * @param repoInterface The repository interface class for which {@link IgniteProxy} will be created.
+     * @return {@link IgniteProxy} instance.
+     */
+    public IgniteProxy igniteProxy(Class<?> repoInterface) {
+        return igniteProxies.computeIfAbsent(repoInterface, k -> createIgniteProxy(repoInterface));
+    }
+
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
         this.ctx = ctx;
+
+        beanExpressionCtx = new BeanExpressionContext(
+            new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),
+            null);
     }
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        Object igniteProxy = getObject();
+        Set<IgniteProxy> proxies = new HashSet<>(igniteProxies.values());
 
-        if (igniteProxy instanceof AutoCloseable)
-            ((AutoCloseable)igniteProxy).close();
+        Exception destroyE = null;
+
+        for (IgniteProxy proxy : proxies) {
+            if (proxy instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable)proxy).close();
+                }
+                catch (Exception e) {
+                    if (destroyE == null)
+                        destroyE = e;
+                    else
+                        destroyE.addSuppressed(e);
+                }
+            }
+        }
+
+        if (destroyE != null)
+            throw destroyE;
     }
 
-    /** {@inheritDoc} */
-    @Override public Class<?> getObjectType() {
-        return IgniteProxy.class;
-    }
+    /**
+     * Creates {@link IgniteProxy} to be used for providing access to the Ignite cluster for specified repository.
+     *
+     * @param repoInterface {@link Class} instance of the repository interface.
+     * @return Instance of {@link IgniteProxy} associated with specified repository.
+     *
+     * @see RepositoryConfig
+     */
+    private IgniteProxy createIgniteProxy(Class<?> repoInterface) {
+        RepositoryConfig repoCfg = IgniteRepositoryFactory.getRepositoryConfiguration(repoInterface);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteProxy createInstance() {
         return Stream.<BeanFinder>of(
-            () -> ctx.getBean(IGNITE_INSTANCE_BEAN_NAME),
-            () -> ctx.getBean(IGNITE_CONFIG_BEAN_NAME),
-            () -> ctx.getBean(IGNITE_SPRING_CONFIG_PATH_BEAN_NAME, String.class),
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteInstance())),
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteCfg())),
+            () -> ctx.getBean(evaluateExpression(repoCfg.igniteSpringCfgPath()), String.class),
             () -> ctx.getBean(Ignite.class),
             () -> ctx.getBean(IgniteClient.class),
             () -> ctx.getBean(IgniteConfiguration.class),
@@ -79,12 +120,22 @@ public class IgniteProxyFactory extends AbstractFactoryBean<IgniteProxy> impleme
             .findFirst()
             .map(IgniteProxy::of)
             .orElseThrow(() -> {
-                return new IllegalArgumentException("No beans were found that provide connection configuration to" +
-                    " the Ignite cluster. One of the beans with the following names is required : \"" +
-                    IGNITE_INSTANCE_BEAN_NAME + "\", \"" + IGNITE_CONFIG_BEAN_NAME + "\" or \"" +
-                    IGNITE_SPRING_CONFIG_PATH_BEAN_NAME + "\". You can also provide Ignite, IgniteClient," +
-                    " IgniteConfiguration or ClientConfiguration bean to application context.");
+                return new IllegalArgumentException("Invalid configuration for repository " +
+                    repoInterface.getName() + ". No beans were found that provide connection configuration to the" +
+                    " Ignite cluster. Check \"igniteInstance\", \"igniteCfg\", \"igniteSpringCfgPath\" parameters" +
+                    " of " + RepositoryConfig.class.getName() + " repository annotation or provide Ignite, IgniteClient, " +
+                    " ClientConfiguration or IgniteConfiguration bean to application context.");
             });
+    }
+
+    /**
+     * Evaluates the SpEL expression.
+     *
+     * @param spelExpression SpEL expression
+     * @return The result of evaluation of the SpEL expression.
+     */
+    private String evaluateExpression(String spelExpression) {
+        return (String)expressionResolver.evaluate(spelExpression, beanExpressionCtx);
     }
 
     /**

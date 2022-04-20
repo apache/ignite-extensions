@@ -20,12 +20,14 @@ package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
 import java.util.List;
+
 import javax.cache.Cache;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Test repository.
@@ -34,6 +36,36 @@ import org.springframework.data.domain.Sort;
 public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     public List<Person> findByFirstName(String val);
+
+    /** */
+    @Query("firstName = ?")
+    public List<PersonProjection> queryByFirstNameWithProjection(String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> List<P> queryByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = :firstname")
+    public <P> P queryOneByFirstNameWithProjectionNamedParameter(Class<P> dynamicProjection, @Param("firstname") String val);
+
+    /** */
+    @Query("firstName = ?#{[1]}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedIndexedParameter(@Param("notUsed") String notUsed, @Param("firstname") String val);
+
+    /** */
+    @Query(textQuery = true, value = "#{#firstname}", limit = 2)
+    public List<PersonProjection> textQueryByFirstNameWithProjectionNamedParameter(@Param("firstname") String val);
+
+    @Query(value = "select * from (sElecT * from #{#entityName} where firstName = :firstname)", forceFieldsQuery = true)
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable(@Param("firstname") String val);
+
+    @Query(value = "firstName = ?#{sampleExtension.transformParam(#firstname)}")
+    public List<PersonProjection> queryByFirstNameWithProjectionNamedParameterWithSpELExtension(@Param("firstname") String val);
 
     /** */
     public List<Person> findByFirstNameContaining(String val);
@@ -66,7 +98,7 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public Cache.Entry<Integer, Person> findTopBySecondNameLike(String val);
 
     /** */
-    public Person findTopBySecondNameStartingWith(String val);
+    public PersonProjection findTopBySecondNameStartingWith(String val);
 
     /** */
     @Query("firstName = ?")
@@ -92,8 +124,36 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
     public int countQuery(String val);
 
-    /** */
-    @Query("SELECT count(*) FROM Person")
-    public int countAllPersons();
-}
+    /** Top 3 query */
+    public List<Person> findTop3ByFirstName(String val);
 
+    /** Delete query */
+    public long deleteByFirstName(String firstName);
+
+    /** Remove Query */
+    public List<Person> removeByFirstName(String firstName);
+
+    /** Delete using @Query with keyword in lower-case */
+    @Query("delete FROM Person WHERE secondName = ?")
+    public void deleteBySecondNameLowerCase(String secondName);
+
+    /** Delete using @Query but with errors on the query */
+    @Query("DELETE FROM Person WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public void deleteWrongByFirstNameQuery(String firstName);
+
+    /** Update using @Query with keyword in mixed-case */
+    @Query("upDATE Person SET secondName = ? WHERE firstName = ?")
+    public int setFixedSecondNameMixedCase(String secondName, String firstName);
+
+    /** Update using @Query but with errors on the query */
+    @Query("UPDATE Person SET secondName = ? WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public int setWrongFixedSecondName(String secondName, String firstName);
+
+    /** Produces a list of domain entity classes whose fields are obtained from the query result row. */
+    @Query(value = "SELECT firstName, secondName, birthday, _key, _val, NULL as one FROM Person", forceFieldsQuery = true)
+    public List<Person> queryWithRowToEntityConversion();
+
+    /** Produces a list of domain entity classes whose fields are obtained from the query result row. */
+    @Query(value = "SELECT firstName, birthday FROM Person", forceFieldsQuery = true)
+    public List<Person> queryWithIncompleteRowToEntityConversion();
+}

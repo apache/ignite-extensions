@@ -19,47 +19,50 @@ package org.apache.ignite.springdata.repository.support;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.ignite.springdata.repository.config.RepositoryConfig;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactoryBeanSupport;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 
 /**
  * Apache Ignite repository factory bean.
- *
- * The repository requires to define one of the parameters below in your Spring application configuration in order
- * to get an access to Apache Ignite cluster:
+ * <p>
+ * The {@link RepositoryConfig} requires to define one of the
+ * parameters below in your Spring application configuration in order to get an access to Apache Ignite cluster:
  * <ul>
- * <li>{@link Ignite} or {@link IgniteClient} instance bean named "igniteInstance"</li>
- * <li>{@link IgniteConfiguration} or {@link ClientConfiguration} bean named "igniteCfg"</li>
- * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath"</li>
+ * <li>{@link Ignite} instance bean</li>
+ * <li>{@link IgniteConfiguration} bean</li>
+ * <li>A path to Ignite's Spring XML configuration named "igniteSpringCfgPath" by default</li>
  * <ul/>
  *
  * @param <T> Repository type, {@link IgniteRepository}
- * @param <S> Domain object class.
- * @param <ID> Domain object key, super expects {@link Serializable}.
+ * @param <V> Domain object class.
+ * @param <K> Domain object key, super expects {@link Serializable}.
  */
-public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID extends Serializable>
-    extends RepositoryFactoryBeanSupport<T, S, ID> {
-    /** Ignite proxy. */
-    @Autowired
-    private IgniteProxy ignite;
+public class IgniteRepositoryFactoryBean<T extends Repository<V, K>, V, K extends Serializable>
+    extends RepositoryFactoryBeanSupport<T, V, K> implements ApplicationContextAware {
+    /** */
+    private ApplicationContext ctx;
 
     /**
-     * @param repositoryInterface Repository interface.
+     * @param repoInterface Repository interface.
      */
-    protected IgniteRepositoryFactoryBean(Class<? extends T> repositoryInterface) {
-        super(repositoryInterface);
+    protected IgniteRepositoryFactoryBean(Class<? extends T> repoInterface) {
+        super(repoInterface);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
     @Override protected RepositoryFactorySupport createRepositoryFactory() {
-        return new IgniteRepositoryFactory(ignite, getObjectType());
+        return new IgniteRepositoryFactory(ctx, getObjectType());
     }
 }
-

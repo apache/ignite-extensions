@@ -19,5 +19,4 @@
  * <!-- Package description. -->
  * Package includes Spring Data integration related configuration files.
  */
-
 package org.apache.ignite.springdata.repository.config;

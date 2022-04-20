@@ -21,55 +21,41 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.RunningQueryManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
+import org.apache.ignite.springdata.misc.FullNameProjection;
 import org.apache.ignite.springdata.misc.Person;
-import org.apache.ignite.springdata.misc.PersonKey;
+import org.apache.ignite.springdata.misc.PersonProjection;
 import org.apache.ignite.springdata.misc.PersonRepository;
-import org.apache.ignite.springdata.misc.PersonRepositoryWithCompoundKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 /**
  * CRUD tests.
  */
 public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
-    /** Number of entries to store. */
-    protected static final int CACHE_SIZE = 1000;
+    /** Repository. */
+    protected static PersonRepository repo;
 
     /** Context. */
     protected static AnnotationConfigApplicationContext ctx;
 
-    /** Repository. */
-    protected static PersonRepository repo;
-
-    /** Repository. */
-    protected static PersonRepositoryWithCompoundKey repoWithCompoundKey;
-
-    /** */
-    @Rule
-    public final ExpectedException expected = ExpectedException.none();
-
-    /** */
-    protected static IgniteEx ignite;
+    /** Number of entries to store */
+    private static int CACHE_SIZE = 1000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         ctx = new AnnotationConfigApplicationContext();
+
         ctx.register(ApplicationConfiguration.class);
+
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
-        repoWithCompoundKey = ctx.getBean(PersonRepositoryWithCompoundKey.class);
-        ignite = ctx.getBean(IgniteEx.class);
     }
 
     /** {@inheritDoc} */
@@ -90,8 +76,22 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** */
+    private void fillInRepository() {
+        for (int i = 0; i < CACHE_SIZE - 5; i++) {
+            repo.save(i, new Person("person" + Integer.toHexString(i),
+                "lastName" + Integer.toHexString((i + 16) % 256)));
+        }
+
+        repo.save((int) repo.count(), new Person("uniquePerson", "uniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+        repo.save((int) repo.count(), new Person("nonUniquePerson", "nonUniqueLastName"));
+    }
+
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
+    @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
     }
 
@@ -104,13 +104,18 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(person, repo.save(id, person));
 
-        assertTrue(repo.exists(id));
+        assertTrue(repo.existsById(id));
 
-        assertEquals(person, repo.findOne(id));
+        assertEquals(person, repo.findById(id).get());
 
-        expected.expect(UnsupportedOperationException.class);
-        expected.expectMessage("Use IgniteRepository.save(key,value) method instead.");
-        repo.save(person);
+        try {
+            repo.save(person);
+
+            fail("Managed to save a Person without ID");
+        }
+        catch (UnsupportedOperationException e) {
+            //excepted
+        }
     }
 
     /** */
@@ -130,11 +135,16 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         while (persons.hasNext())
             assertEquals(origPersons.next(), persons.next());
 
-        expected.expect(UnsupportedOperationException.class);
-        expected.expectMessage("Use IgniteRepository.save(Map<keys,value>) method instead.");
-        repo.save(map.values());
+        try {
+            repo.saveAll(map.values());
 
-        persons = repo.findAll(map.keySet()).iterator();
+            fail("Managed to save a list of Persons with ids");
+        }
+        catch (UnsupportedOperationException e) {
+            //expected
+        }
+
+        persons = repo.findAllById(map.keySet()).iterator();
 
         int counter = 0;
 
@@ -168,19 +178,22 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
 
-        repo.delete(0);
+        repo.deleteById(0);
 
         assertEquals(CACHE_SIZE - 1, repo.count());
-        assertNull(repo.findOne(0));
+        assertEquals(Optional.empty(),repo.findById(0));
 
-        expected.expect(UnsupportedOperationException.class);
-        expected.expectMessage("Use IgniteRepository.delete(key) method instead.");
-        repo.delete(new Person("", ""));
+        try {
+            repo.delete(new Person("", ""));
+
+            fail("Managed to delete a Person without id");
+        }
+        catch (UnsupportedOperationException e) {
+            //expected
+        }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDeleteSet() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -190,23 +203,26 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_SIZE / 2; i++)
             ids.add(i);
 
-        expected.expect(UnsupportedOperationException.class);
-        expected.expectMessage("Use IgniteRepository.deleteAll(keys) method instead.");
-        repo.deleteAll(ids);
+        repo.deleteAllById(ids);
 
         assertEquals(CACHE_SIZE / 2, repo.count());
 
-        ArrayList<Person> persons = new ArrayList<>();
+        try {
+            ArrayList<Person> persons = new ArrayList<>();
 
-        for (int i = 0; i < 3; i++)
-            persons.add(new Person(String.valueOf(i), String.valueOf(i)));
+            for (int i = 0; i < 3; i++)
+                persons.add(new Person(String.valueOf(i), String.valueOf(i)));
 
-        repo.delete(persons);
+            repo.deleteAll(persons);
+
+            fail("Managed to delete Persons without ids");
+        }
+        catch (UnsupportedOperationException e) {
+            //expected
+        }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testDeleteAll() {
         assertEquals(CACHE_SIZE, repo.count());
@@ -216,75 +232,216 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         assertEquals(0, repo.count());
     }
 
-    /** */
-    private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE; i++)
-            repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
-    }
-
-    /** */
+    /**
+     * Delete existing record.
+     */
     @Test
-    public void shouldDeleteAll() {
-        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+    public void testDeleteByFirstName() {
+        assertEquals(repo.countByFirstNameLike("uniquePerson"), 1);
 
-        repoWithCompoundKey.deleteAll(ids);
+        long cnt = repo.deleteByFirstName("uniquePerson");
 
-        assertEquals(0, repoWithCompoundKey.count());
+        assertEquals(1, cnt);
     }
 
-    /** */
+    /**
+     * Delete NON existing record.
+     */
     @Test
-    public void shouldFindAll() {
-        List<PersonKey> ids = prepareDataWithNonComparableKeys();
+    public void testDeleteExpression() {
+        long cnt = repo.deleteByFirstName("880");
 
-        Iterable<Person> res = repoWithCompoundKey.findAll(ids);
-
-        assertEquals(2, res.spliterator().estimateSize());
+        assertEquals(0, cnt);
     }
 
-    /** */
-    private List<PersonKey> prepareDataWithNonComparableKeys() {
-        List<PersonKey> ids = new ArrayList<>();
-
-        PersonKey key = new PersonKey(1, 1);
-        ids.add(key);
-
-        repoWithCompoundKey.save(key, new Person("test1", "test1"));
-
-        key = new PersonKey(2, 2);
-        ids.add(key);
-
-        repoWithCompoundKey.save(key, new Person("test2", "test2"));
-
-        assertEquals(2, repoWithCompoundKey.count());
-
-        return ids;
-    }
-
-    /** */
+    /**
+     * Delete Multiple records due to where.
+     */
     @Test
-    public void shouldNotLeakCursorsInRunningQueryManager() {
-        RunningQueryManager runningQryMgr = ((IgniteH2Indexing)ignite.context().query().getIndexing()).runningQueryManager();
+    public void testDeleteExpressionMultiple() {
+        long count = repo.countByFirstName("nonUniquePerson");
+        long cnt = repo.deleteByFirstName("nonUniquePerson");
 
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+        assertEquals(cnt, count);
+    }
 
-        List<Person> res = repo.simpleQuery("person0");
+    /**
+     * Remove should do the same than Delete.
+     */
+    @Test
+    public void testRemoveExpression() {
+        repo.removeByFirstName("person3f");
 
-        assertEquals(1, res.size());
+        long count = repo.count();
+        assertEquals(CACHE_SIZE - 1, count);
+    }
 
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+    /**
+     * Delete unique record using lower case key word.
+     */
+    @Test
+    public void testDeleteQuery() {
+        repo.deleteBySecondNameLowerCase("uniqueLastName");
 
-        Person person = repo.findTopBySecondNameStartingWith("lastName");
+        long countAfter = repo.count();
+        assertEquals(CACHE_SIZE - 1, countAfter);
+    }
 
-        assertNotNull(person);
+    /**
+     * Try to delete with a wrong @Query.
+     */
+    @Test
+    public void testWrongDeleteQuery() {
+        long countBefore = repo.countByFirstNameLike("person3f");
 
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+        try {
+            repo.deleteWrongByFirstNameQuery("person3f");
+        }
+        catch (Exception e) {
+            //expected
+        }
 
-        long cnt = repo.countByFirstName("person0");
+        long countAfter = repo.countByFirstNameLike("person3f");
+        assertEquals(countBefore, countAfter);
+    }
+
+    /**
+     * Update with a @Query a record.
+     */
+    @Test
+    public void testUpdateQueryMixedCase() {
+        final String newSecondName = "updatedUniqueSecondName";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
 
         assertEquals(1, cnt);
 
-        assertEquals(0, runningQryMgr.longRunningQueries(0).size());
+        List<Person> person = repo.findByFirstName("uniquePerson");
+        assertEquals(person.get(0).getSecondName(), "updatedUniqueSecondName");
+    }
+
+    /**
+     * Update with a @Query a record
+     */
+    @Test
+    public void testUpdateQueryMixedCaseProjection() {
+        final String newSecondName = "updatedUniqueSecondName1";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjection("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName1");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseDynamicProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameter(PersonProjection.class, "uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+
+        List<FullNameProjection> personFullName = repo.queryByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
+        assertEquals(personFullName.get(0).getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryOneMixedCaseDynamicProjectionNamedParameter() {
+        final String newSecondName = "updatedUniqueSecondName2";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        PersonProjection person = repo.queryOneByFirstNameWithProjectionNamedParameter(PersonProjection.class, "uniquePerson");
+        assertEquals(person.getFullName(), "uniquePerson updatedUniqueSecondName2");
+
+        FullNameProjection personFullName = repo.queryOneByFirstNameWithProjectionNamedParameter(FullNameProjection.class, "uniquePerson");
+        assertEquals(personFullName.getFullName(), "uniquePerson updatedUniqueSecondName2");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseProjectionIndexedParameter() {
+        final String newSecondName = "updatedUniqueSecondName3";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedIndexedParameter("notUsed","uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName3");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseProjectionIndexedParameterLuceneTextQuery() {
+        final String newSecondName = "updatedUniqueSecondName4";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.textQueryByFirstNameWithProjectionNamedParameter("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName4");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameterAndTemplateDomainEntityVariable() {
+        final String newSecondName = "updatedUniqueSecondName5";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameterAndTemplateDomainEntityVariable("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName5");
+    }
+
+    /** */
+    @Test
+    public void testUpdateQueryMixedCaseProjectionNamedParameterWithSpELExtension() {
+        final String newSecondName = "updatedUniqueSecondName6";
+        int cnt = repo.setFixedSecondNameMixedCase(newSecondName, "uniquePerson");
+
+        assertEquals(1, cnt);
+
+        List<PersonProjection> person = repo.queryByFirstNameWithProjectionNamedParameterWithSpELExtension("uniquePerson");
+        assertEquals(person.get(0).getFullName(), "uniquePerson updatedUniqueSecondName6");
+        assertEquals(person.get(0).getFirstName(), person.get(0).getFirstNameTransformed());
+    }
+
+    /**
+     * Update with a wrong @Query
+     */
+    @Test
+    public void testWrongUpdateQuery() {
+        final String newSecondName = "updatedUniqueSecondName";
+        int rowsUpdated = 0;
+
+        try {
+            rowsUpdated = repo.setWrongFixedSecondName(newSecondName, "uniquePerson");
+        }
+        catch (Exception ignored) {
+            //expected
+        }
+
+        assertEquals(0, rowsUpdated);
+
+        List<Person> person = repo.findByFirstName("uniquePerson");
+        assertEquals(person.get(0).getSecondName(), "uniqueLastName");
     }
 }
