@@ -59,22 +59,15 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-2.2-ext</artifactId>
-            <version>${ignite-spring-data-2.2-ext.version}</version>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-commons</artifactId>
-            <version>${spring.data-2.2.version}</version>
+            <artifactId>ignite-spring-data-ext</artifactId>
+            <version>${ignite-spring-data-ext.release.version}</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
-            <version>${spring-5.2.version}</version>
+            <version>${spring.version}</version>
             <optional>true</optional>
         </dependency>
 
