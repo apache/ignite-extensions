@@ -32,7 +32,6 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
-        <spring.version>5.3.19</spring.version>
         <netty.version>4.1.66.Final</netty.version>
     </properties>
 
@@ -359,21 +358,21 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

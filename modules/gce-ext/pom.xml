@@ -31,10 +31,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <url>https://ignite.apache.org</url>
 
-    <properties>
-        <spring.version>5.3.19</spring.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -91,21 +87,21 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring.version}</version>
+            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
