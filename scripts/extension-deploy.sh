@@ -26,14 +26,13 @@ set -o functrace
 # Usage: ./scripts/extension-deploy.sh modules/zookeeper-ip-finder-ext/
 #
 #################################################################################
-#################################################################################
+
 function _logger () {
   echo -e "$@\r" | tee -a $log
 }
 
 #################################################################################
-#                                       BEGIN                                   #
-#################################################################################
+
 if [ $# -eq 0 ]
   then
     echo "Ignite Extension directory is not specified."
@@ -47,6 +46,7 @@ SCRIPTS_HOME="${GIT_HOME}/scripts/"
 . ${SCRIPTS_HOME}/git-patch-functions.sh
 
 server_id="apache.releases.https"
+dist_url="https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/"
 now=$(date +'%H%M%S')
 dir=$1
 module_name="ignite-$(sed 's/\/$//' <<< $1 |  cut -d '/' -f2)"
@@ -66,22 +66,23 @@ _logger "Extension Version:        ${ext_ver}"
 _logger "Extension Ignite Version: ${ignite_ver}"
 
 ### Get the RC tag associated with the last commit in the current branch. ###
-rc_tag=$(git describe --tags --exact-match --abbrev=0)
+rc_tag="${module_name}-${ext_ver}-rc1"
+#rc_tag=$(git describe --tags --exact-match --abbrev=0)
+#
+#if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
+#  _logger "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
+#  _logger "ERROR: Given tag: ${rc_tag}"
+#
+#  exit 1;
+#fi
+#
+#_logger "Extension RC tag:         ${rc_tag}"
 
-if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
-  _logger "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
-  _logger "ERROR: Given tag: ${rc_tag}"
-
-  exit 1;
-fi
-
-_logger "Extension RC tag:         ${rc_tag}"
-_logger "Start Maven Build ..."
-
-# Uncomment:
 # requireCleanWorkTree ${GIT_HOME}
 
 ### Build the Extension ###
+_logger "============================================================================="
+_logger "Start Maven Build ..."
 mvn clean install -DskipTests -Pextension-release | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
@@ -90,21 +91,36 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
 
         exit 1;
     fi
-done < ./${log}
+done < ${log}
 
-cd target
+### Prepare sources and binary packages. ###
+list=$(find $(pwd) -regex '.*\.zip' -o -regex '.*\.zip\.asc' -o -regex '.*\.zip\.sha512')
+svn_dir=$(pwd)"/target/svn"
+mkdir ${svn_dir}
 
+_logger
+_logger "============================================================================="
+_logger "Copy assemblies (zip, asc, sha512) to the temporary svn directory: ${svn_dir}"
 
-#echo "RC ${ignite_version}${rc_name}"
+for file in $list
+do
+    _logger "Copying ${file}"
+
+    cp ${file} ${svn_dir}
+done
+
+_logger
+_logger "============================================================================="
+_logger "Uploading RC to Apache dist: ${rc_tag}"
 # Uncomment subsequent line in case you want to remove incorrectly prepared RC
 #svn rm -m "Removing redundant Release" https://dist.apache.org/repos/dist/dev/ignite/$ignite_version$rc_name || true
-#svn import svn/vote https://dist.apache.org/repos/dist/dev/ignite/$ignite_version$rc_name -m "New RC ${ignite_version}${rc_name}: Binaries"
+#svn import {$svn_dir} ${dist_url}${rc_tag} -m "New RC ${rc_tag}: Sources and Binaries"
 
 #
 # Output result and notes
 #
-echo
-echo "============================================================================="
-echo "Artifacts should be moved to RC repository"
-echo "Please check results at:"
-echo " * binaries: https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/${ignite_version}${rc_name}"
+_logger
+_logger "============================================================================="
+_logger "Artifacts should be moved to RC repository"
+_logger "Please check results at:"
+_logger " * binaries: https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/${rc_tag}"

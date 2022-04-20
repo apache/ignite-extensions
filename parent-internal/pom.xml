@@ -146,7 +146,7 @@
                                     <descriptors>
                                         <descriptor>../../assembly/source-release.xml</descriptor>
                                     </descriptors>
-                                    <finalName>${project.artifactId}</finalName>
+                                    <finalName>ignite-${project.projectDirectory.name}</finalName>
                                 </configuration>
                             </execution>
                             <execution>
@@ -156,7 +156,6 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                     <descriptorSourceDirectory>${project.basedir}/assembly</descriptorSourceDirectory>
                                     <!-- Assembly id will be attached to the final name in favor the release name. -->
                                     <finalName>${project.artifactId}</finalName>
@@ -235,7 +234,7 @@
                                 <fileSet>
                                     <directory>${project.build.directory}</directory>
                                     <includes>
-                                        <include>${project.artifactId}*.zip</include>
+                                        <include>*.zip</include>
                                     </includes>
                                 </fileSet>
                             </fileSets>
