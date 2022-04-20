@@ -32,20 +32,28 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
-server_id="apache.releases.https"
+GIT_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+SCRIPTS_HOME="${GIT_HOME}/scripts/"
 
+# Import patch functions.
+. ${SCRIPTS_HOME}/git-patch-functions.sh
+
+#
+now=$(date +'%H%M%S')
+server_id="apache.releases.https"
 dir=$1
 module_name="ignite-$(sed 's/\/$//' <<< $1 |  cut -d '/' -f2)"
+log=$(pwd)"/log_${module_name}_${now}.log"
 
-echo "Extension Module Name:    ${module_name}"
+echo "Extension Module Name:    ${module_name}" | tee ${log}
 
 cd ${dir}
 
 ext_ver=$(mvn help:evaluate -D expression=project.version -q -DforceStdout)
 ignite_ver=$(mvn help:evaluate -D expression=ignite.version -q -DforceStdout)
 
-echo "Extension Version:        ${ext_ver}"
-echo "Extension Ignite Version: ${ignite_ver}"
+echo "Extension Version:        ${ext_ver}" | tee -a ${log}
+echo "Extension Ignite Version: ${ignite_ver}" | tee -a ${log}
 
 # Get the RC tag associated with the last commit in the current branch.
 rc_tag=$(git describe --tags --exact-match --abbrev=0)
@@ -57,10 +65,25 @@ if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
   exit 1;
 fi
 
-echo "Extension RC tag:         ${rc_tag}"
-echo "Start Maven Build ..."
+echo "Extension RC tag:         ${rc_tag}" | tee -a ${log}
+echo "Start Maven Build ..." } | tee -a ${log}
 
-mvn clean install -DskipTests -Pextension-release
+requireCleanWorkTree ${GIT_HOME}
+
+# Build the Extension
+mvn clean install -DskipTests -Pextension-release | tee -a ${log}
+
+while IFS='' read -r line || [[ -n "$line" ]]; do
+    if [[ $line == *ERROR* ]]; then
+        result="ERROR: building. Please check log file: ${log}."
+
+        exit 1;
+    fi
+done < ./${log}
+
+cd target
+
+
 
 #echo "RC ${ignite_version}${rc_name}"
 # Uncomment subsequent line in case you want to remove incorrectly prepared RC
