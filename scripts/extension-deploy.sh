@@ -4,7 +4,7 @@ set -o errexit
 set -o pipefail
 set -o errtrace
 set -o functrace
-
+#################################################################################
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -25,7 +25,15 @@ set -o functrace
 # Run from the Apache Ignite Extensions root directory.
 # Usage: ./scripts/extension-deploy.sh modules/zookeeper-ip-finder-ext/
 #
+#################################################################################
+#################################################################################
+function _logger () {
+  echo -e "$@\r" | tee -a $log
+}
 
+#################################################################################
+#                                       BEGIN                                   #
+#################################################################################
 if [ $# -eq 0 ]
   then
     echo "Ignite Extension directory is not specified."
@@ -35,54 +43,55 @@ fi
 GIT_HOME="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
 SCRIPTS_HOME="${GIT_HOME}/scripts/"
 
-# Import patch functions.
+### Import patch functions. ###
 . ${SCRIPTS_HOME}/git-patch-functions.sh
 
-#
-now=$(date +'%H%M%S')
 server_id="apache.releases.https"
+now=$(date +'%H%M%S')
 dir=$1
 module_name="ignite-$(sed 's/\/$//' <<< $1 |  cut -d '/' -f2)"
 log=$(pwd)"/log_${module_name}_${now}.log"
 
-echo "Extension Module Name:    ${module_name}" | tee ${log}
+touch ${log}
+
+_logger "Extension Module Name:    ${module_name}"
 
 cd ${dir}
 
+### Get version from pom.xml with respect to the Maven. ###
 ext_ver=$(mvn help:evaluate -D expression=project.version -q -DforceStdout)
 ignite_ver=$(mvn help:evaluate -D expression=ignite.version -q -DforceStdout)
 
-echo "Extension Version:        ${ext_ver}" | tee -a ${log}
-echo "Extension Ignite Version: ${ignite_ver}" | tee -a ${log}
+_logger "Extension Version:        ${ext_ver}"
+_logger "Extension Ignite Version: ${ignite_ver}"
 
-# Get the RC tag associated with the last commit in the current branch.
+### Get the RC tag associated with the last commit in the current branch. ###
 rc_tag=$(git describe --tags --exact-match --abbrev=0)
 
 if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
-  echo "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
-  echo "ERROR: Given tag: ${rc_tag}"
+  _logger "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
+  _logger "ERROR: Given tag: ${rc_tag}"
 
   exit 1;
 fi
 
-echo "Extension RC tag:         ${rc_tag}" | tee -a ${log}
-echo "Start Maven Build ..." } | tee -a ${log}
+_logger "Extension RC tag:         ${rc_tag}"
+_logger "Start Maven Build ..."
 
-requireCleanWorkTree ${GIT_HOME}
+requireCleanWorkTree ${GIT_HOME} >> _logger
 
-# Build the Extension
+### Build the Extension ###
 mvn clean install -DskipTests -Pextension-release | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]; then
-        result="ERROR: building. Please check log file: ${log}."
+        _logger "ERROR: building. Please check log file: ${log}."
 
         exit 1;
     fi
 done < ./${log}
 
 cd target
-
 
 
 #echo "RC ${ignite_version}${rc_name}"
