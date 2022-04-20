@@ -35,10 +35,6 @@
 
     <url>https://ignite.apache.org</url>
 
-    <properties>
-        <ignite-spring-data-ext.release.version>2.0.0-SNAPSHOT</ignite-spring-data-ext.release.version>
-    </properties>
-
     <modules>
         <module>spring-boot-autoconfigure</module>
         <module>examples</module>

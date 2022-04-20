@@ -38,6 +38,7 @@
     <properties>
         <spring.data.version>2.2.13.RELEASE</spring.data.version>
     </properties>
+
     <modules>
         <module>spring-data</module>
         <module>examples</module>
