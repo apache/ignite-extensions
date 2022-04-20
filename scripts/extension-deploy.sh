@@ -78,7 +78,8 @@ fi
 _logger "Extension RC tag:         ${rc_tag}"
 _logger "Start Maven Build ..."
 
-requireCleanWorkTree ${GIT_HOME}
+# Uncomment:
+# requireCleanWorkTree ${GIT_HOME}
 
 ### Build the Extension ###
 mvn clean install -DskipTests -Pextension-release | tee -a ${log}

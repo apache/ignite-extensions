@@ -186,25 +186,26 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>enforce-no-snapshots</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <rules>
-                                        <requireReleaseDeps/>
-                                        <requireReleaseVersion/>
-                                    </rules>
-                                    <fail>true</fail>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
+<!--                    TODO: uncomment to enforce snapshots -->
+<!--                    <plugin>-->
+<!--                        <groupId>org.apache.maven.plugins</groupId>-->
+<!--                        <artifactId>maven-enforcer-plugin</artifactId>-->
+<!--                        <executions>-->
+<!--                            <execution>-->
+<!--                                <id>enforce-no-snapshots</id>-->
+<!--                                <goals>-->
+<!--                                    <goal>enforce</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <rules>-->
+<!--                                        <requireReleaseDeps/>-->
+<!--                                        <requireReleaseVersion/>-->
+<!--                                    </rules>-->
+<!--                                    <fail>true</fail>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
+<!--                        </executions>-->
+<!--                    </plugin>-->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-scm-plugin</artifactId>
