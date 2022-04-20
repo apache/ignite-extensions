@@ -50,7 +50,7 @@ server_id="apache.releases.https"
 now=$(date +'%H%M%S')
 dir=$1
 module_name="ignite-$(sed 's/\/$//' <<< $1 |  cut -d '/' -f2)"
-log=$(pwd)"/log_${module_name}_${now}.log"
+log=$(pwd)"/log_${module_name}_${now}.tmp"
 
 touch ${log}
 
@@ -78,7 +78,7 @@ fi
 _logger "Extension RC tag:         ${rc_tag}"
 _logger "Start Maven Build ..."
 
-requireCleanWorkTree ${GIT_HOME} >> _logger
+requireCleanWorkTree ${GIT_HOME}
 
 ### Build the Extension ###
 mvn clean install -DskipTests -Pextension-release | tee -a ${log}
