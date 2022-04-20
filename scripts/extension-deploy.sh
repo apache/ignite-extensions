@@ -4,6 +4,7 @@ set -o errexit
 set -o pipefail
 set -o errtrace
 set -o functrace
+
 #################################################################################
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,16 +23,30 @@ set -o functrace
 # limitations under the License.
 #
 #
+#################################################################################
+#                                  README                                       #
+#################################################################################
+#
 # Run from the Apache Ignite Extensions root directory.
 # Usage: ./scripts/extension-deploy.sh modules/zookeeper-ip-finder-ext/
+#
+# CONFIGURATION:
+# - `apache.releases.https` user name and password exists (see settings.xml in the scripts directory)
+# - pgp configured
+#
+# SCRIPT EXECUTION:
+#
+# The following conditions must be met in order to complete the deploy successfully:
+# - git branch `ignite-zookeeper-ip-finder-ext-1.0.0` created;
+# - there is no SNAPSHOT versions in the release branch (dependencies and extension version);
+# - the RC tag `ignite-zookeeper-ip-finder-ext-1.0.0-rc1` is added to the last commit;
+# - there is no uncommitted changes in the release branch;
 #
 #################################################################################
 
 function _logger () {
   echo -e "$@\r" | tee -a $log
 }
-
-#################################################################################
 
 if [ $# -eq 0 ]
   then
@@ -50,10 +65,11 @@ dist_url="https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/"
 now=$(date +'%H%M%S')
 dir=$1
 module_name="ignite-$(sed 's/\/$//' <<< $1 |  cut -d '/' -f2)"
-log=$(pwd)"/log_${module_name}_${now}.tmp"
 
+log=$(pwd)"/log_${module_name}_${now}.tmp"
 touch ${log}
 
+_logger "============================================================================="
 _logger "Extension Module Name:    ${module_name}"
 
 cd ${dir}
@@ -122,5 +138,5 @@ _logger "Uploading RC to Apache dist: ${rc_tag}"
 _logger
 _logger "============================================================================="
 _logger "Artifacts should be moved to RC repository"
-_logger "Please check results at:"
-_logger " * binaries: https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/${rc_tag}"
+_logger "Please check results at: "
+_logger " - binaries: https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/${rc_tag}"
