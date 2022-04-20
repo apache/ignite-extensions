@@ -33,13 +33,15 @@
     </parent>
 
     <artifactId>ignite-spring-boot-thin-client-autoconfigure-ext-examples</artifactId>
+    <version>${project.parent.version}</version>
+
     <url>https://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-boot-thin-client-autoconfigure-ext</artifactId>
-            <version>${project.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
