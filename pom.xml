@@ -43,8 +43,6 @@
         <module>modules/jms11-ext</module>
         <module>modules/kafka-ext</module>
         <module>modules/spring-data-ext</module>
-        <module>modules/spring-data-2.0-ext</module>
-        <module>modules/spring-data-2.2-ext</module>
         <module>modules/spring-data-commons</module>
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
@@ -57,6 +55,15 @@
         <module>modules/zookeeper-ip-finder-ext</module>
         <module>modules/topology-validator-ext</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>use-ignite-src</id>
+            <modules>
+                <module>../ignite</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

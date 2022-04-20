@@ -17,7 +17,7 @@
 
 package org.apache.ignite.springframework.boot.autoconfigure;
 
-import org.apache.ignite.springdata22.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springframework.boot.autoconfigure.misc.DefaultTestConfigutation;
 import org.apache.ignite.springframework.boot.autoconfigure.misc.ObjectRepository;
 import org.junit.jupiter.api.Test;

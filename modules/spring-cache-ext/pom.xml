@@ -61,7 +61,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${spring-data-commons.release.version}</version>
+            <version>${ignite-spring-data-commons.release.version}</version>
         </dependency>
 
         <dependency>

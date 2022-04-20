@@ -31,10 +31,6 @@
     <version>1.0.0-SNAPSHOT</version>
     <url>https://ignite.apache.org</url>
 
-    <properties>
-        <spring53.version>5.3.15</spring53.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <!-- https://mvnrepository.com/artifact/org.springframework/spring-framework-bom -->
@@ -59,12 +55,6 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-tools</artifactId>
             <scope>test</scope>
         </dependency>
 
