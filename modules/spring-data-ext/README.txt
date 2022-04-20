@@ -22,8 +22,8 @@ Importing Spring Data extension In Maven Project
 ----------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Spring Data extension
-dependency like this (replace '${ignite-spring-data-ext.version}' with actual version of Ignite Spring Data 2.2
-extension you are interested in):
+dependency like this (replace '${ignite-spring-data-ext.version}' with actual version of Ignite Spring Data extension
+you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
