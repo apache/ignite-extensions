@@ -33,6 +33,7 @@ set -o functrace
 # PREREQUISITES:
 # - `apache.releases.https` user name and password exist (see example of `settings.xml` in the scripts directory)
 # - pgp signature configured
+# - export GPG_TTY=$(tty)
 #
 # SCRIPT EXECUTION:
 #

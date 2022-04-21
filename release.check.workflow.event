@@ -2,6 +2,7 @@
   "action": "workflow_dispatch",
   "inputs": {
       "extension-name": "ignite-zookeeper-ip-finder-ext",
-      "release-version": "1.0.0"
+      "release-version": "1.0.0",
+      "release-tag": "ignite-zookeeper-ip-finder-ext-1.0.0-rc1"
   }
 }
