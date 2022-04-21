@@ -30,9 +30,9 @@ set -o functrace
 # Run from the Apache Ignite Extensions root directory.
 # Usage: ./scripts/extension-deploy.sh modules/zookeeper-ip-finder-ext/
 #
-# CONFIGURATION:
-# - `apache.releases.https` user name and password exists (see settings.xml in the scripts directory)
-# - pgp configured
+# PREREQUISITES:
+# - `apache.releases.https` user name and password exist (see example of `settings.xml` in the scripts directory)
+# - pgp signature configured
 #
 # SCRIPT EXECUTION:
 #
@@ -128,13 +128,13 @@ done
 _logger
 _logger "============================================================================="
 _logger "Uploading RC to Apache dist: ${rc_tag}"
-# Uncomment subsequent line in case you want to remove incorrectly prepared RC
+
+# Uncomment subsequent line in case you want to remove incorrectly prepared RC.
 #svn rm -m "Removing redundant Release" https://dist.apache.org/repos/dist/dev/ignite/$ignite_version$rc_name || true
 #svn import {$svn_dir} ${dist_url}${rc_tag} -m "New RC ${rc_tag}: Sources and Binaries"
 
-#
-# Output result and notes
-#
+
+### Output result and notes ###
 _logger
 _logger "============================================================================="
 _logger "Artifacts should be moved to RC repository"
