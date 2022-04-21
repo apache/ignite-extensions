@@ -37,15 +37,22 @@ jobs:
 #    if: github.repository == 'apache/ignite-extensions'
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Directory
+      - name: Setup Inputs
         id: vars
         shell: bash
         # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
         run: |
           name=${{ github.event.inputs.extension-name }}
-          export MODULE_DIR=modules/${name#"ignite-"}
-          echo "Extension directory: $MODULE_DIR"
-          echo ::set-output name=MODULE_DIR::$MODULE_DIR
+          ver=${{ github.event.inputs.release-version }}
+          mod_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          mod_name=$(echo ${name} | sed -e 's/^[[:space:]]*//')
+          mod_dir=modules/${name#"ignite-"}
+          echo "Extension Version:     $mod_ver"
+          echo "Extension Module Name: $mod_name"
+          echo "Extension Directory:   $mod_dir"
+          echo "EXTENSION_VERSION=${mod_ver}" >> $GITHUB_ENV
+          echo "EXTENSION_NAME=${mod_name}" >> $GITHUB_ENV
+          echo "EXTENSION_DIR=${mod_dir}" >> $GITHUB_ENV
       - name: Checkout Release Branch
         uses: actions/checkout@v3
         with:
@@ -65,32 +72,32 @@ jobs:
         with:
           java-version: 8
           distribution: 'adopt'
-      - name: Extract POM Version
-        id: poms
+      - name: Extract Branch POM Version and Compare
         shell: bash
         run: |
-          echo "Module directory: ${{ steps.vars.outputs.MODULE_DIR }}"
-          mvn -pl ${{ steps.vars.outputs.MODULE_DIR }} help:evaluate \
-            -Dexpression=project.version -DforceStdout | tee maven.version.log
-          pom_ver=$(grep -v '\[' < maven.version.log)
-          export VERSION_POM=$pom_ver
-          echo "Extension pom version: $VERSION_POM"
-          echo "::set-output name=VERSION_POM::$VERSION_POM"
-      - name: Compare Release Versions
-        if: ${{ github.event.inputs.release-version }} != ${{ steps.poms.outputs.$VERSION_POM }}
+          mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.artifactId
+          ver=$(mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.version -q -DforceStdout)
+          pom_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          missmatch='true'
+          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && echo "missmatch='false'"
+          echo "Extension pom version: ${pom_ver}"
+          echo "VERSIONS_MISMATCH=${missmatch}" >> $GITHUB_ENV
+          echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
+      - name: Compare Release Versions With Branch Version
+        if: ${{ env.VERSIONS_MISMATCH == 'true' }}
         uses: actions/github-script@v3
         with:
           script: |
-            core.setFailed('Branch pom and release versions are not equivalent!')
-      - name: Download Binary and Sources
-        run: |
-          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
-          apt-get update
-          apt-get -y install unzip
-          unzip -d /usr/share maven.zip
-          rm maven.zip
-          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+            core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+#      - name: Download Binary and Sources
+#        run: |
+#          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+#          apt-get update
+#          apt-get -y install unzip
+#          unzip -d /usr/share maven.zip
+#          rm maven.zip
+#          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+#          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
 #      - name: Download Binary and Sources
 #        run: "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
 #      - name: Build and Test
