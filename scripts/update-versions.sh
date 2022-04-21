@@ -27,12 +27,15 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
+git_root=$(pwd)
 module_name="ignite-$(sed 's/\/$//' <<< $2 |  cut -d '/' -f2)"
+
+cd parent-internal
 
 echo Updating Apache Ignite parent version to $1 with Maven...
 mvn versions:update-parent -DparentVersion=$1 -DgenerateBackupPoms=false
 
-cd $2
+cd ${git_root}/$2
 
 echo Updating Extension '${module_name}' version to $3 with Maven...
 mvn versions:set -DnewVersion=$3 -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
