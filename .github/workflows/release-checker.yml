@@ -37,35 +37,46 @@ jobs:
 #    if: github.repository == 'apache/ignite-extensions'
     runs-on: ubuntu-latest
     steps:
+      - name: Setup Directory
+        id: vars
+        shell: bash
+        # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+        run: |
+          name=${{ github.event.inputs.extension-name }}
+          export MODULE_DIR=modules/${name#"ignite-"}
+          echo "Extension directory: $MODULE_DIR"
+          echo ::set-output name=MODULE_DIR::$MODULE_DIR
       - name: Checkout Release Branch
         uses: actions/checkout@v3
         with:
           ref: '${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
-          fetch-depth: 1
+      # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
+      - name: Download Maven
+        run: |
+          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+          apt-get update
+          apt-get -y install unzip
+          unzip -d /usr/share maven.zip
+          rm maven.zip
+          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
           java-version: 8
           distribution: 'adopt'
-
-
-#  deploy:
-#    if: github.repository == 'apache/ignite-extensions'
-#    name: "Deploy Apache Ignite"
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout Release Branch
-#        uses: actions/checkout@v2
-#      - name: Set up Java
-#        uses: actions/setup-java@v2
-#        with:
-#          java-version: 8
-#          distribution: 'adopt'
-#          server-id: apache.snapshots.https
-#          server-username: NEXUS_USER
-#          server-password: NEXUS_PW
-#      - name: Deploy
-#        run: ./mvnw deploy -Pcheckstyle -DskipTests -Dmaven.javadoc.skip=true -B -V
-#        env:
-#          NEXUS_USER: ${{ secrets.NEXUS_USER }}
-#          NEXUS_PW: ${{ secrets.NEXUS_PW }}
+      - name: Extract POM Version
+        shell: bash
+        run: |
+          echo "Module directory: ${{ steps.vars.outputs.MODULE_DIR }}"
+          dir=${{ steps.vars.outputs.MODULE_DIR }}
+          cd ${dir}
+          mvn help:evaluate -Dexpression=project.version -DforceStdout
+          pom_ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          export VERSION_POM=$pom_ver
+          echo "Extension pom version: $VERSION_POM"
+          echo "::set-output name=VERSION_POM::$VERSION_POM"
+#      - name: Download Binary and Sources
+#        run: "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
+      - name: Build and Test
+        run: mvn install -Pcheckstyle -B -V
