@@ -45,7 +45,7 @@ public class ZookeeperIpFinderExample {
      */
     public static void main(String[] args) {
         try (Ignite server1 = Ignition.start(configuration("server1"));
-             Ignite server2 =  Ignition.start(configuration("server2"))) {
+             Ignite server2 = Ignition.start(configuration("server2"))) {
             System.out.println();
             System.out.println("Zookeeper Ip Finder example started.");
 

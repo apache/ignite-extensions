@@ -54,7 +54,7 @@ public class PerformanceStatisticsPrinter {
 
         try {
             new FilePerformanceStatisticsReader(
-                new PrintHandler(ps, params.ops, params.from, params.to,params.cacheIds))
+                new PrintHandler(ps, params.ops, params.from, params.to, params.cacheIds))
                 .read(singletonList(new File(params.statFileOrDir)));
         }
         finally {

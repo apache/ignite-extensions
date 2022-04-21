@@ -39,6 +39,13 @@ public class IgniteClientTransactionalService {
      * The emitters transfer the specified funds to the broker. When both funds are received, they are transferred to
      * the recipient, excluding the fee which the broker keeps for himself. If an error occurs at any step of this
      * operation, it is rolled back.
+     *
+     * @param firstEmitter First emitter.
+     * @param secondEmitter Second emitter.
+     * @param recipient Recipient.
+     * @param broker Broker.
+     * @param funds Funds.
+     * @param fee Fee.
      */
     @Transactional(isolation = REPEATABLE_READ)
     public void transferFundsWithBroker(
@@ -56,7 +63,13 @@ public class IgniteClientTransactionalService {
         transferFunds(broker, recipient, funds * 2 - fee);
     }
 
-    /** Transfers funds between two accounts that belong to users with the specified names. */
+    /**
+     * Transfers funds between two accounts that belong to users with the specified names.
+     *
+     * @param emitter Emitter.
+     * @param recipient Recipient.
+     * @param funds Funds.
+     */
     @Transactional(isolation = REPEATABLE_READ)
     public void transferFunds(String emitter, String recipient, int funds) {
         Account emitterAcc = cache.get(emitter);
@@ -74,13 +87,24 @@ public class IgniteClientTransactionalService {
         System.out.println(">>> " + emitter + " transfers " + funds + " coins to " + recipient);
     }
 
-    /** Gets current balance of the account with the specified name.*/
+    /**
+     * Gets current balance of the account with the specified name.
+     *
+     * @param login Login.
+     * @return Balance.
+     */
     @Transactional(isolation = READ_COMMITTED)
     public int getBalance(String login) {
         return cache.get(login).balance;
     }
 
-    /** Creates account with the specified user login and balance. */
+    /**
+     * Creates account with the specified user login and balance.
+     *
+     * @param login Login.
+     * @param balance Balance.
+     * @return Account.
+     */
     public Account createAccount(String login, int balance) {
         Account acc = new Account(login);
 
@@ -91,12 +115,20 @@ public class IgniteClientTransactionalService {
         return acc;
     }
 
-    /** Sets an Ignite cache representation that uses thin client to communicate with the Ignite cluster. */
+    /**
+     * Sets an Ignite cache representation that uses thin client to communicate with the Ignite cluster.
+     *
+     * @param cache Cache.
+     */
     public void setCache(ClientCache<String, Account> cache) {
         this.cache = cache;
     }
 
-    /** Puts the specified account into the cache. */
+    /**
+     * Puts the specified account into the cache.
+     *
+     * @param acc Account.
+     */
     private void saveAccount(Account acc) {
         cache.put(acc.login, acc);
     }
@@ -109,7 +141,11 @@ public class IgniteClientTransactionalService {
         /** Balance. */
         private int balance;
 
-        /** Creates an account with the specified owner name. */
+        /**
+         * Creates an account with the specified owner name.
+         *
+         * @param login Login.
+         */
         public Account(String login) {
             this.login = login;
         }

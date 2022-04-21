@@ -23,9 +23,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
+        <artifactId>ignite-parent-ext-internal</artifactId>
         <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-aws-ext</artifactId>
@@ -39,48 +39,62 @@
         <httpclient.version>4.5.1</httpclient.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.springframework/spring-framework-bom -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring53.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-bom</artifactId>
+                <version>${aws.sdk.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-ec2</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-elasticloadbalancing</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-elasticloadbalancingv2</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-kms</artifactId>
-            <version>${aws.sdk.version}</version>
         </dependency>
 
         <!-- Do not remove  com.fasterxml.jackson.core:jackson-core it is required at runtime -->
@@ -149,15 +163,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-tools</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -171,7 +177,6 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -184,14 +189,12 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

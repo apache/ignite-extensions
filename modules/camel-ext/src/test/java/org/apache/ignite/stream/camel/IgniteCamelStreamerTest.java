@@ -17,6 +17,16 @@
 
 package org.apache.ignite.stream.camel;
 
+import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.apache.camel.CamelContext;
@@ -44,17 +54,6 @@ import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
@@ -96,6 +95,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         return super.getConfiguration(igniteInstanceName).setIncludeEventTypes(EventType.EVTS_ALL);
     }
 
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
@@ -116,6 +116,7 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         producerTemplate.start();
     }
 
+    /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
         try {
             streamer.stop();
@@ -396,12 +397,12 @@ public class IgniteCamelStreamerTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(expect);
         @SuppressWarnings("serial") IgniteBiPredicate<UUID, CacheEvent> callback =
             new IgniteBiPredicate<UUID, CacheEvent>() {
-            @Override public boolean apply(UUID uuid, CacheEvent evt) {
-                latch.countDown();
+                @Override public boolean apply(UUID uuid, CacheEvent evt) {
+                    latch.countDown();
 
-                return true;
-            }
-        };
+                    return true;
+                }
+            };
 
         remoteLsnr = ignite.events(ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME))
             .remoteListen(callback, null, EVT_CACHE_OBJECT_PUT);

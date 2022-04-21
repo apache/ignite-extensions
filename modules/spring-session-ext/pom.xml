@@ -24,14 +24,14 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
+        <artifactId>ignite-parent-ext-internal</artifactId>
         <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-spring-session-ext</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <url>http://ignite.apache.org</url>
+    <url>https://ignite.apache.org</url>
 
     <properties>
         <spring.session.version>2.5.0</spring.session.version>
@@ -40,14 +40,25 @@
         <assertj.version>3.20.0</assertj.version>
         <junit.jupiter.version>5.7.2</junit.jupiter.version>
         <javax.servlet.version>3.0.1</javax.servlet.version>
-        <mockito.version>2.22.0</mockito.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.springframework/spring-framework-bom -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring53.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -61,13 +72,11 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring53.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
-            <version>${spring53.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-core -->
@@ -84,11 +93,9 @@
             <version>${spring.session.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring53.version}</version>
         </dependency>
 
         <dependency>
@@ -113,11 +120,9 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-test -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -128,18 +133,15 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-web -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>${spring53.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.ignite/ignite-indexing -->
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->

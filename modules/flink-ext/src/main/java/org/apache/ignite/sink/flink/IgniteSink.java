@@ -126,6 +126,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      * Default IgniteSink constructor.
      *
      * @param cacheName Cache name.
+     * @param igniteCfgFile Ignite config.
      */
     public IgniteSink(String cacheName, String igniteCfgFile) {
         this.cacheName = cacheName;
@@ -137,22 +138,24 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @throws IgniteException If failed.
      */
-    @Override
-    public void open(Configuration parameter) {
+    @Override public void open(Configuration parameter) {
         A.notNull(igniteCfgFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
 
         try {
             this.ignite = Ignition.start(igniteCfgFile);
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             if (e.getMessage().contains("instance has already been started.")) {
                 // ignite instance is already started in same JVM then use it
                 try {
                     this.ignite = Ignition.ignite();
-                } catch(IgniteIllegalStateException illegalStateException){
+                }
+                catch (IgniteIllegalStateException illegalStateException) {
                     throw new IgniteException("Cannot connect to existing ignite instance", e);
                 }
-            } else {
+            }
+            else {
                 throw e;
             }
         }
@@ -173,8 +176,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @throws IgniteException If failed.
      */
-    @Override
-    public void close() {
+    @Override public void close() {
         if (stopped)
             return;
 
@@ -190,8 +192,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      * @param in IN.
      */
     @SuppressWarnings("unchecked")
-    @Override
-    public void invoke(IN in) {
+    @Override public void invoke(IN in) {
         try {
             if (!(in instanceof Map))
                 throw new IgniteException("Map as a streamer input is expected!");

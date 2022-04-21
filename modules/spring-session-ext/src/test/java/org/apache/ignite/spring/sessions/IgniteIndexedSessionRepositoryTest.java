@@ -25,25 +25,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.cache.expiry.TouchedExpiryPolicy;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.FlushMode;
 import org.springframework.session.MapSession;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -163,6 +160,7 @@ public class IgniteIndexedSessionRepositoryTest {
         verifyNoMoreInteractions(this.sessions);
     }
 
+    /** */
     @Test
     void saveUpdatedAttributeFlushModeImmediate() {
         verify(this.sessions, times(1)).registerCacheEntryListener(ArgumentMatchers.any());
@@ -421,34 +419,28 @@ public class IgniteIndexedSessionRepositoryTest {
 
         given(this.sessions.query(ArgumentMatchers.any())).willReturn(new FieldsQueryCursor<List<?>>() {
             /** */
-            @Override
-            public String getFieldName(int idx) {
+            @Override public String getFieldName(int idx) {
                 return null;
             }
 
             /** */
-            @Override
-            public int getColumnsCount() {
+            @Override public int getColumnsCount() {
                 return 2;
             }
 
             /** */
-            @Override
-            public List<List<?>> getAll() {
-                return (List) saved;
+            @Override public List<List<?>> getAll() {
+                return (List)saved;
             }
 
             /** */
-            @Override
-            public void close() {
-
+            @Override public void close() {
             }
 
             /** */
             @NotNull
-            @Override
-            public Iterator<List<?>> iterator() {
-                return (Iterator) saved.iterator();
+            @Override public Iterator<List<?>> iterator() {
+                return (Iterator)saved.iterator();
             }
         });
 

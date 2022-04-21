@@ -26,7 +26,9 @@ public class IgniteNodeProxy implements IgniteProxy {
     /** {@link Ignite} instance to which operations are delegated. */
     protected final Ignite ignite;
 
-    /** */
+    /**
+     * @param ignite Ignite instance.
+     */
     public IgniteNodeProxy(Ignite ignite) {
         this.ignite = ignite;
     }

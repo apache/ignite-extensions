@@ -102,7 +102,9 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
         return U.map("cacheOps", jsonRes);
     }
 
+    /** */
     public static class IntWrapper {
+        /** */
         public int count;
     }
 }

@@ -16,14 +16,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
  * limitations under the License.
  */
 
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.models.BlobErrorCode;
-import com.azure.storage.blob.models.BlobItem;
-import com.azure.storage.blob.models.BlobStorageException;
-import com.azure.storage.blob.specialized.BlockBlobClient;
-import com.azure.storage.common.StorageSharedKeyCredential;
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -35,6 +27,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.common.StorageSharedKeyCredential;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;

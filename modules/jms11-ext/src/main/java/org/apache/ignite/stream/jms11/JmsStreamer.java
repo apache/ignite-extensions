@@ -438,6 +438,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         this.exceptionListener = exceptionListener;
     }
 
+    /** */
     private void initializeJmsObjectsForTopic() throws JMSException {
         Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
         Topic topic = (Topic)destination;
@@ -456,6 +457,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         listeners.add(messageListener);
     }
 
+    /** */
     private void initializeJmsObjectsForQueue() throws JMSException {
         for (int i = 0; i < threads; i++) {
             Session session = connection.createSession(transacted, Session.AUTO_ACKNOWLEDGE);
@@ -474,6 +476,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
         }
     }
 
+    /** */
     private void processMessage(T message) {
         final IgniteDataStreamer<K, V> streamer = getStreamer();
 
@@ -489,13 +492,16 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
      * Message listener for queues.
      */
     private class IgniteJmsMessageListener implements MessageListener {
-
+        /** */
         private Session session;
 
+        /** */
         private AtomicInteger counter = new AtomicInteger(0);
 
+        /** */
         private Executor executor;
 
+        /** */
         public IgniteJmsMessageListener(Session session, boolean createThreadPool) {
             this.session = session;
 
@@ -508,6 +514,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             };
         }
 
+        /** {@inheritDoc} */
         @Override public void onMessage(final Message message) {
             if (stopped) {
                 return;
@@ -545,6 +552,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
 
         }
 
+        /** */
         public void resetBatchCounter() {
             counter.set(0);
         }

@@ -22,7 +22,6 @@ import org.apache.ignite.Ignition;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ContextConfiguration;
@@ -35,8 +34,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration
 @WebAppConfiguration
-public
-class EmbeddedIgniteIndexedSessionRepositoryITest extends AbstractIgniteIndexedSessionRepositoryITest {
+public class EmbeddedIgniteIndexedSessionRepositoryITest extends AbstractIgniteIndexedSessionRepositoryITest {
     /** */
     @BeforeAll
     static void setUpClass() {

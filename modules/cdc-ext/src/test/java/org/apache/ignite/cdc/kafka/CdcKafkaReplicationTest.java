@@ -213,7 +213,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         cfg.setKafkaPartsFrom(fromPart);
         cfg.setKafkaPartsTo(toPart);
-        cfg.setThreadCount((toPart - fromPart)/2);
+        cfg.setThreadCount((toPart - fromPart) / 2);
 
         cfg.setCaches(Collections.singletonList(cacheName));
         cfg.setTopic(topic);

@@ -48,7 +48,7 @@ public class Employee {
      * @param addr Address.
      * @param departments Departments.
      */
-    public Employee(String name, long salary,Address addr, Collection<String> departments) {
+    public Employee(String name, long salary, Address addr, Collection<String> departments) {
         this.name = name;
         this.salary = salary;
         this.addr = addr;

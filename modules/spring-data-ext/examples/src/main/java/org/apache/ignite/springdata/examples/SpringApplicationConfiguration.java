@@ -43,9 +43,11 @@ public class SpringApplicationConfiguration {
     /**
      * Creating Apache Ignite instance bean. A bean will be passed to {@link IgniteRepositoryFactoryBean} to initialize
      * all Ignite based Spring Data repositories and connect to a cluster.
+     *
+     * @return Ignite instance.
      */
     @Bean
     public Ignite igniteInstance() {
-        return Ignition.start("modules/spring-data-ext/examples/config/example-spring-data.xml");
+        return Ignition.start("modules/spring-data-2.2-ext/examples/config/example-spring-data.xml");
     }
 }

@@ -48,6 +48,7 @@ public interface IgniteCacheProxy<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Gets the number of all entries cached across all nodes.
      *
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return The number of all entries cached across all nodes.
      */
     public int size(CachePeekMode... peekModes);
 
@@ -89,6 +90,7 @@ public interface IgniteCacheProxy<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
      * the returned cache.
      *
+     * @param expirePlc Expire policy.
      * @return Cache instance with the specified expiry policy set.
      */
     public IgniteCacheProxy<K, V> withExpiryPolicy(ExpiryPolicy expirePlc);
@@ -96,10 +98,11 @@ public interface IgniteCacheProxy<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Execute SQL query and get cursor to iterate over results.
      *
+     * @param <R> Type of query data.
      * @param qry SQL query.
      * @return Query result cursor.
      */
-    public <R> QueryCursor<R> query(Query<R> qry) ;
+    public <R> QueryCursor<R> query(Query<R> qry);
 
     /**
      * Determines if the {@link ClientCache} contains an entry for the specified key.

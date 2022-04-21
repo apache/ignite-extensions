@@ -32,7 +32,6 @@ import javax.jms.TextMessage;
  * @author Raul Kripalani
  */
 public class TestTransformers {
-
     /**
      * Returns a transformer for JMS {@link TextMessage}s, capable of extracting many tuples from a single message,
      * if pipe characters are encountered.
@@ -94,6 +93,9 @@ public class TestTransformers {
         };
     }
 
+    /**
+     * @return Message transformer.
+     */
     public static MessageTransformer<TextMessage, String, String> generateNoEntries() {
         return new MessageTransformer<TextMessage, String, String>() {
             @Override public Map<String, String> apply(TextMessage message) {
@@ -102,26 +104,38 @@ public class TestTransformers {
         };
     }
 
+    /** */
     public static class TestObject implements Serializable {
+        /** */
         private static final long serialVersionUID = -7332027566186690945L;
 
+        /** */
         private String key;
 
+        /** */
         private String value;
 
+        /**
+         * @param key Key.
+         * @param value Value.
+         */
         public TestObject(String key, String value) {
             this.key = key;
             this.value = value;
         }
 
+        /**
+         * @return Key.
+         */
         public String getKey() {
             return key;
         }
 
+        /**
+         * @return Value.
+         */
         public String getValue() {
             return value;
         }
-
     }
-
 }

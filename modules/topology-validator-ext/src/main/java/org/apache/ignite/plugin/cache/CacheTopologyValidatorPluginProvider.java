@@ -125,7 +125,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin() {
-        return (T) new IgnitePlugin() {
+        return (T)new IgnitePlugin() {
             // No-op.
         };
     }
@@ -259,7 +259,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
             if (discoCache != null) {
                 for (ClusterNode srv : discoCache.serverNodes()) {
                     if (!ctx.discovery().alive(srv)) {
-                        String msg =  "Node join request was rejected due to concurrent node left" +
+                        String msg = "Node join request was rejected due to concurrent node left" +
                             " process handling [rejectedNodeId=" + node.id() + ']';
 
                         throw new PluginValidationException(msg, msg, node.id());
@@ -326,12 +326,12 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
 
             boolean isTopValidationApplicable =
                 !isDisabled() &&
-                state == ACTIVE &&
-                evt.type() == EVT_NODE_FAILED  &&
-                isBaselineConfigurationCompatible(
-                    ctx.state().isBaselineAutoAdjustEnabled(),
-                    ctx.state().baselineAutoAdjustTimeout()
-                );
+                    state == ACTIVE &&
+                    evt.type() == EVT_NODE_FAILED &&
+                    isBaselineConfigurationCompatible(
+                        ctx.state().isBaselineAutoAdjustEnabled(),
+                        ctx.state().baselineAutoAdjustTimeout()
+                    );
 
             if (isTopValidationApplicable && !isValidTopology(discoCache.baselineNodes())) {
                 locStateCopy = null;
@@ -344,11 +344,11 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                             }
                             catch (Throwable e) {
                                 U.error(log,
-                                "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
-                                    " mode. Cache writes were already restricted for all configured caches, but this" +
-                                    " step is still required in order to be able to unlock cache writes in the future." +
-                                    " Retry this operation manually, if possible [segmentedNodes=" +
-                                    F.viewReadOnly(discoCache.allNodes(), F.node2id()) + "]", e);
+                                    "Failed to automatically switch state of the segmented cluster to the READ-ONLY" +
+                                        " mode. Cache writes were already restricted for all configured caches, but this" +
+                                        " step is still required in order to be able to unlock cache writes in the future." +
+                                        " Retry this operation manually, if possible [segmentedNodes=" +
+                                        F.viewReadOnly(discoCache.allNodes(), F.node2id()) + "]", e);
                             }
                         }
                     }, PUBLIC_POOL);

@@ -31,10 +31,12 @@ public class ZeroMqStringSingleTupleExtractor implements StreamSingleTupleExtrac
     /** Counter. */
     private AtomicInteger count = new AtomicInteger();
 
+    /** */
     public ZeroMqStringSingleTupleExtractor() {
         count.set(0);
     }
 
+    /** {@inheritDoc} */
     @Override public Map.Entry<Integer, String> extract(byte[] msg) {
         try {
             return new IgniteBiTuple<>(count.getAndIncrement(), new String(msg, Charset.forName("UTF-8")));

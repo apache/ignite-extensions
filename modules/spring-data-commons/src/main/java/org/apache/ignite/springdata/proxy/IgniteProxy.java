@@ -28,6 +28,8 @@ public interface IgniteProxy {
     /**
      * Gets existing cache with the given name or creates new one.
      *
+     * @param <K> Key.
+     * @param <V> Value.
      * @param name Cache name.
      * @return Cache proxy that provides access to cache with given name.
      */
@@ -36,6 +38,8 @@ public interface IgniteProxy {
     /**
      * Gets cache with the given name.
      *
+     * @param <K> Key.
+     * @param <V> Value.
      * @param name Cache name.
      * @return Cache proxy that provides access to cache with specified name or {@code null} if it doesn't exist.
      */

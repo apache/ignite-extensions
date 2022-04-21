@@ -587,6 +587,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
             assertEquals(entry.getValue(), cache.get(entry.getKey()));
     }
 
+    /** */
     @SuppressWarnings("unchecked")
     private <T extends Message> JmsStreamer<T, String, String> newJmsStreamer(Class<T> type,
         IgniteDataStreamer<String, String> dataStreamer) {
@@ -597,9 +598,9 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         jmsStreamer.setConnectionFactory(connFactory);
 
         if (type == ObjectMessage.class)
-            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forObjectMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>)TestTransformers.forObjectMessage());
         else
-            jmsStreamer.setTransformer((MessageTransformer<T, String, String>) TestTransformers.forTextMessage());
+            jmsStreamer.setTransformer((MessageTransformer<T, String, String>)TestTransformers.forTextMessage());
 
         dataStreamer.allowOverwrite(true);
         dataStreamer.autoFlushFrequency(10);
@@ -627,6 +628,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
         return latch;
     }
 
+    /** */
     private void produceObjectMessages(Destination dest, boolean singleMsg) throws JMSException {
         Session ses = connFactory.createConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -664,6 +666,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
     }
 
+    /** */
     private void produceStringMessages(Destination dest, boolean singleMsg) throws JMSException {
         Session ses = connFactory.createConnection().createSession(false, Session.AUTO_ACKNOWLEDGE);
 

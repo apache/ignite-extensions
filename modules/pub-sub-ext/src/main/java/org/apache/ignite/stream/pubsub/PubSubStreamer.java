@@ -25,13 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.stream.StreamAdapter;
-
 import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStub;
 import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
@@ -41,10 +34,13 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PullRequest;
 import com.google.pubsub.v1.PullResponse;
 import com.google.pubsub.v1.ReceivedMessage;
-
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
-
 
 /**
  * Server that subscribes to topic messages from Pub/Sub and streams its to key-value pairs into
@@ -54,7 +50,7 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
  * cache tuples out of the incoming message.
  * <p>
  */
-public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
+public class PubSubStreamer<K, V> extends StreamAdapter<PubsubMessage, K, V> {
     /** Default max messages. */
     private static final int DFLT_MAX_MESSAGES = 10;
 
@@ -157,7 +153,8 @@ public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
 
         executor = Executors.newFixedThreadPool(threads);
 
-        IntStream.range(0, threads).forEach(i -> consumerTasks.add(new ConsumerTask(subscriberStubSettings, subscriptionName, returnImmediately, maxMessages)));
+        IntStream.range(0, threads).forEach(i -> consumerTasks.add(new ConsumerTask(subscriberStubSettings, subscriptionName,
+            returnImmediately, maxMessages)));
 
         for (ConsumerTask task : consumerTasks)
             executor.submit(task);
@@ -190,18 +187,32 @@ public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
         /** Pub/Sub consumer */
         private final SubscriberStub subscriberStub;
 
+        /** */
         private final String subscriptionName;
 
+        /** */
         private final boolean returnImmediately;
 
+        /** */
         private final int maxMessages;
 
         /** Stopped. */
         private volatile boolean stopped;
 
-        public ConsumerTask(SubscriberStubSettings subscriberStubSettings,String subscriptionName, boolean returnImmediately, int maxMessages) throws IgniteException {
+        /**
+         * @param subscriberStubSettings
+         * @param subscriptionName
+         * @param returnImmediately
+         * @param maxMessages
+         * @throws IgniteException
+         */
+        public ConsumerTask(
+            SubscriberStubSettings subscriberStubSettings,
+            String subscriptionName,
+            boolean returnImmediately,
+            int maxMessages
+        ) throws IgniteException {
             try {
-
                 this.subscriberStub = GrpcSubscriberStub.create(subscriberStubSettings);
                 this.subscriptionName = subscriptionName;
                 this.returnImmediately = returnImmediately;
@@ -213,7 +224,6 @@ public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-
             try {
                 while (!stopped) {
                     PullRequest pullRequest =
@@ -249,7 +259,7 @@ public class PubSubStreamer<K,V> extends StreamAdapter<PubsubMessage, K, V> {
         public void stop() {
             stopped = true;
 
-            if (subscriberStub!= null) {
+            if (subscriberStub != null) {
                 subscriberStub.shutdown();
             }
         }

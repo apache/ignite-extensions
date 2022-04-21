@@ -702,9 +702,9 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
                         if (timeData.getExpireTime() > 0)
                             if (timeData.getExpireTime() <= now) {
                                 try {
-                                   delete(key);
+                                    delete(key);
 
-                                   if (log.isDebugEnabled())
+                                    if (log.isDebugEnabled())
                                         log.debug("Data was deleted by timeout: " + key);
                                 }
                                 catch (AmazonClientException e) {
@@ -715,9 +715,8 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
 
                                 rmvKeys.add(timeData.getKey());
                             }
-                            else
-                                if (timeData.getExpireTime() < nextTime || nextTime == -1)
-                                    nextTime = timeData.getExpireTime();
+                            else if (timeData.getExpireTime() < nextTime || nextTime == -1)
+                                nextTime = timeData.getExpireTime();
                     }
                 }
 

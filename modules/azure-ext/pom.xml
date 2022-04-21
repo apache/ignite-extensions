@@ -22,39 +22,39 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-extensions-parent</artifactId>
+        <artifactId>ignite-parent-ext-internal</artifactId>
         <version>1</version>
-        <relativePath>../../parent</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-azure-ext</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <url>https://ignite.apache.org</url>
 
-    <properties>
-        <netty.version>4.1.66.Final</netty.version>
-    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.springframework/spring-framework-bom -->
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring53.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
             <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-tools</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -140,21 +140,21 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>${log4j.version}</version>
+            <version>${log4j2.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
+            <version>${log4j2.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j-impl -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${log4j.version}</version>
+            <version>${log4j2.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.netty/netty-buffer -->
@@ -358,21 +358,18 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>${spring53.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

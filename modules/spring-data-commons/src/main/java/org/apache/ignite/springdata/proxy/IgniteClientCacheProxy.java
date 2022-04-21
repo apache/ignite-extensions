@@ -35,7 +35,9 @@ public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     /** {@link ClientCache} instance to which operations are delegated. */
     private final ClientCache<K, V> cache;
 
-    /** */
+    /**
+     * @param cache Client cache.
+     */
     public IgniteClientCacheProxy(ClientCache<K, V> cache) {
         this.cache = cache;
     }

@@ -28,9 +28,15 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import java.util.concurrent.TimeoutException;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.ProjectSubscriptionName;
+import com.google.pubsub.v1.ProjectTopicName;
+import com.google.pubsub.v1.PubsubMessage;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -49,21 +55,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.protobuf.ByteString;
-import com.google.pubsub.v1.ProjectSubscriptionName;
-import com.google.pubsub.v1.ProjectTopicName;
-import com.google.pubsub.v1.PubsubMessage;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.PROJECT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.TOPIC_NAME;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -104,12 +100,14 @@ public class PubSubStreamerSelfTest {
     /** */
     private static MockPubSubServer mockPubSubServer = new MockPubSubServer();
 
+    /** */
     @Before
     public void beforeTest() throws InterruptedException {
         this.ignite = Ignition.start(GRID_CONF_FILE);
-        IgniteCache<Integer,String> igniteCache = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache<Integer, String> igniteCache = ignite.getOrCreateCache(defaultCacheConfiguration());
     }
 
+    /** */
     @After
     public void afterTest() {
         ignite.cache(DEFAULT_CACHE_NAME).clear();
@@ -119,7 +117,7 @@ public class PubSubStreamerSelfTest {
     /**
      * @return New cache configuration with modified defaults.
      */
-    public static CacheConfiguration<Integer,String> defaultCacheConfiguration() {
+    public static CacheConfiguration<Integer, String> defaultCacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         cfg.setAtomicityMode(ATOMIC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -218,7 +216,7 @@ public class PubSubStreamerSelfTest {
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
         }
         finally {
-            if (pubSubStmr!= null)
+            if (pubSubStmr != null)
                 pubSubStmr.stop();
         }
     }
@@ -292,12 +290,12 @@ public class PubSubStreamerSelfTest {
 
                 final Map<String, String> answer = new HashMap<>();
 
-                for(int i=0;i<jsonArray.size();i++) {
-                    JsonObject jsonObject = jsonArray.get(i) .getAsJsonObject();
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    JsonObject jsonObject = jsonArray.get(i).getAsJsonObject();
                     String key = jsonObject.get(JSON_KEY).getAsString();
                     String value = jsonObject.get(JSON_VALUE).getAsString();
 
-                    answer.put(key,value);
+                    answer.put(key, value);
                 }
 
                 return answer;
