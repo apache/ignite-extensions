@@ -101,7 +101,7 @@ requireCleanWorkTree ${GIT_HOME}
 _logger "============================================================================="
 _logger "Start Maven Build ..."
 
-mvn clean install -pl ${dir} -DskipTests -Pextension-release -amd | tee -a ${log}
+mvn clean deploy -pl ${dir} -DskipTests -Pextension-release -amd | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]; then
