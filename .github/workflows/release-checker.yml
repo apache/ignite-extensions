@@ -97,6 +97,7 @@ jobs:
         run: |
           git fetch --prune --unshallow --tags
           echo $(git tag -l)
+          echo "GIT_ROOT=$(pwd)" >> $GITHUB_ENV
       # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
       - name: Download Maven
         run: |
@@ -140,15 +141,18 @@ jobs:
           wget --recursive --no-parent --no-directories --tries=3 --retry-on-http-error=429,503,504 --accept '.zip,.asc,.sha512' \
             --execute robots=off "${{ env.SERVER_URL }}${{ env.EXTENSION_RC_TAG }}/" -P ${{ env.EXTENSION_RC_TAG }}
           ls ${{ env.EXTENSION_RC_TAG }}
-      - name: Validate Binary and Sources Hashes
+      - name: Validate Binary and Sources Checksums
         run: |
           cd ${{ env.EXTENSION_RC_TAG }}
           sha512sum -c *.sha512
-      - name: Validate PGP Signature
+      - name: Validate PGP Signatures
         run: |
           apt-get -y install gpg
           wget https://dist.apache.org/repos/dist/release/ignite/KEYS
           gpg --import KEYS
           for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
-      - name: Extenstion Sources Compilation
-        run: mvn package -Pcheckstyle -DskipTests -B -V
+      - name: Extenstion Sources Compilation with Checkstyle
+        run: |
+          cd ${{ env.GIT_ROOT }}
+          cd ${{ env.EXTENSION_DIR }}
+          mvn install -Pcheckstyle -DskipTests -am -B -V
