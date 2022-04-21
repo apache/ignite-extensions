@@ -57,6 +57,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: '${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
+        run: |
+          git fetch --prune --unshallow --tags
+          echo $(git tag -l)
       # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
       - name: Download Maven
         run: |
@@ -89,6 +92,11 @@ jobs:
         with:
           script: |
             core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+      - name: Extracting RC tag
+        run: |
+          rc_tag=$(git describe --tags --exact-match --abbrev=0)
+          echo "Extension RC tag: ${rc_tag}"
+          echo "EXTENSION_RC_TAG=${rc_tag}" >> $GITHUB_ENV
 #      - name: Download Binary and Sources
 #        run: |
 #          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
