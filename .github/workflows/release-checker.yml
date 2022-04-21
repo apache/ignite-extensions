@@ -150,7 +150,5 @@ jobs:
           wget https://dist.apache.org/repos/dist/release/ignite/KEYS
           gpg --import KEYS
           for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
-      - name: Check Module Licenses
-        run: mvn validate -DskipTests=true -P check-licenses
       - name: Extenstion Sources Compilation
         run: mvn package -Pcheckstyle -DskipTests -B -V
