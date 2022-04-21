@@ -29,18 +29,8 @@ on:
         description: 'THe Extension release version (e.g. 1.0.0)'
         required: true
 
-#jobs:
-#  log-the-inputs:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - run: |
-#          echo "Log level: $LEVEL"
-#          echo "Tags: $TAGS"
-#          echo "Environment: $ENVIRONMENT"
-#        env:
-#          LEVEL: ${{ github.event.inputs.logLevel }}
-#          TAGS: ${{ github.event.inputs.tags }}
-#          ENVIRONMENT: ${{ github.event.inputs.environment }}
+env:
+  SERVER_URL: 'https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/'
 
 jobs:
   check:
@@ -52,6 +42,12 @@ jobs:
         with:
           ref: '${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
           fetch-depth: 1
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'adopt'
+
 
 #  deploy:
 #    if: github.repository == 'apache/ignite-extensions'
