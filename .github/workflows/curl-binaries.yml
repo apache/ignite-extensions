@@ -66,6 +66,12 @@ jobs:
         run: |
           cd ${{ env.EXTENSION_RC_TAG }}
           sha512sum -c *.sha512
+      - name: Validate PGP Signature
+        run: |
+          apt-get -y install gpg
+          wget https://dist.apache.org/repos/dist/release/ignite/KEYS
+          gpg --import KEYS
+          for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
 #      - name: Download Binary and Sources
 #        run: "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
 #      - name: Build and Test

@@ -95,19 +95,26 @@ jobs:
             core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
       - name: Extracting RC tag
         run: |
+          echo "Status: $(git status)"
           rc_tag=$(git describe --tags --exact-match --abbrev=0)
           echo "Extension RC tag: ${rc_tag}"
           echo "EXTENSION_RC_TAG=${rc_tag}" >> $GITHUB_ENV
-#      - name: Download Binary and Sources
-#        run: |
-#          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
-#          apt-get update
-#          apt-get -y install unzip
-#          unzip -d /usr/share maven.zip
-#          rm maven.zip
-#          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-#          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
-#      - name: Download Binary and Sources
-#        run: "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
-#      - name: Build and Test
-#        run: mvn package -Pcheckstyle -DskipTests -B -V
+      - name: Download Binary and Sources
+        run: |
+          wget --recursive --no-parent --no-directories --tries=3 --retry-on-http-error=429,503,504 --accept '.zip,.asc,.sha512' \
+            --execute robots=off "${{ env.SERVER_URL }}${{ env.EXTENSION_RC_TAG }}/" -P ${{ env.EXTENSION_RC_TAG }}
+          ls ${{ env.EXTENSION_RC_TAG }}
+      - name: Validate Binary and Sources Hashes
+        run: |
+          cd ${{ env.EXTENSION_RC_TAG }}
+          sha512sum -c *.sha512
+      - name: Validate PGP Signature
+        run: |
+          apt-get -y install gpg
+          wget https://dist.apache.org/repos/dist/release/ignite/KEYS
+          gpg --import KEYS
+          for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
+      - name: Check Module Licenses
+        run: mvn validate -DskipTests=true -P check-licenses
+      - name: Extenstion Sources Compilation
+        run: mvn package -Pcheckstyle -DskipTests -B -V
