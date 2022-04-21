@@ -97,12 +97,11 @@ _logger "Extension RC tag:         ${rc_tag}"
 
 requireCleanWorkTree ${GIT_HOME}
 
-cd ${dir}
-
 ### Build the Extension ###
 _logger "============================================================================="
 _logger "Start Maven Build ..."
-mvn clean install -DskipTests -Pextension-release | tee -a ${log}
+
+mvn clean install -pl ${dir} -DskipTests -Pextension-release -amd | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]; then
@@ -111,6 +110,8 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
         exit 1;
     fi
 done < ${log}
+
+cd ${dir}
 
 ### Prepare sources and binary packages. ###
 list=$(find $(pwd) -regex '.*\.zip' -o -regex '.*\.zip\.asc' -o -regex '.*\.zip\.sha512')

@@ -154,5 +154,4 @@ jobs:
       - name: Extenstion Sources Compilation with Checkstyle
         run: |
           cd ${{ env.GIT_ROOT }}
-          cd ${{ env.EXTENSION_DIR }}
-          mvn install -Pcheckstyle -DskipTests -am -B -V
+          mvn install -pl ${{ env.EXTENSION_DIR }} -Pcheckstyle -DskipTests -amd -B -V
