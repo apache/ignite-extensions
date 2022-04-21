@@ -32,10 +32,12 @@ module_name="ignite-$(sed 's/\/$//' <<< $2 |  cut -d '/' -f2)"
 
 cd parent-internal
 
-echo Updating Apache Ignite parent version to $1 with Maven...
+echo "============================================================================="
+echo "Updating Apache Ignite parent version to $1 with Maven..."
 mvn versions:update-parent -DparentVersion=$1 -DgenerateBackupPoms=false
 
 cd ${git_root}/$2
 
-echo Updating Extension '${module_name}' version to $3 with Maven...
+echo "============================================================================="
+echo "Updating Extension ${module_name} version to $3 with Maven..."
 mvn versions:set -DnewVersion=$3 -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
