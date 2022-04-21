@@ -66,17 +66,32 @@ jobs:
           java-version: 8
           distribution: 'adopt'
       - name: Extract POM Version
+        id: poms
         shell: bash
         run: |
           echo "Module directory: ${{ steps.vars.outputs.MODULE_DIR }}"
-          dir=${{ steps.vars.outputs.MODULE_DIR }}
-          cd ${dir}
-          mvn help:evaluate -Dexpression=project.version -DforceStdout
-          pom_ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          mvn -pl ${{ steps.vars.outputs.MODULE_DIR }} help:evaluate \
+            -Dexpression=project.version -DforceStdout | tee maven.version.log
+          pom_ver=$(grep -v '\[' < maven.version.log)
           export VERSION_POM=$pom_ver
           echo "Extension pom version: $VERSION_POM"
           echo "::set-output name=VERSION_POM::$VERSION_POM"
+      - name: Compare Release Versions
+        if: ${{ github.event.inputs.release-version }} != ${{ steps.poms.outputs.$VERSION_POM }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Branch pom and release versions are not equivalent!')
+      - name: Download Binary and Sources
+        run: |
+          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+          apt-get update
+          apt-get -y install unzip
+          unzip -d /usr/share maven.zip
+          rm maven.zip
+          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
 #      - name: Download Binary and Sources
 #        run: "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
-      - name: Build and Test
-        run: mvn install -Pcheckstyle -B -V
+#      - name: Build and Test
+#        run: mvn package -Pcheckstyle -DskipTests -B -V
