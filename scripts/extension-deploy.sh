@@ -82,19 +82,21 @@ _logger "Extension Version:        ${ext_ver}"
 _logger "Extension Ignite Version: ${ignite_ver}"
 
 ### Get the RC tag associated with the last commit in the current branch. ###
-rc_tag="${module_name}-${ext_ver}-rc1"
-#rc_tag=$(git describe --tags --exact-match --abbrev=0)
-#
-#if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
-#  _logger "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
-#  _logger "ERROR: Given tag: ${rc_tag}"
-#
-#  exit 1;
-#fi
-#
-#_logger "Extension RC tag:         ${rc_tag}"
+#rc_tag="${module_name}-${ext_ver}-rc1"
+rc_tag=$(git describe --tags --exact-match --abbrev=0)
 
-# requireCleanWorkTree ${GIT_HOME}
+if [[ rc_tag =~ "${module_name}-${ext_ver}-rc"* ]]; then
+  _logger "ERROR: The RC tag must have the following format: ignite-zookeeper-if-finder-ext-1.0.0-rc1"
+  _logger "ERROR: Given tag: ${rc_tag}"
+
+  exit 1;
+fi
+
+_logger "Extension RC tag:         ${rc_tag}"
+
+requireCleanWorkTree ${GIT_HOME}
+
+cd ${dir}
 
 ### Build the Extension ###
 _logger "============================================================================="
@@ -130,8 +132,8 @@ _logger "=======================================================================
 _logger "Uploading RC to Apache dist: ${rc_tag}"
 
 # Uncomment subsequent line in case you want to remove incorrectly prepared RC.
-#svn rm -m "Removing redundant Release" https://dist.apache.org/repos/dist/dev/ignite/$ignite_version$rc_name || true
-#svn import {$svn_dir} ${dist_url}${rc_tag} -m "New RC ${rc_tag}: Sources and Binaries"
+#svn rm -m "Removing redundant Release" https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/${rc_tag} || true
+svn import ${svn_dir} ${dist_url}${rc_tag} -m "New RC ${rc_tag}: Sources and Binaries"
 
 
 ### Output result and notes ###
