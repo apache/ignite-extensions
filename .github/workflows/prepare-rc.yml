@@ -130,7 +130,8 @@ jobs:
         shell: bash
         run: |
           tag_prefix=${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}-rc
-          branch_tag=$(git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD 2>/dev/null || true)
+          git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD || true
+          branch_tag=$(git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD || true)
           rc_tag=$(echo ${branch_tag:-${tag_prefix}0})
           rc_tag_id=$((${rc_tag#"${tag_prefix}"} + 1))
           new_tag=${tag_prefix}${rc_tag_id}
