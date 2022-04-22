@@ -172,10 +172,11 @@ jobs:
         run: |
           sudo apt-get -y install zip
           cd ${{ env.EXTENSION_DIST }}/..
-          zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_RC_TAG }}
+          zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_RC_TAG }}/
           cd -
       - name: Create RC tag ${{ env.EXTENSION_RC_TAG }}
         run: |
+          git remote set-url origin https://github.com/Mmuzaf/ignite-extensions.git
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "GitHub Action"
           git tag -a ${tag} -m "Create new RC tag: ${tag}"
@@ -187,4 +188,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.EXTENSION_RC_TAG }}.zip
-          path: ${{ env.GIT_HOME }}/${{ env.EXTENSION_RC_TAG }}.zip
+          path: ${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}.zip
