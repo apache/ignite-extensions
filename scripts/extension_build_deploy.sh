@@ -101,7 +101,10 @@ requireCleanWorkTree ${GIT_HOME}
 _logger "============================================================================="
 _logger "Start Maven Build ..."
 
-mvn clean deploy -pl ${dir} -DskipTests -Pextension-release -amd | tee -a ${log}
+cd ${dir}
+
+### The mvn must be started from the module root directory to collect assembly sources.
+mvn clean deploy -DskipTests -Pextension-release -amd | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]; then

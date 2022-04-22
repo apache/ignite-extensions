@@ -186,7 +186,7 @@
                                     <rules>
                                         <!-- TODO: uncomment when Apache Ignite Release ready-->
                                         <!-- <requireReleaseDeps/>-->
-                                        <requireReleaseVersion/>
+<!--                                        <requireReleaseVersion/>-->
                                     </rules>
                                     <fail>true</fail>
                                 </configuration>
