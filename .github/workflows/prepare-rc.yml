@@ -127,6 +127,7 @@ jobs:
             core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
       # Get the RC tag reachable from the branch HEAD matching pattern.
       - name: Extracting Release RC tag
+        shell: bash
         run: |
           tag_prefix=${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}-rc
           branch_tag=$(git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD 2>/dev/null || true)
