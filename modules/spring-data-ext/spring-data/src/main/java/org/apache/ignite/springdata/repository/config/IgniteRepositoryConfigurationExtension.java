@@ -18,9 +18,9 @@ package org.apache.ignite.springdata.repository.config;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.facade.IgniteFacade;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.repository.support.IgniteProxyFactory;
+import org.apache.ignite.springdata.repository.support.IgniteFacadeFactory;
 import org.apache.ignite.springdata.repository.support.IgniteRepositoryFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -34,11 +34,11 @@ import static org.springframework.beans.factory.config.ConfigurableBeanFactory.S
  * Apache Ignite specific implementation of {@link RepositoryConfigurationExtension}.
  */
 public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurationExtensionSupport {
-    /** Name of the auto-registered Ignite proxy factory bean. */
-    private static final String IGNITE_PROXY_FACTORY_BEAN_NAME = "igniteProxyFactory";
+    /** Name of the auto-registered Ignite facade factory bean. */
+    private static final String IGNITE_FACADE_FACTORY_BEAN_NAME = "igniteFacadeFactory";
 
     /** Name of the auto-registered Ignite proxy bean prototype. */
-    private static final String IGNITE_PROXY_BEAN_NAME = "igniteProxy";
+    private static final String IGNITE_FACADE_BEAN_NAME = "igniteFacade";
 
     /** {@inheritDoc} */
     @Override public String getModuleName() {
@@ -63,18 +63,18 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
     /** {@inheritDoc} */
     @Override public void registerBeansForRoot(BeanDefinitionRegistry registry, RepositoryConfigurationSource cfg) {
         registerIfNotAlreadyRegistered(
-            () -> BeanDefinitionBuilder.genericBeanDefinition(IgniteProxyFactory.class).getBeanDefinition(),
+            () -> BeanDefinitionBuilder.genericBeanDefinition(IgniteFacadeFactory.class).getBeanDefinition(),
             registry,
-            IGNITE_PROXY_FACTORY_BEAN_NAME,
+            IGNITE_FACADE_FACTORY_BEAN_NAME,
             cfg);
 
         registerIfNotAlreadyRegistered(
-            () -> BeanDefinitionBuilder.genericBeanDefinition(IgniteProxy.class)
+            () -> BeanDefinitionBuilder.genericBeanDefinition(IgniteFacade.class)
                 .setScope(SCOPE_PROTOTYPE)
-                .setFactoryMethodOnBean("igniteProxy", IGNITE_PROXY_FACTORY_BEAN_NAME)
+                .setFactoryMethodOnBean("igniteFacade", IGNITE_FACADE_FACTORY_BEAN_NAME)
                 .getBeanDefinition(),
             registry,
-            IGNITE_PROXY_BEAN_NAME,
+            IGNITE_FACADE_BEAN_NAME,
             cfg);
     }
 }

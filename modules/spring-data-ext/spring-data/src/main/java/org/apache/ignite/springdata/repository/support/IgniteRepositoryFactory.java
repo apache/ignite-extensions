@@ -17,8 +17,8 @@
 package org.apache.ignite.springdata.repository.support;
 
 import java.util.Optional;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
+import org.apache.ignite.facade.IgniteFacade;
 import org.apache.ignite.springdata.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
@@ -57,17 +57,17 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     private final BeanExpressionContext beanExpressionContext;
 
     /** Ignite cache proxy instance associated with the current repository. */
-    private final IgniteCacheProxy<?, ?> cache;
+    private final IgniteCacheFacade<?, ?> cache;
 
     /** Ignite proxy instance associated with the current repository. */
-    private final IgniteProxy ignite;
+    private final IgniteFacade ignite;
 
     /**
      * @param ctx Spring Application context.
      * @param repoInterface Repository interface.
      */
     public IgniteRepositoryFactory(ApplicationContext ctx, Class<?> repoInterface) {
-        ignite = ctx.getBean(IgniteProxy.class, repoInterface);
+        ignite = ctx.getBean(IgniteFacade.class, repoInterface);
 
         beanExpressionContext = new BeanExpressionContext(
             new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),

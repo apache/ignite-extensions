@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.facade;
 
-import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.Ignite;
 
-/** Extends {@link IgniteClientProxy} with the ability to close underlying thin client instance. */
-public class ClosableIgniteClientProxy extends IgniteClientProxy implements AutoCloseable {
+/** Extends {@link IgniteNodeFacade} with the ability to close underlying Ignite instance. */
+public class ClosableIgniteNodeFacade extends IgniteNodeFacade implements AutoCloseable {
     /**
-     * @param cli Ignite client instance.
+     * @param ignite Ignite instance.
      */
-    public ClosableIgniteClientProxy(IgniteClient cli) {
-        super(cli);
+    public ClosableIgniteNodeFacade(Ignite ignite) {
+        super(ignite);
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        cli.close();
+        ignite.close();
     }
 }

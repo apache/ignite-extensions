@@ -15,34 +15,51 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.facade;
 
+import java.util.Collection;
 import java.util.Objects;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 
-/** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link Ignite} instance. */
-public class IgniteNodeProxy implements IgniteProxy {
+/** Implementation of {@link IgniteFacade} that provides access to Ignite cluster through {@link Ignite} instance. */
+public class IgniteNodeFacade implements IgniteFacade {
     /** {@link Ignite} instance to which operations are delegated. */
     protected final Ignite ignite;
 
     /**
      * @param ignite Ignite instance.
      */
-    public IgniteNodeProxy(Ignite ignite) {
+    public IgniteNodeFacade(Ignite ignite) {
         this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name) {
-        return new IgniteNodeCacheProxy<>(ignite.getOrCreateCache(name));
+    @Override public <K, V> IgniteCacheFacade<K, V> getOrCreateCache(String name) {
+        return new IgniteNodeCacheFacade<>(ignite.getOrCreateCache(name));
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
+    @Override public <K, V> IgniteCacheFacade<K, V> cache(String name) {
         IgniteCache<K, V> cache = ignite.cache(name);
 
-        return cache == null ? null : new IgniteNodeCacheProxy<>(cache);
+        return cache == null ? null : new IgniteNodeCacheFacade<>(cache);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return ignite.cacheNames();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        return ignite.binary();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        ignite.destroyCache(cacheName);
     }
 
     /** @return {@link Ignite} instance to which operations are delegated. */
@@ -58,7 +75,7 @@ public class IgniteNodeProxy implements IgniteProxy {
         if (other == null || getClass() != other.getClass())
             return false;
 
-        return Objects.equals(ignite, ((IgniteNodeProxy)other).ignite);
+        return Objects.equals(ignite, ((IgniteNodeFacade)other).ignite);
     }
 
     /** {@inheritDoc} */

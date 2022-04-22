@@ -17,7 +17,7 @@
 
 package org.apache.ignite.transactions.spring;
 
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
@@ -36,7 +36,7 @@ public class GridSpringTransactionService {
      * @param entryCnt Entries count.
      */
     @Transactional
-    public void put(IgniteCacheProxy<Integer, String> cache, int entryCnt) {
+    public void put(IgniteCacheFacade<Integer, String> cache, int entryCnt) {
         for (int i = 0; i < entryCnt; i++)
             cache.put(i, String.valueOf(i));
     }
@@ -46,7 +46,7 @@ public class GridSpringTransactionService {
      * @param entryCnt Entries count.
      */
     @Transactional
-    public void putWithError(IgniteCacheProxy<Integer, String> cache, int entryCnt) {
+    public void putWithError(IgniteCacheFacade<Integer, String> cache, int entryCnt) {
         for (int i = 0; i < entryCnt; i++)
             cache.put(i, String.valueOf(i));
 
@@ -57,7 +57,7 @@ public class GridSpringTransactionService {
      * @param cache Cache.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void putWithMandatoryPropagation(IgniteCacheProxy<Integer, String> cache) {
+    public void putWithMandatoryPropagation(IgniteCacheFacade<Integer, String> cache) {
         cache.put(1, "1");
     }
 
@@ -65,13 +65,13 @@ public class GridSpringTransactionService {
      * @param cache Cache.
      */
     @Transactional(isolation = Isolation.READ_UNCOMMITTED)
-    public void putWithUnsupportedIsolationLevel(IgniteCacheProxy<Integer, String> cache) {
+    public void putWithUnsupportedIsolationLevel(IgniteCacheFacade<Integer, String> cache) {
         cache.put(1, "1");
     }
 
     /** */
     @Transactional
-    public void putWithNestedError(IgniteCacheProxy<Integer, String> cache, int entryCnt) {
+    public void putWithNestedError(IgniteCacheFacade<Integer, String> cache, int entryCnt) {
         self.put(cache, entryCnt);
 
         try {

@@ -20,7 +20,7 @@ package org.apache.ignite.cache.spring;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -32,7 +32,7 @@ class SpringCache implements Cache {
     private static final Object NULL = new NullValue();
 
     /** */
-    private final IgniteCacheProxy<Object, Object> cache;
+    private final IgniteCacheFacade<Object, Object> cache;
 
     /** */
     private final AbstractCacheManager mgr;
@@ -41,7 +41,7 @@ class SpringCache implements Cache {
      * @param cache Cache.
      * @param mgr Manager
      */
-    SpringCache(IgniteCacheProxy<Object, Object> cache, AbstractCacheManager mgr) {
+    SpringCache(IgniteCacheFacade<Object, Object> cache, AbstractCacheManager mgr) {
         assert cache != null;
 
         this.cache = cache;

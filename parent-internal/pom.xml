@@ -35,7 +35,9 @@
     <version>1</version>
 
     <properties>
+        <ignite.generated-sources.dir>${basedir}/target/generated-sources/ignite</ignite.generated-sources.dir>
         <spring-boot.version>2.2.13.RELEASE</spring-boot.version>
+        <spring.data.version>2.2.13.RELEASE</spring.data.version>
         <spring53.version>5.3.19</spring53.version>
 
         <!--
@@ -43,7 +45,6 @@
             the latest released version prior to an extension release.
         -->
         <ignite-spring-data-ext.release.version>2.0.0-SNAPSHOT</ignite-spring-data-ext.release.version>
-        <ignite-spring-data-commons.release.version>1.1.0</ignite-spring-data-commons.release.version>
     </properties>
 
     <scm>
@@ -66,6 +67,12 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-facade</artifactId>
+                <version>1</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-bom</artifactId>
@@ -102,7 +109,40 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.1.1</version>
+                    <executions>
+                        <execution>
+                            <id>generate-ignite-facade-sources</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>unpack-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <includeArtifactIds>ignite-facade</includeArtifactIds>
+                                <classifier>sources</classifier>
+                                <type>jar</type>
+                                <includes>**\/*.java</includes>
+                                <outputDirectory>${ignite.generated-sources.dir}</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <generatedSourcesDirectory>${ignite.generated-sources.dir}</generatedSourcesDirectory>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

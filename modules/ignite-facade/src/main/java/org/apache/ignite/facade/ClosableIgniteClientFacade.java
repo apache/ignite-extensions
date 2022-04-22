@@ -15,8 +15,21 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains classes that provide client-independent access to the Ignite operations required by Spring Data.
- */
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.facade;
+
+import org.apache.ignite.client.IgniteClient;
+
+/** Extends {@link IgniteClientFacade} with the ability to close underlying thin client instance. */
+public class ClosableIgniteClientFacade extends IgniteClientFacade implements AutoCloseable {
+    /**
+     * @param cli Ignite client instance.
+     */
+    public ClosableIgniteClientFacade(IgniteClient cli) {
+        super(cli);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cli.close();
+    }
+}

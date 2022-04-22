@@ -23,8 +23,8 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.facade.IgniteClientCacheFacade;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationListener;
@@ -181,7 +181,7 @@ public class IgniteClientSpringCacheManager extends AbstractCacheManager impleme
 
         ClientCache<Object, Object> cache = cli.getOrCreateCache(ccfg.setName(name));
 
-        return new SpringCache(new IgniteClientCacheProxy<>(cache), this);
+        return new SpringCache(new IgniteClientCacheFacade<>(cache), this);
     }
 
     /** {@inheritDoc} */

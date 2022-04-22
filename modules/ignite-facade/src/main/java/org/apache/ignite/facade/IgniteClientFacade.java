@@ -15,31 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.facade;
 
+import java.util.Collection;
 import java.util.Objects;
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.client.IgniteClient;
 
-/** Implementation of {@link IgniteProxy} that provides access to Ignite cluster through {@link IgniteClient} instance. */
-public class IgniteClientProxy implements IgniteProxy {
+/** Implementation of {@link IgniteFacade} that provides access to Ignite cluster through {@link IgniteClient} instance. */
+public class IgniteClientFacade implements IgniteFacade {
     /** {@link IgniteClient} instance to which operations are delegated.  */
     protected final IgniteClient cli;
 
     /**
      * @param cli Ignite client.
      */
-    public IgniteClientProxy(IgniteClient cli) {
+    public IgniteClientFacade(IgniteClient cli) {
         this.cli = cli;
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> getOrCreateCache(String name) {
-        return new IgniteClientCacheProxy<>(cli.getOrCreateCache(name));
+    @Override public <K, V> IgniteCacheFacade<K, V> getOrCreateCache(String name) {
+        return new IgniteClientCacheFacade<>(cli.getOrCreateCache(name));
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> IgniteCacheProxy<K, V> cache(String name) {
-        return new IgniteClientCacheProxy<>(cli.cache(name));
+    @Override public <K, V> IgniteCacheFacade<K, V> cache(String name) {
+        return new IgniteClientCacheFacade<>(cli.cache(name));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        return cli.cacheNames();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        return cli.binary();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(String cacheName) {
+        cli.destroyCache(cacheName);
     }
 
     /** {@inheritDoc} */
@@ -50,7 +67,7 @@ public class IgniteClientProxy implements IgniteProxy {
         if (other == null || getClass() != other.getClass())
             return false;
 
-        return Objects.equals(cli, ((IgniteClientProxy)other).cli);
+        return Objects.equals(cli, ((IgniteClientFacade)other).cli);
     }
 
     /** {@inheritDoc} */

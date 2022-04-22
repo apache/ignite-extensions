@@ -27,7 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.facade.IgniteFacade;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
@@ -41,15 +41,15 @@ import org.springframework.context.expression.StandardBeanExpressionResolver;
 import static org.apache.ignite.springdata.repository.support.IgniteRepositoryFactory.getRepositoryConfiguration;
 
 /**
- * Represents factory for obtaining instances of {@link IgniteProxy} that provide client-independent connection to the
+ * Represents factory for obtaining instances of {@link IgniteFacade} that provide client-independent connection to the
  * Ignite cluster.
  */
-public class IgniteProxyFactory implements ApplicationContextAware, DisposableBean {
+public class IgniteFacadeFactory implements ApplicationContextAware, DisposableBean {
     /** Spring application expression resolver. */
     private final BeanExpressionResolver expressionResolver = new StandardBeanExpressionResolver();
 
     /** Repositories associated with Ignite proxy. */
-    private final Map<Class<?>, IgniteProxy> igniteProxies = new ConcurrentHashMap<>();
+    private final Map<Class<?>, IgniteFacade> igniteFacades = new ConcurrentHashMap<>();
 
     /** Spring application context. */
     private ApplicationContext ctx;
@@ -58,11 +58,11 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
     private BeanExpressionContext beanExpressionCtx;
 
     /**
-     * @param repoInterface The repository interface class for which {@link IgniteProxy} will be created.
-     * @return {@link IgniteProxy} instance.
+     * @param repoInterface The repository interface class for which {@link IgniteFacade} will be created.
+     * @return {@link IgniteFacade} instance.
      */
-    public IgniteProxy igniteProxy(Class<?> repoInterface) {
-        return igniteProxies.computeIfAbsent(repoInterface, k -> createIgniteProxy(repoInterface));
+    public IgniteFacade igniteFacade(Class<?> repoInterface) {
+        return igniteFacades.computeIfAbsent(repoInterface, k -> createIgniteFacade(repoInterface));
     }
 
     /** {@inheritDoc} */
@@ -76,14 +76,14 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        Set<IgniteProxy> proxies = new HashSet<>(igniteProxies.values());
+        Set<IgniteFacade> facades = new HashSet<>(igniteFacades.values());
 
         Exception destroyE = null;
 
-        for (IgniteProxy proxy : proxies) {
-            if (proxy instanceof AutoCloseable) {
+        for (IgniteFacade facade : facades) {
+            if (facade instanceof AutoCloseable) {
                 try {
-                    ((AutoCloseable)proxy).close();
+                    ((AutoCloseable)facade).close();
                 }
                 catch (Exception e) {
                     if (destroyE == null)
@@ -99,14 +99,14 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
     }
 
     /**
-     * Creates {@link IgniteProxy} to be used for providing access to the Ignite cluster for specified repository.
+     * Creates {@link IgniteFacade} to be used for providing access to the Ignite cluster for specified repository.
      *
      * @param repoInterface {@link Class} instance of the repository interface.
-     * @return Instance of {@link IgniteProxy} associated with specified repository.
+     * @return Instance of {@link IgniteFacade} associated with specified repository.
      *
      * @see RepositoryConfig
      */
-    private IgniteProxy createIgniteProxy(Class<?> repoInterface) {
+    private IgniteFacade createIgniteFacade(Class<?> repoInterface) {
         RepositoryConfig repoCfg = getRepositoryConfiguration(repoInterface);
 
         return Stream.<BeanFinder>of(
@@ -120,7 +120,7 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
         ).map(BeanFinder::getBean)
             .filter(Objects::nonNull)
             .findFirst()
-            .map(IgniteProxy::of)
+            .map(IgniteFacade::of)
             .orElseThrow(() -> {
                 return new IllegalArgumentException("Invalid configuration for repository " +
                     repoInterface.getName() + ". No beans were found that provide connection configuration to the" +

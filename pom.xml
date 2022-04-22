@@ -29,6 +29,7 @@
     <modules>
         <module>modules/apache-license-gen</module>
         <module>parent-internal</module>
+        <module>modules/ignite-facade</module>
         <module>modules/flink-ext</module>
         <module>modules/flume-ext</module>
         <module>modules/pub-sub-ext</module>
@@ -43,7 +44,6 @@
         <module>modules/jms11-ext</module>
         <module>modules/kafka-ext</module>
         <module>modules/spring-data-ext</module>
-        <module>modules/spring-data-commons</module>
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
         <module>modules/spring-cache-ext</module>

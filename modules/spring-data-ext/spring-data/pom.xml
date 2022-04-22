@@ -50,8 +50,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${ignite-spring-data-commons.release.version}</version>
+            <artifactId>ignite-facade</artifactId>
         </dependency>
 
         <dependency>
@@ -72,6 +71,7 @@
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
             <version>${spring.data.version}</version>
+            <scope>provided</scope>
             <!-- Exclude slf4j logging in favor of log4j -->
             <exclusions>
                 <exclusion>
@@ -112,4 +112,13 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

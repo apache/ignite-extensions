@@ -103,8 +103,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-commons</artifactId>
-            <version>${ignite-spring-data-commons.release.version}</version>
+            <artifactId>ignite-facade</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

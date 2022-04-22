@@ -17,7 +17,7 @@
 
 package org.apache.ignite.transactions.spring;
 
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -33,7 +33,7 @@ public abstract class GridSpringTransactionManagerAbstractTest extends GridCommo
     protected static final String CACHE_NAME = "testCache";
 
     /** */
-    public abstract IgniteCacheProxy<Integer, String> cache();
+    public abstract IgniteCacheFacade<Integer, String> cache();
 
     /** */
     public abstract GridSpringTransactionService service();

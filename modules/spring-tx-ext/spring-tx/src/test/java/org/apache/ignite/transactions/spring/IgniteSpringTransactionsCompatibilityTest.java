@@ -30,12 +30,12 @@ import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityA
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.facade.IgniteCacheFacade;
+import org.apache.ignite.facade.IgniteClientCacheFacade;
+import org.apache.ignite.facade.IgniteNodeCacheFacade;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -165,11 +165,11 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
                 cache.clear();
 
-                IgniteCacheProxy<Integer, String> cacheProxy = new IgniteClientCacheProxy<>(cache);
+                IgniteCacheFacade<Integer, String> cacheFacade = new IgniteClientCacheFacade<>(cache);
 
-                svc.put(cacheProxy, 1);
+                svc.put(cacheFacade, 1);
 
-                assertThrowsWithCause(() -> svc.putWithError(cacheProxy, 1), NumberFormatException.class);
+                assertThrowsWithCause(() -> svc.putWithError(cacheFacade, 1), NumberFormatException.class);
 
                 assertEquals(1, cache.size());
             }
@@ -189,11 +189,11 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
 
                 cache.clear();
 
-                IgniteCacheProxy<Integer, String> cacheProxy = new IgniteNodeCacheProxy<>(cache);
+                IgniteCacheFacade<Integer, String> cacheFacade = new IgniteNodeCacheFacade<>(cache);
 
-                svc.put(cacheProxy, 1);
+                svc.put(cacheFacade, 1);
 
-                assertThrowsWithCause(() -> svc.putWithError(cacheProxy, 1), NumberFormatException.class);
+                assertThrowsWithCause(() -> svc.putWithError(cacheFacade, 1), NumberFormatException.class);
 
                 assertEquals(1, cache.size());
             }

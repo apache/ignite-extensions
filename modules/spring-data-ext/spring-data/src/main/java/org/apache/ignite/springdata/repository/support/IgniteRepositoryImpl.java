@@ -29,10 +29,10 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteNodeProxy;
-import org.apache.ignite.springdata.proxy.IgniteProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
+import org.apache.ignite.facade.IgniteFacade;
+import org.apache.ignite.facade.IgniteNodeCacheFacade;
+import org.apache.ignite.facade.IgniteNodeFacade;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.jetbrains.annotations.Nullable;
@@ -56,12 +56,12 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
     /**
      * Ignite Cache bound to the repository
      */
-    private final IgniteCacheProxy<K, V> cache;
+    private final IgniteCacheFacade<K, V> cache;
 
     /**
      * Ignite instance bound to the repository
      */
-    private final IgniteProxy ignite;
+    private final IgniteFacade ignite;
 
     /**
      * Repository constructor.
@@ -69,23 +69,23 @@ public class IgniteRepositoryImpl<V, K extends Serializable> implements IgniteRe
      * @param ignite the ignite
      * @param cache  Initialized cache instance.
      */
-    public IgniteRepositoryImpl(IgniteProxy ignite, IgniteCacheProxy<K, V> cache) {
+    public IgniteRepositoryImpl(IgniteFacade ignite, IgniteCacheFacade<K, V> cache) {
         this.cache = cache;
         this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> cache() {
-        if (cache instanceof IgniteNodeCacheProxy)
-            return ((IgniteNodeCacheProxy<K, V>)cache).delegate();
+        if (cache instanceof IgniteNodeCacheFacade)
+            return ((IgniteNodeCacheFacade<K, V>)cache).delegate();
 
         throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }
 
     /** {@inheritDoc} */
     @Override public Ignite ignite() {
-        if (ignite instanceof IgniteNodeProxy)
-            return ((IgniteNodeProxy)ignite).delegate();
+        if (ignite instanceof IgniteNodeFacade)
+            return ((IgniteNodeFacade)ignite).delegate();
 
         throw new UnsupportedOperationException(UNSUPPORTED_ERR_MSG);
     }

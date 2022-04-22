@@ -47,10 +47,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.facade.IgniteCacheFacade;
+import org.apache.ignite.facade.IgniteClientCacheFacade;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteClientCacheProxy;
 import org.apache.ignite.springdata.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata.repository.query.StringQuery.ParameterBinding;
 import org.jetbrains.annotations.Nullable;
@@ -206,7 +206,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     private final IgniteQuery staticQuery;
 
     /** */
-    private final IgniteCacheProxy<?, ?> cache;
+    private final IgniteCacheFacade<?, ?> cache;
 
     /** */
     private final Method mtd;
@@ -263,7 +263,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         @Nullable IgniteQuery staticQuery,
         Method mtd,
         ProjectionFactory factory,
-        IgniteCacheProxy<?, ?> cache,
+        IgniteCacheFacade<?, ?> cache,
         @Nullable DynamicQueryConfig staticQueryConfiguration,
         QueryMethodEvaluationContextProvider queryMethodEvaluationContextProvider) {
         this.metadata = metadata;
@@ -348,7 +348,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             qryCursor = cache.query(iQry);
         }
         catch (IllegalArgumentException e) {
-            if (cache instanceof IgniteClientCacheProxy) {
+            if (cache instanceof IgniteClientCacheFacade) {
                 throw new IllegalStateException(String.format("Query of type %s is not supported by thin client." +
                     " Check %s#%s method configuration or use Ignite node instance to connect to the Ignite cluster.",
                     iQry.getClass().getSimpleName(), mtd.getDeclaringClass().getName(), mtd.getName()), e);

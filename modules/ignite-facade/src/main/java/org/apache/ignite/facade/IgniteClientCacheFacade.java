@@ -15,30 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.proxy;
+package org.apache.ignite.facade;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
 import org.jetbrains.annotations.NotNull;
 
-/** Implementation of {@link IgniteCacheProxy} that provides access to Ignite cache through {@link ClientCache} instance. */
-public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
+/** Implementation of {@link IgniteCacheFacade} that provides access to Ignite cache through {@link ClientCache} instance. */
+public class IgniteClientCacheFacade<K, V> implements IgniteCacheFacade<K, V> {
     /** {@link ClientCache} instance to which operations are delegated. */
     private final ClientCache<K, V> cache;
 
     /**
      * @param cache Client cache.
      */
-    public IgniteClientCacheProxy(ClientCache<K, V> cache) {
+    public IgniteClientCacheFacade(ClientCache<K, V> cache) {
         this.cache = cache;
     }
 
@@ -83,8 +87,8 @@ public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheProxy<K, V> withExpiryPolicy(ExpiryPolicy expirePlc) {
-        return new IgniteClientCacheProxy<>(cache.withExpirePolicy(expirePlc));
+    @Override public IgniteCacheFacade<K, V> withExpiryPolicy(ExpiryPolicy expirePlc) {
+        return new IgniteClientCacheFacade<>(cache.withExpirePolicy(expirePlc));
     }
 
     /** {@inheritDoc} */
@@ -108,7 +112,7 @@ public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheProxy<K, V> withSkipStore() {
+    @Override public IgniteCacheFacade<K, V> withSkipStore() {
         return this;
     }
 
@@ -120,6 +124,61 @@ public class IgniteClientCacheProxy<K, V> implements IgniteCacheProxy<K, V> {
     /** {@inheritDoc} */
     @Override public void removeAll() {
         cache.removeAll();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
+        cache.deregisterCacheEntryListener(cacheEntryListenerConfiguration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry) {
+        return cache.query(qry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean replace(K key, V val) {
+        return cache.replace(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean replace(K key, V oldVal, V newVal) {
+        return cache.replace(key, oldVal, newVal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<? extends K> keys) {
+        cache.clearAll(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsKeys(Set<? extends K> keys) {
+        return cache.containsKeys(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration) {
+        cache.registerCacheEntryListener(cacheEntryListenerConfiguration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndReplace(K key, V val) {
+        return cache.getAndReplace(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndPut(K key, V val) {
+        return cache.getAndPut(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putIfAbsent(K key, V val) {
+        return cache.putIfAbsent(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getAndRemove(K key) {
+        return cache.getAndRemove(key);
     }
 
     /** {@inheritDoc} */

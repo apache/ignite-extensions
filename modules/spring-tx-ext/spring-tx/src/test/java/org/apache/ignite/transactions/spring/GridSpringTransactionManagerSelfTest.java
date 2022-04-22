@@ -20,8 +20,8 @@ package org.apache.ignite.transactions.spring;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.proxy.IgniteCacheProxy;
-import org.apache.ignite.springdata.proxy.IgniteNodeCacheProxy;
+import org.apache.ignite.facade.IgniteCacheFacade;
+import org.apache.ignite.facade.IgniteNodeCacheFacade;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericXmlApplicationContext;
 
@@ -47,8 +47,8 @@ public class GridSpringTransactionManagerSelfTest extends GridSpringTransactionM
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheProxy<Integer, String> cache() {
-        return new IgniteNodeCacheProxy<>(grid().cache(CACHE_NAME));
+    @Override public IgniteCacheFacade<Integer, String> cache() {
+        return new IgniteNodeCacheFacade<>(grid().cache(CACHE_NAME));
     }
 
     /** {@inheritDoc} */
