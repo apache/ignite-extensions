@@ -1,0 +1,141 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+#################################################################################
+#
+# You can test this workflow locally using the `act` command.
+# Please, follow the command installation guide: https://github.com/nektos/act
+#
+#
+# Execute the command below from the command line to run workflow:
+#
+# admin@workbook ignite-extensions % act --job check --eventpath release.check.workflow.event \
+#    -s GITHUB_TOKEN=[your_github_token_for_the_fork_repo]
+#
+# Use the following json-file as an event to trigger the workflow:
+#
+#  admin@workbook ignite-extensions % cat release.check.workflow.event
+#  {
+#    "action": "workflow_dispatch",
+#    "inputs": {
+#      "extension": "ignite-zookeeper-ip-finder-ext-1.0.0",
+#    }
+#  }
+#
+# The act command executes the workflow in the docker container. Some of them may require
+# the manual maven installation. Use the step below to install Maven 3.6.3 version into container.
+#
+# - name: Download Maven
+#   run: |
+#     curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+#     apt-get update
+#     apt-get -y install unzip
+#     unzip -d /usr/share maven.zip
+#     rm maven.zip
+#     ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+#     echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+#
+#################################################################################
+
+name: "Release Prepare"
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: 'The Ignite Extension to release (e.g. ignite-aws-ext-1.0.0)'
+        required: true
+
+env:
+  SERVER_URL: 'https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/'
+
+jobs:
+  prepare:
+    #if: github.repository == 'apache/ignite-extensions'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Inputs
+        shell: bash
+        # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+        run: |
+          ext=$(echo ${{ github.event.inputs.extension }} | sed -e 's/^[[:space:]]*//')
+          ext_ver=${ext##*-}
+          ext_name=${ext%-*}
+          ext_dir=modules/${ext_name#"ignite-"}
+          echo "Extension Version:     $ext_ver"
+          echo "Extension Module Name: $ext_name"
+          echo "Extension Directory:   $ext_dir"
+          echo "EXTENSION_VERSION=${ext_ver}" >> $GITHUB_ENV
+          echo "EXTENSION_NAME=${ext_name}" >> $GITHUB_ENV
+          echo "EXTENSION_DIR=${ext_dir}" >> $GITHUB_ENV
+      - name: Checkout Release Branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'release/${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}'
+      - name: Checkout Release tags
+        run: |
+          git fetch --prune --unshallow --tags
+          echo $(git tag -l)
+          echo "GIT_ROOT=$(pwd)" >> $GITHUB_ENV
+      # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
+      - name: Download Maven
+        run: |
+          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+          apt-get update
+          apt-get -y install unzip
+          unzip -d /usr/share maven.zip
+          rm maven.zip
+          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'adopt'
+      - name: Extract POM Version and Compare With Branch Version
+        shell: bash
+        run: |
+          mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.artifactId
+          ver=$(mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.version -q -DforceStdout)
+          pom_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          missmatch='true'
+          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && echo "missmatch='false'"
+          echo "Extension pom version: ${pom_ver}"
+          echo "VERSIONS_MISMATCH=${missmatch}" >> $GITHUB_ENV
+          echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
+      - name: Compare Release Versions With Branch Version
+        if: ${{ env.VERSIONS_MISMATCH == 'true' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+      # Get the RC tag reachable from the branch HEAD matching pattern.
+      - name: Extracting Release RC tag
+        run: |
+          tag_prefix=${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}-rc
+          branch_tag=$(git describe --match "${tag_prefix}*" --abbrev=0 --tags HEAD 2>/dev/null)
+          rc_tag=$(echo ${branch_tag:-${tag_prefix}0})
+          rc_tag_id=$((${rc_tag#"${tag_prefix}"} + 1))
+          new_tag=${tag_prefix}${rc_tag_id}
+          echo "New Extension RC tag: new_tag"
+          echo "EXTENSION_RC_TAG=${new_tag}" >> $GITHUB_ENV
+#      - name: Build The RC and Prepare Packages
+#        run: mvn install -pl ${{ env.EXTENSION_DIR }} -DskipTests -Pextension-release -amd
+      - name: Prepare Release Properties
+        run: |
+          mkdir ${{ env.EXTENSION_RC_TAG }}
