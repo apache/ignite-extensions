@@ -114,7 +114,7 @@ jobs:
           ver=$(mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.version -q -DforceStdout)
           pom_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
           missmatch='true'
-          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && echo "missmatch='false'"
+          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && missmatch='false'
           echo "Extension pom version: ${pom_ver}"
           echo "VERSIONS_MISMATCH=${missmatch}" >> $GITHUB_ENV
           echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
