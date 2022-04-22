@@ -68,6 +68,7 @@ jobs:
   prepare:
     #if: github.repository == 'apache/ignite-extensions'
     runs-on: ubuntu-latest
+    name: Prepare RC Distribution
     steps:
       - name: Setup Inputs
         shell: bash
@@ -93,15 +94,15 @@ jobs:
           echo $(git tag -l)
           echo "GIT_HOME=$(pwd)" >> $GITHUB_ENV
       # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
-#      - name: Download Maven
-#        run: |
-#          curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
-#          sudo apt-get update
-#          sudo apt-get -y install unzip
-#          unzip -d /usr/share maven.zip
-#          rm maven.zip
-#          ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-#          echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+      # - name: Download Maven
+      #   run: |
+      #     curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+      #     sudo apt-get update
+      #     sudo apt-get -y install unzip
+      #     unzip -d /usr/share maven.zip
+      #     rm maven.zip
+      #     ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
+      #     echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
@@ -170,10 +171,11 @@ jobs:
       - name: Zip the Distribution
         run: |
           sudo apt-get -y install zip
-          cd ${{ env.GIT_HOME }}
-          zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_DIST }}
+          cd ${{ env.EXTENSION_DIST }}/..
+          zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_RC_TAG }}
+          cd -
       - name: Upload Job Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.EXTENSION_RC_TAG }}
+          name: ${{ env.EXTENSION_RC_TAG }}.zip
           path: ${{ env.GIT_HOME }}/${{ env.EXTENSION_RC_TAG }}.zip
