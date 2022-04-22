@@ -174,6 +174,15 @@ jobs:
           cd ${{ env.EXTENSION_DIST }}/..
           zip -r ${{ env.EXTENSION_RC_TAG }}.zip ${{ env.EXTENSION_RC_TAG }}
           cd -
+      - name: Create RC tag ${{ env.EXTENSION_RC_TAG }}
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "GitHub Action"
+          git tag -a ${tag} -m "Create new RC tag: ${tag}"
+          git push origin ${branch}
+        env:
+          tag: ${{ env.EXTENSION_RC_TAG }}
+          branch: "release/${{ env.EXTENSION_NAME }}-${{ env.EXTENSION_VERSION }}"
       - name: Upload Job Artifacts
         uses: actions/upload-artifact@v3
         with:
