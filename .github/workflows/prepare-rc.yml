@@ -52,7 +52,7 @@
 #
 #################################################################################
 
-name: "Release Prepare"
+name: "Extension Release Prepare"
 
 on:
   workflow_dispatch:
