@@ -68,7 +68,7 @@ jobs:
       - name: Validate Extension Release Branch
         id: check
         run: | 
-          prefix = 'false'
+          prefix='false'
           [[ ${{ github.ref_name }} =~ ^'release\/' ]] && prefix='true'
           echo "::set-output name=isReleaseBrancht::${prefix}\n"
 
