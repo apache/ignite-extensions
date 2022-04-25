@@ -70,14 +70,15 @@ jobs:
         run: | 
           prefix='false'
           [[ ${{ github.ref_name }} =~ ^'release\/' ]] && prefix='true'
-          echo "::set-output name=isReleaseBrancht::${prefix}\n"
+          echo "Release prefix found: ${prefix}"
+          echo "::set-output name=isReleaseBranch::${prefix}"
 
       - name: Interrupt If not a Release Branch
-        if: ${{ steps.check.outputs.isReleaseBrancht == 'false' }}
+        if: ${{ steps.check.outputs.isReleaseBranch == 'false' }}
         uses: actions/github-script@v3
         with:
           script: |
-            core.setFailed('The release branch must have the \'release/\' prefix: ${{ github.ref_name }} ')
+            core.setFailed('You should run this action from the release branch with \'release/\' prefix name: ${{ github.ref_name }} ')
 
       - name: Setup Inputs
         shell: bash
@@ -136,7 +137,7 @@ jobs:
           missmatch='true'
           [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && missmatch='false'
           echo "Extension pom version: ${pom_ver}"
-          echo "::set-output name=versionMissmatch::${missmatch}\n"
+          echo "::set-output name=versionMissmatch::${missmatch}"
           echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
 
       - name: Compare Release Versions With Branch Version
