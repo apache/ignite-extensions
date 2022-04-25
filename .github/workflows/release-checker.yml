@@ -53,7 +53,7 @@
 #
 #################################################################################
 
-name: "Release Checker"
+name: "Extension Check Release Candidate"
 
 on:
   workflow_dispatch:

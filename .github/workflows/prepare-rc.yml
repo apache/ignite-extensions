@@ -36,7 +36,7 @@
 #
 #################################################################################
 
-name: "Extension Release Prepare"
+name: "Extension Prepare Release Candidate"
 
 on: workflow_dispatch
 
@@ -45,7 +45,7 @@ env:
 
 jobs:
   prepare:
-    #if: github.repository == 'apache/ignite-extensions'
+    if: github.repository == 'apache/ignite-extensions'
     runs-on: ubuntu-latest
     name: Prepare RC for `${{ github.ref_name }}`
     steps:
