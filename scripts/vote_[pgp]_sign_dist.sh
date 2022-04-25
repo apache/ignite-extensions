@@ -44,7 +44,7 @@ result="Signed OK."
 while IFS='' read -r line || [[ -n "${line}" ]]; do
     if [[ $line == *ERROR* ]]
     then
-        result="Signing failed. Please check log file: ${logname}."
+        result="Signing failed. Please check log file: ${log}."
     fi
 done < ${log}
 

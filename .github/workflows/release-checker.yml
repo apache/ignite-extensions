@@ -89,15 +89,12 @@ jobs:
           echo "EXTENSION_VERSION=${mod_ver}" >> $GITHUB_ENV
           echo "EXTENSION_NAME=${mod_name}" >> $GITHUB_ENV
           echo "EXTENSION_DIR=${mod_dir}" >> $GITHUB_ENV
+
       - name: Checkout Release Branch
         uses: actions/checkout@v3
         with:
-          ref: '${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
-      - name: Checkout Release tags
-        run: |
-          git fetch --prune --unshallow --tags
-          echo $(git tag -l)
-          echo "GIT_ROOT=$(pwd)" >> $GITHUB_ENV
+          ref: 'release/${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
+
       # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
       #- name: Download Maven
       #  run: |
@@ -108,11 +105,13 @@ jobs:
       #    rm maven.zip
       #    ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
       #    echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
           java-version: 8
           distribution: 'adopt'
+
       - name: Extract Branch POM Version and Compare
         shell: bash
         run: |
@@ -124,33 +123,39 @@ jobs:
           echo "Extension pom version: ${pom_ver}"
           echo "VERSIONS_MISMATCH=${missmatch}" >> $GITHUB_ENV
           echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
+
       - name: Compare Release Versions With Branch Version
         if: ${{ env.VERSIONS_MISMATCH == 'true' }}
         uses: actions/github-script@v3
         with:
           script: |
             core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+
       # The RC tag must points to the last commit in the release branch.
       - name: Extracting RC tag
         run: |
           rc_tag=$(git describe --tags --exact-match --abbrev=0)
           echo "Extension RC tag: ${rc_tag}"
           echo "EXTENSION_RC_TAG=${rc_tag}" >> $GITHUB_ENV
+
       - name: Download Binary and Sources
         run: |
           wget --recursive --no-parent --no-directories --tries=3 --retry-on-http-error=429,503,504 --accept '.zip,.asc,.sha512' \
             --execute robots=off "${{ env.SERVER_URL }}${{ env.EXTENSION_RC_TAG }}/" -P ${{ env.EXTENSION_RC_TAG }}
           ls ${{ env.EXTENSION_RC_TAG }}
+
       - name: Validate Binary and Sources Checksums
         run: |
           cd ${{ env.EXTENSION_RC_TAG }}
           sha512sum -c *.sha512
+
       - name: Validate PGP Signatures
         run: |
           apt-get -y install gpg
           wget https://dist.apache.org/repos/dist/release/ignite/KEYS
           gpg --import KEYS
           for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
+
       - name: Extenstion Sources Compilation with Checkstyle
         run: |
           cd ${{ env.GIT_ROOT }}

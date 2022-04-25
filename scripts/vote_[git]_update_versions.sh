@@ -18,7 +18,7 @@
 
 #
 # Run from the Apache Ignite sources root directory.
-# Usage: ./scripts/update-versions 2.13.0 modules/zookeeper-ip-finder-ext/ 1.0.0
+# Usage: ./scripts/update-versions [2.13.0] modules/zookeeper-ip-finder-ext/ 1.0.0
 #
 
 if [ $# -eq 0 ]
@@ -36,6 +36,7 @@ echo "==========================================================================
 echo "Updating Apache Ignite parent version to $1 with Maven..."
 mvn versions:update-parent -DparentVersion=$1 -DgenerateBackupPoms=false
 
+### Use changing version command from the extension directory.  ###
 cd ${git_root}/$2
 
 echo "============================================================================="

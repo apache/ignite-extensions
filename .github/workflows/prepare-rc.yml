@@ -21,22 +21,6 @@
 # You can test this workflow locally using the `act` command.
 # Please, follow the command installation guide: https://github.com/nektos/act
 #
-#
-# Execute the command below from the command line to run workflow:
-#
-# admin@workbook ignite-extensions % act --job prepare --eventpath release.prepare.workflow.event \
-#    -s GITHUB_TOKEN=[your_github_token_for_the_fork_repo]
-#
-# Use the following json-file as an event to trigger the workflow:
-#
-#  admin@workbook ignite-extensions % cat release.prepare.workflow.event
-#  {
-#    "action": "workflow_dispatch",
-#    "inputs": {
-#      "extension": "ignite-zookeeper-ip-finder-ext-1.0.0",
-#    }
-#  }
-#
 # The act command executes the workflow in the docker container. Some of them may require
 # the manual maven installation. Use the step below to install Maven 3.6.3 version into container.
 #
