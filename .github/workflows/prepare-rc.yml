@@ -70,7 +70,6 @@ jobs:
         run: | 
           prefix='false'
           [[ ${{ github.ref_name }} =~ ^'release\/' ]] && prefix='true'
-          echo "Release prefix found: ${prefix}"
           echo "::set-output name=isReleaseBranch::${prefix}"
 
       - name: Interrupt If not a Release Branch
@@ -78,7 +77,7 @@ jobs:
         uses: actions/github-script@v3
         with:
           script: |
-            core.setFailed('You should run this action from the release branch with \'release/\' prefix name: ${{ github.ref_name }} ')
+            core.setFailed("You should run this action from the release branch which has the 'release/' prefix: ${{ github.ref_name }} ")
 
       - name: Setup Inputs
         shell: bash
