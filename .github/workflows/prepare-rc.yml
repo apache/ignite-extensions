@@ -91,17 +91,6 @@ jobs:
           echo $(git tag -l)
           echo "GIT_HOME=$(pwd)" >> $GITHUB_ENV
 
-      # This is a workaround for the Maven installation on the act image (official GitHub runners have maven preinstalled)
-      # - name: Download Maven
-      #   run: |
-      #     curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
-      #     sudo apt-get update
-      #     sudo apt-get -y install unzip
-      #     unzip -d /usr/share maven.zip
-      #     rm maven.zip
-      #     ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-      #     echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
-
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
