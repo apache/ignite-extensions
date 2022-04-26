@@ -77,8 +77,10 @@ performance-statistics-tool/print-statistics.sh --help
 
 See the output example below:
 
+----
     {"op":"CACHE_GET","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":64992213}
     {"op":"CACHE_PUT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":-1809642915,"startTime":1616837094237,"duration":879869}
     {"op":"CACHE_GET_AND_PUT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheId":1328364293,"startTime":1616837094248,"duration":17186240}
     {"op":"TX_COMMIT","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","cacheIds":[-1809642915],"startTime":1616837094172,"duration":184887787}
     {"op":"QUERY","nodeId":"955130d1-5218-4e46-87f6-62755e92e9b4","type":"SQL_FIELDS","text":"create table Person (id int, val varchar, primary key (id))","id":0,"startTime":1616837094143,"duration":258741595,"success":true}
+----

@@ -218,4 +218,4 @@ strm.close();
 ----
 --
 
-For the detailed information on Kafka consumer properties, refer http://kafka.apache.org/documentation.html
+For the detailed information on Kafka consumer properties, refer to http://kafka.apache.org/documentation.html

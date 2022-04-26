@@ -17,6 +17,7 @@
 WARNING: CDC is an experimental feature. API or design architecture might be changed.
 
 == Overview
+
 link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[Change Data Capture Extension] module provides two ways to set up cross cluster replication based on CDC.
 
 . link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/IgniteToIgniteCdcStreamer.java[Ignite2IgniteCdcStreamer] - streams changes to destination cluster using client node.
@@ -31,7 +32,7 @@ After connection is established, all changes captured by CDC will be replicated 
 
 NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
 
-image:../../assets/images/integrations/CDC-ignite2ignite.svg[]
+image:images/CDC-design.svg[]
 
 == Configuration
 
@@ -60,8 +61,6 @@ This way to replicate changes between clusters requires setting up two applicati
 . `kafka-to-ignite.sh` that will read changes from Kafka topic and then write them to destination cluster.
 
 NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
-
-image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 
 === IgniteToKafkaCdcStreamer Configuration
 
