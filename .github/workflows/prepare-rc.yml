@@ -178,6 +178,7 @@ jobs:
 
       - name: Configure Git for Release
         run: |
+          cd ${{ env.EXTENSION_DIST }}/git
           git config user.name github-actions
           git config user.email github-actions@github.com
           git fetch --prune --unshallow --tags
