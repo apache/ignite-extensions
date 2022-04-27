@@ -22,38 +22,13 @@
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <id>bin</id>
-
     <includeBaseDirectory>false</includeBaseDirectory>
 
     <formats>
         <format>zip</format>
     </formats>
 
-    <fileSets>
-        <fileSet>
-            <directory>${project.build.directory}</directory>
-            <outputDirectory>${project.artifactId}/libs/optional/${project.artifactId}</outputDirectory>
-            <includes>
-                <include>${project.build.finalName}.${project.packaging}</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.build.directory}/libs</directory>
-            <outputDirectory>${project.artifactId}/libs/optional/${project.artifactId}</outputDirectory>
-        </fileSet>
-        <!-- license, dependencies, notice, etc. calculated at build time -->
-        <fileSet>
-            <directory>${project.build.directory}/maven-shared-archive-resources/META-INF</directory>
-            <outputDirectory>${project.artifactId}</outputDirectory>
-        </fileSet>
-        <!-- readme, release_notes etc. -->
-        <fileSet>
-            <directory>${project.basedir}</directory>
-            <outputDirectory>${project.artifactId}</outputDirectory>
-            <includes>
-                <include>RELEASE_NOTES*</include>
-                <include>README*</include>
-            </includes>
-        </fileSet>
-    </fileSets>
+    <componentDescriptors>
+        <componentDescriptor>../../assembly/bin-component-shared.xml</componentDescriptor>
+    </componentDescriptors>
 </assembly>
