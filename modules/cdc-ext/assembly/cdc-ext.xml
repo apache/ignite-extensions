@@ -45,5 +45,19 @@
             <directory>${basedir}/bin</directory>
             <outputDirectory>${project.artifactId}/bin</outputDirectory>
         </fileSet>
+        <!-- license, dependencies, notice, etc. calculated at build time -->
+        <fileSet>
+            <directory>${project.build.directory}/maven-shared-archive-resources/META-INF</directory>
+            <outputDirectory>${project.artifactId}</outputDirectory>
+        </fileSet>
+        <!-- readme, release_notes etc. -->
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>${project.artifactId}</outputDirectory>
+            <includes>
+                <include>RELEASE_NOTES*</include>
+                <include>README*</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>
