@@ -64,6 +64,12 @@ jobs:
         with:
           ref: 'release/${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
 
+      - name: Checkout Release tags
+        run: |
+          git fetch --prune --unshallow --tags
+          echo $(git tag -l)
+          echo "GIT_ROOT=$(pwd)" >> $GITHUB_ENV
+
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
@@ -117,4 +123,4 @@ jobs:
       - name: Extenstion Sources Compilation with Checkstyle
         run: |
           cd ${{ env.GIT_ROOT }}
-          mvn install -pl ${{ env.EXTENSION_DIR }} -Pcheckstyle -DskipTests -amd -B -V
+          mvn install -p ${{ env.EXTENSION_DIR }} -am -Pcheckstyle -DskipTests -B -V

@@ -86,7 +86,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Check there is no SNAPSHOT versions
-        run: mvn -pl ${{ env.EXTENSION_DIR }} -amd org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion
+        run: mvn -f ${{ env.EXTENSION_DIR }} -amd org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion
 
       - name: Extract POM Version and Compare With Branch Version
         id: pom
@@ -139,7 +139,7 @@ jobs:
       - name: Build Java and Prepare Packages
         run: |
           cd ${{ env.GIT_HOME }}/${{ env.EXTENSION_DIR }}
-          mvn deploy -amd -DskipTests -Pextension-release -DuniqueVersion=false ${toLocalRepo} 
+          mvn deploy -am -DskipTests -Pextension-release -DuniqueVersion=false ${toLocalRepo} 
           cd -
         env:
           toLocalRepo: '-D altDeploymentRepository=local::default::file:${{ env.EXTENSION_DIST }}/maven'
