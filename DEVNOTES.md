@@ -59,7 +59,8 @@ of the Apache Software Foundation release process for better understanding the w
    scripts/update-versions.sh [2.13.0] modules/asw-ext/ 1.0.0
    ```
   
-- Run the [Extension Prepare Release Candidate][7] GitHub Action using the release branch as job source.
+- Run the [Extension Prepare Release Candidate][7] GitHub Action using the release branch as job source 
+this job also create a tag which is pointed to the last commit in the release branch.
 - Download the `zip` artifact containing all the stuff required for signing release artifacts.
 - Run the `vote_[mvn][pgp]_jar_deploy.sh` to sign and deploy extensions jar's to Maven Central.
 - Run the `vote_[pgp]_sign_dist.sh` to sign the extension binary and source zip-archives.

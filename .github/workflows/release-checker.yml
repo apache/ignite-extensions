@@ -22,6 +22,11 @@
 # Please, follow the command installation guide: https://github.com/nektos/act
 #
 
+#
+# This action will check that an extension release candidate is ready for the vote
+# (verify checksums, verify the release signature, rc tag is exist etc.).
+#
+
 name: "Extension Check Release Candidate"
 
 on:

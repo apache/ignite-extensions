@@ -51,7 +51,7 @@
         <!-- license, dependencies, notice, etc. calculated at build time -->
         <fileSet>
             <directory>${project.build.directory}/maven-shared-archive-resources/META-INF</directory>
-            <outputDirectory>modules/${project.artifactId}</outputDirectory>
+            <outputDirectory/>
         </fileSet>
         <!-- parent pom-->
         <fileSet>

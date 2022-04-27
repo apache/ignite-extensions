@@ -17,6 +17,13 @@
 # under the License.
 #
 
+#
+# This action will produce a zip-archive with all the stuff required for signing and
+# deploying an extension release candidate maven artifacts, extension sources and
+# binary zip-archive (if applicable). It will also create a rc-tag pointed to the last
+# commit in the release branch.
+#
+
 name: "Extension Prepare Release Candidate"
 
 on: workflow_dispatch
