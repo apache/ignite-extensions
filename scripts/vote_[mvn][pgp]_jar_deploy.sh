@@ -85,4 +85,3 @@ _logger "=======================================================================
 _logger "Maven staging should be created"
 _logger "Please check results at"
 _logger "https://repository.apache.org/#stagingRepositories"
-_logger "Don't forget to close staging with proper comment"
