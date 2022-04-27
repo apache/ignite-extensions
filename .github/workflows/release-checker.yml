@@ -16,11 +16,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-#################################################################################
-#
-# You can test this workflow locally using the `act` command.
-# Please, follow the command installation guide: https://github.com/nektos/act
-#
 
 #
 # This action will check that an extension release candidate is ready for the vote
