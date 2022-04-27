@@ -193,4 +193,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.EXTENSION_RC_TAG }}.zip
-          path: ${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}.zip
+          path: ${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}
