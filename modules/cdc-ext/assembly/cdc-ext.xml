@@ -32,18 +32,18 @@
     <fileSets>
         <fileSet>
             <directory>${project.build.directory}</directory>
-            <outputDirectory>/libs/optional/ignite-cdc-ext</outputDirectory>
+            <outputDirectory>${project.artifactId}/libs/optional/${project.artifactId}</outputDirectory>
             <includes>
                 <include>${project.build.finalName}.${project.packaging}</include>
             </includes>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/libs</directory>
-            <outputDirectory>/libs/optional/ignite-cdc-ext</outputDirectory>
+            <outputDirectory>${project.artifactId}/libs/optional/${project.artifactId}</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${basedir}/bin</directory>
-            <outputDirectory>/bin</outputDirectory>
+            <outputDirectory>${project.artifactId}/bin</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>
