@@ -16,25 +16,6 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-#################################################################################
-#
-# You can test this workflow locally using the `act` command.
-# Please, follow the command installation guide: https://github.com/nektos/act
-#
-# The act command executes the workflow in the docker container. Some of them may require
-# the manual maven installation. Use the step below to install Maven 3.6.3 version into container.
-#
-# - name: Download Maven
-#   run: |
-#     curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
-#     apt-get update
-#     apt-get -y install unzip
-#     unzip -d /usr/share maven.zip
-#     rm maven.zip
-#     ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-#     echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
-#
-#################################################################################
 
 name: "Extension Prepare Release Candidate"
 

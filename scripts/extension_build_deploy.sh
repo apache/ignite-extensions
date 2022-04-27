@@ -27,18 +27,22 @@ set -o functrace
 #                                  README                                       #
 #################################################################################
 #
-# Run from the Apache Ignite Extensions root directory.
+# This script is used to build an extension locally on developers environment and
+# upload everything to the Maven Central Staging repository and distribution archive.
+#
+# Run script from the Apache Ignite Extensions root directory.
 # Usage: ./scripts/extension-deploy.sh modules/zookeeper-ip-finder-ext/
 #
 # PREREQUISITES:
-# - `apache.releases.https` user name and password exist (see example of `settings.xml` in the scripts directory)
+# - copy `settings.xml` template from scripts directory
+# - `apache.releases.https` username/password pair exists
 # - pgp signature configured
 # - export GPG_TTY=$(tty)
 #
 # SCRIPT EXECUTION:
 #
 # The following conditions must be met in order to complete the deploy successfully:
-# - git branch `ignite-zookeeper-ip-finder-ext-1.0.0` created;
+# - git branch `release/ignite-zookeeper-ip-finder-ext-1.0.0` created;
 # - there is no SNAPSHOT versions in the release branch (dependencies and extension version);
 # - the RC tag `ignite-zookeeper-ip-finder-ext-1.0.0-rc1` is added to the last commit;
 # - there is no uncommitted changes in the release branch;
