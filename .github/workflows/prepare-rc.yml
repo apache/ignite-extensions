@@ -86,7 +86,7 @@ jobs:
           distribution: 'adopt'
 
       - name: Check there is no SNAPSHOT versions
-        run: mvn -f ${{ env.EXTENSION_DIR }} -amd org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion
+        run: mvn -f ${{ env.EXTENSION_DIR }} -amd org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion,requireReleaseDeps
 
       - name: Extract POM Version and Compare With Branch Version
         id: pom
