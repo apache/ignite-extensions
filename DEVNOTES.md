@@ -1,16 +1,16 @@
-## NOTES
+# NOTES
 
 ---
 
-### Build Instructions
+## Build Instructions
 
-#### Build all Extensions
+### Build all Extensions
 
 ```shell
 mvn clean install -DskipTests -Pcheckstyle
 ```
 
-#### Build an Extension
+### Build an Extension
 
 ```shell
 mvn clean install -f modules/sptring-boot-ext -Pcheckstyle
@@ -22,9 +22,9 @@ OR
 mvn clean install -pl :ignite-aws-ext -am -Pcheckstyle
 ```
 
-### Release Instructions
+## Release Instructions
 
-#### Prerequisites
+### Prerequisites
 
 - Personal PGP Key Pair (see [Generating a Key Pair][1])  
 - GnuGP installed (see [Installing GnuPG][2])
@@ -41,18 +41,18 @@ of the Apache Software Foundation release process for better understanding the w
 [5]: <https://infra.apache.org/release-publishing.html#distribution> "Apache Software Foundation the Release Publishing Guide"
 [6]: <https://infra.apache.org/publishing-maven-artifacts.html> "Publishing Maven Releases to Maven Central Repository"
 
-#### Prepare a new Release Candidate
+### Prepare a new Release Candidate
 
 - Create and push an extension release branch with the following branch name format: `release/[extension-project-name]-[extension-version]`.
 
    ```shell
-   git remote set-url origin https://gitbox.apache.org/repos/asf/ignite.git
+   git remote set-url origin https://github.com/apache/ignite-extensions.git
    git checkout master
-   git checkout -b releae/ignite-aws-ext-1.0.0
-   git push origin releae/ignite-aws-ext-1.0.0
+   git checkout -b release/ignite-aws-ext-1.0.0
+   git push origin release/ignite-aws-ext-1.0.0
    ```
 
-- Update Extension parent reference and module versions using the `scripts/update-versions.sh`.
+- Update Extension parent reference version and the extension module version using the `scripts/update-versions.sh`.
 
    ```shell
    # Usage: scripts/update-versions.sh [<ignite-parent-version>] <module-path> <module-release-version>
@@ -60,8 +60,9 @@ of the Apache Software Foundation release process for better understanding the w
    ```
   
 - Run the [Extension Prepare Release Candidate][7] GitHub Action using the release branch as job source 
-this job also create a tag which is pointed to the last commit in the release branch.
-- Download the `zip` artifact containing all the stuff required for signing release artifacts.
+this job will also create a rc-tag which points to the last commit in the release branch.
+- From the execution job result download the `zip` artifact containing all the stuff required for 
+signing and deploying release artifacts.
 - Run the `vote_[mvn][pgp]_jar_deploy.sh` to sign and deploy extensions jar's to Maven Central.
 - Run the `vote_[pgp]_sign_dist.sh` to sign the extension binary and source zip-archives.
 - Run the `vote_[svn]_upload_dist.sh` to upload signed zip-archives.
@@ -71,9 +72,9 @@ this job also create a tag which is pointed to the last commit in the release br
 [7]: <https://github.com/apache/ignite-extensions/actions/workflows/prepare-rc.yml> "Extension Prepare Release Candidate"
 [8]: <https://github.com/apache/ignite-extensions/actions/workflows/release-checker.yml> "Extension Check Release Candidate"
 
-### Development Instructions
+## Development Instructions
 
-#### Running GitHub Actions Locally
+### Running GitHub Actions Locally
 
 Configure the `act` command line utility. When you run `act` it reads projects GitHub Actions 
 from `.github/workflows/` and determines the set of actions that need to be run on Docker image. 
@@ -81,7 +82,7 @@ from `.github/workflows/` and determines the set of actions that need to be run 
 Use the following installation guide to install the `act` command:
 https://github.com/nektos/act/blob/master/README.md#installation
 
-##### Run
+#### Run
 
 ```shell
 act --job check --eventpath event.json -s GITHUB_TOKEN=[your_fork_github_token]
@@ -99,7 +100,7 @@ The `event.json`:
 }
 ```
 
-##### Troubleshooting
+#### Troubleshooting
 
 The `act` command executes the workflow in a docker container. Some docker images may not have 
 the `mvn` command pre-installed. Thus, you have to install it in the docker container manually
