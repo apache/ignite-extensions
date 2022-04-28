@@ -115,7 +115,6 @@ jobs:
 
       - name: Validate PGP Signatures
         run: |
-          apt-get -y install gpg
           wget https://dist.apache.org/repos/dist/release/ignite/KEYS
           gpg --import KEYS
           for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
@@ -123,4 +122,4 @@ jobs:
       - name: Extenstion Sources Compilation with Checkstyle
         run: |
           cd ${{ env.GIT_ROOT }}
-          mvn install -p ${{ env.EXTENSION_DIR }} -am -Pcheckstyle -DskipTests -B -V
+          mvn install -f ${{ env.EXTENSION_DIR }} -am -Pcheckstyle -DskipTests -B -V

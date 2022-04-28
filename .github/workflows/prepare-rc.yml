@@ -85,9 +85,6 @@ jobs:
           java-version: 8
           distribution: 'adopt'
 
-      - name: Check there is no SNAPSHOT versions
-        run: mvn -f ${{ env.EXTENSION_DIR }} -amd org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion,requireReleaseDeps
-
       - name: Extract POM Version and Compare With Branch Version
         id: pom
         shell: bash
@@ -144,6 +141,9 @@ jobs:
         env:
           toLocalRepo: '-D altDeploymentRepository=local::default::file:${{ env.EXTENSION_DIST }}/maven'
 
+      - name: Check there is no SNAPSHOT versions
+        run: mvn -f ${{ env.EXTENSION_DIR }} -am org.apache.maven.plugins:maven-enforcer-plugin:3.0.0-M3:enforce -Drules=requireReleaseVersion,requireReleaseDeps
+
       - name: Copy Binary and Sources
         run: |
           svn_dir=${{ env.EXTENSION_DIST }}/svn/vote
@@ -158,6 +158,7 @@ jobs:
           cd ${{ env.GIT_HOME }}
           cp -v ./scripts/vote* ${{ env.EXTENSION_DIST }}
           cp -v ./scripts/settings.xml ${{ env.EXTENSION_DIST }}
+          chmod +x ${{ env.EXTENSION_DIST }}/*.sh
 
       - name: Create RC tag `${{ env.EXTENSION_RC_TAG }}`
         uses: actions/github-script@v5
