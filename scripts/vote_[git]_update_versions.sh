@@ -17,9 +17,8 @@
 #
 
 #
-# Updates Ignite version in Java pom files, .NET AssemblyInfo files, C++ configure files.
-# Run in Ignite sources root directory.
-# Usage: ./update-versions 2.6.0
+# Run from the Apache Ignite sources root directory.
+# Usage: ./scripts/update-versions [2.13.0] modules/zookeeper-ip-finder-ext/ 1.0.0
 #
 
 if [ $# -eq 0 ]
@@ -28,8 +27,18 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
-echo Updating Java versions to $1 with Maven...
-mvn versions:set -DnewVersion=$1 -Pall-java,all-scala,all-other -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false
+git_root=$(pwd)
+module_name="ignite-$(sed 's/\/$//' <<< $2 |  cut -d '/' -f2)"
 
-echo Updating .NET & C++ versions to $1 with Maven...
-mvn validate -P update-versions -D new.ignite.version=$1
+cd parent-internal
+
+echo "============================================================================="
+echo "Updating Apache Ignite parent version to $1 with Maven..."
+mvn versions:update-parent -DparentVersion=$1 -DgenerateBackupPoms=false
+
+### Use changing version command from the extension directory.  ###
+cd ${git_root}/$2
+
+echo "============================================================================="
+echo "Updating Extension ${module_name} version to $3 with Maven..."
+mvn versions:set -DnewVersion=$3 -DgenerateBackupPoms=false -DgroupId=* -DartifactId=* -DoldVersion=* -DprocessDependencies=false

@@ -127,28 +127,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>gce-ext</id>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>assembly/gce-ext.xml</descriptor>
-                            </descriptors>
-                            <finalName>ignite-gce-ext</finalName>
-                            <attach>false</attach>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

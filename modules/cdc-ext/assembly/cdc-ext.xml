@@ -21,29 +21,21 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>cdc-ext</id>
-
+    <id>bin</id>
     <includeBaseDirectory>false</includeBaseDirectory>
 
     <formats>
         <format>zip</format>
     </formats>
 
+    <componentDescriptors>
+        <componentDescriptor>../../assembly/bin-component-shared.xml</componentDescriptor>
+    </componentDescriptors>
+
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}</directory>
-            <outputDirectory>/libs/optional/ignite-cdc-ext</outputDirectory>
-            <includes>
-                <include>${project.build.finalName}.${project.packaging}</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.build.directory}/libs</directory>
-            <outputDirectory>/libs/optional/ignite-cdc-ext</outputDirectory>
-        </fileSet>
-        <fileSet>
             <directory>${basedir}/bin</directory>
-            <outputDirectory>/bin</outputDirectory>
+            <outputDirectory>${project.artifactId}/bin</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>

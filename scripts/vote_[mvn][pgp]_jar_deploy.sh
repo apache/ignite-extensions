@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,27 +17,31 @@
 # limitations under the License.
 #
 
-module_version="1.0.0"
-dir_name="release-module-name" #enter module name to release.
-module_name="ignite-${dir_name}"
-dir="../modules/${dir_name}"
+chmod +x release.properties
+. ./release.properties
+
+function _logger () {
+  echo -e "$@\r" | tee -a $log
+}
 
 server_url="https://repository.apache.org/service/local/staging/deploy/maven2"
 server_id="apache.releases.https"
 
-echo "Uploading $module_name to staging"
-
 now=$(date +'%H%M%S')
+log="vote_[mvn][pgp]_deploy_${now}.log"
 
-main_file=$(find $dir/target -name "${module_name}-${module_version}.jar")
-pom=$(find $dir -name "pom-installed.xml")
-javadoc=$(find $dir/target -name "${module_name}-${module_version}-javadoc.jar")
-sources=$(find $dir/target -name "${module_name}-${module_version}-sources.jar")
-tests=$(find $dir -name "${module_name}-${module_version}-tests.jar")
+_logger "============================================================================="
+_logger "Preparing Maven Upload ${EXTENSION_RC_TAG}"
+
+dir="./maven/org/apache/ignite"
+
+main_file=$(find $dir -name "${EXTENSION_NAME}-${EXTENSION_VERSION}.jar")
+pom=$(find $dir -name "${EXTENSION_NAME}-${EXTENSION_VERSION}.pom")
+javadoc=$(find $dir -name "${EXTENSION_NAME}-${EXTENSION_VERSION}-javadoc.jar")
+sources=$(find $dir -name "${EXTENSION_NAME}-${EXTENSION_VERSION}-sources.jar")
+tests=$(find $dir -name "${EXTENSION_NAME}-${EXTENSION_VERSION}-tests.jar")
 
 adds=""
-
-echo "Uploading ${dir}."
 
 if [[ $javadoc == *javadoc* ]]
 then
@@ -59,26 +64,24 @@ then
 	adds="-Dpackaging=pom"
 fi
 
-echo "Directory: $dir"
-echo "File: $main_file"
-echo "Adds: $adds"
+_logger "Directory: $dir"
+_logger "File: $main_file"
+_logger "Adds: $adds"
 
-mvn gpg:sign-and-deploy-file -Papache_staging -Dfile=$main_file -Durl=$server_url -DrepositoryId=$server_id -DretryFailedDeploymentCount=10 -DpomFile=$pom ${adds} --settings ./settings.xml
-
-result="Uploaded"
+mvn gpg:sign-and-deploy-file -Pgpg -Dfile=$main_file -Durl=$server_url -DrepositoryId=$server_id \
+  -DretryFailedDeploymentCount=10 -DpomFile=$pom ${adds} --settings ./settings.xml | tee -a ${log}
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]
     then
-        result="Uploading failed. Please check log file: ${logname}."
+        result="Uploading failed. Please check log file: ${log}."
     fi
-done < ./$logname
+done < ${log}
 
-echo $result
+_logger "$(result:-"Uploaded")"
 
-echo " "
-echo "======================================================"
-echo "Maven staging should be created"
-echo "Please check results at"
-echo "https://repository.apache.org/#stagingRepositories"
-echo "Don't forget to close staging with proper comment"
+_logger " "
+_logger "============================================================================="
+_logger "Maven staging should be created"
+_logger "Please check results at"
+_logger "https://repository.apache.org/#stagingRepositories"

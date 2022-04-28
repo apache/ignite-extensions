@@ -125,4 +125,78 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>extension-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>source-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                    <descriptors>
+                                        <descriptor>../../assembly/source-release.xml</descriptor>
+                                    </descriptors>
+                                    <finalName>ignite-${project.projectDirectory.name}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>binary-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptorSourceDirectory>${project.basedir}/assembly</descriptorSourceDirectory>
+                                    <!-- Assembly id will be attached to the final name in favor the release name. -->
+                                    <finalName>${project.artifactId}</finalName>
+                                    <ignoreMissingDescriptor>true</ignoreMissingDescriptor>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <inherited>true</inherited>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <!-- We want to deploy the artifact to a staging location. -->
+                            <updateReleaseInfo>true</updateReleaseInfo>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.nicoulaj.maven.plugins</groupId>
+                        <artifactId>checksum-maven-plugin</artifactId>
+                        <version>1.10</version>
+                        <executions>
+                            <execution>
+                                <id>checksum</id>
+                                <goals>
+                                    <goal>artifacts</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <algorithms>
+                                <algorithm>SHA-512</algorithm>
+                            </algorithms>
+                            <appendFilename>true</appendFilename>
+                            <excludeMainArtifact>true</excludeMainArtifact>
+                            <failIfNoFiles>false</failIfNoFiles>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
