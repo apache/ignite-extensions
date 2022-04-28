@@ -146,7 +146,8 @@
                                     <descriptors>
                                         <descriptor>../../assembly/source-release.xml</descriptor>
                                     </descriptors>
-                                    <finalName>ignite-${project.projectDirectory.name}</finalName>
+                                    <finalName>ignite-${project.projectDirectory.name}-src</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
                             <execution>
