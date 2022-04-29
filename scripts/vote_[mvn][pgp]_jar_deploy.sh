@@ -68,8 +68,12 @@ _logger "Directory: $dir"
 _logger "File: $main_file"
 _logger "Adds: $adds"
 
+export GPG_TTY=$(tty)
+
 mvn gpg:sign-and-deploy-file -Pgpg -Dfile=$main_file -Durl=$server_url -DrepositoryId=$server_id \
-  -DretryFailedDeploymentCount=10 -DpomFile=$pom ${adds} --settings ./settings.xml | tee -a ${log}
+  -DretryFailedDeploymentCount=10 -DpomFile=$pom ${adds} | tee -a ${log}
+
+result="Uploaded"
 
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line == *ERROR* ]]
@@ -78,7 +82,7 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
     fi
 done < ${log}
 
-_logger "$(result:-"Uploaded")"
+_logger ${result}
 
 _logger " "
 _logger "============================================================================="
