@@ -41,6 +41,7 @@ jobs:
   check:
     if: github.repository == 'apache/ignite-extensions'
     runs-on: ubuntu-latest
+    name: Check RC `${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}`
     steps:
       - name: Setup Inputs
         id: vars
