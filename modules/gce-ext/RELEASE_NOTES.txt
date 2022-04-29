@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite GCE Module 1.0.0
+------------------------------
+
+* Initial release of the Apache Ignite GCE module that provides Google Cloud Storage based implementations of IP finder for TCP discovery.

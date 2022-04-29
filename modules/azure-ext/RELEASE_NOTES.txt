@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Azure Module 1.0.0
+--------------------------------
+
+* Initial release of the Apache Ignite Azure module that provides Azure Blob Storage based implementation of IP finder for TCP discovery.
