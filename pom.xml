@@ -54,6 +54,7 @@
         <module>modules/gce-ext</module>
         <module>modules/zookeeper-ip-finder-ext</module>
         <module>modules/topology-validator-ext</module>
+        <module>modules/hibernate-ext</module>
     </modules>
 
     <profiles>
