@@ -56,14 +56,14 @@ import org.hibernate.cache.spi.QueryResultsRegion;
  * values. For this reason, the query cache should always be used in conjunction with
  * the second-level cache for those entities expected to be cached as part of a query result cache
  */
-class HibernateQueryResultsRegion extends HibernateGeneralDataRegion implements QueryResultsRegion {
+public class HibernateQueryResultsRegion extends HibernateGeneralDataRegion implements QueryResultsRegion {
     /**
      * @param factory Region factory.
      * @param name Region name.
      * @param ignite Grid.
      * @param cache Region cache.
      */
-    HibernateQueryResultsRegion(HibernateRegionFactory factory, String name,
+    public HibernateQueryResultsRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, HibernateCacheProxy cache) {
         super(factory, name, ignite, cache);
     }

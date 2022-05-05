@@ -37,15 +37,12 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistryBuilder;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
 import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
@@ -112,7 +109,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(cacheName);
 
@@ -135,7 +132,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         cfg.addAnnotatedClass(Entity3.class);
         cfg.addAnnotatedClass(Entity4.class);
 
-        cfg.setProperty(DFLT_ACCESS_TYPE_PROPERTY, AccessType.NONSTRICT_READ_WRITE.name());
+        cfg.setProperty(HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY, AccessType.NONSTRICT_READ_WRITE.name());
 
         cfg.setProperty(HBM2DDL_AUTO, "create");
 
@@ -149,7 +146,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
+        cfg.setProperty(HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
@@ -268,12 +265,13 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     private SessionFactory startHibernate(String igniteInstanceName) {
         Configuration cfg = hibernateConfiguration(igniteInstanceName);
 
-        ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", CONNECTION_URL);
         builder.applySetting("hibernate.show_sql", false);
+        builder.applySettings(cfg.getProperties());
 
-        return cfg.buildSessionFactory(builder.buildServiceRegistry());
+        return cfg.buildSessionFactory(builder.build());
     }
 
     /**

@@ -50,5 +50,5 @@ import org.junit.runners.Suite;
 
     CacheHibernateStoreFactorySelfTest.class
 })
-public class IgniteHibernateTestSuite {
+public class IgniteHibernate5TestSuite {
 }

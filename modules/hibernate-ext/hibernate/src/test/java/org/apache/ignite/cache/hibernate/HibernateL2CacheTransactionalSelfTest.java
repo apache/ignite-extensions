@@ -26,14 +26,14 @@ import org.apache.commons.dbcp.managed.BasicManagedDataSource;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.h2.jdbcx.JdbcDataSource;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.engine.transaction.internal.jta.JtaTransactionFactory;
-import org.hibernate.engine.transaction.spi.TransactionFactory;
-import org.hibernate.service.ServiceRegistryBuilder;
-import org.hibernate.service.jdbc.connections.internal.DatasourceConnectionProviderImpl;
-import org.hibernate.service.jdbc.connections.spi.ConnectionProvider;
-import org.hibernate.service.jta.platform.internal.AbstractJtaPlatform;
-import org.hibernate.service.jta.platform.spi.JtaPlatform;
+import org.hibernate.cfg.Environment;
+import org.hibernate.engine.jdbc.connections.internal.DatasourceConnectionProviderImpl;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
+import org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatform;
+import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
+import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.jotm.Jotm;
 import org.objectweb.jotm.rmi.RmiLocalConfiguration;
@@ -109,8 +109,8 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected ServiceRegistryBuilder registryBuilder() {
-        ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+    @Nullable @Override protected StandardServiceRegistryBuilder registryBuilder() {
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
         DatasourceConnectionProviderImpl connProvider = new DatasourceConnectionProviderImpl();
 
@@ -134,7 +134,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
         builder.addService(JtaPlatform.class, new TestJtaPlatform());
 
-        builder.addService(TransactionFactory.class, new JtaTransactionFactory());
+        builder.applySetting(Environment.TRANSACTION_COORDINATOR_STRATEGY, JtaTransactionCoordinatorBuilderImpl.class.getName());
 
         return builder;
     }

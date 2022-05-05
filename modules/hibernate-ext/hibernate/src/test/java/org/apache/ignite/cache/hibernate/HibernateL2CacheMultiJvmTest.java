@@ -34,10 +34,9 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -222,36 +221,26 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
         IgniteLogger log;
 
         /**
-         * @param igniteInstanceName Name of the grid providing caches.
+         * @param nodeName Name of the grid providing caches.
          * @return Session factory.
          */
-        SessionFactory startHibernate(String igniteInstanceName) {
-            log.info("Start hibernate on node: " + igniteInstanceName);
+        SessionFactory startHibernate(String nodeName) {
+            log.info("Start hibernate on node: " + nodeName);
 
-            Configuration cfg = hibernateConfiguration(igniteInstanceName);
+            StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
-            ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+            for (Map.Entry<String, String> e : hibernateProperties(nodeName, NONSTRICT_READ_WRITE.name()).entrySet())
+                builder.applySetting(e.getKey(), e.getValue());
 
             builder.applySetting("hibernate.connection.url", CONNECTION_URL);
 
-            return cfg.buildSessionFactory(builder.buildServiceRegistry());
-        }
+            MetadataSources metadataSources = new MetadataSources(builder.build());
 
-        /**
-         * @param nodeName Ignite instance name.
-         * @return Hibernate configuration.
-         */
-        private Configuration hibernateConfiguration(String nodeName) {
-            Configuration cfg = new Configuration();
+            metadataSources.addAnnotatedClass(Entity1.class);
+            metadataSources.addAnnotatedClass(Entity2.class);
+            metadataSources.addAnnotatedClass(Entity3.class);
 
-            cfg.addAnnotatedClass(Entity1.class);
-            cfg.addAnnotatedClass(Entity2.class);
-            cfg.addAnnotatedClass(Entity3.class);
-
-            for (Map.Entry<String, String> e : hibernateProperties(nodeName, NONSTRICT_READ_WRITE.name()).entrySet())
-                cfg.setProperty(e.getKey(), e.getValue());
-
-            return cfg;
+            return metadataSources.buildMetadata().buildSessionFactory();
         }
     }
 

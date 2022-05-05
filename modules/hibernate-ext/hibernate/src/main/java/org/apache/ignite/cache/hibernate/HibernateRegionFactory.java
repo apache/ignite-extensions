@@ -19,9 +19,9 @@ package org.apache.ignite.cache.hibernate;
 
 import java.util.Properties;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
-import org.hibernate.cache.spi.CacheKey;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.NaturalIdRegion;
@@ -29,8 +29,6 @@ import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Settings;
-
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
 import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 
@@ -76,16 +74,6 @@ public class HibernateRegionFactory implements RegionFactory {
     /** Key transformer. */
     private final HibernateKeyTransformer hibernate4transformer = new HibernateKeyTransformer() {
         @Override public Object transform(Object key) {
-            if (key instanceof CacheKey) {
-                CacheKey cacheKey = (CacheKey)key;
-
-                return new HibernateKeyWrapper(
-                    cacheKey.getKey(),
-                    cacheKey.getEntityOrRoleName(),
-                    cacheKey.getTenantId()
-                );
-            }
-
             return key;
         }
     };
@@ -95,7 +83,7 @@ public class HibernateRegionFactory implements RegionFactory {
         new HibernateAccessStrategyFactory(hibernate4transformer, EXCEPTION_CONVERTER);
 
     /** {@inheritDoc} */
-    @Override public void start(Settings settings, Properties props) throws CacheException {
+    @Override public void start(SessionFactoryOptions settings, Properties props) throws CacheException {
         String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
 
         dfltAccessType = AccessType.valueOf(accessType);
@@ -142,7 +130,7 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** {@inheritDoc} */
     @Override public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties props,
-        CacheDataDescription metadata) throws CacheException {
+                                                          CacheDataDescription metadata) throws CacheException {
         return new HibernateNaturalIdRegion(this,
             regionName,
             accessStgyFactory.node(),
@@ -152,7 +140,7 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** {@inheritDoc} */
     @Override public CollectionRegion buildCollectionRegion(String regionName, Properties props,
-        CacheDataDescription metadata) throws CacheException {
+                                                            CacheDataDescription metadata) throws CacheException {
         return new HibernateCollectionRegion(this,
             regionName,
             accessStgyFactory.node(),

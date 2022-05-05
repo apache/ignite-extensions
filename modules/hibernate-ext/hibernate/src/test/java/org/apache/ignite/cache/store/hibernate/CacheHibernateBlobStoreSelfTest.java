@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTe
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
+import org.junit.Test;
 
 /**
  * Cache store test.
@@ -52,7 +54,7 @@ public class CacheHibernateBlobStoreSelfTest extends
 
             Transaction hTx = s.getTransaction();
 
-            if (hTx != null && hTx.isActive())
+            if (hTx != null && hTx.getStatus() == TransactionStatus.ACTIVE)
                 hTx.commit();
         }
         finally {
@@ -68,6 +70,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByUrl() throws Exception {
         URL url = U.resolveIgniteUrl(CacheHibernateStoreFactorySelfTest.MODULE_PATH +
             "/src/test/java/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
@@ -83,6 +86,7 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByFile() throws Exception {
         URL url = U.resolveIgniteUrl(CacheHibernateStoreFactorySelfTest.MODULE_PATH +
                 "/src/test/java/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
@@ -100,10 +104,12 @@ public class CacheHibernateBlobStoreSelfTest extends
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfigurationByResource() throws Exception {
         store.setHibernateConfigurationPath("/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
         // Store will be implicitly initialized.
         store.load("key");
     }
+
 }

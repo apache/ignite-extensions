@@ -24,6 +24,9 @@ import org.hibernate.cache.spi.EntityRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.EntityRegionAccessStrategy;
 import org.hibernate.cache.spi.access.SoftLock;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.persister.entity.EntityPersister;
 
 /**
  * Implementation of {@link EntityRegion}. This region is used to store entity data.
@@ -60,7 +63,7 @@ public class HibernateEntityRegion extends HibernateTransactionalDataRegion impl
      * @param cache Region cache,
      * @param dataDesc Region data description.
      */
-    HibernateEntityRegion(HibernateRegionFactory factory, String name, Ignite ignite,
+    public HibernateEntityRegion(HibernateRegionFactory factory, String name, Ignite ignite,
         HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
@@ -83,28 +86,48 @@ public class HibernateEntityRegion extends HibernateTransactionalDataRegion impl
         }
 
         /** {@inheritDoc} */
+        @Override public Object generateCacheKey(Object id,
+            EntityPersister persister,
+            SessionFactoryImplementor factory,
+            String tenantIdentifier) {
+            return HibernateKeyWrapper.staticCreateEntityKey(id, persister, tenantIdentifier);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getCacheKeyId(Object cacheKey) {
+            return ((HibernateKeyWrapper)cacheKey).id();
+        }
+
+        /** {@inheritDoc} */
         @Override public EntityRegion getRegion() {
             return HibernateEntityRegion.this;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean insert(Object key, Object val, Object ver) throws CacheException {
+        @Override public boolean insert(SessionImplementor ses, Object key, Object val, Object ver) throws CacheException {
             return stgy.insert(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterInsert(Object key, Object val, Object ver) throws CacheException {
+        @Override public boolean afterInsert(SessionImplementor ses, Object key, Object val, Object ver) throws CacheException {
             return stgy.afterInsert(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean update(Object key, Object val, Object currVer, Object previousVer)
+        @Override public boolean update(SessionImplementor ses, Object key, Object val, Object currVer, Object previousVer)
             throws CacheException {
             return stgy.update(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterUpdate(Object key, Object val, Object currVer, Object previousVer, SoftLock lock)
+        @Override public boolean afterUpdate(
+            SessionImplementor ses,
+            Object key,
+            Object val,
+            Object currVer,
+            Object previousVer,
+            SoftLock lock
+        )
             throws CacheException {
             return stgy.afterUpdate(key, val);
         }

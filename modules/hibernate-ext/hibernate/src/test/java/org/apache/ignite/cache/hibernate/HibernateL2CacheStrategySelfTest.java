@@ -19,6 +19,7 @@ package org.apache.ignite.cache.hibernate;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.cache.Cache;
 import javax.persistence.Cacheable;
 import javax.persistence.Id;
@@ -33,22 +34,16 @@ import org.hamcrest.core.Is;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.service.ServiceRegistryBuilder;
+import org.hibernate.mapping.PersistentClass;
+import org.hibernate.mapping.RootClass;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
-import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
-import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
-import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
-import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
-import static org.hibernate.cfg.AvailableSettings.RELEASE_CONNECTIONS;
-import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
-import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_STRUCTURED_CACHE;
 import static org.junit.Assert.assertThat;
 
@@ -118,50 +113,6 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
         cfg.setName(cacheName);
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
-
-        return cfg;
-    }
-
-    /**
-     * @param accessType Cache access type.
-     * @param igniteInstanceName Ignite instance name.
-     * @return Hibernate configuration.
-     */
-    private Configuration hibernateConfiguration(AccessType accessType, String igniteInstanceName) {
-        Configuration cfg = new Configuration();
-
-        cfg.addAnnotatedClass(Entity1.class);
-        cfg.addAnnotatedClass(Entity2.class);
-        cfg.addAnnotatedClass(Entity3.class);
-        cfg.addAnnotatedClass(Entity4.class);
-
-        cfg.setCacheConcurrencyStrategy(ENTITY1_NAME, accessType.getExternalName());
-        cfg.setCacheConcurrencyStrategy(ENTITY2_NAME, accessType.getExternalName());
-        cfg.setCacheConcurrencyStrategy(ENTITY3_NAME, accessType.getExternalName());
-        cfg.setCacheConcurrencyStrategy(ENTITY4_NAME, accessType.getExternalName());
-
-        cfg.setProperty(DFLT_ACCESS_TYPE_PROPERTY, accessType.name());
-
-        cfg.setProperty(HBM2DDL_AUTO, "create");
-
-        cfg.setProperty(GENERATE_STATISTICS, "true");
-
-        cfg.setProperty(USE_SECOND_LEVEL_CACHE, "true");
-
-        cfg.setProperty(USE_QUERY_CACHE, "true");
-
-        cfg.setProperty(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
-
-        cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
-
-        cfg.setProperty(USE_STRUCTURED_CACHE, "true");
-
-        cfg.setProperty(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
-
-        cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
-        cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        cfg.setProperty(REGION_CACHE_PROPERTY + TIMESTAMP_CACHE, TIMESTAMP_CACHE);
-        cfg.setProperty(REGION_CACHE_PROPERTY + QUERY_CACHE, QUERY_CACHE);
 
         return cfg;
     }
@@ -331,14 +282,34 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
      * @return Session factory.
      */
     private SessionFactory startHibernate(AccessType accessType, String igniteInstanceName) {
-        Configuration cfg = hibernateConfiguration(accessType, igniteInstanceName);
-
-        ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
 
         builder.applySetting("hibernate.connection.url", CONNECTION_URL);
-        builder.applySetting("hibernate.show_sql", false);
 
-        return cfg.buildSessionFactory(builder.buildServiceRegistry());
+        for (Map.Entry<String, String> e : HibernateL2CacheSelfTest.hibernateProperties(igniteInstanceName, accessType.name()).entrySet())
+            builder.applySetting(e.getKey(), e.getValue());
+
+        builder.applySetting(USE_STRUCTURED_CACHE, "true");
+        builder.applySetting(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
+        builder.applySetting(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
+        builder.applySetting(REGION_CACHE_PROPERTY + TIMESTAMP_CACHE, TIMESTAMP_CACHE);
+        builder.applySetting(REGION_CACHE_PROPERTY + QUERY_CACHE, QUERY_CACHE);
+
+        MetadataSources metadataSources = new MetadataSources(builder.build());
+
+        metadataSources.addAnnotatedClass(Entity1.class);
+        metadataSources.addAnnotatedClass(Entity2.class);
+        metadataSources.addAnnotatedClass(Entity3.class);
+        metadataSources.addAnnotatedClass(Entity4.class);
+
+        Metadata metadata = metadataSources.buildMetadata();
+
+        for (PersistentClass entityBinding : metadata.getEntityBindings()) {
+            if (!entityBinding.isInherited())
+                ((RootClass)entityBinding).setCacheConcurrencyStrategy(accessType.getExternalName());
+        }
+
+        return metadata.buildSessionFactory();
     }
 
     /**

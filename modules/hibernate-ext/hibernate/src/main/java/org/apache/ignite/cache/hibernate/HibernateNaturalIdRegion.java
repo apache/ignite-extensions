@@ -19,11 +19,14 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.NaturalIdRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.NaturalIdRegionAccessStrategy;
 import org.hibernate.cache.spi.access.SoftLock;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.persister.entity.EntityPersister;
 
 /**
  * Implementation of {@link NaturalIdRegion}. This region is used to store naturalId data.
@@ -50,11 +53,8 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
      * @param cache Region cache,
      * @param dataDesc Region data description.
      */
-    HibernateNaturalIdRegion(HibernateRegionFactory factory,
-        String name,
-        Ignite ignite,
-        HibernateCacheProxy cache,
-        CacheDataDescription dataDesc) {
+    public HibernateNaturalIdRegion(HibernateRegionFactory factory, String name,
+        Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 
@@ -76,27 +76,37 @@ public class HibernateNaturalIdRegion extends HibernateTransactionalDataRegion i
         }
 
         /** {@inheritDoc} */
+        @Override public Object generateCacheKey(Object[] naturalIdValues, EntityPersister persister, SessionImplementor ses) {
+            return DefaultCacheKeysFactory.staticCreateNaturalIdKey(naturalIdValues, persister, ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object[] getNaturalIdValues(Object cacheKey) {
+            return DefaultCacheKeysFactory.staticGetNaturalIdValues(cacheKey);
+        }
+
+        /** {@inheritDoc} */
         @Override public NaturalIdRegion getRegion() {
             return HibernateNaturalIdRegion.this;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean insert(Object key, Object val) throws CacheException {
+        @Override public boolean insert(SessionImplementor ses, Object key, Object val) throws CacheException {
             return stgy.insert(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterInsert(Object key, Object val) throws CacheException {
+        @Override public boolean afterInsert(SessionImplementor ses, Object key, Object val) throws CacheException {
             return stgy.afterInsert(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean update(Object key, Object val) throws CacheException {
+        @Override public boolean update(SessionImplementor ses, Object key, Object val) throws CacheException {
             return stgy.update(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean afterUpdate(Object key, Object val, SoftLock lock) throws CacheException {
+        @Override public boolean afterUpdate(SessionImplementor ses, Object key, Object val, SoftLock lock) throws CacheException {
             return stgy.afterUpdate(key, val);
         }
     }

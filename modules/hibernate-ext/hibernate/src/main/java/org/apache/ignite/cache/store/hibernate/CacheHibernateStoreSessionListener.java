@@ -35,6 +35,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 /**
  * Hibernate-based cache store session listener.
@@ -203,12 +204,13 @@ public class CacheHibernateStoreSessionListener implements CacheStoreSessionList
                 Transaction tx = hibSes.getTransaction();
 
                 if (commit) {
-                    hibSes.flush();
+                    if (hibSes.isDirty())
+                        hibSes.flush();
 
-                    if (tx.isActive())
+                    if (tx.getStatus() == TransactionStatus.ACTIVE)
                         tx.commit();
                 }
-                else if (tx.isActive())
+                else if (tx.getStatus().canRollback())
                     tx.rollback();
             }
             catch (HibernateException e) {

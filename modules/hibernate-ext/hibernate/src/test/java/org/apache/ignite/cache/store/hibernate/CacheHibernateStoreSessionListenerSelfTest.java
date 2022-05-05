@@ -26,6 +26,7 @@ import javax.cache.integration.CacheWriterException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import org.apache.ignite.cache.store.CacheStore;
@@ -40,6 +41,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 /**
  * Tests for {@link CacheJdbcStoreSessionListener}.
@@ -155,9 +157,9 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
             assertNotNull(tx);
 
             if (ses.isWithinTransaction())
-                assertTrue(tx.isActive());
+                assertEquals(TransactionStatus.ACTIVE, tx.getStatus());
             else
-                assertFalse(tx.isActive());
+                assertFalse("Unexpected status: " + tx.getStatus(), tx.getStatus() == TransactionStatus.ACTIVE);
 
             verifySameInstance(hibSes);
         }
@@ -186,7 +188,8 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
     @Table(name = "Table1")
     private static class Table1 implements Serializable {
         /** */
-        @Id @GeneratedValue
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         @Column(name = "id")
         private Integer id;
 
@@ -214,7 +217,8 @@ public class CacheHibernateStoreSessionListenerSelfTest extends CacheStoreSessio
     @Table(name = "Table2")
     private static class Table2 implements Serializable {
         /** */
-        @Id @GeneratedValue
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         @Column(name = "id")
         private Integer id;
 

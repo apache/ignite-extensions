@@ -23,6 +23,7 @@ import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.GeneralDataRegion;
 import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.TimestampsRegion;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,19 +43,21 @@ public class HibernateGeneralDataRegion extends HibernateRegion implements Gener
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object get(Object key) throws CacheException {
+    @Nullable @Override public Object get(SessionImplementor ses, Object key) throws CacheException {
         try {
             return cache.get(key);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Object key, Object val) throws CacheException {
+    @Override public void put(SessionImplementor ses, Object key, Object val) throws CacheException {
         try {
             cache.put(key, val);
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new CacheException(e);
         }
     }

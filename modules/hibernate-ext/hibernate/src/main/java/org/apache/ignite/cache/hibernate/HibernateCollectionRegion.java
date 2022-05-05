@@ -23,6 +23,8 @@ import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.CollectionRegionAccessStrategy;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.persister.collection.CollectionPersister;
 
 /**
  * Implementation of {@link CollectionRegion}. This region is used to store collection data.
@@ -70,7 +72,7 @@ public class HibernateCollectionRegion extends HibernateTransactionalDataRegion 
      * @param cache Region cache.
      * @param dataDesc Region data description.
      */
-    HibernateCollectionRegion(HibernateRegionFactory factory, String name,
+    public HibernateCollectionRegion(HibernateRegionFactory factory, String name,
         Ignite ignite, HibernateCacheProxy cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
@@ -90,6 +92,18 @@ public class HibernateCollectionRegion extends HibernateTransactionalDataRegion 
          */
         private AccessStrategy(HibernateAccessStrategyAdapter stgy) {
             super(stgy);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object generateCacheKey(Object id,
+            CollectionPersister persister,
+            SessionFactoryImplementor factory, String tenantIdentifier) {
+            return HibernateKeyWrapper.staticCreateCollectionKey(id, persister, tenantIdentifier);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getCacheKeyId(Object cacheKey) {
+            return ((HibernateKeyWrapper)cacheKey).id();
         }
 
         /** {@inheritDoc} */

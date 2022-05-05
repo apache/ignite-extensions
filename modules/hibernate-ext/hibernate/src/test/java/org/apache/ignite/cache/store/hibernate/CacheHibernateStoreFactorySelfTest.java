@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.store.hibernate;
 
-import java.io.Serializable;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +38,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.StatelessSessionBuilder;
 import org.hibernate.TypeHelper;
+import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
@@ -89,7 +89,6 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                System.out.println(">>>> Working Directory = " + System.getProperty("user.dir"));
                 try (Ignite ignite =
                     Ignition.start(MODULE_PATH + "/src/test/config/factory-incorrect-store-cache.xml")) {
                     ignite.cache(CACHE_NAME).getConfiguration(CacheConfiguration.class).
@@ -231,38 +230,6 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Cache getCache() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evict(Class persistentCls) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evict(Class persistentCls, Serializable id) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictEntity(String entityName) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictEntity(String entityName, Serializable id) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictCollection(String roleName) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictCollection(String roleName, Serializable id) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictQueries(String cacheRegion) throws HibernateException {
-        }
-
-        /** {@inheritDoc} */
-        @Override public void evictQueries() throws HibernateException {
         }
 
         /** {@inheritDoc} */
