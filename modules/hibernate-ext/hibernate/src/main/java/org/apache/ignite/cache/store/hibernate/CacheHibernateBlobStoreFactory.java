@@ -140,7 +140,7 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
 
     /** Application context. */
     @SpringApplicationContextResource
-    private Object appContext;
+    private Object appCtx;
 
     /** {@inheritDoc} */
     @Override public CacheHibernateBlobStore<K, V> create() {
@@ -152,7 +152,7 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
         if (sesFactory != null)
             store.setSessionFactory(sesFactory);
         else if (sesFactoryBean != null) {
-            if (appContext == null)
+            if (appCtx == null)
                 throw new IgniteException("Spring application context resource is not injected.");
 
             IgniteSpringHelper spring;
@@ -160,13 +160,13 @@ public class CacheHibernateBlobStoreFactory<K, V> implements Factory<CacheHibern
             try {
                 spring = IgniteComponentType.SPRING.create(false);
 
-                SessionFactory sesFac = spring.loadBeanFromAppContext(appContext, sesFactoryBean);
+                SessionFactory sesFac = spring.loadBeanFromAppContext(appCtx, sesFactoryBean);
 
                 store.setSessionFactory(sesFac);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + sesFactoryBean +
-                        ", igniteConfig=" + appContext + ']');
+                        ", igniteConfig=" + appCtx + ']');
             }
         }
 

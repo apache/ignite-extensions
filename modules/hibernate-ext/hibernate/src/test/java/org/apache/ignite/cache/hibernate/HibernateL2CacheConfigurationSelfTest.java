@@ -25,6 +25,9 @@ import javax.cache.Cache;
 import javax.persistence.Cacheable;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +47,8 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
+import static org.hibernate.cache.spi.RegionFactory.DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME;
+import static org.hibernate.cache.spi.RegionFactory.DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME;
 import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
 import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
@@ -68,17 +73,16 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     public static final String ENTITY4_NAME = Entity4.class.getName();
 
     /** */
-    public static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
-
-    /** */
-    public static final String QUERY_CACHE = "org.hibernate.cache.internal.StandardQueryCache";
-
-    /** */
     public static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -97,9 +101,13 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(cacheConfiguration(ENTITY3_NAME), cacheConfiguration(ENTITY4_NAME),
-            cacheConfiguration("cache1"), cacheConfiguration("cache2"), cacheConfiguration("cache3"),
-            cacheConfiguration(TIMESTAMP_CACHE), cacheConfiguration(QUERY_CACHE));
+        cfg.setCacheConfiguration(cacheConfiguration(ENTITY3_NAME),
+            cacheConfiguration(ENTITY4_NAME),
+            cacheConfiguration("cache1"),
+            cacheConfiguration("cache2"),
+            cacheConfiguration("cache3"),
+            cacheConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
+            cacheConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME));
 
         return cfg;
     }
@@ -116,6 +124,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         cfg.setCacheMode(PARTITIONED);
 
         cfg.setAtomicityMode(ATOMIC);
+
+        cfg.setStatisticsEnabled(true);
 
         return cfg;
     }
@@ -150,8 +160,14 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        cfg.setProperty(REGION_CACHE_PROPERTY + TIMESTAMP_CACHE, TIMESTAMP_CACHE);
-        cfg.setProperty(REGION_CACHE_PROPERTY + QUERY_CACHE, QUERY_CACHE);
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME
+        );
+        cfg.setProperty(
+            REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME
+        );
 
         return cfg;
     }
@@ -195,7 +211,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
             ses = sesFactory.openSession();
 
             try {
-                List<Entity1> list1 = ses.createCriteria(ENTITY1_NAME).list();
+                List<Entity1> list1 = getResultsList(ses, Entity1.class);
 
                 assertEquals(1, list1.size());
 
@@ -204,21 +220,21 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
                     assertNotNull(e.getId());
                 }
 
-                List<Entity2> list2 = ses.createCriteria(ENTITY2_NAME).list();
+                List<Entity2> list2 = getResultsList(ses, Entity2.class);
 
                 assertEquals(1, list2.size());
 
                 for (Entity2 e : list2)
                     assertNotNull(e.getId());
 
-                List<Entity3> list3 = ses.createCriteria(ENTITY3_NAME).list();
+                List<Entity3> list3 = getResultsList(ses, Entity3.class);
 
                 assertEquals(1, list3.size());
 
                 for (Entity3 e : list3)
                     assertNotNull(e.getId());
 
-                List<Entity4> list4 = ses.createCriteria(ENTITY4_NAME).list();
+                List<Entity4> list4 = getResultsList(ses, Entity4.class);
 
                 assertEquals(1, list4.size());
 
@@ -244,6 +260,15 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         finally {
             sesFactory.close();
         }
+    }
+
+    /** */
+    private <T> List<T> getResultsList(Session ses, Class<T> entityClass) {
+        CriteriaBuilder builder = ses.getCriteriaBuilder();
+        CriteriaQuery<T> query = builder.createQuery(entityClass);
+        Root<T> root = query.from(entityClass);
+        query.select(root);
+        return ses.createQuery(query).getResultList();
     }
 
     /**

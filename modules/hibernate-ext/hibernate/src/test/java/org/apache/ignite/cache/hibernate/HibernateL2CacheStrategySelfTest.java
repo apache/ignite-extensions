@@ -44,6 +44,8 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.REGION_CACHE_PROPERTY;
+import static org.hibernate.cache.spi.RegionFactory.DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME;
+import static org.hibernate.cache.spi.RegionFactory.DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME;
 import static org.hibernate.cfg.AvailableSettings.USE_STRUCTURED_CACHE;
 import static org.junit.Assert.assertThat;
 
@@ -65,12 +67,6 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     private static final String ENTITY4_NAME = Entity4.class.getName();
 
     /** */
-    private static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
-
-    /** */
-    private static final String QUERY_CACHE = "org.hibernate.cache.internal.StandardQueryCache";
-
-    /** */
     private static final String CONNECTION_URL = "jdbc:h2:mem:example;DB_CLOSE_DELAY=-1";
 
     /** */
@@ -79,6 +75,11 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -97,8 +98,8 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
             cacheConfiguration(ENTITY4_NAME),
             cacheConfiguration("cache1"),
             cacheConfiguration("cache2"),
-            cacheConfiguration(TIMESTAMP_CACHE),
-            cacheConfiguration(QUERY_CACHE));
+            cacheConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
+            cacheConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME));
 
         return cfg;
     }
@@ -292,8 +293,14 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
         builder.applySetting(USE_STRUCTURED_CACHE, "true");
         builder.applySetting(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         builder.applySetting(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        builder.applySetting(REGION_CACHE_PROPERTY + TIMESTAMP_CACHE, TIMESTAMP_CACHE);
-        builder.applySetting(REGION_CACHE_PROPERTY + QUERY_CACHE, QUERY_CACHE);
+        builder.applySetting(
+            REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME
+        );
+        builder.applySetting(
+            REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME
+        );
 
         MetadataSources metadataSources = new MetadataSources(builder.build());
 

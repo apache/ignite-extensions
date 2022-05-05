@@ -42,21 +42,19 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.CONNECTION_URL;
 import static org.apache.ignite.cache.hibernate.HibernateL2CacheSelfTest.hibernateProperties;
+import static org.hibernate.cache.spi.RegionFactory.DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME;
 import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 
 /**
  *
  */
 public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
-    /** */
-    private static final String TIMESTAMP_CACHE = "org.hibernate.cache.spi.UpdateTimestampsCache";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(
-            cacheConfiguration(TIMESTAMP_CACHE),
+            cacheConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
             cacheConfiguration(Entity1.class.getName()),
             cacheConfiguration(Entity2.class.getName()),
             cacheConfiguration(Entity3.class.getName())
@@ -92,6 +90,13 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
 
         startClientGrid(1);
         startClientGrid(2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**

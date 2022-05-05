@@ -18,22 +18,23 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
+import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 
 /**
  * Implementation of {@link TimestampsRegion}. This region is automatically created when query
  * caching is enabled and it holds most recent updates timestamps to queryable tables.
- * Name of timestamps region is {@code "org.hibernate.cache.spi.UpdateTimestampsCache"}.
+ * Name of timestamps region is {@link RegionFactory#DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME}.
  */
-public class HibernateTimestampsRegion extends HibernateGeneralDataRegion implements TimestampsRegion {
+public class IgniteTimestampsRegion extends IgniteGeneralDataRegion implements TimestampsRegion {
     /**
      * @param factory Region factory.
-     * @param name Region name.
-     * @param ignite Grid.
+     * @param regionName Region name.
      * @param cache Region cache.
+     * @param ignite Ignite instance.
      */
-    public HibernateTimestampsRegion(HibernateRegionFactory factory, String name,
-        Ignite ignite, HibernateCacheProxy cache) {
-        super(factory, name, ignite, cache);
+    public IgniteTimestampsRegion(RegionFactory factory, String regionName, Ignite ignite, HibernateCacheProxy cache) {
+        super(factory, regionName, ignite, cache);
     }
+
 }

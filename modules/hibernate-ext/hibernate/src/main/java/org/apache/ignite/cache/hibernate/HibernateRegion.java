@@ -17,44 +17,39 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.Collections;
-import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.ExtendedStatisticsSupport;
 import org.hibernate.cache.spi.Region;
+import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.cache.spi.support.AbstractRegion;
 
 /**
  * Implementation of {@link Region}. This interface defines base contract for all L2 cache regions.
  */
-public class HibernateRegion implements Region {
-    /** */
-    protected final HibernateRegionFactory factory;
-
-    /** */
-    private final String name;
-
+public abstract class HibernateRegion extends AbstractRegion implements ExtendedStatisticsSupport {
     /** Cache instance. */
     protected final HibernateCacheProxy cache;
 
     /** Grid instance. */
     protected Ignite ignite;
 
-    /**
-     * @param factory Region factory.
-     * @param name Region name.
-     * @param ignite Grid.
-     * @param cache Region cache.
-     */
-    public HibernateRegion(HibernateRegionFactory factory, String name, Ignite ignite, HibernateCacheProxy cache) {
-        this.factory = factory;
-        this.name = name;
+    /** */
+    protected HibernateRegion(RegionFactory factory, String name, Ignite ignite, HibernateCacheProxy cache) {
+        super(name, factory);
+
         this.ignite = ignite;
         this.cache = cache;
     }
 
     /** {@inheritDoc} */
-    @Override public String getName() {
-        return name;
+    @Override public void clear() {
+        try {
+            cache.clear();
+        } catch (IgniteCheckedException e) {
+            throw new CacheException("Problem clearing cache [name=" + cache.name() + "]", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -63,37 +58,17 @@ public class HibernateRegion implements Region {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean contains(Object key) {
-        return cache.containsKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getSizeInMemory() {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getElementCountInMemory() {
-        return cache.size();
+        return cache.offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getElementCountOnDisk() {
-        return -1;
+        return cache.sizeLong();
     }
 
     /** {@inheritDoc} */
-    @Override public Map toMap() {
-        return Collections.emptyMap();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long nextTimestamp() {
-        return System.currentTimeMillis();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getTimeout() {
-        return 0;
+    @Override public long getSizeInMemory() {
+        return cache.offHeapAllocatedSize();
     }
 }

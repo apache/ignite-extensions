@@ -31,10 +31,10 @@
 
     <artifactId>ignite-hibernate-parent-ext</artifactId>
     <packaging>pom</packaging>
-    <version>5.1.0-SNAPSHOT</version>
+    <version>5.3.0-SNAPSHOT</version>
 
     <properties>
-        <hibernate.core.version>5.1.5.Final</hibernate.core.version>
+        <hibernate.core.version>5.3.7.Final</hibernate.core.version>
     </properties>
 
     <modules>

@@ -150,9 +150,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses = session(tx);
 
         try {
-            CacheHibernateBlobStoreEntry entry = (CacheHibernateBlobStoreEntry)
-                ses.get(CacheHibernateBlobStoreEntry.class, toBytes(key));
-
+            CacheHibernateBlobStoreEntry entry = ses.get(CacheHibernateBlobStoreEntry.class, toBytes(key));
             if (entry == null)
                 return null;
 
@@ -381,8 +379,8 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
                 log.debug("Initializing cache store.");
 
             try {
+                // Session factory has been provided - nothing to do.
                 if (sesFactory != null)
-                    // Session factory has been provided - nothing to do.
                     return;
 
                 if (!F.isEmpty(hibernateCfgPath)) {

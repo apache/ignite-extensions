@@ -17,18 +17,20 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import java.util.Properties;
+import java.time.Instant;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
-import org.hibernate.cache.spi.CacheDataDescription;
-import org.hibernate.cache.spi.CollectionRegion;
-import org.hibernate.cache.spi.EntityRegion;
-import org.hibernate.cache.spi.NaturalIdRegion;
+import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
+import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
+import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.QueryResultsRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 import org.hibernate.cache.spi.access.AccessType;
+import org.hibernate.cache.spi.support.RegionNameQualifier;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import static org.apache.ignite.cache.hibernate.HibernateAccessStrategyFactory.DFLT_ACCESS_TYPE_PROPERTY;
 import static org.hibernate.cache.spi.access.AccessType.NONSTRICT_READ_WRITE;
 
@@ -82,13 +84,19 @@ public class HibernateRegionFactory implements RegionFactory {
     private final HibernateAccessStrategyFactory accessStgyFactory =
         new HibernateAccessStrategyFactory(hibernate4transformer, EXCEPTION_CONVERTER);
 
+    /** */
+    private SessionFactoryOptions options;
+
     /** {@inheritDoc} */
-    @Override public void start(SessionFactoryOptions settings, Properties props) throws CacheException {
-        String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
+    @Override public void start(SessionFactoryOptions options, Map cfgValues) throws CacheException {
+        this.options = options;
+
+        String accessType = cfgValues.getOrDefault(
+            DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name()).toString();
 
         dfltAccessType = AccessType.valueOf(accessType);
 
-        accessStgyFactory.start(props);
+        accessStgyFactory.start(cfgValues);
     }
 
     /**
@@ -115,53 +123,31 @@ public class HibernateRegionFactory implements RegionFactory {
 
     /** {@inheritDoc} */
     @Override public long nextTimestamp() {
-        return System.currentTimeMillis();
+        return Instant.now().toEpochMilli();
     }
 
     /** {@inheritDoc} */
-    @Override public EntityRegion buildEntityRegion(String regionName, Properties props, CacheDataDescription metadata)
-        throws CacheException {
-        return new HibernateEntityRegion(this,
-            regionName,
-            accessStgyFactory.node(),
-            accessStgyFactory.regionCache(regionName),
-            metadata);
+    @Override public String qualify(String regionName) {
+        return RegionNameQualifier.INSTANCE.qualify(regionName, options);
     }
 
     /** {@inheritDoc} */
-    @Override public NaturalIdRegion buildNaturalIdRegion(String regionName, Properties props,
-                                                          CacheDataDescription metadata) throws CacheException {
-        return new HibernateNaturalIdRegion(this,
-            regionName,
-            accessStgyFactory.node(),
-            accessStgyFactory.regionCache(regionName),
-            metadata);
+    @Override public DomainDataRegion buildDomainDataRegion(
+        DomainDataRegionConfig regionCfg,
+        DomainDataRegionBuildingContext buildingCtx) {
+        return new IgniteDomainDataRegion(regionCfg, this, null, buildingCtx,
+            accessStgyFactory);
     }
 
     /** {@inheritDoc} */
-    @Override public CollectionRegion buildCollectionRegion(String regionName, Properties props,
-                                                            CacheDataDescription metadata) throws CacheException {
-        return new HibernateCollectionRegion(this,
-            regionName,
-            accessStgyFactory.node(),
-            accessStgyFactory.regionCache(regionName),
-            metadata);
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryResultsRegion buildQueryResultsRegion(String regionName, Properties props)
-        throws CacheException {
-        return new HibernateQueryResultsRegion(this,
-            regionName,
-            accessStgyFactory.node(),
+    @Override public QueryResultsRegion buildQueryResultsRegion(String regionName, SessionFactoryImplementor sessFactory) {
+        return new IgniteQueryResultsRegion(this, regionName, accessStgyFactory.node(),
             accessStgyFactory.regionCache(regionName));
     }
 
     /** {@inheritDoc} */
-    @Override public TimestampsRegion buildTimestampsRegion(String regionName, Properties props) throws CacheException {
-        return new HibernateTimestampsRegion(this,
-            regionName,
-            accessStgyFactory.node(),
+    @Override public TimestampsRegion buildTimestampsRegion(String regionName, SessionFactoryImplementor sessFactory) {
+        return new IgniteTimestampsRegion(this, regionName, accessStgyFactory.node(),
             accessStgyFactory.regionCache(regionName));
     }
 }

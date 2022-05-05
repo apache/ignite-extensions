@@ -41,13 +41,9 @@ import org.junit.runners.Suite;
     HibernateL2CacheConfigurationSelfTest.class,
     HibernateL2CacheStrategySelfTest.class,
     HibernateL2CacheMultiJvmTest.class,
-
     CacheHibernateBlobStoreSelfTest.class,
-
     CacheHibernateBlobStoreNodeRestartTest.class,
-
     CacheHibernateStoreSessionListenerSelfTest.class,
-
     CacheHibernateStoreFactorySelfTest.class
 })
 public class IgniteHibernate5TestSuite {

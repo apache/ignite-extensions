@@ -136,9 +136,10 @@ public class CacheHibernateStoreSessionListener implements CacheStoreSessionList
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public void start() throws IgniteException {
-        if (sesFactory == null && F.isEmpty(hibernateCfgPath))
+        if (sesFactory == null && F.isEmpty(hibernateCfgPath)) {
             throw new IgniteException("Either session factory or Hibernate configuration file is required by " +
                 getClass().getSimpleName() + '.');
+        }
 
         if (!F.isEmpty(hibernateCfgPath)) {
             if (sesFactory == null) {
@@ -147,8 +148,8 @@ public class CacheHibernateStoreSessionListener implements CacheStoreSessionList
 
                     sesFactory = new Configuration().configure(url).buildSessionFactory();
                 }
-                catch (MalformedURLException ignored) {
-                    // No-op.
+                catch (MalformedURLException ex) {
+                    log.warning("Exception on store listener start", ex);
                 }
 
                 if (sesFactory == null) {
@@ -166,9 +167,10 @@ public class CacheHibernateStoreSessionListener implements CacheStoreSessionList
 
                 closeSesOnStop = true;
             }
-            else
+            else {
                 U.warn(log, "Hibernate configuration file configured in " + getClass().getSimpleName() +
                     " will be ignored (session factory is already set).");
+            }
         }
     }
 
