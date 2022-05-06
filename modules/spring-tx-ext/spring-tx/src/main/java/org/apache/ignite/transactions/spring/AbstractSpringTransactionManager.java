@@ -39,8 +39,7 @@ import org.springframework.transaction.support.TransactionSynchronizationUtils;
 
 /** Abstract implementation of Spring Transaction manager with omitted Ignite cluster access logic. */
 public abstract class AbstractSpringTransactionManager extends AbstractPlatformTransactionManager
-    implements ResourceTransactionManager, ApplicationListener<ContextRefreshedEvent>
-{
+    implements ResourceTransactionManager, ApplicationListener<ContextRefreshedEvent> {
     /** Transaction factory.*/
     private TransactionProxyFactory txFactory;
 

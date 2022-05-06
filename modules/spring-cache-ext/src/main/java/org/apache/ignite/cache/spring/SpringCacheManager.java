@@ -141,8 +141,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * in caching the data.
  */
 public class SpringCacheManager extends AbstractCacheManager implements ApplicationListener<ContextRefreshedEvent>,
-    ApplicationContextAware, DisposableBean
-{
+    ApplicationContextAware, DisposableBean {
     /** Default locks count. */
     private static final int DEFAULT_LOCKS_COUNT = 512;
 

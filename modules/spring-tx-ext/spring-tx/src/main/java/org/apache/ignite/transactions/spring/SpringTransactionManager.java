@@ -191,8 +191,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * </pre>
  */
 public class SpringTransactionManager extends AbstractSpringTransactionManager implements ApplicationContextAware,
-    DisposableBean
-{
+    DisposableBean {
     /** Grid configuration file path. */
     private String cfgPath;
 
