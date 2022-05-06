@@ -106,8 +106,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * </pre>
  */
 public class IgniteClientSpringCacheManager extends AbstractCacheManager implements DisposableBean,
-    ApplicationListener<ContextRefreshedEvent>
-{
+    ApplicationListener<ContextRefreshedEvent> {
     /** Ignite client instance. */
     private IgniteClient cli;
 
