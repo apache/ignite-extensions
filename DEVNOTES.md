@@ -4,22 +4,30 @@
 
 ## Build Instructions
 
+### Build Requirements
+
+- JDK 8
+- Maven 3.6.3+
+
 ### Build all Extensions
 
 ```shell
+# Run from the Ignite Extension project root
 mvn clean install -DskipTests -Pcheckstyle
 ```
 
 ### Build an Extension
 
 ```shell
-mvn clean install -f modules/sptring-boot-ext -Pcheckstyle
+# Run from the Ignite Extension project root
+mvn clean install -f modules/sptring-boot-ext -Pcheckstyle -DskipTests
 ```
 
-OR
+or
 
 ```shell
-mvn clean install -pl :ignite-aws-ext -am -Pcheckstyle
+# Run from the Ignite Extension project root
+mvn clean install -pl :ignite-aws-ext -am -Pcheckstyle -DskipTests
 ```
 
 ## Release Instructions

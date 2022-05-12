@@ -33,7 +33,7 @@
         <!-- main project directory structure -->
         <fileSet>
             <directory>.</directory>
-            <outputDirectory>modules/${project.artifactId}</outputDirectory>
+            <outputDirectory>modules/${basedir.name}</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
             <excludes>
                 <!-- build output -->
