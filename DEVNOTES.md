@@ -20,7 +20,7 @@ mvn clean install -DskipTests -Pcheckstyle
 
 ```shell
 # Run from the Ignite Extension project root
-mvn clean install -f modules/sptring-boot-ext -Pcheckstyle -DskipTests
+mvn clean install -f modules/spring-boot-ext -Pcheckstyle -DskipTests
 ```
 
 or

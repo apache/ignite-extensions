@@ -109,7 +109,7 @@ ignite-cdc-ext.zip
 
 . Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder.
 
-Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
+Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/ignite-cdc-ext` module.
 
 NOTE: Please, enable `ignite-cdc-ext` to be able to run `kafka-to-ignite.sh`.
 

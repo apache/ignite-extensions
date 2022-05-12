@@ -25,13 +25,13 @@ Either of the following two methods can be used to achieve such streaming:
 == Streaming Data via Kafka Connect
 
 `IgniteSinkConnector` will help you export data from Kafka to Ignite cache by polling data from Kafka topics and writing
-it to your specified cache. The connector can be found in the `optional/ignite-kafka` module. It and its dependencies
+it to your specified cache. The connector can be found in the `ignite-kafka` module. It and its dependencies
 have to be on the classpath of a Kafka running instance, as described in the following subsection. _For more information
 on Kafka Connect, see http://kafka.apache.org/documentation.html#connect[Kafka Documentation, window=_blank]._
 
 === Setting up and Running
 
-. Add the `IGNITE_HOME/libs/optional/ignite-kafka` module to the application classpath.
+. Add the `IGNITE_HOME/libs/ignite-kafka` module to the application classpath.
 
 . Prepare worker configurations, e.g.,
 +

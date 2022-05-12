@@ -4,7 +4,7 @@ Apache Ignite Hibernate Module
 Apache Ignite Hibernate module provides Hibernate second-level cache (L2 cache) implementation based
 on Apache Ignite In-Memory Data Grid.
 
-To enable Hibernate module when starting a standalone node, move 'optional/ignite-hibernate' folder to
+To enable Hibernate module when starting a standalone node, move 'ignite-hibernate' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 

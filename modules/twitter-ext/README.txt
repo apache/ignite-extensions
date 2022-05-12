@@ -3,7 +3,7 @@ Apache Ignite Twitter Streamer Module
 
 Apache Ignite Twitter Streamer module provides streaming from Twitter to Ignite cache.
 
-To enable Twitter Streamer module when starting a standalone node, move 'optional/ignite-twitter' folder to
+To enable Twitter Streamer module when starting a standalone node, move 'ignite-twitter' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 

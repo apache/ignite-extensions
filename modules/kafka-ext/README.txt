@@ -38,7 +38,7 @@ interested in):
 Sink Connector will help you export data from Kafka to Ignite cache. It polls data from Kafka topics and writes it to the user-specified cache.
 For more information on Kafka Connect, see [Kafka Documentation](http://kafka.apache.org/documentation.html#connect).
 
-Connector can be found in 'optional/ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
+Connector can be found in 'ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
 as described in the following subsection.
 
 ### Setting up and Running
@@ -136,7 +136,7 @@ http://node1:8080/ignite?cmd=size&cacheName=cache1
 
 Source connector enables listening to Ignite cache events and, upon filtering, stream them to Kafka.
 
-Connector can be found in 'optional/ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
+Connector can be found in 'ignite-kafka.' It and its dependencies have to be on the classpath of a Kafka running instance,
 as described in the following subsection.
 
 ### Setting up and Running
