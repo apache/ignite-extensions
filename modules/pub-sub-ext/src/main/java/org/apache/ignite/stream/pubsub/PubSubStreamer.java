@@ -217,7 +217,8 @@ public class PubSubStreamer<K, V> extends StreamAdapter<PubsubMessage, K, V> {
                 this.subscriptionName = subscriptionName;
                 this.returnImmediately = returnImmediately;
                 this.maxMessages = maxMessages;
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new IgniteException(e);
             }
         }
@@ -248,7 +249,8 @@ public class PubSubStreamer<K, V> extends StreamAdapter<PubsubMessage, K, V> {
 
                     subscriberStub.acknowledgeCallable().call(acknowledgeRequest);
                 }
-            } finally {
+            }
+            finally {
                 subscriberStub.close();
             }
 

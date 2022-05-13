@@ -170,7 +170,8 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
 
             try {
                 blobContainerClient.getBlobClient(key).delete();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 // https://github.com/Azure/azure-sdk-for-java/issues/20551
                 if ((!(e.getMessage().contains("InterruptedException"))) || (e instanceof BlobStorageException
                     && (((BlobStorageException)e).getErrorCode() != BlobErrorCode.BLOB_NOT_FOUND))) {
@@ -279,7 +280,8 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
             try {
                 if (!blobContainerClient.exists())
                     throw new IgniteSpiException("IpFinder has not been initialized properly");
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 // Check if this is a nested exception wrapping an InterruptedException
                 // https://github.com/Azure/azure-sdk-for-java/issues/20551
                 if (!(e.getCause() instanceof InterruptedException)) {
