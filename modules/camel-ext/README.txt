@@ -6,8 +6,8 @@ HTTP, TCP, File, FTP, AMQP, SNMP, databases, etc. For more information on availa
 refer to http://camel.apache.org/components.html.
 
 To enable the Camel module when starting a standalone node, move 'ignite-camel' folder
-to 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+to the 'libs' directory of the Ignite distribution before starting the 'ignite.{sh|bat}' script.
+The content of the module folder will be added to classpath in this case.
 
 Importing the Camel module in a Maven project
 ---------------------------------------------
