@@ -124,7 +124,8 @@ public class IgniteTwitterStreamerTest extends GridCommonAbstractTest {
             streamer.setThreadsCount(8);
 
             executeStreamer(streamer);
-        } finally {
+        }
+        finally {
             cleanup();
         }
     }

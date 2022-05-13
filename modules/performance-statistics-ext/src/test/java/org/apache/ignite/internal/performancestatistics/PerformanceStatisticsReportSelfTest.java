@@ -110,7 +110,8 @@ public class PerformanceStatisticsReportSelfTest {
             assertTrue(index.exists());
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
-        } finally {
+        }
+        finally {
             U.delete(new File(U.defaultWorkDirectory()));
         }
     }

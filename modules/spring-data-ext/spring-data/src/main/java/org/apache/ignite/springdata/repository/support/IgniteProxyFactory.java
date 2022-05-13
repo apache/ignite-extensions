@@ -152,7 +152,8 @@ public class IgniteProxyFactory implements ApplicationContextAware, DisposableBe
         default Object getBean() {
             try {
                 return get();
-            } catch (BeansException ex) {
+            }
+            catch (BeansException ex) {
                 return null;
             }
         }
