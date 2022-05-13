@@ -5,9 +5,9 @@ Apache Ignite Camel provides a streamer to consume cache tuples from a Camel end
 HTTP, TCP, File, FTP, AMQP, SNMP, databases, etc. For more information on available components,
 refer to http://camel.apache.org/components.html.
 
-To enable the Camel module when starting a standalone node, move 'optional/ignite-camel' folder
-to 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+To enable the Camel module when starting a standalone node, move 'ignite-camel' folder
+to the 'libs' directory of the Ignite distribution before starting the 'ignite.{sh|bat}' script.
+The content of the module folder will be added to classpath in this case.
 
 Importing the Camel module in a Maven project
 ---------------------------------------------
