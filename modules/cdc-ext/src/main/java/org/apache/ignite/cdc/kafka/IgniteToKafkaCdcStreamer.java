@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -93,7 +94,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
     /** Metadata updater marker. */
-    public static final byte[] META_UPDATE_MARKER = new byte[] {42};
+    public static final byte[] META_UPDATE_MARKER = U.longToBytes(0xC0FF1E);
 
     /** Log. */
     @LoggerResource
@@ -225,9 +226,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendMetaUpdatedMarkers();
     }
 
-    /**
-     * Send marker(meta need to be updated) record to each partition of events topic.
-     */
+    /** Send marker(meta need to be updated) record to each partition of events topic. */
     private void sendMetaUpdatedMarkers() {
         Iterator<Integer> parts = IntStream.range(0, kafkaParts).iterator();
 
