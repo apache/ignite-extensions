@@ -20,7 +20,6 @@ package org.apache.ignite.cdc.kafka;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CdcEventsApplier;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -41,21 +39,15 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
 /** */
-public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
+public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Ignite instance. */
     private final IgniteEx ign;
 
     /** Log. */
     private final IgniteLogger log;
 
-    /** Closed flag. Shared between all appliers. */
-    private final AtomicBoolean stopped;
-
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
-
-    /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private final long metaUpdInterval;
 
     /** */
     private final KafkaConsumer<Void, byte[]> cnsmr;
@@ -68,19 +60,15 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
      * @param log Logger.
      * @param initProps Kafka properties.
      * @param streamerCfg Streamer configuration.
-     * @param stopped Stopped flag.
      */
     public KafkaToIgniteMetadataUpdater(
         IgniteEx ign,
         IgniteLogger log,
         Properties initProps,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
-        AtomicBoolean stopped
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         this.ign = ign;
         this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
-        this.metaUpdInterval = streamerCfg.getMetaUpdateInterval();
-        this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
 
         Properties kafkaProps = new Properties();
@@ -95,22 +83,6 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
         cnsmr = new KafkaConsumer<>(kafkaProps);
 
         cnsmr.subscribe(Collections.singletonList(streamerCfg.getMetadataTopic()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void run() {
-        U.setCurrentIgniteName(ign.name());
-
-        while (!stopped.get()) {
-            updateMetadata();
-
-            try {
-                Thread.sleep(metaUpdInterval);
-            }
-            catch (InterruptedException e) {
-                // Ignore.
-            }
-        }
     }
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
@@ -141,8 +113,6 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, Runnable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        log.warning("Close applier!");
-
         cnsmr.wakeup();
     }
 

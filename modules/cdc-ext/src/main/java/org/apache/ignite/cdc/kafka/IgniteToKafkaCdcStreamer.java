@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcConsumer;
@@ -91,6 +92,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Bytes sent metric description. */
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
+    /** Metadata updater marker. */
+    public static final byte[] META_UPDATE_MARKER = new byte[] {42};
+
     /** Log. */
     @LoggerResource
     private IgniteLogger log;
@@ -139,6 +143,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
+
+    /** Count of metadata updates. */
+    protected byte metaUpdCnt = 0;
 
     /** */
     private List<Future<RecordMetadata>> futs;
@@ -201,6 +208,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 typesCnt
             );
         }
+
+        sendMetaUpdatedMarkers();
     }
 
     /** {@inheritDoc} */
@@ -212,6 +221,21 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 mappingsCnt
             );
         }
+
+        sendMetaUpdatedMarkers();
+    }
+
+    /**
+     * Send marker(meta need to be updated) record to each partition of events topic.
+     */
+    private void sendMetaUpdatedMarkers() {
+        Iterator<Integer> parts = IntStream.range(0, kafkaParts).iterator();
+
+        while (parts.hasNext())
+            sendLimited(parts, p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER), evtsCnt);
+
+        if (log.isDebugEnabled())
+            log.debug("Meta update markers sent.");
     }
 
     /** Send limited amount of data to Kafka. */

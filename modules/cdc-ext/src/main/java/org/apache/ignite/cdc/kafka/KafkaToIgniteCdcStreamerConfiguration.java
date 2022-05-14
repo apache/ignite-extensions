@@ -33,9 +33,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default maximum time to complete Kafka related requests, in milliseconds. */
     public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
-    /** Default maximum time to complete Kafka related requests, in milliseconds. */
-    public static final long DFLT_META_UPD_INTERVAL = 3_000L;
-
     /** Default {@link #threadCnt} value. */
     public static final int DFLT_THREAD_CNT = 16;
 
@@ -59,9 +56,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
-
-    /** Amount of time between two polling of {@link #metadataTopic}, in milliseconds. */
-    private long metaUpdInterval = DFLT_META_UPD_INTERVAL;
 
     /** Metadata consumer group. */
     private String metadataCnsmrGrp;
@@ -191,22 +185,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setMetadataTopic(String metadataTopic) {
         this.metadataTopic = metadataTopic;
-    }
-
-    /**
-     * @return Amount of time between two polling of {@link #metadataTopic}.
-     */
-    public long getMetaUpdateInterval() {
-        return metaUpdInterval;
-    }
-
-    /**
-     * Sets amount of time between two polling of {@link #metadataTopic}.
-     *
-     * @param metaUpdateInterval Amount of time between two polling of {@link #metadataTopic}.
-     */
-    public void setMetaUpdateInterval(long metaUpdateInterval) {
-        this.metaUpdInterval = metaUpdateInterval;
     }
 
     /**

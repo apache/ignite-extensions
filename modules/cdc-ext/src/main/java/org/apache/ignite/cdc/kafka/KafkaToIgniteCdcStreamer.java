@@ -133,9 +133,8 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
         this.kafkaProps = kafkaProps;
         this.streamerCfg = streamerCfg;
 
-        // Extra thread for metadata updater.
-        appliers = new ArrayList<>(streamerCfg.getThreadCount() + 1);
-        runners = new ArrayList<>(streamerCfg.getThreadCount() + 1);
+        appliers = new ArrayList<>(streamerCfg.getThreadCount());
+        runners = new ArrayList<>(streamerCfg.getThreadCount());
 
         if (!kafkaProps.containsKey(ConsumerConfig.GROUP_ID_CONFIG))
             throw new IllegalArgumentException("Kafka properties don't contains " + ConsumerConfig.GROUP_ID_CONFIG);
@@ -179,11 +178,8 @@ public class KafkaToIgniteCdcStreamer implements Runnable {
                 ign,
                 log,
                 kafkaProps,
-                streamerCfg,
-                stopped
+                streamerCfg
             );
-
-            addAndStart("meta-update-thread", metaUpdr);
 
             int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
             int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
