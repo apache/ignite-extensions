@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -236,7 +237,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     private boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
         byte[] val = rec.value();
 
-        if (val.length == META_UPDATE_MARKER.length && U.bytesEqual(val, 0, META_UPDATE_MARKER, 0, val.length)) {
+        if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
             metaUpdr.updateMetadata();
 
             return false;

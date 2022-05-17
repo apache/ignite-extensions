@@ -184,61 +184,66 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             return true;
         });
 
-        while (filtered.hasNext()) {
-            sendLimited(
-                filtered,
-                evt -> new ProducerRecord<>(
-                    evtTopic,
-                    evt.partition() % kafkaParts,
-                    evt.cacheId(),
-                    IgniteUtils.toBytes(evt)
-                ),
-                evtsCnt
-            );
-        }
+        sendAll(
+            filtered,
+            evt -> new ProducerRecord<>(
+                evtTopic,
+                evt.partition() % kafkaParts,
+                evt.cacheId(),
+                IgniteUtils.toBytes(evt)
+            ),
+            evtsCnt
+        );
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        while (types.hasNext()) {
-            sendLimited(
-                types,
-                t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-                typesCnt
-            );
-        }
+        sendAll(
+            types,
+            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+            typesCnt
+        );
 
         sendMetaUpdatedMarkers();
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        while (mappings.hasNext()) {
-            sendLimited(
-                mappings,
-                m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
-                mappingsCnt
-            );
-        }
+        sendAll(
+            mappings,
+            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
+            mappingsCnt
+        );
 
         sendMetaUpdatedMarkers();
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
     private void sendMetaUpdatedMarkers() {
-        Iterator<Integer> parts = IntStream.range(0, kafkaParts).iterator();
-
-        while (parts.hasNext())
-            sendLimited(parts, p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER), evtsCnt);
+        sendAll(
+            IntStream.range(0, kafkaParts).iterator(),
+            p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER),
+            evtsCnt
+        );
 
         if (log.isDebugEnabled())
             log.debug("Meta update markers sent.");
     }
 
-    /** Send limited amount of data to Kafka. */
-    private <T> void sendLimited(
+    /** Send all data to Kafka. */
+    private <T> void sendAll(
+        Iterator<T> data,
+        Function<T, ProducerRecord<Integer, byte[]>> toRec,
+        AtomicLongMetric cntr
+    ) {
+        while (data.hasNext())
+            sendOneBatch(data, toRec, cntr);
+    }
+
+    /** Send one batch. */
+    private <T> void sendOneBatch(
         Iterator<T> data,
         Function<T, ProducerRecord<Integer, byte[]>> toRec,
         AtomicLongMetric cntr
