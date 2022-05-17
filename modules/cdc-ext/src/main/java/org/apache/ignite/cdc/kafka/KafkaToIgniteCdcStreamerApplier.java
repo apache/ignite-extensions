@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_MARKER;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
@@ -212,15 +215,35 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
-        if (log.isDebugEnabled()) {
-            log.debug(
-                "Polled from consumer [assignments=" + cnsmr.assignment() + ",rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']'
+        if (log.isInfoEnabled()) {
+            log.info(
+                "Polled from consumer [assignments=" + cnsmr.assignment() +
+                    ", cnt=" + recs.count() +
+                    ", rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']'
             );
         }
 
-        apply(F.iterator(recs, this::deserialize, true, rec -> F.isEmpty(caches) || caches.contains(rec.key())));
+        apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
+    }
+
+    /**
+     * Filter out {@link CdcEvent} records.
+     * Updates metadata in case update metadata marker found.
+     * @param rec Record to filter.
+     * @return {@code True} if record should be pushed down.
+     */
+    private boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
+        byte[] val = rec.value();
+
+        if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
+            metaUpdr.updateMetadata();
+
+            return false;
+        }
+
+        return F.isEmpty(caches) || caches.contains(rec.key());
     }
 
     /**
@@ -237,13 +260,10 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateMetadata() {
-        metaUpdr.updateMetadata();
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
         log.warning("Close applier!");
+
+        metaUpdr.close();
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
     }
