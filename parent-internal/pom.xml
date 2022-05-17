@@ -43,7 +43,7 @@
             NOTE: The dependency versions below must be changed in the release branch up to
             the latest released version prior to an extension release.
         -->
-        <ignite-spring-data-ext.release.version>2.0.0-SNAPSHOT</ignite-spring-data-ext.release.version>
+        <ignite-spring-data-ext.release.version>2.0.0</ignite-spring-data-ext.release.version>
         <ignite-spring-data-commons.release.version>1.1.0</ignite-spring-data-commons.release.version>
     </properties>
 
