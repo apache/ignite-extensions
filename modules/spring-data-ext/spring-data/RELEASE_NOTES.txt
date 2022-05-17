@@ -1,7 +1,7 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
-Apache Ignite Spring Data Module 2.2.0
+Apache Ignite Spring Data Module 2.0.0
 --------------------------------------
 
 * Fixed the deleteAllById method which had the same type erasure
