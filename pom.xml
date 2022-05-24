@@ -55,6 +55,7 @@
         <module>modules/zookeeper-ip-finder-ext</module>
         <module>modules/topology-validator-ext</module>
         <module>modules/hibernate-ext</module>
+        <module>modules/geospatial-ext</module>
     </modules>
 
     <profiles>
