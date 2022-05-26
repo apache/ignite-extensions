@@ -33,7 +33,7 @@ JVM_OPTS="-Xms256m -Xmx32g"
 #
 # Define classpath
 #
-CP="${SCRIPT_DIR}/libs/*"
+CP="${SCRIPT_DIR}/../libs/ignite-performance-statistics-ext/*"
 
 #
 # Set main class to run the tool.
