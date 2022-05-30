@@ -57,6 +57,7 @@
         <module>modules/hibernate-ext</module>
         <module>modules/geospatial-ext</module>
         <module>modules/aop-ext</module>
+        <module>modules/spark-ext</module>
     </modules>
 
     <profiles>
