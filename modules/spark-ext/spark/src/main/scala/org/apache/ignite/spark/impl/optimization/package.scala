@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark.impl
 
-
 import org.apache.ignite.IgniteException
 import org.apache.ignite.spark.impl.optimization.accumulator.{QueryAccumulator, SingleTableSQLAccumulator}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Count}
