@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheTopologySplitAbstractTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,7 +67,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     private static final String LOCAL_HOST = "localhost";
 
     /** */
-    private static final int CACHE_KEY_CNT = 1000;
+    private static final int CACHE_KEY_CNT = 10;
 
     /** */
     public static final int CACHE_CNT = 2;
@@ -502,6 +503,7 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
     public void createCaches() {
         for (int cacheIdx = 0; cacheIdx < CACHE_CNT; cacheIdx++) {
             grid(0).createCache(new CacheConfiguration<>()
+                .setAffinity(new GridCacheModuloAffinityFunction(CACHE_KEY_CNT, CACHE_KEY_CNT))
                 .setName(cacheName(cacheIdx))
                 .setWriteSynchronizationMode(FULL_SYNC)
                 .setCacheMode(REPLICATED)
