@@ -58,6 +58,7 @@
         <module>modules/geospatial-ext</module>
         <module>modules/aop-ext</module>
         <module>modules/spark-ext</module>
+        <module>modules/mesos-ext</module>
     </modules>
 
     <profiles>
