@@ -54,7 +54,7 @@
                     <property name="indexedTypes">
                         <list>
                             <value>java.lang.Long</value>
-                            <value>org.apache.ignite.springdata22.examples.model.Person</value>
+                            <value>org.apache.ignite.springdata.examples.model.Person</value>
                         </list>
                     </property>
                 </bean>
