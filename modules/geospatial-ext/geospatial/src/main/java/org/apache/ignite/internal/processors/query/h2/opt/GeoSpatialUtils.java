@@ -24,13 +24,13 @@ import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexKeyDefinitionProvider;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexRowHandler;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.h2.table.IndexColumn;
 import org.locationtech.jts.geom.Geometry;
 
@@ -42,7 +42,7 @@ public class GeoSpatialUtils {
     private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
 
     static {
-        IndexKeyFactory.register(IndexKeyTypes.GEOMETRY, k -> new GeometryIndexKey((Geometry)k));
+        IndexKeyFactory.register(IndexKeyType.GEOMETRY, k -> new GeometryIndexKey((Geometry)k));
     }
 
     /** */
@@ -50,7 +50,7 @@ public class GeoSpatialUtils {
         try {
             IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
 
-            LinkedHashMap<String, IndexKeyDefinition> keyDefs = new QueryIndexKeyDefinitionProvider(tbl, cols).keyDefinitions();
+            LinkedHashMap<String, IndexKeyDefinition> keyDefs = H2Utils.columnsToKeyDefinitions(tbl, cols);
 
             if (tbl.cacheInfo().affinityNode())
                 return createIndex(tbl, name, keyDefs, cols);
@@ -71,15 +71,15 @@ public class GeoSpatialUtils {
     ) {
         List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
-        QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl, cols, keyDefs, idxKeyTypes, DUMMY_SETTINGS);
+        QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl.rowDescriptor(), keyDefs, idxKeyTypes, DUMMY_SETTINGS);
 
-        final int segments = tbl.rowDescriptor().cacheInfo().config().getQueryParallelism();
+        final int segments = tbl.cacheInfo().config().getQueryParallelism();
 
-        IndexDefinition def = new GeoSpatialIndexDefinition(name, keyDefs, rowHnd, segments);
+        IndexDefinition def = new GeoSpatialIndexDefinition(tbl, name, keyDefs, rowHnd, segments);
 
         Index idx = tbl.idxProc().createIndex(tbl.cacheContext(), GeoSpatialIndexFactory.INSTANCE, def);
 
-        return new GridH2SpatialIndex(idx.unwrap(GeoSpatialIndexImpl.class));
+        return new GridH2SpatialIndex(tbl, cols, idx.unwrap(GeoSpatialIndexImpl.class));
     }
 
     /** Creates index for client Ignite nodes. */

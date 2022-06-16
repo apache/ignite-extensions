@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.h2.value.ValueGeometry;
 import org.locationtech.jts.geom.Geometry;
@@ -38,8 +38,8 @@ public class GeometryIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.GEOMETRY;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.GEOMETRY;
     }
 
     /** {@inheritDoc} */

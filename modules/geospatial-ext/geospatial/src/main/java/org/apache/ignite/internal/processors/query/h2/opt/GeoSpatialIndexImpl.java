@@ -105,7 +105,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
     /** */
     IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        GridH2Table table = def.rowHandler().getTable();
+        GridH2Table table = def.getTable();
 
         if (table.isPartitioned()) {
             assert filter > 0; // Lookup batch will not be created for the first table filter.
@@ -299,7 +299,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
             qryFilter = qctx.filter();
 
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ?
-            qryFilter.forCache(def.rowHandler().getTable().cacheName()) : null;
+            qryFilter.forCache(def.getTable().cacheName()) : null;
 
         List<IndexRow> rows = new ArrayList<>();
 
