@@ -52,6 +52,8 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInitSpringContextOnce() throws Exception {
+        assertEquals(0, InitiationTestBean.initCnt.get());
+
         loadKafkaToIgniteStreamer("loader/kafka-to-ignite-initiation-context-test.xml");
 
         assertEquals(1, InitiationTestBean.initCnt.get());
