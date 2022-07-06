@@ -19,13 +19,15 @@ package org.apache.ignite.cdc.kafka;
 
 import java.net.URL;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
@@ -49,27 +51,30 @@ public class KafkaToIgniteLoader {
 
         IgniteSpringHelper spring = SPRING.create(false);
 
-        IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgTuple =
-            spring.loadConfigurations(cfgUrl);
+        GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> cfgTuple =
+            spring.loadBeans(cfgUrl, F.asList(KAFKA_PROPERTIES),
+                IgniteConfiguration.class, KafkaToIgniteCdcStreamerConfiguration.class);
 
-        if (cfgTuple.get1().size() > 1) {
+        Collection<IgniteConfiguration> ignCfg = cfgTuple.get2().get(IgniteConfiguration.class);
+
+        if (ignCfg.size() > 1) {
             throw new IgniteCheckedException(
-                "Exact 1 IgniteConfiguration should be defined. Found " + cfgTuple.get1().size()
+                "Exact 1 IgniteConfiguration should be defined. Found " + ignCfg.size()
             );
         }
 
-        IgniteBiTuple<Collection<KafkaToIgniteCdcStreamerConfiguration>, ? extends GridSpringResourceContext> k2iCfg =
-            spring.loadConfigurations(cfgUrl, KafkaToIgniteCdcStreamerConfiguration.class);
+        Collection<KafkaToIgniteCdcStreamerConfiguration> k2iCfg =
+            cfgTuple.get2().get(KafkaToIgniteCdcStreamerConfiguration.class);
 
-        if (k2iCfg.get1().size() > 1) {
+        if (k2iCfg.size() > 1) {
             throw new IgniteCheckedException(
                 "Exact 1 KafkaToIgniteCdcStreamerConfiguration configuration should be defined. " +
-                    "Found " + k2iCfg.get1().size()
+                    "Found " + k2iCfg.size()
             );
         }
 
-        Properties kafkaProps = spring.loadBean(cfgUrl, KAFKA_PROPERTIES);
+        Properties kafkaProps = (Properties)cfgTuple.get1().get(KAFKA_PROPERTIES);
 
-        return new KafkaToIgniteCdcStreamer(cfgTuple.get1().iterator().next(), kafkaProps, k2iCfg.get1().iterator().next());
+        return new KafkaToIgniteCdcStreamer(ignCfg.iterator().next(), kafkaProps, k2iCfg.iterator().next());
     }
 }
