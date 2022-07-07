@@ -223,12 +223,16 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
-        // No-op.
+        cacheEvents.forEachRemaining(e -> {
+            // Just skip. Handle of cache events not supported.
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        // No-op.
+        caches.forEachRemaining(e -> {
+            // Just skip. Handle of cache events not supported.
+        });
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
