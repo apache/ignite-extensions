@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
@@ -218,6 +219,16 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         );
 
         sendMetaUpdatedMarkers();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheDestroy(Iterator<Integer> caches) {
+        // No-op.
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */

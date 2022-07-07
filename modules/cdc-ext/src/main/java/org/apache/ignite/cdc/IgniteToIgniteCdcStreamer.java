@@ -191,6 +191,16 @@ public class IgniteToIgniteCdcStreamer extends CdcEventsApplier implements CdcCo
     }
 
     /** {@inheritDoc} */
+    @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCacheDestroy(Iterator<Integer> caches) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         dest.close();
     }
