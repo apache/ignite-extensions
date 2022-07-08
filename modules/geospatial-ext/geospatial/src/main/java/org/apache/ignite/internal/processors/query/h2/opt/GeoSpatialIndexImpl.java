@@ -187,7 +187,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     private boolean put(CacheDataRow row) {
         checkClosed();
 
-        Object key = def.rowHandler().key(row);
+        Object key = def.rowHandler().cacheKey(row);
 
         assert key != null;
 
@@ -220,7 +220,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
     private boolean remove(CacheDataRow row) {
         checkClosed();
 
-        Object key = def.rowHandler().key(row);
+        Object key = def.rowHandler().cacheKey(row);
 
         assert key != null;
 
