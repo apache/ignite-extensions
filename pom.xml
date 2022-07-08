@@ -61,6 +61,7 @@
         <module>modules/mesos-ext</module>
         <module>modules/yarn-ext</module>
         <module>modules/cloud-ext</module>
+        <module>modules/osgi-ext</module>
     </modules>
 
     <profiles>
