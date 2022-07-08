@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.List;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
@@ -42,10 +43,10 @@ public class GridH2SpatialIndex extends GridH2SpatialBaseIndex {
     private final GeoSpatialIndexImpl delegate;
 
     /** */
-    public GridH2SpatialIndex(GeoSpatialIndexImpl idx) {
-        super(idx.def.rowHandler().getTable(),
+    public GridH2SpatialIndex(GridH2Table tbl, List<IndexColumn> cols, GeoSpatialIndexImpl idx) {
+        super(tbl,
             idx.def.idxName().idxName(),
-            idx.def.rowHandler().getH2IdxColumns().toArray(new IndexColumn[0]),
+            cols.toArray(new IndexColumn[0]),
             IndexType.createNonUnique(false, false, true));
 
         delegate = idx;

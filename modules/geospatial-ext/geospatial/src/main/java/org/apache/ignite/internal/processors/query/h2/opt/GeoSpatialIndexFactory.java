@@ -22,11 +22,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexFactory;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.h2.message.DbException;
-import org.h2.result.SortOrder;
-import org.h2.table.IndexColumn;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,24 +41,19 @@ public class GeoSpatialIndexFactory implements IndexFactory {
         GeoSpatialIndexDefinition def = (GeoSpatialIndexDefinition)definition;
 
         try {
-            List<IndexColumn> cols = def.rowHandler().getH2IdxColumns();
+            List<IndexKeyDefinition> keyDefs = def.rowHandler().indexKeyDefinitions();
 
-            if (cols.size() > 1)
+            if (keyDefs.size() > 1)
                 throw DbException.getUnsupportedException("can only do one column");
 
-            if ((cols.get(0).sortType & SortOrder.DESCENDING) != 0)
+            if ((keyDefs.get(0).order().sortOrder() == SortOrder.DESC))
                 throw DbException.getUnsupportedException("cannot do descending");
 
-            if ((cols.get(0).sortType & SortOrder.NULLS_FIRST) != 0)
-                throw DbException.getUnsupportedException("cannot do nulls first");
+            if (keyDefs.get(0).order().nullsOrder() != null)
+                throw DbException.getUnsupportedException("cannot do nulls ordering");
 
-            if ((cols.get(0).sortType & SortOrder.NULLS_LAST) != 0)
-                throw DbException.getUnsupportedException("cannot do nulls last");
-
-            if (cols.get(0).column.getType() != Value.GEOMETRY) {
-                throw DbException.getUnsupportedException("spatial index on non-geometry column, " +
-                    cols.get(0).column.getCreateSQL());
-            }
+            if (keyDefs.get(0).idxType() != IndexKeyType.GEOMETRY)
+                throw DbException.getUnsupportedException("spatial index on non-geometry column");
 
             return new GeoSpatialIndexImpl(cctx, def);
         }
