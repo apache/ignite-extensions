@@ -60,6 +60,7 @@
         <module>modules/spark-ext</module>
         <module>modules/mesos-ext</module>
         <module>modules/yarn-ext</module>
+        <module>modules/cloud-ext</module>
     </modules>
 
     <profiles>

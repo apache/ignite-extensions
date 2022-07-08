@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -46,5 +47,26 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
         KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/kafka-to-ignite-correct.xml");
 
         assertNotNull(streamer);
+    }
+
+    /** */
+    @Test
+    public void testInitSpringContextOnce() throws Exception {
+        assertEquals(0, InitiationTestBean.initCnt.get());
+
+        loadKafkaToIgniteStreamer("loader/kafka-to-ignite-initiation-context-test.xml");
+
+        assertEquals(1, InitiationTestBean.initCnt.get());
+    }
+
+    /** */
+    private static class InitiationTestBean {
+        /** */
+        static AtomicInteger initCnt = new AtomicInteger();
+
+        /** */
+        InitiationTestBean() {
+            initCnt.incrementAndGet();
+        }
     }
 }
