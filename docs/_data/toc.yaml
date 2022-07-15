@@ -32,6 +32,8 @@
   url: spring/spring-data
 - title: Apache Ignite and Spring Cache
   url: spring/spring-caching
+- title: Apache Ignite and Spring Session
+  url: spring/spring-sessions
 - title: Apache Ignite and Spring Transactions
   url: spring/spring-tx
 - title: Apache Kafka Streamer
