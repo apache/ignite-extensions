@@ -1,0 +1,54 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Apache Ignite With Spring Session
+
+== Overview
+
+
+Apache Ignite Spring Session integration provides SessionRepository and ReactiveSessionRepository implementation backed by Redis and configuration support. Spring Session simplifies support for clustered sessions without being tied to an application container specific solution.
+
+
+== Maven Configuration
+
+Add the `ignite-spring-session-ext` extension to your Maven use your Ignite servers or clients with Spring Session.
+
+The extension can be added with Maven as follows:
+
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-core</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-spring-session-ext</artifactId>
+    <version>1.0.0</version>
+  </dependency>
+</dependencies>
+----
+--
+
+Once added, Ignite instance will connect to Spring on start-up automatically.
+
+
+== Examples
+
+Refer to several available https://github.com/antkr/ignite-spring-session-demo[examples, windows="_blank"]
+for more details.
