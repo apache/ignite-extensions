@@ -45,10 +45,21 @@ tab:pom.xml[]
 ----
 --
 
-Once added, Ignite instance will connect to Spring on start-up automatically.
+Once added, Ignite instance will connect to Spring on start-up automatically. You can use Spring Session annotations in your code. For example, here is how you can create a simple controller:
+
+[source,java]
+----
+@Controller
+public class SampleController {
+    @GetMapping("/")
+    public String SessionId(HttpSession session) {
+        return session.getId();
+    }
+}
+----
 
 
-== Examples
 
-Refer to several available https://github.com/antkr/ignite-spring-session-demo[examples, windows="_blank"]
-for more details.
+== Extended Example
+
+You can find an extended example in the https://github.com/antkr/ignite-spring-session-demo[example repository, windows="_blank"]. In it, an Ignite node is started with a Spring Session controller.
