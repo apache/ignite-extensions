@@ -22,7 +22,7 @@ Apache Ignite Spring Session integration provides SessionRepository and Reactive
 
 == Maven Configuration
 
-Add the `ignite-spring-session-ext` extension to your Maven use your Ignite servers or clients with Spring Session.
+Add the `ignite-spring-session-ext` extension to your Maven to use your Ignite servers or clients with Spring Session.
 
 The extension can be added with Maven as follows:
 
