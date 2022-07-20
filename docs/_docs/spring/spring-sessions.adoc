@@ -52,7 +52,7 @@ To expose Spring Sessions to Ignite:
 - Add the `@EnableIgniteHttpSession` annotation to the class that configures Ignite session.
 - Add the `@SpringSessionIgnite` annotation to your Ignite instance.
 
-After you add these annotations, Spring Session annotations will be available in your code.  For example, here is how you can create a simple controller:
+After you add these annotations, Spring Session will use Ignite as data storage for sessions.  For example, here is how you can create a simple controller:
 
 [source,java]
 ----
