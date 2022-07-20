@@ -17,14 +17,12 @@
 == Overview
 
 
-Apache Ignite Spring Session integration provides SessionRepository and ReactiveSessionRepository implementation and configuration support. Spring Session simplifies support for clustered sessions without being tied to an application container specific solution.
+Apache Ignite Spring Session integration provides SessionRepository and IndexedSessionRepository implementation and configuration support. Spring Session simplifies support for clustered sessions without being tied to an application container specific solution.
 
 
 == Maven Configuration
 
-Add the `ignite-spring-session-ext` extension to your Maven to use your Ignite servers or clients with Spring Session.
-
-The extension can be added with Maven as follows:
+Add the `ignite-spring-session-ext` extension to your Maven to use your Ignite cluster for Spring Session storage and replication. Here is how you can add this extension to your project:
 
 [tabs]
 --
