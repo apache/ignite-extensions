@@ -128,11 +128,13 @@ public abstract class CdcEventsApplier {
                 else
                     val = new CacheObjectImpl(evt.value(), null);
 
-                updBatch.put(key, new GridCacheDrExpirationInfo(
-                    val,
-                    new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()),
-                    TTL_NOT_CHANGED,
-                    EXPIRE_TIME_CALCULATE));
+                GridCacheVersion ver = new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId());
+
+                GridCacheDrInfo drVal = currCache.configuration().getExpiryPolicyFactory() != null ?
+                    new GridCacheDrExpirationInfo(val, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE)
+                    : new GridCacheDrInfo(val, ver);
+
+                updBatch.put(key, drVal);
             }
             else {
                 evtsApplied += applyIf(currCache, hasUpdates, () -> isApplyBatch(rmvBatch, key));
