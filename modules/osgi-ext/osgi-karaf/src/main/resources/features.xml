@@ -22,12 +22,7 @@
         <details>
             <![CDATA[Aggregate feature for installing all Apache Ignite module + their dependencies.
             
-            NOTE #1: Due to a bug in Apache Karaf (KARAF-4129), you must install the ignite-log4j feature explicitly and then either:
-            - manually refresh the pax-logging-api framework bundle  - or - 
-            - restart the Apache Karaf container.
-            You may safely ignore the 'Resource has no uri' exception if you follow this method.
-
-            NOTE #2: This feature *does not* include components that depend on LGPL software.]]>
+            NOTE #1: This feature *does not* include components that depend on LGPL software.]]>
         </details>
         <feature>ignite-core</feature>
         <feature>ignite-camel-ext</feature>
@@ -38,8 +33,6 @@
         <feature>ignite-jta</feature>
         <feature>ignite-kafka-ext</feature>
         <feature>ignite-mqtt-ext</feature>
-        <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
-        <feature>ignite-log4j</feature>-->
         <feature>ignite-rest-http</feature>
         <feature>ignite-schedule</feature>
         <feature>ignite-slf4j</feature>

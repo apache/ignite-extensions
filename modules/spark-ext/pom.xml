@@ -36,7 +36,7 @@
     <properties>
         <spark.version>2.4.4</spark.version>
         <scala.library.version>2.11.12</scala.library.version>
-        <spark.hadoop.version>2.6.5</spark.hadoop.version>
+        <spark.hadoop.version>3.3.3</spark.hadoop.version>
         <spark.janino.version>3.0.8</spark.janino.version>
         <spark.jackson.version>2.6.7</spark.jackson.version>
         <scala.test.version>2.2.6</scala.test.version>
