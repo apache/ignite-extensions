@@ -113,6 +113,9 @@ public class IgniteSpringTransactionsCompatibilityTest extends IgniteCompatibili
         if (IgniteProductVersion.fromString(igniteVer).compareTo(VER_2_11_0.version()) <= 0)
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
 
+        if (IgniteProductVersion.fromString("2.14.0").compareTo(IgniteProductVersion.fromString(igniteVer)) > 0)
+            res.add(new Dependency("log4j", "log4j", "log4j", "1.2.17", false));
+
         return res;
     }
 

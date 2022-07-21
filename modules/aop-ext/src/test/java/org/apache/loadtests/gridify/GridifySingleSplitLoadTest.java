@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.loadtests.GridLoadTestStatistics;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -30,9 +29,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.apache.logging.log4j.Level.INFO;
 
 /**
  * Gridify single split load test.
@@ -67,12 +68,8 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
         DiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         cfg.setDiscoverySpi(discoSpi);
-        /*
-         */
-        @SuppressWarnings("TypeMayBeWeakened")
-        Log4JLogger log = (Log4JLogger)cfg.getGridLogger();
 
-        log.getLogger("org.apache.ignite").setLevel(Level.INFO);
+        Configurator.setLevel("org.apache.ignite", INFO);
 
         return cfg;
     }

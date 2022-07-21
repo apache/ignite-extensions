@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -108,6 +109,9 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
             res.add(new Dependency("spring-tx", "org.springframework", "spring-tx", springVer, false));
             res.add(new Dependency("spring-jdbc", "org.springframework", "spring-jdbc", springVer, false));
         }
+
+        if (IgniteProductVersion.fromString("2.14.0").compareTo(IgniteProductVersion.fromString(igniteVer)) > 0)
+            res.add(new Dependency("log4j", "log4j", "log4j", "1.2.17", false));
 
         return res;
     }
