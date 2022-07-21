@@ -23,7 +23,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.{Ignite, Ignition}
-import org.apache.log4j.{Level, Logger}
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.sql.SparkSession
 
 /**
@@ -48,8 +49,8 @@ object IgniteDataFrameJoinExample extends App {
             .getOrCreate()
 
         // Adjust the logger to exclude the logs of no interest.
-        Logger.getRootLogger.setLevel(Level.ERROR)
-        Logger.getLogger("org.apache.ignite").setLevel(Level.INFO)
+        Configurator.setRootLevel(Level.ERROR)
+        Configurator.setLevel("org.apache.ignite", Level.INFO)
 
         // Executing examples.
         sparkDSLJoinExample
