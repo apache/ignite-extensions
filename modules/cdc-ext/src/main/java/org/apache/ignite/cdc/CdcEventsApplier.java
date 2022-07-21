@@ -34,10 +34,14 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT_CHANGED;
 
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the provided by {@link #ignite()} cluster.
@@ -124,8 +128,11 @@ public abstract class CdcEventsApplier {
                 else
                     val = new CacheObjectImpl(evt.value(), null);
 
-                updBatch.put(key, new GridCacheDrInfo(val,
-                    new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId())));
+                updBatch.put(key, new GridCacheDrExpirationInfo(
+                    val,
+                    new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId()),
+                    TTL_NOT_CHANGED,
+                    EXPIRE_TIME_CALCULATE));
             }
             else {
                 evtsApplied += applyIf(currCache, hasUpdates, () -> isApplyBatch(rmvBatch, key));
