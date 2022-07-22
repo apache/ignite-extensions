@@ -25,9 +25,14 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -52,6 +57,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -428,6 +434,36 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Test that destination cluster applies expiration policy on received entries. */
+    @Test
+    public void testWithExpiryPolicy() throws Exception {
+        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 10));
+
+        IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE, factory);
+        IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE, factory);
+
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
+
+        try {
+            srcCache.putAll(F.asMap(0, ConflictResolvableTestData.create()));
+
+            assertTrue(srcCache.containsKey(0));
+
+            log.warning(">>>>>> Waiting for entry in destination cache");
+            assertTrue(waitForCondition(() -> destCache.containsKey(0), getTestTimeout()));
+
+            log.warning(">>>>>> Waiting for removing in source cache");
+            assertTrue(waitForCondition(() -> !srcCache.containsKey(0), getTestTimeout()));
+
+            log.warning(">>>>>> Waiting for removing in destination cache");
+            assertTrue(waitForCondition(() -> !destCache.containsKey(0), 20_000));
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
     /** */
     public Runnable generateData(String cacheName, IgniteEx ign, IntStream keys) {
         return () -> {
@@ -480,10 +516,22 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCache<Integer, ConflictResolvableTestData> createCache(IgniteEx ignite, String name) {
+        return createCache(ignite, name, null);
+    }
+
+    /** */
+    private IgniteCache<Integer, ConflictResolvableTestData> createCache(
+        IgniteEx ignite,
+        String name,
+        @Nullable Factory<? extends ExpiryPolicy> expiryPlcFactory
+    ) {
         CacheConfiguration<Integer, ConflictResolvableTestData> ccfg = new CacheConfiguration<Integer, ConflictResolvableTestData>()
             .setName(name)
             .setCacheMode(mode)
             .setAtomicityMode(atomicity);
+
+        if (expiryPlcFactory != null)
+            ccfg.setExpiryPolicyFactory(expiryPlcFactory);
 
         if (mode != REPLICATED)
             ccfg.setBackups(backups);
