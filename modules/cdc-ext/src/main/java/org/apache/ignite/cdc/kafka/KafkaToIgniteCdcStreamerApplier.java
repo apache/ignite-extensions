@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.CdcEventsApplier;
+import org.apache.ignite.cdc.CdcEventsIgniteApplier;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -83,7 +84,7 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_M
  * @see CdcEvent
  * @see CacheEntryVersion
  */
-class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnable, AutoCloseable {
+class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Ignite instance. */
     private final IgniteEx ign;
 
@@ -120,6 +121,9 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
+    /** */
+    private CdcEventsApplier applier;
+
     /**
      * @param ign Ignite instance.
      * @param log Logger.
@@ -146,8 +150,6 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
-        super(maxBatchSize);
-
         this.ign = ign;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
@@ -158,6 +160,8 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
+
+        applier = new CdcEventsIgniteApplier(ign, maxBatchSize, log);
     }
 
     /** {@inheritDoc} */
@@ -223,7 +227,7 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
             );
         }
 
-        apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+        applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
@@ -266,16 +270,6 @@ class KafkaToIgniteCdcStreamerApplier extends CdcEventsApplier implements Runnab
         metaUpdr.close();
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteEx ignite() {
-        return ign;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteLogger log() {
-        return log;
     }
 
     /** {@inheritDoc} */

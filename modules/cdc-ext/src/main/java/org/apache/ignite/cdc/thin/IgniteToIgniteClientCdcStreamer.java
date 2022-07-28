@@ -15,78 +15,69 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.thin;
 
 import java.util.Iterator;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
+import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteExperimental;
-
-import static org.apache.ignite.cdc.CdcEventsApplier.registerBinaryMeta;
-import static org.apache.ignite.cdc.CdcEventsApplier.registerMapping;
 
 /**
- * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.
+ * Change Data Consumer that streams all data changes to destination cluster through Ignite thin client.
+ * <p/>
  * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
  * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka unavailability or network issues.
- *
+ * <p/>
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
  * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
  *
+ * @see IgniteClient
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
-@IgniteExperimental
-public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteCdcStreamer>  {
-    /** Destination cluster client configuration. */
-    private IgniteConfiguration destIgniteCfg;
+public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteCdcStreamer> {
+    /** Ignite thin client configuration. */
+    private ClientConfiguration destClientCfg;
 
-    /** Destination Ignite cluster client */
-    private IgniteEx dest;
+    /** Ignite thin client. */
+    private IgniteClient dest;
+
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
-        A.notNull(destIgniteCfg, "Destination ignite configuration");
+        super.start(mreg);
 
-        dest = (IgniteEx)Ignition.start(destIgniteCfg);
+        A.notNull(destClientCfg, "Destination thin client configuration");
 
-        applier = new CdcEventsIgniteApplier(dest, maxBatchSize, log);
+        dest = Ignition.startClient(destClientCfg);
+
+        applier = new CdcEventsIgniteClientApplier(dest, maxBatchSize, log);
     }
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
         types.forEachRemaining(t -> {
-            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
-
-            registerBinaryMeta(dest, log, meta);
-
-            typesCnt.increment();
+            // Just skip. Handle of new binary types not supported.
         });
-
-        lastEvtTs.value(System.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         mappings.forEachRemaining(m -> {
-            registerMapping(dest, log, m);
-
-            mappingsCnt.increment();
+            // Just skip. Handle of new mappings not supported.
         });
-
-        lastEvtTs.value(System.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
@@ -95,12 +86,13 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer<IgniteT
     }
 
     /**
-     * Sets Ignite client node configuration that will connect to destination cluster.
-     * @param destIgniteCfg Ignite client node configuration that will connect to destination cluster.
+     * Sets Ignite thin client configuration that will connect to destination cluster.
+     *
+     * @param destClientCfg Ignite thin client configuration that will connect to destination cluster.
      * @return {@code this} for chaining.
      */
-    public IgniteToIgniteCdcStreamer setDestinationIgniteConfiguration(IgniteConfiguration destIgniteCfg) {
-        this.destIgniteCfg = destIgniteCfg;
+    public IgniteToIgniteClientCdcStreamer setDestinationIgniteConfiguration(ClientConfiguration destClientCfg) {
+        this.destClientCfg = destClientCfg;
 
         return this;
     }
