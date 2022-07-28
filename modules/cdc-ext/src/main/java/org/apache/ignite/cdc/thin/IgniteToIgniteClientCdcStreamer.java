@@ -21,7 +21,6 @@ import java.util.Iterator;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
-import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
@@ -47,17 +46,19 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteCdcStreamer> {
+public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteClientCdcStreamer> {
     /** Ignite thin client configuration. */
     private ClientConfiguration destClientCfg;
 
     /** Ignite thin client. */
     private IgniteClient dest;
 
-
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
         super.start(mreg);
+
+        if (log.isInfoEnabled())
+            log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesIds + ']');
 
         A.notNull(destClientCfg, "Destination thin client configuration");
 

@@ -58,6 +58,11 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer<IgniteT
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
+        super.start(mreg);
+
+        if (log.isInfoEnabled())
+            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
+
         A.notNull(destIgniteCfg, "Destination ignite configuration");
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);

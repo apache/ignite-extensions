@@ -33,7 +33,7 @@ import org.apache.ignite.resources.LoggerResource;
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
 
 /** */
-public abstract class AbstractIgniteCdcStreamer<T> implements CdcConsumer {
+public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStreamer> implements CdcConsumer {
     /** */
     public static final String EVTS_CNT = "EventsCount";
 
@@ -65,12 +65,12 @@ public abstract class AbstractIgniteCdcStreamer<T> implements CdcConsumer {
     private Set<String> caches;
 
     /** Cache IDs. */
-    private Set<Integer> cachesIds;
+    protected Set<Integer> cachesIds;
 
     /** Maximum batch size. */
     protected int maxBatchSize;
 
-    /** */
+    /** Events applier. */
     protected CdcEventsApplier applier;
 
     /** Timestamp of last sent message. */
@@ -92,9 +92,6 @@ public abstract class AbstractIgniteCdcStreamer<T> implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
         A.notEmpty(caches, "caches");
-
-        if (log.isInfoEnabled())
-            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
