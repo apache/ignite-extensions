@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -69,9 +70,9 @@ public class CdcEventsIgniteApplier extends CdcEventsApplier<KeyCacheObject, Gri
             IgniteInternalCache<BinaryObject, BinaryObject> cache = cache(cacheId);
 
             if (cache.configuration().getExpiryPolicyFactory() != null) {
-                drMap.forEach((key, i) -> drMap.compute(key,
-                    (k, info) -> new GridCacheDrExpirationInfo(info.value(), info.version(),
-                        TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE)));
+                drMap = F.viewReadOnly(drMap,
+                    (info) -> new GridCacheDrExpirationInfo(info.value(), info.version(),
+                        TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE));
             }
 
             cache(cacheId).putAllConflict(drMap);
