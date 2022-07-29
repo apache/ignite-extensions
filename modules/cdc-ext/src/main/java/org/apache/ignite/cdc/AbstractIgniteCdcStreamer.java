@@ -32,7 +32,11 @@ import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
 
-/** */
+/**
+ * Change Data Consumer that streams all data changes to destination cluster by the provided {@link #applier}.
+ *
+ * @see CdcEventsApplier
+ */
 public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStreamer> implements CdcConsumer {
     /** */
     public static final String EVTS_CNT = "EventsCount";
