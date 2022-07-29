@@ -92,7 +92,7 @@ public class CdcIgniteToIgniteClientReplicationTest extends AbstractReplicationT
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(new IgniteToIgniteClientCdcStreamer()
-                .setDestinationIgniteConfiguration(clientCfg)
+                .setDestinationIgniteClientConfiguration(clientCfg)
                 .setCaches(Collections.singleton(cache))
                 .setMaxBatchSize(KEYS_CNT));
 
