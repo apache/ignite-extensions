@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * <p/>
  * Consumer will just fail in case of any error during write. Fail of consumer will lead to the fail of {@code ignite-cdc} application.
  * It expected that {@code ignite-cdc} will be configured for automatic restarts with the OS tool to failover temporary errors
- * such as Kafka unavailability or network issues.
+ * such as destination cluster unavailability or other issues.
  * <p/>
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
