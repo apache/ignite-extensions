@@ -92,7 +92,7 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer<I
      * @param destClientCfg Ignite thin client configuration that will connect to destination cluster.
      * @return {@code this} for chaining.
      */
-    public IgniteToIgniteClientCdcStreamer setDestinationIgniteClientConfiguration(ClientConfiguration destClientCfg) {
+    public IgniteToIgniteClientCdcStreamer setDestinationClientConfiguration(ClientConfiguration destClientCfg) {
         this.destClientCfg = destClientCfg;
 
         return this;
