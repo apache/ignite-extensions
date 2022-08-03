@@ -90,6 +90,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
+
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
@@ -101,8 +103,6 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
             for (ConsumerRecord<Void, byte[]> rec : recs) {
                 Object data = IgniteUtils.fromBytes(rec.value());
-
-                BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
 
                 if (data instanceof BinaryMetadata)
                     registerBinaryMeta(ctx, log, (BinaryMetadata)data);
