@@ -35,8 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.cdc.CdcEventsIgniteApplier;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -122,7 +122,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /** */
-    private CdcEventsApplier applier;
+    private AbstractCdcEventsApplier applier;
 
     /**
      * @param ign Ignite instance.

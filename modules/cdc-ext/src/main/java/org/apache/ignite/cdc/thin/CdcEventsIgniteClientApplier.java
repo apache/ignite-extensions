@@ -19,8 +19,8 @@ package org.apache.ignite.cdc.thin;
 
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  * @see TcpClientCache#putAllConflict(Map)
  * @see TcpClientCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteClientApplier extends CdcEventsApplier<Object, T2<Object, GridCacheVersion>> {
+public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T2<Object, GridCacheVersion>> {
     /** Client connected to the destination cluster. */
     private final IgniteClient client;
 

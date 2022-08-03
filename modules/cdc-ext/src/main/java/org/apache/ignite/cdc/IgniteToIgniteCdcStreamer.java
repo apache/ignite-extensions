@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
 
-import static org.apache.ignite.cdc.CdcEventsApplier.registerBinaryMeta;
-import static org.apache.ignite.cdc.CdcEventsApplier.registerMapping;
+import static org.apache.ignite.cdc.AbstractCdcEventsApplier.registerBinaryMeta;
+import static org.apache.ignite.cdc.AbstractCdcEventsApplier.registerMapping;
 
 /**
  * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.

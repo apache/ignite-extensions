@@ -18,7 +18,6 @@
 package org.apache.ignite.cdc;
 
 import java.util.Map;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -46,7 +45,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteApplier extends CdcEventsApplier<KeyCacheObject, GridCacheDrInfo> {
+public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObject, GridCacheDrInfo> {
     /** Destination cluster. */
     private final IgniteEx ignite;
 
@@ -58,10 +57,10 @@ public class CdcEventsIgniteApplier extends CdcEventsApplier<KeyCacheObject, Gri
      * @param maxBatchSize Maximum batch size.
      * @param log Logger.
      */
-    public CdcEventsIgniteApplier(Ignite ignite, int maxBatchSize, IgniteLogger log) {
+    public CdcEventsIgniteApplier(IgniteEx ignite, int maxBatchSize, IgniteLogger log) {
         super(maxBatchSize, log);
 
-        this.ignite = (IgniteEx)ignite;
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */

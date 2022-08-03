@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFIN
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the cluster.
  */
-public abstract class CdcEventsApplier<K, V>  {
+public abstract class AbstractCdcEventsApplier<K, V>  {
     /** Maximum batch size. */
     private final int maxBatchSize;
 
@@ -59,7 +59,7 @@ public abstract class CdcEventsApplier<K, V>  {
      * @param maxBatchSize Maximum batch size.
      * @param log Logger.
      */
-    public CdcEventsApplier(int maxBatchSize, IgniteLogger log) {
+    public AbstractCdcEventsApplier(int maxBatchSize, IgniteLogger log) {
         this.maxBatchSize = maxBatchSize;
         this.log = log.getLogger(getClass());
     }

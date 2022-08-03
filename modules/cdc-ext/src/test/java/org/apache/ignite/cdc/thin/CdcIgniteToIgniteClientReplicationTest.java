@@ -71,7 +71,7 @@ public class CdcIgniteToIgniteClientReplicationTest extends AbstractReplicationT
 
     /**
      * @param srcCfg Ignite source node configuration.
-     * @param destCfg Ignite destination cluster configuration.
+     * @param dest Destination cluster.
      * @param cache Cache name to replicate.
      * @return Future for Change Data Capture application.
      */

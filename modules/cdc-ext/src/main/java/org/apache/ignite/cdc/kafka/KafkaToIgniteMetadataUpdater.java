@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CdcEventsApplier;
+import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -100,9 +100,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
                 Object data = IgniteUtils.fromBytes(rec.value());
 
                 if (data instanceof BinaryMetadata)
-                    CdcEventsApplier.registerBinaryMeta(ign, log, (BinaryMetadata)data);
+                    AbstractCdcEventsApplier.registerBinaryMeta(ign, log, (BinaryMetadata)data);
                 else if (data instanceof TypeMapping)
-                    CdcEventsApplier.registerMapping(ign, log, (TypeMapping)data);
+                    AbstractCdcEventsApplier.registerMapping(ign, log, (TypeMapping)data);
                 else
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
