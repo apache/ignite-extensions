@@ -262,9 +262,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE);
 
-            destCache.put(KEYS_CNT + 1, ConflictResolvableTestData.create());
-            destCache.remove(KEYS_CNT + 1);
-
             // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
             runAsync(generateData(IGNORED_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
@@ -327,9 +324,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
 
-        addData.accept(destCluster[0], -1);
-        executeSql(destCluster[0], "DELETE FROM " + name);
-
         IntStream.range(0, KEYS_CNT).forEach(i -> addData.accept(srcCluster[0], i));
 
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(name);
@@ -375,9 +369,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
-
-        executeSql(destCluster[0], insertQry, -1, "Name-1");
-        executeSql(destCluster[0], deleteQry);
 
         IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], insertQry, id, "Name" + id));
 
