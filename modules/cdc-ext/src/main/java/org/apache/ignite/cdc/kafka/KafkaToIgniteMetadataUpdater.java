@@ -102,21 +102,18 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
             for (ConsumerRecord<Void, byte[]> rec : recs) {
                 Object data = IgniteUtils.fromBytes(rec.value());
 
+                BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
+
                 if (data instanceof BinaryMetadata)
-                    registerBinaryMeta(binaryContext(), log, (BinaryMetadata)data);
+                    registerBinaryMeta(ctx, log, (BinaryMetadata)data);
                 else if (data instanceof TypeMapping)
-                    registerMapping(binaryContext(), log, (TypeMapping)data);
+                    registerMapping(ctx, log, (TypeMapping)data);
                 else
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
             cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
         }
-    }
-
-    /** @return Binary context. */
-    private BinaryContext binaryContext() {
-        return ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
     }
 
     /** {@inheritDoc} */
