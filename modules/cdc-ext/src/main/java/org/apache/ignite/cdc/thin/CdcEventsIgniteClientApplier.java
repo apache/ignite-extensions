@@ -59,7 +59,7 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
     }
 
     /** {@inheritDoc} */
-    @Override protected T2<Object, GridCacheVersion> toValue(Object val, GridCacheVersion ver) {
+    @Override protected T2<Object, GridCacheVersion> toValue(int cacheId, Object val, GridCacheVersion ver) {
         return new T2<>(val, ver);
     }
 

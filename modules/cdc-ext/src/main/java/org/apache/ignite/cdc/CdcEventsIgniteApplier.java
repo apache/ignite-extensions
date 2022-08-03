@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -66,14 +65,6 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
     /** {@inheritDoc} */
     @Override protected void putAllConflict(int cacheId, Map<KeyCacheObject, GridCacheDrInfo> drMap) {
         try {
-            IgniteInternalCache<BinaryObject, BinaryObject> cache = cache(cacheId);
-
-            if (cache.configuration().getExpiryPolicyFactory() != null) {
-                drMap = F.viewReadOnly(drMap,
-                    (info) -> new GridCacheDrExpirationInfo(info.value(), info.version(),
-                        TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE));
-            }
-
             cache(cacheId).putAllConflict(drMap);
         }
         catch (IgniteCheckedException e) {
@@ -102,7 +93,7 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDrInfo toValue(Object val, GridCacheVersion ver) {
+    @Override protected GridCacheDrInfo toValue(int cacheId, Object val, GridCacheVersion ver) {
         CacheObject cacheObj;
 
         if (val instanceof CacheObject)
@@ -110,7 +101,9 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
         else
             cacheObj = new CacheObjectImpl(val, null);
 
-        return new GridCacheDrInfo(cacheObj, ver);
+        return cache(cacheId).configuration().getExpiryPolicyFactory() != null ?
+            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
+            new GridCacheDrInfo(cacheObj, ver);
     }
 
     /** @return Cache. */
