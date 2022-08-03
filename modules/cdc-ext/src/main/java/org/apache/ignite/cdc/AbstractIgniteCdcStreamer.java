@@ -37,7 +37,7 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_
  *
  * @see AbstractCdcEventsApplier
  */
-public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStreamer> implements CdcConsumer {
+public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     /** */
     public static final String EVTS_CNT = "EventsCount";
 
@@ -154,10 +154,10 @@ public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStrea
      * @param onlyPrimary Whether entries only from primary nodes should be handled.
      * @return {@code this} for chaining.
      */
-    public T setOnlyPrimary(boolean onlyPrimary) {
+    public AbstractIgniteCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
         this.onlyPrimary = onlyPrimary;
 
-        return (T)this;
+        return this;
     }
 
     /**
@@ -166,10 +166,10 @@ public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStrea
      * @param caches Cache names.
      * @return {@code this} for chaining.
      */
-    public T setCaches(Set<String> caches) {
+    public AbstractIgniteCdcStreamer setCaches(Set<String> caches) {
         this.caches = caches;
 
-        return (T)this;
+        return this;
     }
 
     /**
@@ -178,9 +178,9 @@ public abstract class AbstractIgniteCdcStreamer<T extends AbstractIgniteCdcStrea
      * @param maxBatchSize Maximum batch size.
      * @return {@code this} for chaining.
      */
-    public T setMaxBatchSize(int maxBatchSize) {
+    public AbstractIgniteCdcStreamer setMaxBatchSize(int maxBatchSize) {
         this.maxBatchSize = maxBatchSize;
 
-        return (T)this;
+        return this;
     }
 }

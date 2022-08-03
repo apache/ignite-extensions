@@ -70,8 +70,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
             cdcCfg.setConsumer(new IgniteToIgniteCdcStreamer()
-                .setMaxBatchSize(KEYS_CNT)
                 .setDestinationIgniteConfiguration(destCfg)
+                .setMaxBatchSize(KEYS_CNT)
                 .setCaches(Collections.singleton(cache)));
 
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());

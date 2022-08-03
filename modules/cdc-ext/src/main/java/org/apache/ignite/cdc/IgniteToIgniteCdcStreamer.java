@@ -49,7 +49,7 @@ import static org.apache.ignite.cdc.AbstractCdcEventsApplier.registerMapping;
  * @see CacheVersionConflictResolverImpl
  */
 @IgniteExperimental
-public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteCdcStreamer>  {
+public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
     /** Destination cluster client configuration. */
     private IgniteConfiguration destIgniteCfg;
 

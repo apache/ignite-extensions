@@ -46,7 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer<IgniteToIgniteClientCdcStreamer> {
+public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     /** Ignite thin client configuration. */
     private ClientConfiguration destClientCfg;
 
