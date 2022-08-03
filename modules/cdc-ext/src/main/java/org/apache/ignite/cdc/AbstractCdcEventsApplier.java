@@ -21,13 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -151,53 +146,6 @@ public abstract class AbstractCdcEventsApplier<K, V>  {
     /** @return {@code True} if update batch should be applied. */
     private boolean isApplyBatch(Map<K, ?> map, K key) {
         return map.size() >= maxBatchSize || map.containsKey(key);
-    }
-
-    /**
-     * Register {@code meta} inside {@code ign} instance.
-     *
-     * @param ign Ignite instance.
-     * @param log Logger.
-     * @param meta Binary metadata to register.
-     */
-    public static void registerBinaryMeta(IgniteEx ign, IgniteLogger log, BinaryMetadata meta) {
-        ign.context().cacheObjects().addMeta(
-            meta.typeId(),
-            new BinaryTypeImpl(
-                ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext(),
-                meta
-            ),
-            false
-        );
-
-        if (log.isInfoEnabled())
-            log.info("BinaryMeta[meta=" + meta + ']');
-    }
-
-    /**
-     * Register {@code mapping} inside {@code ign} instance.
-     *
-     * @param ign Ignite instance.
-     * @param log Logger.
-     * @param mapping Type mapping to register.
-     */
-    public static void registerMapping(IgniteEx ign, IgniteLogger log, TypeMapping mapping) {
-        assert mapping.platformType().ordinal() <= Byte.MAX_VALUE;
-
-        try {
-            ign.context().marshallerContext().registerClassName(
-                (byte)mapping.platformType().ordinal(),
-                mapping.typeId(),
-                mapping.typeName(),
-                false
-            );
-
-            if (log.isInfoEnabled())
-                log.info("Mapping[mapping=" + mapping + ']');
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
     }
 
     /** @return Key. */

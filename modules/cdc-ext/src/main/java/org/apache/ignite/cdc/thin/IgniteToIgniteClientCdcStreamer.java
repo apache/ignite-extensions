@@ -17,16 +17,15 @@
 
 package org.apache.ignite.cdc.thin;
 
-import java.util.Iterator;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
-import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.client.thin.ClientBinary;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -68,17 +67,8 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTypes(Iterator<BinaryType> types) {
-        types.forEachRemaining(t -> {
-            // Just skip. Handle of new binary types not supported.
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        mappings.forEachRemaining(m -> {
-            // Just skip. Handle of new mappings not supported.
-        });
+    @Override protected BinaryContext binaryContext() {
+        return ((ClientBinary)dest.binary()).binaryContext();
     }
 
     /** {@inheritDoc} */

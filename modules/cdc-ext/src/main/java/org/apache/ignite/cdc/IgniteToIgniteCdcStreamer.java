@@ -17,22 +17,17 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Iterator;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
-
-import static org.apache.ignite.cdc.AbstractCdcEventsApplier.registerBinaryMeta;
-import static org.apache.ignite.cdc.AbstractCdcEventsApplier.registerMapping;
 
 /**
  * Change Data Consumer that streams all data changes to provided {@link #dest} Ignite cluster.
@@ -71,27 +66,8 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTypes(Iterator<BinaryType> types) {
-        types.forEachRemaining(t -> {
-            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
-
-            registerBinaryMeta(dest, log, meta);
-
-            typesCnt.increment();
-        });
-
-        lastEvtTs.value(System.currentTimeMillis());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        mappings.forEachRemaining(m -> {
-            registerMapping(dest, log, m);
-
-            mappingsCnt.increment();
-        });
-
-        lastEvtTs.value(System.currentTimeMillis());
+    @Override protected BinaryContext binaryContext() {
+        return ((CacheObjectBinaryProcessorImpl)dest.context().cacheObjects()).binaryContext();
     }
 
     /** {@inheritDoc} */

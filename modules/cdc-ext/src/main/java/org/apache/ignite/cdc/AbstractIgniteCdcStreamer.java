@@ -23,6 +23,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
@@ -183,4 +187,63 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        mappings.forEachRemaining(mapping -> {
+            registerMapping(binaryContext(), log, mapping);
+
+            mappingsCnt.increment();
+        });
+
+        lastEvtTs.value(System.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTypes(Iterator<BinaryType> types) {
+        types.forEachRemaining(t -> {
+            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
+
+            registerBinaryMeta(binaryContext(), log, meta);
+
+            typesCnt.increment();
+        });
+
+        lastEvtTs.value(System.currentTimeMillis());
+    }
+
+    /**
+     * Register {@code meta}.
+     *
+     * @param ctx Binary context.
+     * @param log Logger.
+     * @param meta Binary metadata to register.
+     */
+    public static void registerBinaryMeta(BinaryContext ctx, IgniteLogger log, BinaryMetadata meta) {
+        ctx.updateMetadata(meta.typeId(), meta, false);
+
+        if (log.isInfoEnabled())
+            log.info("BinaryMeta [meta=" + meta + ']');
+    }
+
+    /**
+     * Register {@code mapping}.
+     *
+     * @param ctx Binary context.
+     * @param log Logger.
+     * @param mapping Type mapping to register.
+     */
+    public static void registerMapping(BinaryContext ctx, IgniteLogger log, TypeMapping mapping) {
+        assert mapping.platformType().ordinal() <= Byte.MAX_VALUE;
+
+        byte platformType = (byte)mapping.platformType().ordinal();
+
+        ctx.registerUserClassName(mapping.typeId(), mapping.typeName(), false, false, platformType);
+
+        if (log.isInfoEnabled())
+            log.info("Mapping [mapping=" + mapping + ']');
+    }
+
+    /** @return Binary context. */
+    protected abstract BinaryContext binaryContext();
 }

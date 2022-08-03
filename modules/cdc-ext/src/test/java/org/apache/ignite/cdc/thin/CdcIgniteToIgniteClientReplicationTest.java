@@ -105,9 +105,4 @@ public class CdcIgniteToIgniteClientReplicationTest extends AbstractReplicationT
             cdc.run();
         });
     }
-
-    /** {@inheritDoc} */
-    @Override protected boolean metadataReplicationSupported() {
-        return false;
-    }
 }
