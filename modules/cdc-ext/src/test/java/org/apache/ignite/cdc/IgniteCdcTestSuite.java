@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import org.apache.ignite.cdc.kafka.CdcKafkaReplicationAppsTest;
 import org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteLoaderTest;
+import org.apache.ignite.cdc.thin.CdcIgniteToIgniteClientReplicationTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,7 +35,8 @@ import org.junit.runners.Suite;
     KafkaToIgniteLoaderTest.class,
     CdcKafkaReplicationTest.class,
     CdcKafkaReplicationAppsTest.class,
-    ConflictResolverRestartTest.class
+    ConflictResolverRestartTest.class,
+    CdcIgniteToIgniteClientReplicationTest.class
 })
 public class IgniteCdcTestSuite {
 }
