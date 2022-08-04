@@ -15,27 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc;
+package org.apache.ignite.cdc.thin;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.ignite.cdc.AbstractReplicationTest;
+import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
-/** */
-public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
+/**
+ * {@link IgniteToIgniteClientCdcStreamer} test.
+ */
+public class CdcIgniteToIgniteClientReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], cache));
+            futs.add(igniteToIgniteClient(srcCluster[i].configuration(), destCluster, cache));
 
         return futs;
     }
@@ -45,10 +55,10 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgniteClient(srcCluster[i].configuration(), destCluster, ACTIVE_ACTIVE_CACHE));
 
         for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgniteClient(destCluster[i].configuration(), srcCluster, ACTIVE_ACTIVE_CACHE));
 
         return futs;
     }
@@ -61,18 +71,30 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
     /**
      * @param srcCfg Ignite source node configuration.
-     * @param destCfg Ignite destination cluster configuration.
-     * @param cache Cache name to stream to kafka.
+     * @param dest Destination cluster.
+     * @param cache Cache name to replicate.
      * @return Future for Change Data Capture application.
      */
-    protected IgniteInternalFuture<?> igniteToIgnite(IgniteConfiguration srcCfg, IgniteConfiguration destCfg, String cache) {
+    private IgniteInternalFuture<?> igniteToIgniteClient(IgniteConfiguration srcCfg, IgniteEx[] dest, String cache) {
         return runAsync(() -> {
+            ClientConfiguration clientCfg = new ClientConfiguration();
+
+            String[] addrs = new String[dest.length];
+
+            for (int i = 0; i < dest.length; i++) {
+                ClusterNode node = dest[i].localNode();
+
+                addrs[i] = F.first(node.addresses()) + ":" + node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+            }
+
+            clientCfg.setAddresses(addrs);
+
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
-            cdcCfg.setConsumer(new IgniteToIgniteCdcStreamer()
-                .setDestinationIgniteConfiguration(destCfg)
-                .setMaxBatchSize(KEYS_CNT)
-                .setCaches(Collections.singleton(cache)));
+            cdcCfg.setConsumer(new IgniteToIgniteClientCdcStreamer()
+                .setDestinationClientConfiguration(clientCfg)
+                .setCaches(Collections.singleton(cache))
+                .setMaxBatchSize(KEYS_CNT));
 
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 

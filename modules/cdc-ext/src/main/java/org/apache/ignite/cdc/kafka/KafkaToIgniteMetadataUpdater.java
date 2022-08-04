@@ -22,10 +22,11 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CdcEventsApplier;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -34,6 +35,8 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerBinaryMeta;
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerMapping;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
@@ -87,6 +90,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
+
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
@@ -100,9 +105,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
                 Object data = IgniteUtils.fromBytes(rec.value());
 
                 if (data instanceof BinaryMetadata)
-                    CdcEventsApplier.registerBinaryMeta(ign, log, (BinaryMetadata)data);
+                    registerBinaryMeta(ctx, log, (BinaryMetadata)data);
                 else if (data instanceof TypeMapping)
-                    CdcEventsApplier.registerMapping(ign, log, (TypeMapping)data);
+                    registerMapping(ctx, log, (TypeMapping)data);
                 else
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
