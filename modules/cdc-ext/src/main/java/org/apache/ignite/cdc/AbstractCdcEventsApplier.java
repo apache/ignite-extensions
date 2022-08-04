@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFIN
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the cluster.
  */
-public abstract class AbstractCdcEventsApplier<K, V>  {
+public abstract class AbstractCdcEventsApplier<K, V> {
     /** Maximum batch size. */
     private final int maxBatchSize;
 
