@@ -152,42 +152,6 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
         });
     }
 
-    /**
-     * Sets whether entries only from primary nodes should be handled.
-     *
-     * @param onlyPrimary Whether entries only from primary nodes should be handled.
-     * @return {@code this} for chaining.
-     */
-    public AbstractIgniteCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
-        this.onlyPrimary = onlyPrimary;
-
-        return this;
-    }
-
-    /**
-     * Sets cache names that participate in CDC.
-     *
-     * @param caches Cache names.
-     * @return {@code this} for chaining.
-     */
-    public AbstractIgniteCdcStreamer setCaches(Set<String> caches) {
-        this.caches = caches;
-
-        return this;
-    }
-
-    /**
-     * Sets maximum batch size that will be applied to destination cluster.
-     *
-     * @param maxBatchSize Maximum batch size.
-     * @return {@code this} for chaining.
-     */
-    public AbstractIgniteCdcStreamer setMaxBatchSize(int maxBatchSize) {
-        this.maxBatchSize = maxBatchSize;
-
-        return this;
-    }
-
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         mappings.forEachRemaining(mapping -> {
@@ -246,4 +210,40 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
     /** @return Binary context. */
     protected abstract BinaryContext binaryContext();
+
+    /**
+     * Sets whether entries only from primary nodes should be handled.
+     *
+     * @param onlyPrimary Whether entries only from primary nodes should be handled.
+     * @return {@code this} for chaining.
+     */
+    public AbstractIgniteCdcStreamer setOnlyPrimary(boolean onlyPrimary) {
+        this.onlyPrimary = onlyPrimary;
+
+        return this;
+    }
+
+    /**
+     * Sets cache names that participate in CDC.
+     *
+     * @param caches Cache names.
+     * @return {@code this} for chaining.
+     */
+    public AbstractIgniteCdcStreamer setCaches(Set<String> caches) {
+        this.caches = caches;
+
+        return this;
+    }
+
+    /**
+     * Sets maximum batch size that will be applied to destination cluster.
+     *
+     * @param maxBatchSize Maximum batch size.
+     * @return {@code this} for chaining.
+     */
+    public AbstractIgniteCdcStreamer setMaxBatchSize(int maxBatchSize) {
+        this.maxBatchSize = maxBatchSize;
+
+        return this;
+    }
 }
