@@ -139,9 +139,15 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 boolean annotatedIgniteQuery = !annotation.dynamicQuery() && (StringUtils.hasText(qryStr) || annotation
                     .textQuery());
 
-                IgniteQuery query = annotatedIgniteQuery ? new IgniteQuery(qryStr,
-                    !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
-                    annotation.textQuery(), false, IgniteQueryGenerator.getOptions(mtd)) : null;
+                IgniteQuery query = annotatedIgniteQuery
+                    ? new IgniteQuery(
+                        qryStr,
+                        !annotation.textQuery() && (isFieldQuery(qryStr) || annotation.forceFieldsQuery()),
+                        annotation.textQuery(),
+                        false,
+                        true,
+                        IgniteQueryGenerator.getOptions(mtd))
+                    : null;
 
                 if (key != QueryLookupStrategy.Key.CREATE) {
                     return new IgniteRepositoryQuery(metadata, query, mtd, factory, cache,

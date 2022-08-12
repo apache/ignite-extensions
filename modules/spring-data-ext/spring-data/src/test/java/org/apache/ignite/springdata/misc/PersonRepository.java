@@ -20,11 +20,11 @@ package org.apache.ignite.springdata.misc;
 
 import java.util.Collection;
 import java.util.List;
-
 import javax.cache.Cache;
 import org.apache.ignite.springdata.repository.IgniteRepository;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Param;
@@ -160,4 +160,95 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** Produces a list of domain entity classes whose fields are obtained from the query result row. */
     @Query(value = "SELECT firstName, birthday FROM Person", forceFieldsQuery = true)
     public List<Person> queryWithIncompleteRowToEntityConversion();
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameIn(List<String> secondNames);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameNotIn(List<String> secondNames);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameIn(List<String> secondNames, Sort sort);
+
+    /** */
+    public <P> List<P> findBySecondNameIn(Class<P> dynamicProjection, List<String> secondNames);
+
+    /** */
+    public Page<Person> findBySecondNameIn(List<String> secondNames, Pageable pageable);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameIn(String[] secondNames);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameIn(String secondNames);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findBySecondNameInAndFirstNameIn(List<String> secondNames, List<String> firstNames);
+
+    /** */
+    public List<Cache.Entry<Integer, Person>> findByFirstNameIsAndSecondNameIn(String firstNames, List<String> secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN ?")
+    public List<Cache.Entry<Integer, Person>> selectInList(List<String> secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName NOT IN ?")
+    public List<Cache.Entry<Integer, Person>> selectNotInList(List<String> secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN :secondNames")
+    public List<Cache.Entry<Integer, Person>> selectInListWithNamedParameter(@Param("secondNames") List<String> secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN :secondNames")
+    public List<Cache.Entry<Integer, Person>> selectInArrayWithNamedParameter(@Param("secondNames") String[] secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN :secondNames")
+    public List<Cache.Entry<Integer, Person>> selectInSingleValueWithNamedParameter(@Param("secondNames") String secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE firstName IN :firstNames AND secondName IN :secondNames")
+    public List<Cache.Entry<Integer, Person>> selectWithMultipleInClauses(
+        @Param("secondNames") List<String> secondNames,
+        @Param("firstNames") List<String> firstNames
+    );
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE firstName = ? AND secondName IN ?")
+    public List<Cache.Entry<Integer, Person>> selectWithInAndEqualClauses(
+        String firstName,
+        List<String> secondNames
+    );
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE firstName = :name AND secondName IN :secondNames")
+    public List<Cache.Entry<Integer, Person>> selectWithInAndEqualClausesAndNamedArguments(
+        @Param("secondNames") List<String> secondNames,
+        @Param("name") String firstName
+    );
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE firstName = :name AND secondName IN :#{#person.secondName}")
+    public List<Cache.Entry<Integer, Person>> selectInWithSpellClause(
+        @Param("person") Person person,
+        @Param("name") String firstName
+    );
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN ?3 AND firstName=?2")
+    public List<Cache.Entry<Integer, Person>> selectInListWithMultipleIndexedParameter(
+        int dummyArg,
+        String firstName,
+        List<String> secondNames
+    );
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN ?2")
+    public List<Cache.Entry<Integer, Person>> selectInArrayWithIndexedParameter(int dummyArg, String[] secondNames);
+
+    /** */
+    @Query(value = "SELECT * FROM Person WHERE secondName IN ?2")
+    public List<Cache.Entry<Integer, Person>> selectInSingleValueWithIndexedParameter(int dummyArg, String secondNames);
 }

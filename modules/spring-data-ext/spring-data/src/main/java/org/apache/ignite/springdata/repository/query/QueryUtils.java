@@ -17,7 +17,13 @@
 
 package org.apache.ignite.springdata.repository.query;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -305,5 +311,50 @@ public abstract class QueryUtils {
         Matcher matcher = PROJECTION_CLAUSE.matcher(qry);
         String projection = matcher.find() ? matcher.group(1) : "";
         return projection.trim();
+    }
+
+    /**
+     * @param args Array of query arguments.
+     * @param argIdxs Indexes of the elements that should be expanded.
+     * @return Copy of the specified array with expanded elements that matches the specified indexes.
+     */
+    public static Object[] expandQueryArguments(Object[] args, List<Integer> argIdxs) {
+        Collections.sort(argIdxs);
+
+        List<Object> res = new ArrayList<>();
+
+        int prevIdx = 0;
+
+        for (Integer idx : argIdxs) {
+            copyTo(res, args, prevIdx, idx);
+
+            Object arg = args[idx];
+
+            if (arg.getClass().isArray()) {
+                for (int i = 0; i < Array.getLength(arg); i++)
+                    res.add(Array.get(arg, i));
+            }
+            else if (arg instanceof Collection)
+                res.addAll((Collection<?>)arg);
+            else
+                res.add(arg);
+
+            prevIdx = idx + 1;
+        }
+
+        copyTo(res, args, prevIdx, args.length);
+
+        return res.toArray();
+    }
+
+    /**
+     * Copies elements of the specified array that lays in the specified bounds to the destination {@link List}.
+     * @param dest Destination.
+     * @param src Source.
+     * @param from Starting index (inclusively).
+     * @param to Finishing index (exclusively).
+     */
+    private static void copyTo(List<Object> dest, Object[] src, int from, int to) {
+        dest.addAll(Arrays.asList(src).subList(from, to));
     }
 }
