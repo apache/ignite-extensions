@@ -285,8 +285,8 @@ class StringQuery implements DeclaredQuery {
                     usesJpaStyleParameters = true;
 
                 // named parameters (:param) will be untouched by spelExtractor, so replace them by ? as we don't
-                // know position as well as indexed parameters because query arguments are rearranged to suite the
-                // proper order.
+                // know position. We also replace the indexed parameters because query arguments will be rearranged to
+                // suite the proper order considering parameter indexes.
                 if (paramName != null || paramIdx != null)
                     replacement = "?";
 
@@ -339,6 +339,7 @@ class StringQuery implements DeclaredQuery {
          * Postprocess specified query clauses that depend on query arguments (e.g. '?' after IN and NOT IN clauses
          * will be replaced with '(?, ? ...)' depending on the size of the collection corresponding to the initial query
          * parameter.
+         *
          * @param qry Query to parse.
          * @param args Query arguments.
          * @return Pair of values which represents parsed query and query argument indexes that corresponds parameter

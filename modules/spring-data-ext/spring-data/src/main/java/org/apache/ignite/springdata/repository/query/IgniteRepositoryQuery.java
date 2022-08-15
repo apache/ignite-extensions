@@ -996,7 +996,9 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         }
     }
 
-    /** @return Whether specified query contains clauses which string representation depends on the query arguments. */
+    /**
+     * @return Whether specified query contains clauses which string representation depends on the query arguments.
+     */
     private boolean isParameterDependent(StringQuery qry) {
         for (ParameterBinding binding : qry.getParameterBindings()) {
             if (binding instanceof StringQuery.InParameterBinding)
