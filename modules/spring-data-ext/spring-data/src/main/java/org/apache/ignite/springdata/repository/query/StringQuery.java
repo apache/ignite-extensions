@@ -336,16 +336,16 @@ class StringQuery implements DeclaredQuery {
         }
 
         /**
-         * Postprocess specified query clauses that depend on query arguments (e.g. '?' after IN and NOT IN clauses
+         * Post-process specified query clauses that depend on query arguments (e.g. '?' after IN and NOT IN clauses
          * will be replaced with '(?, ? ...)' depending on the size of the collection corresponding to the initial query
          * parameter.
          *
          * @param qry Query to parse.
          * @param args Query arguments.
-         * @return Pair of values which represents parsed query and query argument indexes that corresponds parameter
-         * dependent clauses, respectively.
+         * @return Pair of values which represents parsed query and copy of query arguments updated to suite query
+         * parameters structure.
          */
-        T2<String, List<Integer>> parseParameterDependentClauses(String qry, Object[] args) {
+        T2<String, Object[]> processParameterDependentClauses(String qry, Object[] args) {
             Matcher matcher = PARAMETER_BINDING_PATTERN.matcher(qry);
 
             StringBuffer parsedQry = new StringBuffer();
@@ -383,7 +383,7 @@ class StringQuery implements DeclaredQuery {
 
             matcher.appendTail(parsedQry);
 
-            return new T2<>(parsedQry.toString(), argIdxs);
+            return new T2<>(parsedQry.toString(), QueryUtils.expandQueryArguments(args, argIdxs));
         }
 
         /** */

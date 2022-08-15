@@ -76,7 +76,6 @@ import org.springframework.util.StringUtils;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.springdata.repository.query.QueryUtils.expandQueryArguments;
 import static org.apache.ignite.springdata.repository.support.IgniteRepositoryFactory.isFieldQuery;
 
 /**
@@ -766,14 +765,14 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             }
 
             if (isParamDependent) {
-                T2<String, List<Integer>> parseRes = ParameterBindingParser.INSTANCE.parseParameterDependentClauses(
+                T2<String, Object[]> parseRes = ParameterBindingParser.INSTANCE.processParameterDependentClauses(
                     queryString,
                     parameters
                 );
 
                 queryString = parseRes.get1();
 
-                parameters = expandQueryArguments(parameters, parseRes.get2());
+                parameters = parseRes.get2();
             }
 
             if (qry.isFieldQuery()) {
