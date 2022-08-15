@@ -18,6 +18,7 @@
 package org.apache.ignite.springdata;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +32,8 @@ import org.apache.ignite.springdata.misc.PersonRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 /**
  * CRUD tests.
@@ -444,5 +447,168 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         List<Person> person = repo.findByFirstName("uniquePerson");
         assertEquals(person.get(0).getSecondName(), "uniqueLastName");
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndListArgument() {
+        assertEquals(5, repo.findBySecondNameIn(Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithNotInClauseAndListArgument() {
+        assertEquals(CACHE_SIZE - 5, repo.findBySecondNameNotIn(Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndListArgumentWithSorting() {
+        assertEquals(
+            5,
+            repo.findBySecondNameIn(
+                Arrays.asList("uniqueLastName", "nonUniqueLastName"),
+                Sort.by(Sort.Direction.DESC, "secondName")
+            ).size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndListArgumentWithPaging() {
+        assertEquals(
+            5,
+            repo.findBySecondNameIn(
+                Arrays.asList("uniqueLastName", "nonUniqueLastName"),
+                PageRequest.of(0, 10)
+            ).getTotalElements()
+        );
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndListArgumentWithProjection() {
+        assertEquals(5, repo.findBySecondNameIn(PersonProjection.class, Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndArrayArgument() {
+        assertEquals(5, repo.findBySecondNameIn(new String[] {"uniqueLastName", "nonUniqueLastName"}).size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAndSingleValueArgument() {
+        assertEquals(4, repo.findBySecondNameIn("nonUniqueLastName").size());
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithInClauseAlongsideEqualClause() {
+        assertEquals(
+            4,
+            repo.findByFirstNameIsAndSecondNameIn(
+                "nonUniquePerson",
+                Arrays.asList("uniqueLastName", "nonUniqueLastName")
+            ).size()
+        );
+    }
+
+    /** */
+    @Test
+    public void testMethodBasedQueryWithMultipleInClauses() {
+        assertEquals(
+            5,
+            repo.findBySecondNameInAndFirstNameIn(
+                Arrays.asList("uniqueLastName", "nonUniqueLastName"),
+                Arrays.asList("uniquePerson", "nonUniquePerson")
+            ).size()
+        );
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndListArgument() {
+        assertEquals(5, repo.selectInList(Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithNotInClauseAndListArgument() {
+        assertEquals(CACHE_SIZE - 5, repo.selectNotInList(Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndNamedListArgument() {
+        assertEquals(5, repo.selectInListWithNamedParameter(Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndNamedArrayArgument() {
+        assertEquals(5, repo.selectInArrayWithNamedParameter(new String[] {"uniqueLastName", "nonUniqueLastName"}).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndNamedSingleValueArgument() {
+        assertEquals(1, repo.selectInSingleValueWithNamedParameter("uniqueLastName").size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithMultipleInClauses() {
+        assertEquals(
+            5,
+            repo.selectWithMultipleInClauses(
+                Arrays.asList("uniqueLastName", "nonUniqueLastName"),
+                Arrays.asList("uniquePerson", "nonUniquePerson")
+            ).size()
+        );
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAlongsideEqualClause() {
+        assertEquals(4, repo.selectWithInAndEqualClauses("nonUniquePerson", Arrays.asList("uniqueLastName", "nonUniqueLastName")).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAlongsideEqualClauseAndNamedArguments() {
+        assertEquals(
+            4,
+            repo.selectWithInAndEqualClausesAndNamedArguments(
+                Arrays.asList("uniqueLastName", "nonUniqueLastName"), "nonUniquePerson").size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndSpellArgument() {
+        assertEquals(4, repo.selectInWithSpellClause(new Person("", "nonUniqueLastName"), "nonUniquePerson").size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndIndexedListArguments() {
+        assertEquals(4,
+            repo.selectInListWithMultipleIndexedParameter(
+                0,
+                "nonUniquePerson",
+                Arrays.asList("uniqueLastName", "nonUniqueLastName")
+            ).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndIndexedArrayArguments() {
+        assertEquals(5, repo.selectInArrayWithIndexedParameter(0, new String[] {"uniqueLastName", "nonUniqueLastName"}).size());
+    }
+
+    /** */
+    @Test
+    public void testExplicitQueryWithInClauseAndIndexedSingleValueArguments() {
+        assertEquals(1, repo.selectInSingleValueWithIndexedParameter(0, "uniqueLastName").size());
     }
 }
