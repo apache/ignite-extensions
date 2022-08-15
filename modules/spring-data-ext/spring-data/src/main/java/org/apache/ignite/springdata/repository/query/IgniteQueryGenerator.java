@@ -26,6 +26,9 @@ import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 
+import static org.springframework.data.repository.query.parser.Part.Type.IN;
+import static org.springframework.data.repository.query.parser.Part.Type.NOT_IN;
+
 /**
  * Ignite query generator for Spring Data framework.
  */
@@ -100,7 +103,14 @@ public class IgniteQueryGenerator {
             sql.append(parts.getMaxResults().intValue());
         }
 
-        return new IgniteQuery(sql.toString(), isCountOrFieldQuery, false, true, getOptions(mtd));
+        return new IgniteQuery(
+            sql.toString(),
+            isCountOrFieldQuery,
+            false,
+            true,
+            isParametersDependent(parts),
+            getOptions(mtd)
+        );
     }
 
     /**
@@ -272,5 +282,14 @@ public class IgniteQueryGenerator {
         }
 
         sql.append(")");
+    }
+
+    /**
+     * @param qryPartTree {@link PartTree} query representation.
+     * @return Whether the specified {@link PartTree} contains query part which string representation depends on
+     * query arguments.
+     */
+    private static boolean isParametersDependent(PartTree qryPartTree) {
+        return !qryPartTree.getParts(IN).isEmpty() || !qryPartTree.getParts(NOT_IN).isEmpty();
     }
 }

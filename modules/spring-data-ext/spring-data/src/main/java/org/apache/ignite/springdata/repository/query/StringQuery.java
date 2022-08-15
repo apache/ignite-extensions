@@ -21,10 +21,13 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.data.domain.Range;
 import org.springframework.data.domain.Range.Bound;
@@ -282,8 +285,9 @@ class StringQuery implements DeclaredQuery {
                     usesJpaStyleParameters = true;
 
                 // named parameters (:param) will be untouched by spelExtractor, so replace them by ? as we don't
-                // know position
-                if (paramName != null)
+                // know position. We also replace the indexed parameters because query arguments will be rearranged to
+                // suite the proper order considering parameter indexes.
+                if (paramName != null || paramIdx != null)
                     replacement = "?";
 
                 if (usesJpaStyleParameters && queryMeta.usesJdbcStyleParameters) {
@@ -329,6 +333,57 @@ class StringQuery implements DeclaredQuery {
             }
 
             return resultingQry;
+        }
+
+        /**
+         * Post-process specified query clauses that depend on query arguments (e.g. '?' after IN and NOT IN clauses
+         * will be replaced with '(?, ? ...)' depending on the size of the collection corresponding to the initial query
+         * parameter.
+         *
+         * @param qry Query to parse.
+         * @param args Query arguments.
+         * @return Pair of values which represents parsed query and copy of query arguments updated to suite query
+         * parameters structure.
+         */
+        T2<String, Object[]> processParameterDependentClauses(String qry, Object[] args) {
+            Matcher matcher = PARAMETER_BINDING_PATTERN.matcher(qry);
+
+            StringBuffer parsedQry = new StringBuffer();
+
+            int argIdx = 0;
+
+            List<Integer> argIdxs = new ArrayList<>();
+
+            while (matcher.find()) {
+                String typeSrc = matcher.group(COMPARISION_TYPE_GROUP);
+
+                if (ParameterBindingType.of(typeSrc) == ParameterBindingType.IN) {
+                    Object arg = args[argIdx];
+
+                    int length;
+
+                    if (arg.getClass().isArray())
+                        length = Array.getLength(arg);
+                    else if (arg instanceof Collection)
+                        length = ((Collection<?>)arg).size();
+                    else
+                        length = 1;
+
+                    String replacement = Collections.nCopies(length, "?")
+                        .stream()
+                        .collect(Collectors.joining(", ", "(", ")"));
+
+                    matcher.appendReplacement(parsedQry, matcher.group(0).replaceFirst(Pattern.quote(matcher.group(2)), replacement));
+
+                    argIdxs.add(argIdx);
+                }
+
+                ++argIdx;
+            }
+
+            matcher.appendTail(parsedQry);
+
+            return new T2<>(parsedQry.toString(), QueryUtils.expandQueryArguments(args, argIdxs));
         }
 
         /** */
