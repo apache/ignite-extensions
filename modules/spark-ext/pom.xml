@@ -40,10 +40,16 @@
         <spark.janino.version>3.0.8</spark.janino.version>
         <spark.jackson.version>2.6.7</spark.jackson.version>
         <scala.test.version>2.2.6</scala.test.version>
+
+        <scala212.library.version>2.12.16</scala212.library.version>
+        <scala32.test.version>3.2.12</scala32.test.version>
+        <spark32.hadoop.version>3.3.4</spark32.hadoop.version>
+        <spark32.version>3.2.2</spark32.version>
     </properties>
 
     <modules>
         <module>spark</module>
+        <module>spark-3.2</module>
         <module>examples</module>
     </modules>
 
