@@ -32,12 +32,12 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    GridSpringCacheManagerSelfTest.class,
-//    GridSpringCacheManagerSpringBeanSelfTest.class,
-//    SpringCacheManagerContextInjectionTest.class,
-//    SpringCacheTest.class,
-//    GridSpringCacheManagerMultiJvmSelfTest.class,
-//    IgniteClientSpringCacheManagerTest.class,
+    GridSpringCacheManagerSelfTest.class,
+    GridSpringCacheManagerSpringBeanSelfTest.class,
+    SpringCacheManagerContextInjectionTest.class,
+    SpringCacheTest.class,
+    GridSpringCacheManagerMultiJvmSelfTest.class,
+    IgniteClientSpringCacheManagerTest.class,
     IgniteSpringCacheCompatibilityTest.class
 })
 public class IgniteSpringCacheTestSuite {
