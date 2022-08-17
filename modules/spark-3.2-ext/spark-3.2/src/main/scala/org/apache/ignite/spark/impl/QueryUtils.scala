@@ -27,6 +27,17 @@ import org.apache.spark.sql.types._
   */
 private[impl] object QueryUtils extends Logging {
     /**
+      * @param str String.
+      * @param needed Boolean.
+      */
+    def quoteStringIfNeeded(str: String, needed: Boolean): String = {
+        if (needed)
+            "\"" + str + "\""
+        else
+            str
+    }
+
+    /**
       * Builds `where` part of SQL query.
       *
       * @param filters Filter to apply.

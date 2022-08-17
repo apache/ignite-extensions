@@ -18,14 +18,15 @@
 package org.apache.ignite.spark.impl.optimization.accumulator
 
 import org.apache.ignite.IgniteException
+import org.apache.ignite.spark.impl.QueryUtils.quoteStringIfNeeded
 import org.apache.ignite.spark.impl.optimization._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, NamedExpression, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.{BinaryNode, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.{Inner, JoinType, LeftOuter, RightOuter}
 
 /**
-  * Accumulator to store information about join query.
-  */
+ * Accumulator to store information about join query.
+ */
 private[apache] case class JoinSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     left: QueryAccumulator,
@@ -47,29 +48,35 @@ private[apache] case class JoinSQLAccumulator(
     override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
+        val caseSensitiveEnabled = isCaseSensitiveEnabled(igniteQueryContext)
 
         var sql = s"SELECT$delim$tab" +
-            s"${fixQualifier(outputExpressions).map(exprToString(_, useQualifier = true)).mkString(", ")}$delim" +
+            s"${fixQualifier(outputExpressions)
+                .map(exprToString(_, useQualifier = true, caseSensitive = caseSensitiveEnabled)).mkString(", ")}$delim" +
             s"FROM$delim$tab$compileJoinExpr"
 
         if (allFilters.nonEmpty)
             sql += s"${delim}WHERE$delim$tab" +
-                s"${fixQualifier(allFilters).map(exprToString(_, useQualifier = true)).mkString(s" AND$delim$tab")}"
+                s"${fixQualifier(allFilters)
+                    .map(exprToString(_, useQualifier = true, caseSensitive = caseSensitiveEnabled)).mkString(s" AND$delim$tab")}"
 
         if (groupBy.exists(_.nonEmpty))
             sql += s"${delim}GROUP BY " +
-                s"${fixQualifier(groupBy.get).map(exprToString(_, useQualifier = true)).mkString(s",$delim$tab")}"
+                s"${fixQualifier(groupBy.get)
+                    .map(exprToString(_, useQualifier = true, caseSensitive = caseSensitiveEnabled)).mkString(s",$delim$tab")}"
 
         if (having.exists(_.nonEmpty))
             sql += s"${delim}HAVING " +
-                s"${fixQualifier(having.get).map(exprToString(_, useQualifier = true)).mkString(s" AND$delim$tab")}"
+                s"${fixQualifier(having.get)
+                    .map(exprToString(_, useQualifier = true, caseSensitive = caseSensitiveEnabled)).mkString(s" AND$delim$tab")}"
 
         if (orderBy.exists(_.nonEmpty))
             sql += s"${delim}ORDER BY " +
-                s"${fixQualifier(orderBy.get).map(exprToString(_, useQualifier = true)).mkString(s",$delim$tab")}"
+                s"${fixQualifier(orderBy.get)
+                    .map(exprToString(_, useQualifier = true, caseSensitive = caseSensitiveEnabled)).mkString(s",$delim$tab")}"
 
         if (limit.isDefined) {
-            sql += s" LIMIT ${exprToString(fixQualifier0(limit.get), useQualifier = true)}"
+            sql += s" LIMIT ${exprToString(fixQualifier0(limit.get), useQualifier = true, caseSensitive = caseSensitiveEnabled)}"
 
             if (nestedQuery)
                 sql = s"SELECT * FROM ($sql)"
@@ -79,8 +86,8 @@ private[apache] case class JoinSQLAccumulator(
     }
 
     /**
-      * @return Filters for this query.
-      */
+     * @return Filters for this query.
+     */
     private def allFilters: Seq[Expression] = {
         val leftFilters =
             if (isSimpleTableAcc(left))
@@ -97,24 +104,27 @@ private[apache] case class JoinSQLAccumulator(
     }
 
     /**
-      * @return `table1 LEFT JOIN (SELECT....FROM...) table2` part of join query.
-      */
+     * @return `table1 LEFT JOIN (SELECT....FROM...) table2` part of join query.
+     */
     private def compileJoinExpr: String = {
+        val caseSensitiveEnabled = isCaseSensitiveEnabled(igniteQueryContext)
+
         val leftJoinSql =
             if (isSimpleTableAcc(left))
-                left.asInstanceOf[SingleTableSQLAccumulator].table.get
+                quoteStringIfNeeded(left.asInstanceOf[SingleTableSQLAccumulator].table.get, caseSensitiveEnabled)
             else
                 s"(${left.compileQuery()}) ${leftAlias.get}"
 
         val rightJoinSql = {
             val leftTableName =
                 if (isSimpleTableAcc(left))
-                    left.qualifier
+                    quoteStringIfNeeded(left.qualifier, caseSensitiveEnabled)
                 else
                     leftAlias.get
 
             if (isSimpleTableAcc(right)) {
-                val rightTableName = right.asInstanceOf[SingleTableSQLAccumulator].table.get
+                val rightTableName =
+                    quoteStringIfNeeded(right.asInstanceOf[SingleTableSQLAccumulator].table.get, caseSensitiveEnabled)
 
                 if (leftTableName == rightTableName)
                     s"$rightTableName as ${rightAlias.get}"
@@ -125,7 +135,8 @@ private[apache] case class JoinSQLAccumulator(
         }
 
         s"$leftJoinSql $joinTypeSQL $rightJoinSql" +
-            s"${condition.map(expr ⇒ s" ON ${exprToString(fixQualifier0(expr), useQualifier = true)}").getOrElse("")}"
+            s"${condition.map(expr ⇒ s" ON ${exprToString(fixQualifier0(expr),
+                useQualifier = true, caseSensitive = caseSensitiveEnabled)}").getOrElse("")}"
     }
 
     /**
@@ -170,11 +181,11 @@ private[apache] case class JoinSQLAccumulator(
     }
 
     /**
-      * Find right qualifier for a `attr`.
-      *
-      * @param attr Attribute to fix qualifier in
-      * @return Right qualifier for a `attr`
-      */
+     * Find right qualifier for a `attr`.
+     *
+     * @param attr Attribute to fix qualifier in
+     * @return Right qualifier for a `attr`
+     */
     private def findQualifier(attr: AttributeReference): String = {
         val leftTableName =
             if (isSimpleTableAcc(left))
