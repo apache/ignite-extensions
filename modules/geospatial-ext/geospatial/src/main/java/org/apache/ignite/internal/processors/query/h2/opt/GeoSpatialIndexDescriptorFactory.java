@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.management.AbstractIndexDescriptorFactory;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
-import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptorFactory;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,7 +64,7 @@ public class GeoSpatialIndexDescriptorFactory extends AbstractIndexDescriptorFac
         IndexFactory idxFactory;
 
         if (cacheInfo.affinityNode()) {
-            idxFactory =  GeoSpatialIndexFactory.INSTANCE;
+            idxFactory = GeoSpatialIndexFactory.INSTANCE;
             List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
             QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(

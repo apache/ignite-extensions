@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.client.AbstractClientIndex;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.locationtech.jts.geom.Geometry;
 

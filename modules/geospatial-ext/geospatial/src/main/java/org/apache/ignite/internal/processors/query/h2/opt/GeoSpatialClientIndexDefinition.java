@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.h2.table.IndexColumn;
 
 /**
  * Definition of Geo-Spatial client index.

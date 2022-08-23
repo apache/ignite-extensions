@@ -22,7 +22,6 @@ import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexRowHandler;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 
 /**
  * Definition of geo spatial index.

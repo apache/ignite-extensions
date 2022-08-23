@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.h2.table.IndexColumn;
 import org.locationtech.jts.geom.Geometry;
@@ -37,12 +37,12 @@ public class GeoSpatialUtils {
     }
 
     /** */
-    public static GridH2IndexBase createIndex(GridH2Table tbl, Index idx, List<IndexColumn> cols) {
+    public static GridH2IndexBase createIndex(GridH2Table tbl, IndexDescriptor idxDesc, List<IndexColumn> cols) {
         try {
             if (tbl.cacheInfo().affinityNode())
-                return new GridH2SpatialIndex(tbl, cols, idx.unwrap(GeoSpatialIndexImpl.class));
+                return new GridH2SpatialIndex(tbl, cols, idxDesc.index().unwrap(GeoSpatialIndexImpl.class));
             else
-                return new GridH2SpatialClientIndex(tbl, cols, idx.unwrap(GeoSpatialClientIndex.class));
+                return new GridH2SpatialClientIndex(tbl, cols, idxDesc.index().unwrap(GeoSpatialClientIndex.class));
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate", e);
