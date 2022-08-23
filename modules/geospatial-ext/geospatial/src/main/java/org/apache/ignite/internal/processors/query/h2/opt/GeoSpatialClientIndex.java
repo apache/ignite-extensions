@@ -53,16 +53,6 @@ public class GeoSpatialClientIndex extends AbstractClientIndex implements GeoSpa
         return def.idxName().idxName();
     }
 
-    /** */
-    public GridH2Table tbl() {
-        return def.tbl();
-    }
-
-    /** */
-    public List<IndexColumn> cols() {
-        return def.cols();
-    }
-
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> find(int seg, TableFilter filter) {
         throw unsupported();

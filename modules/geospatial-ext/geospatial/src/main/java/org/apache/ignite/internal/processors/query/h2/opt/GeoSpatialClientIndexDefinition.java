@@ -35,32 +35,12 @@ public class GeoSpatialClientIndexDefinition implements IndexDefinition {
     private final IndexName idxName;
 
     /** */
-    private final GridH2Table tbl;
-
-    /** */
-    private final List<IndexColumn> cols;
-
-    /** */
     public GeoSpatialClientIndexDefinition(
-        GridH2Table tbl,
         IndexName idxName,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
-        List<IndexColumn> cols
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs
     ) {
         this.idxName = idxName;
         this.keyDefs = keyDefs;
-        this.tbl = tbl;
-        this.cols = cols;
-    }
-
-    /** */
-    public GridH2Table tbl() {
-        return tbl;
-    }
-
-    /** */
-    public List<IndexColumn> cols() {
-        return cols;
     }
 
     /** {@inheritDoc} */

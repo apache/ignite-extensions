@@ -17,20 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.IndexDefinition;
-import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexRowHandler;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.h2.table.IndexColumn;
 import org.locationtech.jts.geom.Geometry;
 
@@ -38,61 +31,21 @@ import org.locationtech.jts.geom.Geometry;
  * This class is entrypoint for creating Geo-Spatial index.
  */
 public class GeoSpatialUtils {
-    /** Dummy key types. */
-    private static final IndexKeyTypeSettings DUMMY_SETTINGS = new IndexKeyTypeSettings();
-
     static {
+        SchemaManager.registerIndexDescriptorFactory(QueryIndexType.GEOSPATIAL, GeoSpatialIndexDescriptorFactory.INSTANCE);
         IndexKeyFactory.register(IndexKeyType.GEOMETRY, k -> new GeometryIndexKey((Geometry)k));
     }
 
     /** */
-    public static GridH2IndexBase createIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
+    public static GridH2IndexBase createIndex(GridH2Table tbl, Index idx, List<IndexColumn> cols) {
         try {
-            IndexName name = new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), idxName);
-
-            LinkedHashMap<String, IndexKeyDefinition> keyDefs = H2Utils.columnsToKeyDefinitions(tbl, cols);
-
             if (tbl.cacheInfo().affinityNode())
-                return createIndex(tbl, name, keyDefs, cols);
+                return new GridH2SpatialIndex(tbl, cols, idx.unwrap(GeoSpatialIndexImpl.class));
             else
-                return createClientIndex(tbl, name, keyDefs, cols);
+                return new GridH2SpatialClientIndex(tbl, cols, idx.unwrap(GeoSpatialClientIndex.class));
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate", e);
         }
-    }
-
-    /** Creates index for server Ignite nodes. */
-    private static GridH2SpatialIndex createIndex(
-        GridH2Table tbl,
-        IndexName name,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
-        List<IndexColumn> cols
-    ) {
-        List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
-
-        QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(tbl.rowDescriptor(), keyDefs, idxKeyTypes, DUMMY_SETTINGS);
-
-        final int segments = tbl.cacheInfo().config().getQueryParallelism();
-
-        IndexDefinition def = new GeoSpatialIndexDefinition(tbl, name, keyDefs, rowHnd, segments);
-
-        Index idx = tbl.idxProc().createIndex(tbl.cacheContext(), GeoSpatialIndexFactory.INSTANCE, def);
-
-        return new GridH2SpatialIndex(tbl, cols, idx.unwrap(GeoSpatialIndexImpl.class));
-    }
-
-    /** Creates index for client Ignite nodes. */
-    private static GridH2SpatialClientIndex createClientIndex(
-        GridH2Table tbl,
-        IndexName name,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
-        List<IndexColumn> cols
-    ) {
-        IndexDefinition def = new GeoSpatialClientIndexDefinition(tbl, name, keyDefs, cols);
-
-        Index idx = tbl.idxProc().createIndex(tbl.cacheContext(), GeoSpatialClientIndexFactory.INSTANCE, def);
-
-        return new GridH2SpatialClientIndex(idx.unwrap(GeoSpatialClientIndex.class));
     }
 }
