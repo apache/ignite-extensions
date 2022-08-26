@@ -56,7 +56,7 @@ public class GeoSpatialIndexDescriptorFactory extends AbstractIndexDescriptorFac
         @Nullable SchemaIndexCacheVisitor cacheVisitor
     ) {
         GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
-        GridQueryTypeDescriptor typeDesc = tbl.descriptor();
+        GridQueryTypeDescriptor typeDesc = tbl.type();
         LinkedHashMap<String, IndexKeyDefinition> keyDefs = indexDescriptorToKeysDefinition(idxDesc, typeDesc);
         IndexName name = new IndexName(typeDesc.cacheName(), typeDesc.schemaName(), typeDesc.tableName(), idxDesc.name());
 
@@ -68,7 +68,7 @@ public class GeoSpatialIndexDescriptorFactory extends AbstractIndexDescriptorFac
             List<InlineIndexKeyType> idxKeyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), DUMMY_SETTINGS);
 
             QueryIndexRowHandler rowHnd = new QueryIndexRowHandler(
-                tbl.descriptor(), tbl.cacheInfo(), keyDefs, idxKeyTypes, DUMMY_SETTINGS);
+                tbl.type(), tbl.cacheInfo(), keyDefs, idxKeyTypes, DUMMY_SETTINGS);
 
             final int segments = tbl.cacheInfo().config().getQueryParallelism();
 
