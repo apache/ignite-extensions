@@ -50,7 +50,30 @@ To expose Spring Sessions to Ignite:
 - Add the `@EnableIgniteHttpSession` annotation to the class that configures Ignite session.
 - Add the `@SpringSessionIgnite` annotation to your Ignite instance.
 
-After you add these annotations, Spring Session will use Ignite as data storage for sessions.  For example, here is how you can create a simple controller:
+[source,java]
+----
+@Configuration
+@EnableIgniteHttpSession
+public class SessionConfiguration {
+    @Bean
+    @SpringSessionIgnite
+    public Ignite ignite() {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        TcpDiscoverySpi tcpDiscoverySpi = new TcpDiscoverySpi();
+
+        tcpDiscoverySpi.setLocalAddress("127.0.0.1")
+                       .setLocalPort(47500)
+                       .setLocalPortRange(10);
+
+        cfg.setDiscoverySpi();
+
+        return Ignition.start(cfg);
+    }
+}
+----
+
+After you add these annotations, Spring Session will use Ignite as a data storage for sessions. For example, here is how you can create a simple controller:
 
 [source,java]
 ----
@@ -64,7 +87,22 @@ public class SampleController {
 ----
 
 
+== Configuration
 
-== Extended Example
 
-You can find an extended example in the https://github.com/antkr/ignite-spring-session-demo[example repository, windows="_blank"]. In it, an Ignite node is started with a Spring Session controller.
+`@EnableIgniteHttpSession` annotation provides arguments to configure the session storage:
+
+- `maxInactiveIntervalInSeconds` – session timeout in seconds. By default, it is set to 1800 seconds (30 minutes).
+- `sessionMapName` – the name of the distributed map that will be used in Ignite to store the session data.
+By default, it is set to `"spring:session:sessions"`.
+- `flushMode` – flush mode for the Ignite sessions.
+The default is `FlushMode#ON_SAVE` which only updates the backing distributed storage when `SessionRepository#save(Session)` is invoked.
+In a web environment this happens just before the HTTP response is committed.
+- `saveMode` – save mode for the session. The default is `SaveMode#ON_SET_ATTRIBUTE`, which
+only saves changes made to session.
+
+
+== Example
+
+
+You can find an example in the https://github.com/antkr/ignite-spring-session-demo[example repository, windows="_blank"]. In it, an Ignite node is started with a Spring Session controller.
