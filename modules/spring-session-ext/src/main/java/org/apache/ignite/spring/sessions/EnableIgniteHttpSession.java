@@ -80,10 +80,9 @@ public @interface EnableIgniteHttpSession {
      * updates the backing Ignite when {@link SessionRepository#save(Session)} is invoked.
      * In a web environment this happens just before the HTTP response is committed.
      * <p>
-     * Setting the value to {@code IMMEDIATE} will ensure that the any updates to the
+     * Setting the value to {@code IMMEDIATE} will ensure that any updates to the
      * Session are immediately written to the Ignite instance.
      * @return the {@link FlushMode} to use
-     * @since 2.2.0
      */
     FlushMode flushMode() default FlushMode.ON_SAVE;
 
@@ -91,7 +90,6 @@ public @interface EnableIgniteHttpSession {
      * Save mode for the session. The default is {@link SaveMode#ON_SET_ATTRIBUTE}, which
      * only saves changes made to session.
      * @return the save mode
-     * @since 2.2.0
      */
     SaveMode saveMode() default SaveMode.ON_SET_ATTRIBUTE;
 
