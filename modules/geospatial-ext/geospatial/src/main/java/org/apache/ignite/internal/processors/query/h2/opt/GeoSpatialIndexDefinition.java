@@ -28,9 +28,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexRowHandler;
  */
 public class GeoSpatialIndexDefinition implements IndexDefinition {
     /** */
-    private final GridH2Table tbl;
-
-    /** */
     private final QueryIndexRowHandler rowHnd;
 
     /** */
@@ -44,13 +41,11 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
 
     /** */
     public GeoSpatialIndexDefinition(
-        GridH2Table tbl,
         IndexName idxName,
         LinkedHashMap<String, IndexKeyDefinition> keyDefs,
         QueryIndexRowHandler rowHnd,
         int segmentsCnt
     ) {
-        this.tbl = tbl;
         this.idxName = idxName;
         this.rowHnd = rowHnd;
         this.keyDefs = keyDefs;
@@ -65,11 +60,6 @@ public class GeoSpatialIndexDefinition implements IndexDefinition {
     /** */
     public int segmentsCnt() {
         return segmentsCnt;
-    }
-
-    /** */
-    public GridH2Table getTable() {
-        return tbl;
     }
 
     /** {@inheritDoc} */

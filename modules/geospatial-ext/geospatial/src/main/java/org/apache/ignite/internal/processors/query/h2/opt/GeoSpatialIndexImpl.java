@@ -27,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -105,13 +106,11 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
 
     /** */
     IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
-        GridH2Table table = def.getTable();
-
-        if (table.isPartitioned()) {
+        if (cctx.config().getCacheMode() == CacheMode.PARTITIONED) {
             assert filter > 0; // Lookup batch will not be created for the first table filter.
 
             throw DbException.throwInternalError(
-                "Table with a spatial index must be the first in the query: " + table);
+                "Table with a spatial index must be the first in the query: " + def.idxName().tableName());
         }
 
         return null; // Support must be explicitly added.
@@ -299,7 +298,7 @@ public class GeoSpatialIndexImpl extends AbstractIndex implements GeoSpatialInde
             qryFilter = qctx.filter();
 
         IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ?
-            qryFilter.forCache(def.getTable().cacheName()) : null;
+            qryFilter.forCache(cctx.name()) : null;
 
         List<IndexRow> rows = new ArrayList<>();
 
