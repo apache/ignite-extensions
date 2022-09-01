@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.List;
 import org.apache.ignite.internal.cache.query.index.sorted.client.AbstractClientIndex;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
@@ -32,8 +33,8 @@ public class GridH2SpatialClientIndex extends GridH2SpatialBaseIndex {
     private final AbstractClientIndex delegate;
 
     /** */
-    public GridH2SpatialClientIndex(GeoSpatialClientIndex delegate) {
-        super(delegate.tbl(), delegate.name(), delegate.cols().toArray(new IndexColumn[0]),
+    public GridH2SpatialClientIndex(GridH2Table tbl, List<IndexColumn> cols, GeoSpatialClientIndex delegate) {
+        super(tbl, delegate.name(), cols.toArray(new IndexColumn[0]),
             IndexType.createNonUnique(false, false, true));
 
         this.delegate = delegate;

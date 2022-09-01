@@ -45,7 +45,7 @@ public class GridH2SpatialIndex extends GridH2SpatialBaseIndex {
     /** */
     public GridH2SpatialIndex(GridH2Table tbl, List<IndexColumn> cols, GeoSpatialIndexImpl idx) {
         super(tbl,
-            idx.def.idxName().idxName(),
+            idx.name(),
             cols.toArray(new IndexColumn[0]),
             IndexType.createNonUnique(false, false, true));
 
@@ -63,10 +63,10 @@ public class GridH2SpatialIndex extends GridH2SpatialBaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean rmIdx) {
-        delegate.destroy(!rmIdx);
+    @Override public void destroy() {
+        delegate.destroy(false);
 
-        super.destroy(rmIdx);
+        super.destroy();
     }
 
     /** {@inheritDoc} */

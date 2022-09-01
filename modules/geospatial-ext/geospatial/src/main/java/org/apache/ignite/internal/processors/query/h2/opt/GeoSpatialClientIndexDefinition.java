@@ -18,11 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
-import org.h2.table.IndexColumn;
 
 /**
  * Definition of Geo-Spatial client index.
@@ -35,32 +33,12 @@ public class GeoSpatialClientIndexDefinition implements IndexDefinition {
     private final IndexName idxName;
 
     /** */
-    private final GridH2Table tbl;
-
-    /** */
-    private final List<IndexColumn> cols;
-
-    /** */
     public GeoSpatialClientIndexDefinition(
-        GridH2Table tbl,
         IndexName idxName,
-        LinkedHashMap<String, IndexKeyDefinition> keyDefs,
-        List<IndexColumn> cols
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs
     ) {
         this.idxName = idxName;
         this.keyDefs = keyDefs;
-        this.tbl = tbl;
-        this.cols = cols;
-    }
-
-    /** */
-    public GridH2Table tbl() {
-        return tbl;
-    }
-
-    /** */
-    public List<IndexColumn> cols() {
-        return cols;
     }
 
     /** {@inheritDoc} */
