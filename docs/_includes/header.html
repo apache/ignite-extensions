@@ -15,22 +15,23 @@
   limitations under the License.
 -->
 
-<!--header>
-    <button type='button' class='menu' title='Docs menu'>
-	  <img src="{{'assets/images/menu-icon.svg'|relative_url}}"/>
-    </button>
-    
-    <nav>
-   
-    </nav>
-    <form class='search'>
-        <button class="search-close" type='button'><img src='{{"assets/images/cancel.svg"|relative_url}}'></button>
-        <input type="search" placeholder="Search…" id="search-input">
-    </form>
-	<button type='button' class='search-toggle'><img src='{{"assets/images/search.svg"|relative_url}}'></button>
-    <button type='button' class='top-nav-toggle'>⋮</button>
-    <a href="https://github.com/ignite" title='GitHub' class='github' target="_blank">
-        <img src="{{'assets/images/github-gray.svg'|relative_url}}" alt="GitHub logo">
-    </a>
-</header-->
-
+<header>
+    <!--#include virtual="/includes/promotion_banner.html" -->
+    <div class="container">
+        <button type='button' class='menu' title='Docs menu'>
+            <img src="'assets/images/menu-icon.svg'|relative_url" width="18" height="12" alt="menu icon" />
+        </button>
+        <div class='home'>
+            <a href="/" class='home' title='Apache Ignite home'>
+                <img src="'assets/images/apache_ignite_logo.svg'|relative_url" alt="Apache Ignite logo" width="103"
+                    height="36">
+            </a>
+        </div>
+        <form class='search'>
+            <button class="search-close" type='button'><img src='"assets/images/cancel.svg"|relative_url' alt="close"
+                    width="10" height="10" /></button>
+            <input type="search" placeholder="Search…" id="search-input">
+        </form>
+        <button type='button' class='top-nav-toggle'>⋮</button>
+    </div>
+</header>
