@@ -21,7 +21,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -35,7 +38,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], cache));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache));
 
         return futs;
     }
@@ -45,35 +48,45 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, ACTIVE_ACTIVE_CACHE));
 
         for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster, ACTIVE_ACTIVE_CACHE));
 
         return futs;
     }
 
     /** {@inheritDoc} */
     @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
-        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.LAST_EVT_TIME));
-        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.EVTS_CNT));
+        assertNotNull(longMetric.apply(AbstractIgniteCdcStreamer.LAST_EVT_TIME));
+        assertNotNull(longMetric.apply(AbstractIgniteCdcStreamer.EVTS_CNT));
     }
 
     /**
      * @param srcCfg Ignite source node configuration.
      * @param destCfg Ignite destination cluster configuration.
+     * @param dest Ignite destination cluster.
      * @param cache Cache name to stream to kafka.
      * @return Future for Change Data Capture application.
      */
-    protected IgniteInternalFuture<?> igniteToIgnite(IgniteConfiguration srcCfg, IgniteConfiguration destCfg, String cache) {
+    protected IgniteInternalFuture<?> igniteToIgnite(IgniteConfiguration srcCfg, IgniteConfiguration destCfg, IgniteEx[] dest, String cache) {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
-            cdcCfg.setConsumer(new IgniteToIgniteCdcStreamer()
-                .setDestinationIgniteConfiguration(destCfg)
-                .setMaxBatchSize(KEYS_CNT)
-                .setCaches(Collections.singleton(cache)));
+            AbstractIgniteCdcStreamer streamer;
 
+            if (thinClient) {
+                streamer = new IgniteToIgniteClientCdcStreamer()
+                    .setDestinationClientConfiguration(new ClientConfiguration()
+                        .setAddresses(hostAddresses(dest)));
+            }
+            else
+                streamer = new IgniteToIgniteCdcStreamer().setDestinationIgniteConfiguration(destCfg);
+
+            streamer.setMaxBatchSize(KEYS_CNT);
+            streamer.setCaches(Collections.singleton(cache));
+
+            cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
             CdcMain cdc = new CdcMain(srcCfg, null, cdcCfg);

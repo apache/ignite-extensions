@@ -19,7 +19,7 @@ package org.apache.ignite.cdc;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
+import org.apache.ignite.cdc.kafka.AbstractKafkaToIgniteCdcStreamer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -38,7 +38,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
- * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
+ * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link AbstractKafkaToIgniteCdcStreamer} documentation.
  *
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
@@ -58,7 +58,7 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
-        A.notNull(destIgniteCfg, "Destination ignite configuration");
+        A.notNull(destIgniteCfg, "Destination Ignite configuration.");
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 

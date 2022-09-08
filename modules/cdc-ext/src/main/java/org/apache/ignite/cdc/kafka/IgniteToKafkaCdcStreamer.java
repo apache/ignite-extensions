@@ -77,10 +77,11 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
- * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
+ * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link AbstractKafkaToIgniteCdcStreamer} documentation.
  *
  * @see CdcMain
  * @see KafkaToIgniteCdcStreamer
+ * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
 @IgniteExperimental

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -32,36 +33,44 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
- * Utility class to load {@link KafkaToIgniteCdcStreamer} from Spring XML configuration.
+ * Utility class to load {@link AbstractKafkaToIgniteCdcStreamer} from Spring XML configuration.
  */
 public class KafkaToIgniteLoader {
     /** Kafka properties bean name. */
     public static final String KAFKA_PROPERTIES = "kafkaProperties";
 
     /**
-     * Loads {@link KafkaToIgniteCdcStreamer} from XML configuration file.
+     * Loads {@link AbstractKafkaToIgniteCdcStreamer} from XML configuration file.
      * If load fails then error message wouldn't be null.
      *
      * @param springXmlPath Path to XML configuration file.
      * @return {@code KafkaToIgniteCdcStreamer} instance.
      * @throws IgniteCheckedException If failed.
      */
-    public static KafkaToIgniteCdcStreamer loadKafkaToIgniteStreamer(String springXmlPath) throws IgniteCheckedException {
+    public static <T extends AbstractKafkaToIgniteCdcStreamer> T loadKafkaToIgniteStreamer(String springXmlPath)
+        throws IgniteCheckedException {
         URL cfgUrl = U.resolveSpringUrl(springXmlPath);
 
         IgniteSpringHelper spring = SPRING.create(false);
 
         GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> cfgTuple =
             spring.loadBeans(cfgUrl, F.asList(KAFKA_PROPERTIES),
-                IgniteConfiguration.class, KafkaToIgniteCdcStreamerConfiguration.class);
+                IgniteConfiguration.class, ClientConfiguration.class, KafkaToIgniteCdcStreamerConfiguration.class);
 
         Collection<IgniteConfiguration> ignCfg = cfgTuple.get2().get(IgniteConfiguration.class);
+        Collection<ClientConfiguration> clientCfg = cfgTuple.get2().get(ClientConfiguration.class);
 
-        if (ignCfg.size() > 1) {
-            throw new IgniteCheckedException(
-                "Exact 1 IgniteConfiguration should be defined. Found " + ignCfg.size()
-            );
-        }
+        if (ignCfg.isEmpty() && clientCfg.isEmpty())
+            throw new IgniteCheckedException("IgniteConfiguration or ClientConfiguration should be defined.");
+
+        if (!ignCfg.isEmpty() && !clientCfg.isEmpty())
+            throw new IgniteCheckedException("Either IgniteConfiguration or ClientConfiguration should be defined.");
+
+        if (ignCfg.size() > 1)
+            throw new IgniteCheckedException("Exact 1 IgniteConfiguration should be defined. Found " + ignCfg.size());
+
+        if (clientCfg.size() > 1)
+            throw new IgniteCheckedException("Exact 1 ClientConfiguration should be defined. Found " + clientCfg.size());
 
         Collection<KafkaToIgniteCdcStreamerConfiguration> k2iCfg =
             cfgTuple.get2().get(KafkaToIgniteCdcStreamerConfiguration.class);
@@ -75,6 +84,9 @@ public class KafkaToIgniteLoader {
 
         Properties kafkaProps = (Properties)cfgTuple.get1().get(KAFKA_PROPERTIES);
 
-        return new KafkaToIgniteCdcStreamer(ignCfg.iterator().next(), kafkaProps, k2iCfg.iterator().next());
+        if (ignCfg.isEmpty())
+            return (T)new KafkaToIgniteClientCdcStreamer(clientCfg.iterator().next(), kafkaProps, k2iCfg.iterator().next());
+        else
+            return (T)new KafkaToIgniteCdcStreamer(ignCfg.iterator().next(), kafkaProps, k2iCfg.iterator().next());
     }
 }

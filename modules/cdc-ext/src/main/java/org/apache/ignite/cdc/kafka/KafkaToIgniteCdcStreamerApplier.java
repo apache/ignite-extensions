@@ -31,20 +31,18 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcEventsIgniteApplier;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -71,11 +69,11 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_M
  * by the {@link CacheVersionConflictResolver}.
  * <p>
  * In case of any error during read applier just fail.
- * Fail of any applier will lead to the fail of {@link KafkaToIgniteCdcStreamer} application.
+ * Fail of any applier will lead to the fail of {@link AbstractKafkaToIgniteCdcStreamer} application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka or Ignite unavailability.
  *
- * @see KafkaToIgniteCdcStreamer
+ * @see AbstractKafkaToIgniteCdcStreamer
  * @see IgniteToKafkaCdcStreamer
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
@@ -85,9 +83,6 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_M
  * @see CacheEntryVersion
  */
 class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
-    /** Ignite instance. */
-    private final IgniteEx ign;
-
     /** Log. */
     private final IgniteLogger log;
 
@@ -121,11 +116,14 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** */
+    /** Cdc events applier factory. */
+    private final Factory<AbstractCdcEventsApplier> applierFactory;
+
+    /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
 
     /**
-     * @param ign Ignite instance.
+     * @param applierFactory Cdc events applier factory.
      * @param log Logger.
      * @param kafkaProps Kafka properties.
      * @param topic Topic name.
@@ -138,7 +136,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
-        IgniteEx ign,
+        Factory<AbstractCdcEventsApplier> applierFactory,
         IgniteLogger log,
         Properties kafkaProps,
         String topic,
@@ -150,7 +148,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
-        this.ign = ign;
+        this.applierFactory = applierFactory;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.kafkaPartFrom = kafkaPartFrom;
@@ -160,13 +158,11 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
-
-        applier = new CdcEventsIgniteApplier(ign, maxBatchSize, log);
     }
 
     /** {@inheritDoc} */
     @Override public void run() {
-        U.setCurrentIgniteName(ign.name());
+        applier = applierFactory.create();
 
         try {
             for (int kafkaPart = kafkaPartFrom; kafkaPart < kafkaPartTo; kafkaPart++) {

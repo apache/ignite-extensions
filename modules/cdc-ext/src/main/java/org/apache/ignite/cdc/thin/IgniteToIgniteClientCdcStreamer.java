@@ -20,7 +20,7 @@ package org.apache.ignite.cdc.thin;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
+import org.apache.ignite.cdc.kafka.AbstractKafkaToIgniteCdcStreamer;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * If you have plans to apply written messages to the other Ignite cluster in active-active manner,
  * e.g. concurrent updates of the same entry in other cluster is possible,
  * please, be aware of {@link CacheVersionConflictResolverImpl} conflict resolved.
- * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link KafkaToIgniteCdcStreamer} documentation.
+ * Configuration of {@link CacheVersionConflictResolverImpl} can be found in {@link AbstractKafkaToIgniteCdcStreamer} documentation.
  *
  * @see IgniteClient
  * @see CdcMain

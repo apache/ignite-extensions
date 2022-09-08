@@ -25,7 +25,7 @@ import org.junit.Test;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteLoader.loadKafkaToIgniteStreamer;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-/** Tests load {@link KafkaToIgniteCdcStreamer} from Srping xml file. */
+/** Tests load {@link AbstractKafkaToIgniteCdcStreamer} from Srping xml file. */
 public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
     /** */
     @Test
@@ -45,6 +45,35 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
         );
 
         KafkaToIgniteCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/kafka-to-ignite-correct.xml");
+
+        assertNotNull(streamer);
+    }
+
+    /** */
+    @Test
+    public void testLoadIgniteClientConfig() throws Exception {
+        assertThrows(
+            null,
+            () -> loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-double-client-cfg.xml"),
+            IgniteCheckedException.class,
+            "Exact 1 ClientConfiguration should be defined. Found 2"
+        );
+
+        assertThrows(
+            null,
+            () -> loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-without-kafka-properties.xml"),
+            IgniteCheckedException.class,
+            "Spring bean with provided name doesn't exist"
+        );
+
+        assertThrows(
+            null,
+            () -> loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-with-ignite-cfg.xml"),
+            IgniteCheckedException.class,
+            "Either IgniteConfiguration or ClientConfiguration should be defined."
+        );
+
+        KafkaToIgniteClientCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-correct.xml");
 
         assertNotNull(streamer);
     }
