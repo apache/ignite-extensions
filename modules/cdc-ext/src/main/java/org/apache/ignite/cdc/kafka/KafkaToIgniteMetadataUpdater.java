@@ -57,7 +57,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /**
-     * @param ign Ignite instance.
+     * @param ctx Binary context.
      * @param log Logger.
      * @param initProps Kafka properties.
      * @param streamerCfg Streamer configuration.

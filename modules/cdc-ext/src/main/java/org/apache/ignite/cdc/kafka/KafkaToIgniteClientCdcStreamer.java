@@ -45,6 +45,7 @@ public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStre
     private IgniteClient client;
 
     /**
+     * @param clientCfg Ignite thin client configuration.
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */

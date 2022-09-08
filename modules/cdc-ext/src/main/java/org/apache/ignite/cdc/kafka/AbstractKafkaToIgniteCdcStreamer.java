@@ -102,14 +102,10 @@ public abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     protected IgniteLogger log;
 
     /**
-     * @param igniteCfg Ignite configuration.
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
-    public AbstractKafkaToIgniteCdcStreamer(
-        Properties kafkaProps,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg
-    ) {
+    public AbstractKafkaToIgniteCdcStreamer(Properties kafkaProps, KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
         A.notNull(streamerCfg.getTopic(), "Kafka topic");
         A.notNull(streamerCfg.getMetadataTopic(), "Kafka metadata topic");
         A.ensure(

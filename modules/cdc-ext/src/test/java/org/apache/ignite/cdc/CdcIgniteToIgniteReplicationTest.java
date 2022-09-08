@@ -69,7 +69,12 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      * @param cache Cache name to stream to kafka.
      * @return Future for Change Data Capture application.
      */
-    protected IgniteInternalFuture<?> igniteToIgnite(IgniteConfiguration srcCfg, IgniteConfiguration destCfg, IgniteEx[] dest, String cache) {
+    protected IgniteInternalFuture<?> igniteToIgnite(
+        IgniteConfiguration srcCfg,
+        IgniteConfiguration destCfg,
+        IgniteEx[] dest,
+        String cache
+    ) {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 

@@ -44,6 +44,7 @@ public class KafkaToIgniteLoader {
      * If load fails then error message wouldn't be null.
      *
      * @param springXmlPath Path to XML configuration file.
+     * @param <T> Streamer type.
      * @return {@code KafkaToIgniteCdcStreamer} instance.
      * @throws IgniteCheckedException If failed.
      */
