@@ -88,9 +88,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 @RunWith(Parameterized.class)
 public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
-    /** Thin client flag. */
+    /** Client type to connect to a destination cluster. */
     @Parameterized.Parameter
-    public boolean thinClient;
+    public ClientType clientType;
 
     /** Cache atomicity mode. */
     @Parameterized.Parameter(1)
@@ -105,11 +105,11 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public int backups;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "thinClient={0}, atomicity={1}, mode={2}, backupCnt={3}")
+    @Parameterized.Parameters(name = "clientType={0}, atomicity={1}, mode={2}, backupCnt={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (Object thinClient : new Object[] {false, true}) {
+        for (ClientType clientType : ClientType.values()) {
             for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL)) {
                 for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
                     for (int backups = 0; backups < 2; backups++) {
@@ -117,7 +117,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                         if (backups > 0 && mode == REPLICATED)
                             continue;
 
-                        params.add(new Object[] {thinClient, atomicity, mode, backups});
+                        params.add(new Object[] {clientType, atomicity, mode, backups});
                     }
                 }
             }
@@ -660,5 +660,14 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             this.name = name;
             this.orgId = orgId;
         }
+    }
+
+    /** Client type to run load from. */
+    protected enum ClientType {
+        /** Client node. */
+        CLIENT_NODE,
+
+        /** Thin client. */
+        THIN_CLIENT;
     }
 }

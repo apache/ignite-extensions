@@ -226,7 +226,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
-        if (thinClient) {
+        if (clientType == ClientType.THIN_CLIENT) {
             ClientConfiguration clientCfg = new ClientConfiguration();
 
             clientCfg.setAddresses(hostAddresses(dest));

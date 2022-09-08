@@ -139,15 +139,20 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     ) {
         Map<String, String> params = new HashMap<>();
 
-        int discoPort = getFieldValue(igniteCfg.getDiscoverySpi(), "locPort");
+        String cfg;
 
-        if (thinClient) {
+        if (clientType == ClientType.THIN_CLIENT) {
+            cfg = "/replication/kafka-to-ignite-client.xml";
             String addresses = Arrays.stream(hostAddresses(dest)).map(addr -> "<value>" + addr + "</value>")
                 .collect(Collectors.joining());
 
             params.put(HOST_ADDRESSES, addresses);
         }
         else {
+            cfg = "/replication/kafka-to-ignite.xml";
+
+            int discoPort = getFieldValue(igniteCfg.getDiscoverySpi(), "locPort");
+
             params.put(INSTANCE_NAME, igniteCfg.getIgniteInstanceName());
             params.put(DISCO_PORT, Integer.toString(discoPort));
             params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
@@ -161,8 +166,6 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
-
-        String cfg = thinClient ? "/replication/kafka-to-ignite-client.xml" : "/replication/kafka-to-ignite.xml";
 
         return runAsync(
             () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig(cfg, params)})

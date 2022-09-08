@@ -80,7 +80,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
             AbstractIgniteCdcStreamer streamer;
 
-            if (thinClient) {
+            if (clientType == ClientType.THIN_CLIENT) {
                 streamer = new IgniteToIgniteClientCdcStreamer()
                     .setDestinationClientConfiguration(new ClientConfiguration()
                         .setAddresses(hostAddresses(dest)));
