@@ -662,7 +662,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Client type to run load from. */
+    /** Client type to connect to a destination cluster. */
     protected enum ClientType {
         /** Client node. */
         CLIENT_NODE,
