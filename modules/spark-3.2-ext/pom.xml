@@ -41,7 +41,7 @@
     </properties>
 
     <modules>
-        <module>spark</module>
+        <module>spark-3.2</module>
         <module>examples</module>
     </modules>
 
