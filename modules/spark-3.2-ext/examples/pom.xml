@@ -21,9 +21,9 @@
 
     <parent>
         <groupId>org.apache.ignite</groupId>
-        <artifactId>ignite-spark-parent-ext</artifactId>
-        <version>2.0.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <artifactId>ignite-spark-3.2-parent-ext</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../spark-3.2-ext/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-spark-3.2-examples</artifactId>
@@ -54,37 +54,37 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-common_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-shuffle_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-tags_2.12</artifactId>
-            <version>${spark32.version}</version>
+            <version>${spark.version}</version>
         </dependency>
 
         <dependency>
@@ -100,19 +100,19 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${spark32.jackson.version}</version>
+            <version>${spark.jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${spark32.jackson.version}</version>
+            <version>${spark.jackson.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${spark32.jackson.version}</version>
+            <version>${spark.jackson.version}</version>
         </dependency>
 
         <!-- Test dependencies -->

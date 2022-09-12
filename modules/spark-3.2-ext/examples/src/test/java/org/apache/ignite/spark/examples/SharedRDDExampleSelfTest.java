@@ -19,6 +19,7 @@ package org.apache.ignite.spark.examples;
 
 import org.apache.ignite.examples.spark.SharedRDDExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -29,8 +30,10 @@ public class SharedRDDExampleSelfTest extends GridAbstractExamplesTest {
     static final String[] EMPTY_ARGS = new String[0];
 
     /**
+     * TODO: IGNITE-12054 Only one SparkContext may be running in this JVM (see SPARK-2243).
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12054")
     @Test
     public void testSharedRDDExample() throws Exception {
         SharedRDDExample.main(EMPTY_ARGS);
