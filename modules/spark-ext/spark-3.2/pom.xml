@@ -38,18 +38,21 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
             <version>${scala212.library.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
             <version>${scala212.library.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -103,11 +106,13 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test dependencies -->
