@@ -35,6 +35,21 @@
     <url>http://ignite.apache.org</url>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.library.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala.library.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
@@ -168,10 +183,6 @@
         <!-- IDEA can't load the module if scala has provided scope -->
         <profile>
             <id>spark-3.2-scala-compile-scope</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-                <property><name>!spark-3.2-scala-provided-scope</name></property>
-            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.scala-lang</groupId>
@@ -186,30 +197,6 @@
                 </dependency>
             </dependencies>
         </profile>
-
-        <!-- Compile scope is needed for release -->
-        <profile>
-            <id>spark-3.2-scala-provided-scope</id>
-            <activation>
-                <property><name>!spark-3.2-scala-compile-scope</name></property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-library</artifactId>
-                    <version>${scala.library.version}</version>
-                    <scope>provided</scope>
-                </dependency>
-
-                <dependency>
-                    <groupId>org.scala-lang</groupId>
-                    <artifactId>scala-reflect</artifactId>
-                    <version>${scala.library.version}</version>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
 
         <profile>
             <id>scala-test</id>
