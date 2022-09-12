@@ -34,23 +34,25 @@
     <version>2.0.0-SNAPSHOT</version>
 
     <properties>
-        <spark.version>2.4.4</spark.version>
         <scala.library.version>2.11.12</scala.library.version>
+        <scala.test.version>2.2.6</scala.test.version>
+        <spark.version>2.4.4</spark.version>
         <spark.hadoop.version>3.3.3</spark.hadoop.version>
         <spark.janino.version>3.0.8</spark.janino.version>
         <spark.jackson.version>2.6.7</spark.jackson.version>
-        <scala.test.version>2.2.6</scala.test.version>
 
         <scala212.library.version>2.12.16</scala212.library.version>
         <scala32.test.version>3.2.12</scala32.test.version>
-        <spark32.hadoop.version>3.3.4</spark32.hadoop.version>
         <spark32.version>3.2.2</spark32.version>
+        <spark32.hadoop.version>3.3.4</spark32.hadoop.version>
+        <spark32.jackson.version>2.12.7</spark32.jackson.version>
     </properties>
 
     <modules>
         <module>spark</module>
         <module>spark-3.2</module>
         <module>examples</module>
+        <module>examples-3.2</module>
     </modules>
 
     <build>

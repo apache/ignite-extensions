@@ -31,13 +31,25 @@
     </parent>
 
     <artifactId>ignite-spark-3.2-ext</artifactId>
-    <version>${revision}</version>
+
     <url>http://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-indexing</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-spring</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -53,12 +65,6 @@
             <artifactId>spark-catalyst_2.12</artifactId>
             <version>${spark32.version}</version>
             <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -86,18 +92,6 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-tags_2.12</artifactId>
             <version>${spark32.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-indexing</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-spring</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -170,10 +164,13 @@
     </build>
 
     <profiles>
+
+        <!-- IDEA can't load the module if scala has provided scope -->
         <profile>
             <id>spark-3.2-scala-compile-scope</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
+                <property><name>!spark-3.2-scala-provided-scope</name></property>
             </activation>
             <dependencies>
                 <dependency>
@@ -190,8 +187,12 @@
             </dependencies>
         </profile>
 
+        <!-- Compile scope is needed for release -->
         <profile>
             <id>spark-3.2-scala-provided-scope</id>
+            <activation>
+                <property><name>!spark-3.2-scala-compile-scope</name></property>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.scala-lang</groupId>
@@ -220,7 +221,7 @@
                         <artifactId>scalatest-maven-plugin</artifactId>
                         <version>2.0.0</version>
                         <configuration>
-                            <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                            <reportsDirectory>target/surefire-reports</reportsDirectory>
                             <junitxml>.</junitxml>
                             <filereports>WDF IgniteScalaTestSuites.txt</filereports>
                             <skipTests>true</skipTests>
