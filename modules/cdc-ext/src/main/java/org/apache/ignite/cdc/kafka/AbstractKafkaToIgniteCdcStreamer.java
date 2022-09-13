@@ -50,7 +50,7 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
  * Main abstract class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
  * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
- * and apply {@link CdcEvent} to Ignite. There are two implementation to apply events:
+ * and apply {@link CdcEvent} to Ignite. There are two implementations:
  * <ul>
  *     <li>{@link KafkaToIgniteCdcStreamer} to apply through client node.</li>
  *     <li>{@link KafkaToIgniteClientCdcStreamer} to apply through thin client.</li>
