@@ -123,7 +123,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private AbstractCdcEventsApplier applier;
 
     /**
-     * @param applierFactory Cdc events applier factory.
+     * @param applierSupplier Cdc events applier supplier.
      * @param log Logger.
      * @param kafkaProps Kafka properties.
      * @param topic Topic name.
@@ -136,7 +136,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
-        Supplier<AbstractCdcEventsApplier> applierFactory,
+        Supplier<AbstractCdcEventsApplier> applierSupplier,
         IgniteLogger log,
         Properties kafkaProps,
         String topic,
@@ -148,7 +148,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
-        this.applierSupplier = applierFactory;
+        this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.kafkaPartFrom = kafkaPartFrom;
