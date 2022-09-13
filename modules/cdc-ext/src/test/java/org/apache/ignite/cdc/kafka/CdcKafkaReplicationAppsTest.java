@@ -143,6 +143,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
 
         if (clientType == ClientType.THIN_CLIENT) {
             cfg = "/replication/kafka-to-ignite-client.xml";
+
             String addresses = Arrays.stream(hostAddresses(dest)).map(addr -> "<value>" + addr + "</value>")
                 .collect(Collectors.joining());
 
