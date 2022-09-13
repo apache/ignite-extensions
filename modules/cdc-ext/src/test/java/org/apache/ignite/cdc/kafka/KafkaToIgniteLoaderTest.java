@@ -25,7 +25,7 @@ import org.junit.Test;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteLoader.loadKafkaToIgniteStreamer;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
-/** Tests load {@link AbstractKafkaToIgniteCdcStreamer} from Srping xml file. */
+/** Tests load {@link KafkaToIgniteCdcStreamer} from Srping xml file. */
 public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
     /** */
     @Test

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
- * Utility class to load {@link AbstractKafkaToIgniteCdcStreamer} from Spring XML configuration.
+ * Utility class to load implementation of {@link AbstractKafkaToIgniteCdcStreamer} from Spring XML configuration.
  */
 public class KafkaToIgniteLoader {
     /** Kafka properties bean name. */

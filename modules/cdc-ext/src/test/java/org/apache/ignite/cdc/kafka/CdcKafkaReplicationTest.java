@@ -204,7 +204,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
      * @param cacheName Cache name.
      * @param igniteCfg Ignite configuration.
      * @param dest Destination Ignite cluster.
-     * @return Future for runed {@link AbstractKafkaToIgniteCdcStreamer}.
+     * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
     protected IgniteInternalFuture<?> kafkaToIgnite(
         String cacheName,

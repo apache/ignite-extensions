@@ -28,8 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl;
-import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -37,7 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
@@ -50,42 +47,23 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
 /**
- * Main class of Kafka to Ignite application.
+ * Main abstract class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
  * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
- * and apply {@link CdcEvent} to Ignite.
- * <p>
+ * and apply {@link CdcEvent} to Ignite. There are two implementation to apply events:
+ * <ul>
+ *     <li>{@link KafkaToIgniteCdcStreamer} to apply through client node.</li>
+ *     <li>{@link KafkaToIgniteClientCdcStreamer} to apply through thin client.</li>
+ * </ul>
  * Each applier receive even number of kafka topic partition to read.
- * <p>
- * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
- * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
- * such as Kafka or Ignite unavailability.
- * <p>
- * To resolve possible update conflicts (in case of concurrent update in source and destination Ignite clusters)
- * real-world deployments should use some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
- * Example of Ignite configuration with the conflict resolver:
- * <pre>
- * {@code
- * CacheVersionConflictResolverCachePluginProvider conflictPlugin = new CacheVersionConflictResolverCachePluginProvider();
- *
- * conflictPlugin.setClusterId(clusterId); // Cluster id.
- * conflictPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
- *
- * IgniteConfiguration cfg = ...;
- *
- * cfg.setPluginProviders(conflictPlugin);
- * }
- * </pre>
- * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
  *
  * @see CdcMain
  * @see IgniteToKafkaCdcStreamer
  * @see CdcEvent
- * @see KafkaToIgniteCdcStreamerApplier
- * @see CacheConflictResolutionManagerImpl
+ * @see KafkaToIgniteCdcStreamer
+ * @see KafkaToIgniteClientCdcStreamer
  */
-@IgniteExperimental
-public abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
+abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     /** Kafka consumer properties. */
     private final Properties kafkaProps;
 

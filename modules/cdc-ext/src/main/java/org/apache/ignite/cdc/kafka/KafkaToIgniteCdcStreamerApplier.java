@@ -31,7 +31,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.cache.configuration.Factory;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -69,11 +69,11 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_M
  * by the {@link CacheVersionConflictResolver}.
  * <p>
  * In case of any error during read applier just fail.
- * Fail of any applier will lead to the fail of {@link AbstractKafkaToIgniteCdcStreamer} application.
+ * Fail of any applier will lead to the fail of {@link KafkaToIgniteCdcStreamer} application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
  * such as Kafka or Ignite unavailability.
  *
- * @see AbstractKafkaToIgniteCdcStreamer
+ * @see KafkaToIgniteCdcStreamer
  * @see IgniteToKafkaCdcStreamer
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
@@ -116,8 +116,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** Cdc events applier factory. */
-    private final Factory<AbstractCdcEventsApplier> applierFactory;
+    /** Cdc events applier supplier. */
+    private final Supplier<AbstractCdcEventsApplier> applierFactory;
 
     /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
@@ -136,7 +136,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
-        Factory<AbstractCdcEventsApplier> applierFactory,
+        Supplier<AbstractCdcEventsApplier> applierFactory,
         IgniteLogger log,
         Properties kafkaProps,
         String topic,
@@ -162,7 +162,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        applier = applierFactory.create();
+        applier = applierFactory.get();
 
         try {
             for (int kafkaPart = kafkaPartFrom; kafkaPart < kafkaPartTo; kafkaPart++) {

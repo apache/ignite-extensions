@@ -23,9 +23,9 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Configuration of {@link AbstractKafkaToIgniteCdcStreamer} application.
+ * Configuration of {@link KafkaToIgniteCdcStreamer} application.
  *
- * @see AbstractKafkaToIgniteCdcStreamer
+ * @see KafkaToIgniteCdcStreamer
  * @see KafkaToIgniteLoader
  */
 @IgniteExperimental

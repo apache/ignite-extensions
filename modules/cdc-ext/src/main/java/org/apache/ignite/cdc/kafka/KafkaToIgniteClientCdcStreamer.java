@@ -22,21 +22,55 @@ import java.util.Properties;
 import java.util.UUID;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
+import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl;
+import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.thin.CdcEventsIgniteClientApplier;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.client.thin.ClientBinary;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Implementation of {@link AbstractKafkaToIgniteCdcStreamer} that streams all data changes to a destination cluster
- * through Ignite thin client.
+ * Main class of Kafka to Ignite application.
+ * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
+ * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
+ * and apply {@link CdcEvent} to Ignite through thin client.
+ * <p>
+ * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
+ * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
+ * such as Kafka or Ignite unavailability.
+ * <p>
+ * To resolve possible update conflicts (in case of concurrent update in source and destination Ignite clusters)
+ * real-world deployments should use some conflict resolver, for example {@link CacheVersionConflictResolverImpl}.
+ * Example of Ignite configuration with the conflict resolver:
+ * <pre>
+ * {@code
+ * CacheVersionConflictResolverCachePluginProvider conflictPlugin = new CacheVersionConflictResolverCachePluginProvider();
  *
+ * conflictPlugin.setClusterId(clusterId); // Cluster id.
+ * conflictPlugin.setCaches(new HashSet<>(Arrays.asList("my-cache", "some-other-cache"))); // Caches to replicate.
+ *
+ * IgniteConfiguration cfg = ...;
+ *
+ * cfg.setPluginProviders(conflictPlugin);
+ * }
+ * </pre>
+ * Please, see {@link CacheConflictResolutionManagerImpl} for additional information.
+ *
+ * @see CdcMain
+ * @see IgniteToKafkaCdcStreamer
+ * @see CdcEvent
  * @see IgniteClient
+ * @see KafkaToIgniteCdcStreamerApplier
+ * @see CacheConflictResolutionManagerImpl
  */
+@IgniteExperimental
 public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
     /** Ignite thin client configuration. */
     private final ClientConfiguration clientCfg;
