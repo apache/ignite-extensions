@@ -81,8 +81,11 @@ public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
-    public KafkaToIgniteCdcStreamer(IgniteConfiguration igniteCfg,
-        Properties kafkaProps, KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+    public KafkaToIgniteCdcStreamer(
+        IgniteConfiguration igniteCfg,
+        Properties kafkaProps,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
+    ) {
         super(kafkaProps, streamerCfg);
 
         A.notNull(igniteCfg, "Destination Ignite configuration.");

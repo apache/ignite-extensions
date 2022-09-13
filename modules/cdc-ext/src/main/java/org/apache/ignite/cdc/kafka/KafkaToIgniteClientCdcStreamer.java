@@ -83,8 +83,11 @@ public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStre
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
-    public KafkaToIgniteClientCdcStreamer(ClientConfiguration clientCfg, Properties kafkaProps,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+    public KafkaToIgniteClientCdcStreamer(
+        ClientConfiguration clientCfg,
+        Properties kafkaProps,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
+    ) {
         super(kafkaProps, streamerCfg);
 
         A.notNull(clientCfg, "Destination thin client configuration.");
