@@ -22,9 +22,12 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
@@ -78,6 +81,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     public static final String PROPS_PATH = "PROPS_PATH";
 
     /** */
+    public static final String HOST_ADDRESSES = "HOST_ADDRESSES";
+
+    /** */
     private String kafkaPropsPath = null;
 
     /** {@inheritDoc} */
@@ -127,16 +133,32 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         String topic,
         String metadataTopic,
         IgniteConfiguration igniteCfg,
+        IgniteEx[] dest,
         int partFrom,
         int partTo
     ) {
         Map<String, String> params = new HashMap<>();
 
-        int discoPort = getFieldValue(igniteCfg.getDiscoverySpi(), "locPort");
+        String cfg;
 
-        params.put(INSTANCE_NAME, igniteCfg.getIgniteInstanceName());
-        params.put(DISCO_PORT, Integer.toString(discoPort));
-        params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
+        if (clientType == ClientType.THIN_CLIENT) {
+            cfg = "/replication/kafka-to-ignite-client.xml";
+
+            String addresses = Arrays.stream(hostAddresses(dest)).map(addr -> "<value>" + addr + "</value>")
+                .collect(Collectors.joining());
+
+            params.put(HOST_ADDRESSES, addresses);
+        }
+        else {
+            cfg = "/replication/kafka-to-ignite.xml";
+
+            int discoPort = getFieldValue(igniteCfg.getDiscoverySpi(), "locPort");
+
+            params.put(INSTANCE_NAME, igniteCfg.getIgniteInstanceName());
+            params.put(DISCO_PORT, Integer.toString(discoPort));
+            params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
+        }
+
         params.put(REPLICATED_CACHE, cacheName);
         params.put(TOPIC, topic);
         params.put(METADATA_TOPIC, metadataTopic);
@@ -147,7 +169,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
-            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig("/replication/kafka-to-ignite.xml", params)})
+            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig(cfg, params)})
         );
     }
 

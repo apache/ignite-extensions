@@ -40,6 +40,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -49,8 +50,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -85,31 +88,37 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 @RunWith(Parameterized.class)
 public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
-    /** Cache atomicity mode. */
+    /** Client type to connect to a destination cluster. */
     @Parameterized.Parameter
+    public ClientType clientType;
+
+    /** Cache atomicity mode. */
+    @Parameterized.Parameter(1)
     public CacheAtomicityMode atomicity;
 
     /** Cache replication mode. */
-    @Parameterized.Parameter(1)
+    @Parameterized.Parameter(2)
     public CacheMode mode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter(3)
     public int backups;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "atomicity={0}, mode={1}, backupCnt={2}")
+    @Parameterized.Parameters(name = "clientType={0}, atomicity={1}, mode={2}, backupCnt={3}")
     public static Collection<?> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL)) {
-            for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
-                for (int backups = 0; backups < 2; backups++) {
-                    // backupCount ignored for REPLICATED caches.
-                    if (backups > 0 && mode == REPLICATED)
-                        continue;
+        for (ClientType clientType : ClientType.values()) {
+            for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL)) {
+                for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
+                    for (int backups = 0; backups < 2; backups++) {
+                        // backupCount ignored for REPLICATED caches.
+                        if (backups > 0 && mode == REPLICATED)
+                            continue;
 
-                    params.add(new Object[] {atomicity, mode, backups});
+                        params.add(new Object[] {clientType, atomicity, mode, backups});
+                    }
                 }
             }
         }
@@ -508,8 +517,10 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private boolean checkFuts(boolean res, List<IgniteInternalFuture<?>> futs) {
-        for (int i = 0; i < futs.size(); i++)
-            assertFalse("Fut " + i, futs.get(i).isDone());
+        for (int i = 0; i < futs.size(); i++) {
+            assertFalse("Fut " + i + ", error: " + X.getFullStackTrace(futs.get(i).error()),
+                futs.get(i).isDone());
+        }
 
         return res;
     }
@@ -542,6 +553,19 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
+    }
+
+    /** @return Destination cluster host addresses. */
+    protected String[] hostAddresses(IgniteEx[] dest) {
+        String[] addrs = new String[dest.length];
+
+        for (int i = 0; i < dest.length; i++) {
+            ClusterNode node = dest[i].localNode();
+
+            addrs[i] = F.first(node.addresses()) + ":" + node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+        }
+
+        return addrs;
     }
 
     /** */
@@ -636,5 +660,14 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             this.name = name;
             this.orgId = orgId;
         }
+    }
+
+    /** Client type to connect to a destination cluster. */
+    protected enum ClientType {
+        /** Client node. */
+        CLIENT_NODE,
+
+        /** Thin client. */
+        THIN_CLIENT;
     }
 }
