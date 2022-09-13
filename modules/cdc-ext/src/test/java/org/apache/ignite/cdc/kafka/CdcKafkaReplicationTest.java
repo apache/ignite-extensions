@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -113,6 +114,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
                 cache,
                 SRC_DEST_META_TOPIC,
                 destClusterCliCfg[i],
+                destCluster,
                 i * (DFLT_PARTS / 2),
                 (i + 1) * (DFLT_PARTS / 2)
             ));
@@ -136,6 +138,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             SRC_DEST_TOPIC,
             SRC_DEST_META_TOPIC,
             destClusterCliCfg[0],
+            destCluster,
             0,
             DFLT_PARTS
         ));
@@ -145,6 +148,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             DEST_SRC_TOPIC,
             DEST_SRC_META_TOPIC,
             srcClusterCliCfg[0],
+            srcCluster,
             0,
             DFLT_PARTS
         ));
@@ -199,6 +203,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     /**
      * @param cacheName Cache name.
      * @param igniteCfg Ignite configuration.
+     * @param dest Destination Ignite cluster.
      * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
     protected IgniteInternalFuture<?> kafkaToIgnite(
@@ -206,6 +211,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         String topic,
         String metadataTopic,
         IgniteConfiguration igniteCfg,
+        IgniteEx[] dest,
         int fromPart,
         int toPart
     ) {
@@ -220,7 +226,15 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
-        return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
+        if (clientType == ClientType.THIN_CLIENT) {
+            ClientConfiguration clientCfg = new ClientConfiguration();
+
+            clientCfg.setAddresses(hostAddresses(dest));
+
+            return runAsync(new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg));
+        }
+        else
+            return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
     }
 
     /** */

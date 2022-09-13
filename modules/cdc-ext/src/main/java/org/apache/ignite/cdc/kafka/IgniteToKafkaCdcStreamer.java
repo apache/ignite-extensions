@@ -81,6 +81,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  *
  * @see CdcMain
  * @see KafkaToIgniteCdcStreamer
+ * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
 @IgniteExperimental

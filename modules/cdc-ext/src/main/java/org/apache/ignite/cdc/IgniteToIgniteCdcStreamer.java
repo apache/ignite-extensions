@@ -58,7 +58,7 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer {
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
 
-        A.notNull(destIgniteCfg, "Destination ignite configuration");
+        A.notNull(destIgniteCfg, "Destination Ignite configuration.");
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 

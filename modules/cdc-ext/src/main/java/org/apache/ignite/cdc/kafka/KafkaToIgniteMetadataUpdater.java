@@ -23,10 +23,8 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -43,8 +41,8 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZE
 
 /** */
 public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
-    /** Ignite instance. */
-    private final IgniteEx ign;
+    /** Binary context. */
+    private final BinaryContext ctx;
 
     /** Log. */
     private final IgniteLogger log;
@@ -59,18 +57,18 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /**
-     * @param ign Ignite instance.
+     * @param ctx Binary context.
      * @param log Logger.
      * @param initProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
     public KafkaToIgniteMetadataUpdater(
-        IgniteEx ign,
+        BinaryContext ctx,
         IgniteLogger log,
         Properties initProps,
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
-        this.ign = ign;
+        this.ctx = ctx;
         this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
         this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
 
@@ -90,8 +88,6 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
-        BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
-
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 

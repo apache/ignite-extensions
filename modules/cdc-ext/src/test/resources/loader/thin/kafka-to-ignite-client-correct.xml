@@ -19,20 +19,24 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
-        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="dataStorageConfiguration">
-            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
-                <property name="defaultDataRegionConfiguration">
-                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="cdcEnabled" value="true" />
-                        <property name="persistenceEnabled" value="true" />
-                    </bean>
-                </property>
-            </bean>
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="client.cfg" class="org.apache.ignite.configuration.ClientConfiguration">
+        <property name="addresses">
+            <list>
+                <value>127.0.0.1:10800</value>
+            </list>
         </property>
     </bean>
 
-    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration" />
+    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
+        <property name="topic" value="ignite" />
+        <property name="metadataTopic" value="ignite-metadata" />
+        <property name="kafkaPartsFrom" value="0" />
+        <property name="kafkaPartsTo" value="16" />
+    </bean>
+
+    <util:properties id="kafkaProperties" location="loader/kafka.properties" />
 </beans>

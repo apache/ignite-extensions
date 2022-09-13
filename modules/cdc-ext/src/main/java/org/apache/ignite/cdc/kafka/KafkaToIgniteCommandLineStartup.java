@@ -27,8 +27,10 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
 
 /**
- * This class defines command-line {@link KafkaToIgniteCdcStreamer} startup. This startup can be used to start Ignite
- * {@link KafkaToIgniteCdcStreamer} application outside of any hosting environment from command line.
+ * This class defines command-line Kafka to Ignite startup. This startup can be used to start Ignite
+ * {@link KafkaToIgniteCdcStreamer} or {@link KafkaToIgniteClientCdcStreamer} application outside of any hosting
+ * environment from command line.
+ * <p/>
  * This startup is a Java application with {@link #main(String[])} method that accepts command line arguments.
  * It accepts on parameter which is Ignite Spring XML configuration file path.
  * You can run this class from command line without parameters to get help message.
@@ -61,7 +63,7 @@ public class KafkaToIgniteCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         try {
-            KafkaToIgniteCdcStreamer streamer = KafkaToIgniteLoader.loadKafkaToIgniteStreamer(args[0]);
+            AbstractKafkaToIgniteCdcStreamer streamer = KafkaToIgniteLoader.loadKafkaToIgniteStreamer(args[0]);
 
             streamer.run();
         }
@@ -95,14 +97,16 @@ public class KafkaToIgniteCommandLineStartup {
                 "    Where:",
                 "    ?, /help, -help, - show this message.",
                 "    -v               - verbose mode (quiet by default).",
-                "    path            - path to Spring XML configuration file.",
-                "                      Path can be absolute or relative to IGNITE_HOME.",
+                "    path             - path to Spring XML configuration file.",
+                "                       Path can be absolute or relative to IGNITE_HOME.",
                 " ",
-                "Spring file should contain bean definition of 'org.apache.ignite.configuration.IgniteConfiguration' " +
-                    "and 'org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration' " +
-                    "and bean of class 'java.util.Properties' with '" + KAFKA_PROPERTIES + "' name " +
-                    "that contains properties to connect to Apache Kafka cluster. " +
-                    "Note that bean will be fetched by the type and its ID is not used.");
+                "Spring file should contain the following bean definition:",
+                "1. 'org.apache.ignite.configuration.IgniteConfiguration' or " +
+                    "'org.apache.ignite.configuration.ClientConfiguration' to connect to Apache Ignite cluster.",
+                "2. 'org.apache.ignite.cdc.KafkaToIgniteCdcStreamerConfiguration' to configure streamer.",
+                "3. Bean of class 'java.util.Properties' with '" + KAFKA_PROPERTIES + "' name that contains " +
+                    "properties to connect to Apache Kafka cluster. ",
+                "Note that bean will be fetched by the type and its ID is not used.");
         }
 
         System.exit(exitCode);

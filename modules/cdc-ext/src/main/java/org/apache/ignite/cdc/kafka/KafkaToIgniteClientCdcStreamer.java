@@ -18,19 +18,20 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Properties;
+import java.util.UUID;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcEventsIgniteApplier;
 import org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.cdc.thin.CdcEventsIgniteClientApplier;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.client.thin.ClientBinary;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -39,7 +40,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * Main class of Kafka to Ignite application.
  * This application is counterpart of {@link IgniteToKafkaCdcStreamer} Change Data Capture consumer.
  * Application runs several {@link KafkaToIgniteCdcStreamerApplier} thread to read Kafka topic partitions
- * and apply {@link CdcEvent} to Ignite through client node.
+ * and apply {@link CdcEvent} to Ignite through thin client.
  * <p>
  * In case of any error during read applier just fail. Fail of any applier will lead to the fail of whole application.
  * It expected that application will be configured for automatic restarts with the OS tool to failover temporary errors
@@ -65,47 +66,44 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see CdcMain
  * @see IgniteToKafkaCdcStreamer
  * @see CdcEvent
+ * @see IgniteClient
  * @see KafkaToIgniteCdcStreamerApplier
  * @see CacheConflictResolutionManagerImpl
  */
 @IgniteExperimental
-public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
-    /** Ignite configuration. */
-    private final IgniteConfiguration igniteCfg;
+public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
+    /** Ignite thin client configuration. */
+    private final ClientConfiguration clientCfg;
 
-    /** Ignite client node. */
-    private IgniteEx ign;
+    /** Ignite thin client. */
+    private IgniteClient client;
 
     /**
-     * @param igniteCfg Ignite configuration.
+     * @param clientCfg Ignite thin client configuration.
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
      */
-    public KafkaToIgniteCdcStreamer(
-        IgniteConfiguration igniteCfg,
+    public KafkaToIgniteClientCdcStreamer(
+        ClientConfiguration clientCfg,
         Properties kafkaProps,
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         super(kafkaProps, streamerCfg);
 
-        A.notNull(igniteCfg, "Destination Ignite configuration.");
+        A.notNull(clientCfg, "Destination thin client configuration.");
 
-        this.igniteCfg = igniteCfg;
+        this.clientCfg = clientCfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void initLogger() throws Exception {
-        U.initWorkDir(igniteCfg);
-
-        log = U.initLogger(igniteCfg, "kafka-ignite-streamer");
-
-        igniteCfg.setGridLogger(log);
+        log = U.initLogger(null, "kafka-ignite-streamer", UUID.randomUUID(), U.defaultWorkDirectory());
     }
 
     /** {@inheritDoc} */
     @Override protected void runx() throws Exception {
-        try (IgniteEx ign = (IgniteEx)Ignition.start(igniteCfg)) {
-            this.ign = ign;
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            this.client = client;
 
             runAppliers();
         }
@@ -113,18 +111,20 @@ public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
 
     /** {@inheritDoc} */
     @Override protected AbstractCdcEventsApplier eventsApplier() {
-        U.setCurrentIgniteName(ign.name());
+        GridBinaryMarshaller.popContext(binaryContext());
 
-        return new CdcEventsIgniteApplier(ign, streamerCfg.getMaxBatchSize(), log);
+        return new CdcEventsIgniteClientApplier(client, streamerCfg.getMaxBatchSize(), log);
     }
 
     /** {@inheritDoc} */
     @Override protected BinaryContext binaryContext() {
-        return ((CacheObjectBinaryProcessorImpl)ign.context().cacheObjects()).binaryContext();
+        return ((ClientBinary)client.binary()).binaryContext();
     }
 
     /** {@inheritDoc} */
     @Override protected void checkCaches(Collection<String> caches) {
-        caches.forEach(name -> Objects.requireNonNull(ign.cache(name), name + " not exists!"));
+        Collection<String> clusterCaches = client.cacheNames();
+
+        caches.forEach(name -> A.ensure(clusterCaches.contains(name), name + " not exists!"));
     }
 }
