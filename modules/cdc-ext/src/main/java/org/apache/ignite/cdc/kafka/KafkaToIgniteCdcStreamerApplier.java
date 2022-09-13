@@ -117,7 +117,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /** Cdc events applier supplier. */
-    private final Supplier<AbstractCdcEventsApplier> applierFactory;
+    private final Supplier<AbstractCdcEventsApplier> applierSupplier;
 
     /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
@@ -148,7 +148,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
-        this.applierFactory = applierFactory;
+        this.applierSupplier = applierFactory;
         this.kafkaProps = kafkaProps;
         this.topic = topic;
         this.kafkaPartFrom = kafkaPartFrom;
@@ -162,7 +162,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void run() {
-        applier = applierFactory.get();
+        applier = applierSupplier.get();
 
         try {
             for (int kafkaPart = kafkaPartFrom; kafkaPart < kafkaPartTo; kafkaPart++) {
