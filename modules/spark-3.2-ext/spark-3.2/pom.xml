@@ -182,7 +182,7 @@
 
         <!-- IDEA can't load the module if scala has provided scope -->
         <profile>
-            <id>spark-3.2-scala-compile-scope</id>
+            <id>spark-3.2-dev-profile</id>
             <dependencies>
                 <dependency>
                     <groupId>org.scala-lang</groupId>
