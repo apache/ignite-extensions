@@ -89,7 +89,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(300));
 
             if (recs.count() == 0)
                 return;
