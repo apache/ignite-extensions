@@ -48,7 +48,7 @@ tab:pom.xml[]
 . Make sure that all required libraries are present in the classpath
 if you run the application by using the spark-submit command, or add them to your POM file:
 
-NOTE: Replace `${ignite-version}` with the version of Apache Ignite that you use.
+NOTE: Replace library versions below with specific versions that you use.
 
 tab:pom.xml[]
 [source,xml]
@@ -59,66 +59,66 @@ tab:pom.xml[]
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.12</dependency>
+            <version>{scala-2.12-version}</dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
-            <version>2.12</version>
+            <version>{scala-2.12-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-common_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-shuffle_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-tags_2.12</artifactId>
-            <version>3.2</version>
+            <version>{spark-3.2-version}</version>
         </dependency>
         ...
     </dependencies>
