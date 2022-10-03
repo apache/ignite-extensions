@@ -26,9 +26,10 @@ import org.apache.spark.sql.types._
   * Utility class for building SQL queries.
   */
 private[impl] object QueryUtils extends Logging {
-    /**
+    /** Add quotes to provided string if needed.
       * @param str String.
       * @param needed Boolean.
+      * @return result string.
       */
     def quoteStringIfNeeded(str: String, needed: Boolean): String = {
         if (needed)
