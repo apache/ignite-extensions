@@ -23,10 +23,10 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, NamedEx
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 /**
-  * Class for accumulating parts of SQL query to a single Ignite table.
-  *
-  * See <a href="http://www.h2database.com/html/grammar.html#select">select syntax of H2</a>.
-  */
+ * Class for accumulating parts of SQL query to a single Ignite table.
+ *
+ * See <a href="http://www.h2database.com/html/grammar.html#select">select syntax of H2</a>.
+ */
 private[apache] case class SingleTableSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     table: Option[String],
@@ -45,24 +45,30 @@ private[apache] case class SingleTableSQLAccumulator(
     override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
+        val caseSensitiveEnabled = isCaseSensitiveEnabled(igniteQueryContext)
 
-        var sql = s"SELECT$delim$tab${outputExpressions.map(exprToString(_)).mkString(", ")}${delim}" +
+        var sql = s"SELECT$delim$tab${outputExpressions
+            .map(exprToString(_, caseSensitive = caseSensitiveEnabled)).mkString(", ")}${delim}" +
             s"FROM$delim$tab$compiledTableExpression"
 
         if (where.exists(_.nonEmpty))
-            sql += s"${delim}WHERE$delim$tab${where.get.map(exprToString(_)).mkString(s" AND$delim$tab")}"
+            sql += s"${delim}WHERE$delim$tab${where.get
+                .map(exprToString(_, caseSensitive = caseSensitiveEnabled)).mkString(s" AND$delim$tab")}"
 
         if (groupBy.exists(_.nonEmpty))
-            sql += s"${delim}GROUP BY ${groupBy.get.map(exprToString(_)).mkString(s",$delim$tab")}"
+            sql += s"${delim}GROUP BY ${groupBy.get
+                .map(exprToString(_, caseSensitive = caseSensitiveEnabled)).mkString(s",$delim$tab")}"
 
         if (having.exists(_.nonEmpty))
-            sql += s"${delim}HAVING ${having.get.map(exprToString(_)).mkString(s" AND$delim$tab")}"
+            sql += s"${delim}HAVING ${having.get
+                .map(exprToString(_, caseSensitive = caseSensitiveEnabled)).mkString(s" AND$delim$tab")}"
 
         if (orderBy.exists(_.nonEmpty))
-            sql += s"${delim}ORDER BY ${orderBy.get.map(exprToString(_)).mkString(s",$delim$tab")}"
+            sql += s"${delim}ORDER BY ${orderBy.get
+                .map(exprToString(_,caseSensitive = caseSensitiveEnabled)).mkString(s",$delim$tab")}"
 
         if (limit.isDefined) {
-            sql += s" LIMIT ${limit.map(exprToString(_)).get}"
+            sql += s" LIMIT ${limit.map(exprToString(_, caseSensitive = caseSensitiveEnabled)).get}"
 
             if (nestedQuery)
                 sql = s"SELECT * FROM ($sql)"
@@ -72,11 +78,16 @@ private[apache] case class SingleTableSQLAccumulator(
     }
 
     /**
-      * @return From table SQL query part.
-      */
+     * @return From table SQL query part.
+     */
     private def compiledTableExpression: String = table match {
         case Some(tableName) ⇒
-            tableName
+            val caseSens = igniteQueryContext.sqlContext
+                .getConf("spark.sql.caseSensitive", "false").toBoolean
+            if (caseSens)
+                "\"" + tableName + "\""
+            else
+                tableName
 
         case None ⇒ tableExpression match {
             case Some((acc, alias)) ⇒

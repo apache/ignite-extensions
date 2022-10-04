@@ -51,7 +51,7 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive:Boolean): Option[String] = expr match {
         case AggregateExpression(aggregateFunction, _, isDistinct, _, _) ⇒
             aggregateFunction match {
                 case Count(children) ⇒
