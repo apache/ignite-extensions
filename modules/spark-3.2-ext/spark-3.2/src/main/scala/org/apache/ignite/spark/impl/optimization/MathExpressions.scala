@@ -138,7 +138,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case Abs(child, _) ⇒
             Some(s"ABS(${childToString(child)})")
 

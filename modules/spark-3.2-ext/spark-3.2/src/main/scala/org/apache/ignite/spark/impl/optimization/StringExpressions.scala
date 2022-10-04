@@ -96,7 +96,7 @@ private[optimization] object StringExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case Ascii(child) ⇒
             Some(s"ASCII(${childToString(child)})")
 
