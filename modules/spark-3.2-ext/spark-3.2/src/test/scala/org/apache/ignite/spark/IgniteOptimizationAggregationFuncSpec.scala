@@ -44,7 +44,13 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
         }
 
         it("AVG - DECIMAL") {
-            //TODO: add test for ticket IGNITE-12432
+            val df = igniteSession.sql("SELECT AVG(decimal_val) FROM numbers WHERE id >= 18")
+
+            checkOptimizationResult(df, "SELECT AVG(decimal_val) FROM numbers WHERE id >= 18")
+
+            val data = Tuple1(new java.math.BigDecimal(3.75).setScale( 7))
+
+            checkQueryData(df, data)
         }
 
         it("AVG - DOUBLE") {
