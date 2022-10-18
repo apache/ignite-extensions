@@ -17,10 +17,11 @@
 
 package org.apache.ignite.springdata.examples;
 
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
 
 /** */
-public class SpringDataExampleTest {
+public class SpringDataExampleTest extends GridAbstractExamplesTest {
     /** */
     @Test
     public void testExample() {
