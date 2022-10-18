@@ -14,12 +14,12 @@
 // limitations under the License.
 = Using Spark with Apache Ignite
 
-This spark module provides an implementation of Spark RDD abstraction which enables easy access to Ignite caches.
+This module provides an implementation of Spark RDD abstraction, providing access to Ignite caches from your Spark project.
 
-To use Ignite Spark-3.2 module
+== Using Spark 3.2 Integration
 
-. Import it to your Maven project. If you are using Maven to manage dependencies of your project, you can add an Ignite
-Spark-3.2 module dependency like this (replace `${ignite-spark-3.2-ext.version}` with actual Ignite Spark-3.2 Extension version you are interested in):
+. Import the extension to your Maven project. If you are using Maven to manage dependencies of your project, you can add an Ignite
+Spark-3.2 module dependency in the following way (replace `${ignite-spark-3.2-ext.version}` with actual Ignite Spark-3.2 Extension version you are interested in):
 +
 [tabs]
 --
@@ -45,14 +45,10 @@ tab:pom.xml[]
 ----
 --
 
-. Make sure that all required libraries are presented in the classpath
-when run the application using the spark-submit command or add them to your POM file.
+. Make sure that all required libraries are present in the classpath
+if you run the application by using the spark-submit command, or add them to your POM file:
 
-Versions:
-
-* `${scala-version}` -- 2.12
-* `${spark-version}` -- 3.2
-* `${ignite-versions}` -- the version of Apache Ignite that you use
+NOTE: We support any minor version of Scala 2.12, Spark 3.2 and all versions of Apache Ignite.
 
 tab:pom.xml[]
 [source,xml]
@@ -63,67 +59,66 @@ tab:pom.xml[]
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>${scala-version}</version>
-        </dependency>
+            <version>{scala-version}</dependency>
 
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
-            <version>${scala-version}</version>
+            <version>{scala-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite-version}</version>
+            <version>{ignite-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-common_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-network-shuffle_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-tags_2.12</artifactId>
-            <version>${spark.version}</version>
+            <version>{spark-version}</version>
         </dependency>
         ...
     </dependencies>
