@@ -25,6 +25,6 @@ public class SpringDataExampleTest extends GridAbstractExamplesTest {
     /** */
     @Test
     public void testExample() {
-        SpringDataExample.main(new String[0]);
+        SpringDataExample.main(EMPTY_ARGS);
     }
 }
