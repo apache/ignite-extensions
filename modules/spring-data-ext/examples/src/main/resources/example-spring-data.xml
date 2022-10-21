@@ -25,11 +25,8 @@
 
     Use this configuration file when running Spring Data examples.
 
-    When starting a standalone node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ignite.{bat|sh} modules/spring-data-ext/examples/config/example-spring-data.xml
-
     When starting Ignite from Java IDE, pass path to this file to Ignition:
-    Ignition.start("modules/spring-data-ext/examples/config/example-spring-data.xml");
+    Ignition.start("example-spring-data.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -54,7 +51,7 @@
                     <property name="indexedTypes">
                         <list>
                             <value>java.lang.Long</value>
-                            <value>org.apache.ignite.springdata22.examples.model.Person</value>
+                            <value>org.apache.ignite.springdata.examples.model.Person</value>
                         </list>
                     </property>
                 </bean>
