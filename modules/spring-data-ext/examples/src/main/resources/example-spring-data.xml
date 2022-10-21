@@ -25,9 +25,6 @@
 
     Use this configuration file when running Spring Data examples.
 
-    When starting a standalone node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ignite.{bat|sh} modules/spring-data-ext/examples/src/main/resources/example-spring-data.xml
-
     When starting Ignite from Java IDE, pass path to this file to Ignition:
     Ignition.start("example-spring-data.xml");
 -->
