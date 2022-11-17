@@ -21,8 +21,8 @@ import org.apache.ignite.{Ignite, Ignition}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.scalatest._
-import java.lang.{Long ⇒ JLong}
 
+import java.lang.{Long => JLong}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.internal.IgnitionEx.loadConfiguration
@@ -30,13 +30,15 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.configuration
 import org.apache.ignite.spark.impl.IgniteSQLAccumulatorRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.ignite.spark.AbstractDataFrameSpec._
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.annotation.meta.field
 import scala.reflect.ClassTag
 
 /**
   */
-abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter
+abstract class AbstractDataFrameSpec extends AnyFunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter
     with Assertions {
     var spark: SparkSession = _
 

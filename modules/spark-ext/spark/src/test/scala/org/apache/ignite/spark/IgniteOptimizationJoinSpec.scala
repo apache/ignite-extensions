@@ -18,14 +18,13 @@
 package org.apache.ignite.spark
 
 import java.lang.{Long => JLong}
-
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */
@@ -164,12 +163,12 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql(qry)
 
             checkOptimizationResult(df,
-                "SELECT CAST(SUM(cnt) as BIGINT) as \"SUM(cnt)\" FROM (" +
-                    "SELECT count(1) as cnt FROM (" +
-                        "SELECT id, val1 as val FROM jt1 UNION " +
-                        "SELECT id, val2 as val FROM jt2 UNION " +
-                        "SELECT id, val3 as val FROM jt3" +
-                    ") table1 GROUP BY val HAVING count(1) > 1) table2")
+                "SELECT CAST(SUM(CNT) AS BIGINT) AS \"SUM(CNT)\" FROM (" +
+                    "SELECT COUNT(1) AS CNT FROM (" +
+                        "SELECT ID, VAL1 AS VAL FROM JT1 UNION " +
+                        "SELECT ID, VAL2 AS VAL FROM JT2 UNION " +
+                        "SELECT ID, VAL3 AS VAL FROM JT3" +
+                    ") TABLE1 GROUP BY VAL HAVING CNT > 1) TABLE2")
 
             val data = Tuple1(6.0)
 
@@ -204,8 +203,8 @@ class IgniteOptimizationJoinSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data)
         }
 
-        // TODO: Fix join query IGNITE-12054
-        ignore("SELF INNER JOIN WITH WHERE") {
+
+        it("SELF INNER JOIN WITH WHERE") {
             val qry =
                 """
                   |SELECT

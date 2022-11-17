@@ -22,7 +22,7 @@ import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.ignite.IgniteOptimization
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */

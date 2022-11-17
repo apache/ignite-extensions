@@ -217,6 +217,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     left.igniteQueryContext,
                     left,
                     right,
+//                    newLeft,
+//                    newRight,
                     join.joinType,
                     leftOutput ++ rightOutput,
                     join.condition,

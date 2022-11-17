@@ -28,7 +28,7 @@ import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.DataTypes.StringType
 import org.apache.spark.sql.{Dataset, Row}
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.annotation.meta.field
 
@@ -208,7 +208,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT SQRT(id) FROM city WHERE id = 4 OR id = 1")
 
             checkOptimizationResult(df,
-                "SELECT SQRT(cast(id as double)) FROM city WHERE id = 4 OR id = 1")
+                "SELECT SQRT(CAST(ID AS DOUBLE)) AS \"SQRT(ID)\" FROM CITY WHERE ID = 4 OR ID = 1")
 
             val data = (1, 2)
 
@@ -219,8 +219,7 @@ class IgniteOptimizationSpec extends AbstractDataFrameSpec {
             val df = igniteSession.sql("SELECT CONCAT(id, \" - this is ID\") FROM city")
 
             checkOptimizationResult(df,
-                "SELECT CONCAT(cast(id AS VARCHAR), ' - this is ID') as \"CONCAT(cast(id AS STRING),  - this is ID)\" " +
-                    "FROM city")
+                "SELECT CONCAT(CAST(ID AS VARCHAR), ' - THIS IS ID') AS \"CONCAT(ID,  - THIS IS ID)\" FROM CITY")
 
             val data = (
                 "1 - this is ID",

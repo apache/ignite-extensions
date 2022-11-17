@@ -27,18 +27,21 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.apache.spark.SparkContext
 import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
 
 import scala.collection.JavaConversions._
 import IgniteRDDSpec._
 import org.apache.ignite.binary.BinaryObject
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.annotation.meta.field
 import scala.collection.JavaConversions._
 import scala.reflect.ClassTag
 
+
 @RunWith(classOf[JUnitRunner])
-class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
+class IgniteRDDSpec extends AnyFunSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
     describe("IgniteRDD") {
         it("should successfully store data to ignite using savePairs") {
             val sc = new SparkContext("local[*]", "test")

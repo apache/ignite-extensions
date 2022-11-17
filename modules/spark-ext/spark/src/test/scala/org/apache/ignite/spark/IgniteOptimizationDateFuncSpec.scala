@@ -23,9 +23,10 @@ import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import java.lang.{Long ⇒ JLong}
-import java.util.{Date ⇒ JDate}
+import org.scalatestplus.junit.JUnitRunner
+
+import java.lang.{Long => JLong}
+import java.util.{Date => JDate}
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.DAYS

@@ -73,8 +73,8 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringTrim(child,  Some(trimStr)) ⇒
             checkChild(child) && checkChild(trimStr)
 
-        case RegExpReplace(subject, regexp, rep) ⇒
-            checkChild(subject) && checkChild(regexp) && checkChild(rep)
+        case RegExpReplace(subject, regexp, rep, pos) ⇒
+            checkChild(subject) && checkChild(regexp) && checkChild(rep) && checkChild(pos)
 
         case StringRepeat(str, times) ⇒
             checkChild(str) && checkChild(times)
@@ -88,9 +88,6 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case Substring(str, pos, len) ⇒
             checkChild(str) && checkChild(pos) && checkChild(len)
 
-        case Substring(str, pos, len) ⇒
-            checkChild(str) && checkChild(pos) && checkChild(len)
-
         case StringTranslate(str, strMatch, strReplace) ⇒
             checkChild(str) && checkChild(strMatch) && checkChild(strReplace)
 
@@ -99,7 +96,7 @@ private[optimization] object StringExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case Ascii(child) ⇒
             Some(s"ASCII(${childToString(child)})")
 
@@ -148,7 +145,7 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringTrim(child,  Some(trimStr)) ⇒
             Some(s"TRIM(${childToString(child)}, ${childToString(trimStr)})")
 
-        case RegExpReplace(subject, regexp, rep) ⇒
+        case RegExpReplace(subject, regexp, rep, pos) ⇒
             Some(s"REGEXP_REPLACE(${childToString(subject)}, ${childToString(regexp)}, ${childToString(rep)})")
 
         case StringRepeat(str, times) ⇒

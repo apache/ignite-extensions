@@ -16,10 +16,10 @@
 
 This module provides an implementation of Spark RDD abstraction, providing access to Ignite caches from your Spark project.
 
-== Using Spark 3.2 Integration
+== Using Spark Integration
 
 . Import the extension to your Maven project. If you are using Maven to manage dependencies of your project, you can add an Ignite
-Spark-3.2 module dependency in the following way (replace `${ignite-spark-3.2-ext.version}` with actual Ignite Spark-3.2 Extension version you are interested in):
+Spark module dependency in the following way (replace `${ignite-spark-ext.version}` with actual Ignite Spark Extension version you are interested in):
 +
 [tabs]
 --
@@ -35,8 +35,8 @@ tab:pom.xml[]
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spark-3.2-ext</artifactId>
-            <version>${ignite-spark-3.2-ext.version}</version>
+            <artifactId>ignite-spark-ext</artifactId>
+            <version>${ignite-spark-ext.version}</version>
         </dependency>
         ...
     </dependencies>

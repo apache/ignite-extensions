@@ -19,8 +19,8 @@ package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.IgniteContext
 import org.apache.spark.rdd.RDD
+import org.apache.ignite.spark.IgniteContext
 
 import scala.reflect.ClassTag
 

@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Expression, _}
 private[optimization] object MathExpressions extends SupportedExpressions {
     /** @inheritdoc */
     def apply(expr: Expression, checkChild: (Expression) ⇒ Boolean): Boolean = expr match {
-        case Abs(child) ⇒
+        case Abs(child, _) ⇒
             checkChild(child)
 
         case Acos(child) ⇒
@@ -103,7 +103,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Pow(left, right) ⇒
             checkChild(left) && checkChild(right)
 
-        case Rand(child) ⇒
+        case Rand(child, _) ⇒
             checkChild(child)
 
         case Round(child, scale) ⇒
@@ -112,22 +112,22 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Signum(child) ⇒
             checkChild(child)
 
-        case Remainder(left, right) ⇒
+        case Remainder(left, right, _) ⇒
             checkChild(left) && checkChild(right)
 
-        case Divide(left, right) ⇒
+        case Divide(left, right, _) ⇒
             checkChild(left) && checkChild(right)
 
-        case Multiply(left, right) ⇒
+        case Multiply(left, right, _) ⇒
             checkChild(left) && checkChild(right)
 
-        case Subtract(left, right) ⇒
+        case Subtract(left, right, _) ⇒
             checkChild(left) && checkChild(right)
 
-        case Add(left, right) ⇒
+        case Add(left, right, _) ⇒
             checkChild(left) && checkChild(right)
 
-        case UnaryMinus(child) ⇒
+        case UnaryMinus(child, _) ⇒
             checkChild(child)
 
         case UnaryPositive(child) ⇒
@@ -138,8 +138,8 @@ private[optimization] object MathExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
-        case Abs(child) ⇒
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
+        case Abs(child, _) ⇒
             Some(s"ABS(${childToString(child)})")
 
         case Acos(child) ⇒
@@ -227,7 +227,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Pow(left, right) ⇒
             Some(s"POWER(${childToString(left)}, ${childToString(right)})")
 
-        case Rand(child) ⇒
+        case Rand(child, _) ⇒
             Some(s"RAND(${childToString(child)})")
 
         case Round(child, scale) ⇒
@@ -236,22 +236,22 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Signum(child) ⇒
             Some(s"SIGN(${childToString(child)})")
 
-        case Remainder(left, right) ⇒
+        case Remainder(left, right, _) ⇒
             Some(s"${childToString(left)} % ${childToString(right)}")
 
-        case Divide(left, right) ⇒
+        case Divide(left, right, _) ⇒
             Some(s"${childToString(left)} / ${childToString(right)}")
 
-        case Multiply(left, right) ⇒
+        case Multiply(left, right, _) ⇒
             Some(s"${childToString(left)} * ${childToString(right)}")
 
-        case Subtract(left, right) ⇒
+        case Subtract(left, right, _) ⇒
             Some(s"${childToString(left)} - ${childToString(right)}")
 
-        case Add(left, right) ⇒
+        case Add(left, right, _) ⇒
             Some(s"${childToString(left)} + ${childToString(right)}")
 
-        case UnaryMinus(child) ⇒
+        case UnaryMinus(child, _) ⇒
             Some(s"-${childToString(child)}")
 
         case UnaryPositive(child) ⇒

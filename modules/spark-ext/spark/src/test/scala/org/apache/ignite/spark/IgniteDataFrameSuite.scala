@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 import org.apache.spark.sql.ignite.IgniteSparkSessionSpec
 import org.junit.runner.RunWith
 import org.scalatest.Suites
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   * Test suite for Spark DataFrame API implementation.

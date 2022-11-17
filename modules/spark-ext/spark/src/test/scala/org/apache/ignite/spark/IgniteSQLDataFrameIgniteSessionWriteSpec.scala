@@ -21,11 +21,12 @@ import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec.{TEST_CONFIG_FILE, enclose}
 import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.ignite.testframework.GridTestUtils.resolveIgnitePath
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */

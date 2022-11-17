@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, enclose}
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   * Tests to check Spark Session implementation.

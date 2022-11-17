@@ -22,7 +22,7 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.spark.sql.DataFrame
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   * Tests to check all kinds of SQL queries from Spark SQL engine to Ignite SQL table.

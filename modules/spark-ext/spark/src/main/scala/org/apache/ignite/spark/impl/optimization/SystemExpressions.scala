@@ -71,7 +71,7 @@ private[optimization] object SystemExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case Coalesce(children) ⇒
             Some(s"COALESCE(${children.map(childToString(_)).mkString(", ")})")
 

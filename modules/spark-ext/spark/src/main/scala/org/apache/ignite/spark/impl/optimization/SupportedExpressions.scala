@@ -38,5 +38,5 @@ private[optimization] trait SupportedExpressions {
       * @return SQL representation of `expr` if it supported. `None` otherwise.
       */
     def toString(expr: Expression, childToString: (Expression) ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String]
+        useAlias: Boolean, caseSensitive: Boolean): Option[String]
 }

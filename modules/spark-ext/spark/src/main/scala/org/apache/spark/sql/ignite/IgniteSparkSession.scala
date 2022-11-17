@@ -142,7 +142,7 @@ class IgniteSparkSession private(
     override def createDataset[T: Encoder](data: Seq[T]): Dataset[T] = {
         val enc = encoderFor[T]
         val attributes = enc.schema.toAttributes
-        val encoded = data.map(d => enc.toRow(d).copy())
+        val encoded = data.map(d => enc.createSerializer().apply(d)) // TODO .copy()?
         val plan = new LocalRelation(attributes, encoded)
         Dataset[T](self, plan)
     }
@@ -196,14 +196,11 @@ class IgniteSparkSession private(
         proxy.extensions
 
     /** @inheritdoc */
-    override private[sql] def createDataFrame(rowRDD: RDD[Row],
-        schema: StructType,
-        needsConversion: Boolean) = {
-        val catalystRows = if (needsConversion) {
-            val encoder = RowEncoder(schema)
-            rowRDD.map(encoder.toRow)
-        } else {
-            rowRDD.map{r: Row => InternalRow.fromSeq(r.toSeq)}
+    override def createDataFrame(rowRDD: RDD[Row],
+        schema: StructType): DataFrame = {
+        val catalystRows = {
+            val encoder = RowEncoder(schema).createSerializer()
+            rowRDD.map(encoder.apply)
         }
         val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
         Dataset.ofRows(self, logicalPlan)
