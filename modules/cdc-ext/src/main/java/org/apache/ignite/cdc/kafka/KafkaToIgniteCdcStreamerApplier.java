@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -235,10 +234,10 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return {@code True} if record should be pushed down.
      */
     private boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
-        byte[] val = rec.value();
+        int hash;
 
-        if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
-            metaUpdr.updateMetadata();
+        if (rec.key() == null && (hash = deserializeMetaHash(rec.value())) != -1) {
+            metaUpdr.updateMetadataIfNecessary(hash);
 
             return false;
         }
@@ -257,6 +256,22 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         catch (IOException | ClassNotFoundException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param recVal Kafka record value.
+     * @return int value.
+     */
+    private int deserializeMetaHash(byte[] recVal) {
+        try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(recVal))) {
+            if (is.readLong() == META_UPDATE_MARKER)
+                return is.readInt();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+
+        return -1;
     }
 
     /** {@inheritDoc} */

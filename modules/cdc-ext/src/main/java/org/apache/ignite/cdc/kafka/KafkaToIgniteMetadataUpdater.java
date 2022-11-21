@@ -86,8 +86,25 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
         cnsmr.subscribe(Collections.singletonList(streamerCfg.getMetadataTopic()));
     }
 
-    /** Polls all available records from metadata topic and applies it to Ignite. */
-    public synchronized void updateMetadata() {
+    /**
+     * Polls all available records from metadata topic and applies it to Ignite in case if specified meta mash has no
+     * corresponding entries in {@link BinaryContext}.
+     *
+     * @param metaHash Hash.
+     */
+    public synchronized void updateMetadataIfNecessary(int metaHash) {
+        boolean typeMappingPresent = ctx.metadata().stream()
+            .anyMatch(t -> t.typeId() == metaHash);
+
+        if (typeMappingPresent)
+            return;
+
+        boolean binaryMetadataPresent = ctx.metadata().stream()
+            .anyMatch(t -> IgniteToKafkaCdcStreamer.metaHash(t) == metaHash);
+
+        if (binaryMetadataPresent)
+            return;
+
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 

@@ -17,10 +17,14 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
@@ -37,6 +42,7 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -45,7 +51,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -96,7 +101,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
     /** Metadata updater marker. */
-    public static final byte[] META_UPDATE_MARKER = U.longToBytes(0xC0FF1E);
+    public static final long META_UPDATE_MARKER = 0xC0FF1E;
 
     /** Log. */
     @LoggerResource
@@ -199,24 +204,32 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
+        List<BinaryType> typesList = new ArrayList<>();
+
+        types.forEachRemaining(typesList::add);
+
         sendAll(
-            types,
+            typesList.iterator(),
             t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
             typesCnt
         );
 
-        sendMetaUpdatedMarkers();
+        sendMetaUpdatedMarkers(typesList);
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
+        List<TypeMapping> mappingsList = new ArrayList<>();
+
+        mappings.forEachRemaining(mappingsList::add);
+
         sendAll(
-            mappings,
+            mappingsList.iterator(),
             m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
             mappingsCnt
         );
 
-        sendMetaUpdatedMarkers();
+        sendMetaUpdatedMarkers(mappingsList);
     }
 
     /** {@inheritDoc} */
@@ -233,16 +246,63 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         });
     }
 
-    /** Send marker(meta need to be updated) record to each partition of events topic. */
-    private void sendMetaUpdatedMarkers() {
-        sendAll(
-            IntStream.range(0, kafkaParts).iterator(),
-            p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER),
-            evtsCnt
-        );
+    /**
+     * Send marker record concatenated with meta hash to each partition of events topic.
+     *
+     * @param metas Metas.
+     */
+    private <T> void sendMetaUpdatedMarkers(Iterable<T> metas) {
+        for (T meta : metas) {
+            byte[] markerWithHash = markerWithHashBytes(metaHash(meta));
+
+            sendAll(
+                IntStream.range(0, kafkaParts).iterator(),
+                p -> new ProducerRecord<>(evtTopic, p, null, markerWithHash),
+                evtsCnt
+            );
+        }
 
         if (log.isDebugEnabled())
             log.debug("Meta update markers sent.");
+    }
+
+    /**
+     * @param obj Object.
+     * @return Meta hash.
+     */
+    public static int metaHash(Object obj) {
+        if (obj instanceof BinaryTypeImpl) {
+            BinaryTypeImpl binaryType = (BinaryTypeImpl)obj;
+
+            Object[] schemasHashes = binaryType.metadata().schemas().stream()
+                .map(BinarySchema::hashCode)
+                .toArray();
+
+            return Objects.hash(F.concat(schemasHashes, binaryType.typeId()));
+        }
+        else if (obj instanceof TypeMapping)
+            return ((TypeMapping)obj).typeId();
+
+        throw new IllegalArgumentException("Unexpected type: " + obj.getClass());
+    }
+
+    /**
+     * @param hash Hash.
+     * @return Serialized marker record concatenated with meta hash.
+     */
+    private byte[] markerWithHashBytes(int hash) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            oos.writeLong(META_UPDATE_MARKER);
+            oos.writeInt(hash);
+
+            oos.flush();
+
+            return baos.toByteArray();
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Send all data to Kafka. */
