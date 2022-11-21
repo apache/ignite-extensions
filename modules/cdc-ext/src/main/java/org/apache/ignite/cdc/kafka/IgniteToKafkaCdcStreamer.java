@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -30,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
@@ -46,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -95,8 +101,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Bytes sent metric description. */
     public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
-    /** Metadata updater marker. */
-    public static final byte[] META_UPDATE_MARKER = U.longToBytes(0xC0FF1E);
+    /** BinaryType updater marker. */
+    public static final long TYPE_MARKER = 0xC0FF1E;
+
+    /** TypeMapping updater marker. */
+    public static final long MAPPING_MARKER = TYPE_MARKER >> 1;
 
     /** Log. */
     @LoggerResource
@@ -110,9 +119,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Topic to send data. */
     private String evtTopic;
-
-    /** Topic to send metadata. */
-    private String metadataTopic;
 
     /** Kafka topic partitions count. */
     private int kafkaParts;
@@ -199,24 +205,20 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
-        sendAll(
-            types,
-            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-            typesCnt
-        );
+        int typesSent = sendMetaUpdatedMarkers(F.iterator(
+                types,
+                t -> ((BinaryTypeImpl)t).metadata(),
+                true),
+            TYPE_MARKER);
 
-        sendMetaUpdatedMarkers();
+        typesCnt.add(typesSent);
     }
 
     /** {@inheritDoc} */
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
-        sendAll(
-            mappings,
-            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
-            mappingsCnt
-        );
+        int mappingsSent = sendMetaUpdatedMarkers(mappings, MAPPING_MARKER);
 
-        sendMetaUpdatedMarkers();
+        mappingsCnt.add(mappingsSent);
     }
 
     /** {@inheritDoc} */
@@ -233,16 +235,49 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         });
     }
 
-    /** Send marker(meta need to be updated) record to each partition of events topic. */
-    private void sendMetaUpdatedMarkers() {
+    /**
+     * Send marker record merged with metadata to each partition of events topic.
+     *
+     * @param metaIter Metadata iterator.
+     */
+    private <T extends Serializable> int sendMetaUpdatedMarkers(Iterator<T> metaIter, long marker) {
+        IgniteBiTuple<Integer, byte[]> serializedMetaTuple = serializeWithMarker(metaIter, marker);
+
         sendAll(
             IntStream.range(0, kafkaParts).iterator(),
-            p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER),
+            p -> new ProducerRecord<>(evtTopic, p, null, serializedMetaTuple.get2()),
             evtsCnt
         );
 
         if (log.isDebugEnabled())
             log.debug("Meta update markers sent.");
+
+        return serializedMetaTuple.get1();
+    }
+
+    /**
+     * @param metaIter Metadata iterator.
+     * @param marker Marker.
+     */
+    private <T extends Serializable> IgniteBiTuple<Integer, byte[]> serializeWithMarker(Iterator<T> metaIter, long marker) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeLong(marker);
+
+            List<Serializable> metas = new ArrayList<>();
+
+            while (metaIter.hasNext())
+                metas.add(metaIter.next());
+
+            U.writeCollection(oos, metas);
+
+            oos.flush();
+
+            return F.t(metas.size(), bos.toByteArray());
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Send all data to Kafka. */
@@ -297,7 +332,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void start(MetricRegistry mreg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
-        A.notNull(metadataTopic, "Kafka metadata topic");
         A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
@@ -315,7 +349,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             if (log.isInfoEnabled()) {
                 log.info("CDC Ignite To Kafka started [" +
                     "topic=" + evtTopic +
-                    ", metadataTopic = " + metadataTopic +
                     ", onlyPrimary=" + onlyPrimary +
                     ", cacheIds=" + cachesIds + ']'
                 );
@@ -359,18 +392,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      */
     public IgniteToKafkaCdcStreamer setTopic(String evtTopic) {
         this.evtTopic = evtTopic;
-
-        return this;
-    }
-
-    /**
-     * Sets topic that is used to send metadata to Kafka.
-     *
-     * @param metadataTopic Metadata topic.
-     * @return {@code this} for chaining.
-     */
-    public IgniteToKafkaCdcStreamer setMetadataTopic(String metadataTopic) {
-        this.metadataTopic = metadataTopic;
 
         return this;
     }
@@ -425,7 +446,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /**
      * Sets the maximum time to complete Kafka related requests, in milliseconds.
-     * 
+     *
      * @param kafkaReqTimeout Timeout value.
      * @return {@code this} for chaining.
      */

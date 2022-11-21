@@ -45,9 +45,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Events topic name. */
     private String evtTopic;
 
-    /** Metadata topic name. */
-    private String metadataTopic;
-
     /** Kafka partitions lower bound (inclusive). */
     private int kafkaPartsFrom = -1;
 
@@ -56,9 +53,6 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
-
-    /** Metadata consumer group. */
-    private String metadataCnsmrGrp;
 
     /**
      * Maximum batch size to apply to Ignite.
@@ -169,37 +163,5 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setKafkaRequestTimeout(long kafkaReqTimeout) {
         this.kafkaReqTimeout = kafkaReqTimeout;
-    }
-
-    /**
-     * @return Metadata topic name.
-     */
-    public String getMetadataTopic() {
-        return metadataTopic;
-    }
-
-    /**
-     * Sets metadata topic name.
-     *
-     * @param metadataTopic Metadata topic name.
-     */
-    public void setMetadataTopic(String metadataTopic) {
-        this.metadataTopic = metadataTopic;
-    }
-
-    /**
-     * @return Consumer group to read metadata topic.
-     */
-    public String getMetadataConsumerGroup() {
-        return metadataCnsmrGrp;
-    }
-
-    /**
-     * Sets consumer group to read metadata topic.
-     *
-     * @param metaCnsmrGrp Consumer group to read metadata topic.
-     */
-    public void setMetadataConsumerGroup(String metaCnsmrGrp) {
-        this.metadataCnsmrGrp = metaCnsmrGrp;
     }
 }

@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -371,15 +372,18 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** Active/Passive mode means changes made only in one cluster. */
     @Test
-    public void testActivePassiveSqlDataReplication() throws Exception {
+    public void testActivePassiveSqlDataReplicationWithAlterTable() throws Exception {
         String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"CACHE_NAME=T1,VALUE_TYPE=T1Type\"";
-        String insertQry = "INSERT INTO T1 VALUES(?, ?)";
+        String initInsertQry = "INSERT INTO T1 VALUES(?, ?)";
+        String addSurnameQry = "ALTER TABLE T1 ADD COLUMN SURNAME VARCHAR";
+        String addAgeQry = "ALTER TABLE T1 ADD COLUMN AGE INT";
+        String insertAfterTblUpdateQry = "INSERT INTO T1 VALUES(?, ?, ?, ?)";
         String deleteQry = "DELETE FROM T1";
 
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
 
-        IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], insertQry, id, "Name" + id));
+        IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], initInsertQry, id, "Name" + id));
 
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdc("T1");
 
@@ -399,6 +403,33 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             for (int i = 0; i < KEYS_CNT; i++) {
                 assertEquals((long)i, data.get(i).get(0));
                 assertEquals("Name" + i, data.get(i).get(1));
+            }
+
+            executeSql(srcCluster[0], addSurnameQry);
+            executeSql(srcCluster[0], addAgeQry);
+
+            executeSql(destCluster[0], addSurnameQry);
+            executeSql(destCluster[0], addAgeQry);
+
+            AtomicInteger age = new AtomicInteger();
+
+            IntStream.range(KEYS_CNT, KEYS_CNT * 2).forEach(id -> executeSql(srcCluster[0], insertAfterTblUpdateQry,
+                    id, "Name" + id, "Surname" + id, age.incrementAndGet()));
+
+            assertTrue(waitForCondition(waitForTblSz.apply(KEYS_CNT * 2), getTestTimeout()));
+
+            List<List<?>> dataAfterUpdate = executeSql(destCluster[0],
+                    "SELECT ID, NAME, SURNAME, AGE FROM T1 WHERE ID >= ? ORDER BY ID", KEYS_CNT);
+
+            int expAge = 1;
+
+            for (int i = 0; i < KEYS_CNT; i++) {
+                int id = i + KEYS_CNT;
+
+                assertEquals((long)id, dataAfterUpdate.get(i).get(0));
+                assertEquals("Name" + id, dataAfterUpdate.get(i).get(1));
+                assertEquals("Surname" + id, dataAfterUpdate.get(i).get(2));
+                assertEquals(expAge++, dataAfterUpdate.get(i).get(3));
             }
 
             executeSql(srcCluster[0], deleteQry);

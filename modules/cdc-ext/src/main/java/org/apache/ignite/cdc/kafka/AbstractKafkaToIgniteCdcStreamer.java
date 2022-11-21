@@ -85,7 +85,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
      */
     public AbstractKafkaToIgniteCdcStreamer(Properties kafkaProps, KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
         A.notNull(streamerCfg.getTopic(), "Kafka topic");
-        A.notNull(streamerCfg.getMetadataTopic(), "Kafka metadata topic");
         A.ensure(
             streamerCfg.getKafkaPartsFrom() >= 0,
             "The Kafka partitions lower bound must be explicitly set to a value greater than or equals to zero.");
@@ -141,13 +140,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 .map(CU::cacheId).collect(Collectors.toSet());
         }
 
-        KafkaToIgniteMetadataUpdater metaUpdr = new KafkaToIgniteMetadataUpdater(
-            binaryContext(),
-            log,
-            kafkaProps,
-            streamerCfg
-        );
-
         int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
         int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
         int threadCnt = streamerCfg.getThreadCount();
@@ -171,7 +163,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
-                metaUpdr,
+                binaryContext(),
                 stopped
             );
 

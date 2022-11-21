@@ -20,9 +20,10 @@ package org.apache.ignite.cdc.kafka;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -38,18 +39,26 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_MARKER;
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerBinaryMeta;
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerMapping;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.MAPPING_MARKER;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.TYPE_MARKER;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
@@ -108,7 +117,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private final long kafkaReqTimeout;
 
     /** Metadata updater. */
-    private final KafkaToIgniteMetadataUpdater metaUpdr;
+    private final BinaryContext ctx;
 
     /** Consumers. */
     private final List<KafkaConsumer<Integer, byte[]>> cnsmrs = new ArrayList<>();
@@ -132,7 +141,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
-     * @param metaUpdr Metadata updater.
+     * @param ctx Binary context.
      * @param stopped Stopped flag.
      */
     public KafkaToIgniteCdcStreamerApplier(
@@ -145,7 +154,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         Set<Integer> caches,
         int maxBatchSize,
         long kafkaReqTimeout,
-        KafkaToIgniteMetadataUpdater metaUpdr,
+        BinaryContext ctx,
         AtomicBoolean stopped
     ) {
         this.applierSupplier = applierSupplier;
@@ -155,7 +164,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
         this.kafkaReqTimeout = kafkaReqTimeout;
-        this.metaUpdr = metaUpdr;
+        this.ctx = ctx;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
     }
@@ -235,15 +244,34 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return {@code True} if record should be pushed down.
      */
     private boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
-        byte[] val = rec.value();
-
-        if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
-            metaUpdr.updateMetadata();
+        if (rec.key() == null) {
+            updateMetadata(ctx, log, deserializeMeta(rec.value()));
 
             return false;
         }
 
         return F.isEmpty(caches) || caches.contains(rec.key());
+    }
+
+    /**
+     * Shared method for updating metadata.
+     *
+     * @param ctx Binary context.
+     * @param log Logger.
+     * @param metas Metas.
+     */
+    private static synchronized void updateMetadata(BinaryContext ctx, IgniteLogger log,
+        IgniteBiTuple<Long, Collection<Serializable>> metas) {
+        Long marker = metas.get1();
+
+        for (Serializable meta : metas.get2()) {
+            if (marker == TYPE_MARKER)
+                registerBinaryMeta(ctx, log, (BinaryMetadata)meta);
+            else if (marker == MAPPING_MARKER)
+                registerMapping(ctx, log, (TypeMapping)meta);
+            else
+                throw new IllegalArgumentException("Unknown meta type [marker=" + marker + ", type=" + meta + ']');
+        }
     }
 
     /**
@@ -259,11 +287,22 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         }
     }
 
+    /**
+     * @param recVal Kafka record value.
+     * @return int value.
+     */
+    private IgniteBiTuple<Long, Collection<Serializable>> deserializeMeta(byte[] recVal) {
+        try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(recVal))) {
+            return F.t(is.readLong(), U.readCollection(is));
+        }
+        catch (IOException | ClassNotFoundException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void close() {
         log.warning("Close applier!");
-
-        metaUpdr.close();
 
         cnsmrs.forEach(KafkaConsumer::wakeup);
     }
