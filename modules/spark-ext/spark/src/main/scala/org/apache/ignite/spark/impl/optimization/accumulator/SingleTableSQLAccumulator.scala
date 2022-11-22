@@ -130,7 +130,7 @@ private[apache] case class SingleTableSQLAccumulator(
     override def withOrderBy(orderBy: Seq[SortOrder]): SingleTableSQLAccumulator = copy(orderBy = Some(orderBy))
 
     /** @inheritdoc */
-    override def withNewChildrenInternal(newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = copy() // FIXME
+    override def withNewChildrenInternal(newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = copy()
 
     /** @inheritdoc */
     override def output: Seq[Attribute] = outputExpressions.map(toAttributeReference(_, Seq.empty))

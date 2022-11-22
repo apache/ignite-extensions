@@ -85,5 +85,5 @@ private[apache] case class UnionSQLAccumulator(
     /** @inheritdoc */
     override def withLocalLimit(localLimit: Expression): QueryAccumulator =  copy(localLimit = Some(localLimit))
 
-    override protected def withNewChildrenInternal(newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = copy() // FIXME
+    override protected def withNewChildrenInternal(newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = copy()
 }

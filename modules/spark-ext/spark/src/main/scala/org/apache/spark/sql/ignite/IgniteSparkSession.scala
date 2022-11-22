@@ -142,7 +142,7 @@ class IgniteSparkSession private(
     override def createDataset[T: Encoder](data: Seq[T]): Dataset[T] = {
         val enc = encoderFor[T]
         val attributes = enc.schema.toAttributes
-        val encoded = data.map(d => enc.createSerializer().apply(d)) // TODO .copy()?
+        val encoded = data.map(d => enc.createSerializer().apply(d))
         val plan = new LocalRelation(attributes, encoded)
         Dataset[T](self, plan)
     }

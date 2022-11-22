@@ -322,7 +322,7 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
     override def getTablesByName(db: String, tables: Seq[String]): Seq[CatalogTable] = tables.map(getTable(db, _))
 
     override def listViews(db: String, pattern: String): Seq[String] = {
-        throw new UnsupportedOperationException("unsupported") // FIXME
+        throw new UnsupportedOperationException("unsupported")
     }
 }
 

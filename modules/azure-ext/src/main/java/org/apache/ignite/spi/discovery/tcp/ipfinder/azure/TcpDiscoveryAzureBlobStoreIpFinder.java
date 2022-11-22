@@ -324,7 +324,6 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
      * @return Bucket key.
      */
     private String keyFromAddr(InetSocketAddress addr) {
-        // TODO: This needs to move out to a generic helper class
         return addr.getAddress().getHostAddress() + "#" + addr.getPort();
     }
 

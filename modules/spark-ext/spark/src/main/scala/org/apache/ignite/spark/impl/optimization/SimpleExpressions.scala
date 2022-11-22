@@ -77,7 +77,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
                             //So we converting from internal spark representation to CAST call.
                             case days: Integer ⇒
                                 val date = new java.util.Date(DateTimeUtils.microsToMillis(
-                                    DateTimeUtils.daysToMicros(days, ZoneOffset.UTC))) // FIXME: default id
+                                    DateTimeUtils.daysToMicros(days, ZoneOffset.UTC)))
 
                                 Some(s"CAST('${dateFormat.get.format(date)}' AS DATE)")
 
@@ -92,7 +92,6 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)
-                // TODO: add ticket to handle seq with two elements with qualifier for database name: related to the [SPARK-19602][SQL] ticket
                     ar.qualifier
                         .map(quoteStringIfNeeded(_, caseSensitive))
                         .map(_ + "." + quoteStringIfNeeded(ar.name, caseSensitive))
@@ -112,7 +111,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
             else
                 Some(childToString(child))
 
-        case Cast(child, dataType, _, _) ⇒ // FIXME: Timezone
+        case Cast(child, dataType, _, _) ⇒
             Some(s"CAST(${childToString(child)} AS ${toSqlType(dataType)})")
 
         case SortOrder(child, direction, _, _) ⇒
