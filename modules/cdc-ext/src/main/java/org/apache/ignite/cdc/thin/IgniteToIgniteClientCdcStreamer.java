@@ -21,6 +21,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -46,11 +47,23 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
+    /** Timeout to refresh "alive" value. */
+    public static final int DFLT_ALIVE_CHECK_TIMEOUT = 60_000;
+
     /** Ignite thin client configuration. */
     private ClientConfiguration destClientCfg;
 
     /** Ignite thin client. */
     private IgniteClient dest;
+
+    /** Alive flag. */
+    private volatile boolean alive = true;
+
+    /** Time of the last alive check. */
+    private volatile long lastAliveCheck = System.currentTimeMillis();
+
+    /** Timeout to check liveness of Ignite client. */
+    private long aliveCheckTimeout = DFLT_ALIVE_CHECK_TIMEOUT;
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry mreg) {
@@ -86,5 +99,36 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
         this.destClientCfg = destClientCfg;
 
         return this;
+    }
+
+    /**
+     * Sets timeout to check aliveness of Ignite client.
+     *
+     * @param aliveCheckTimeout Alive check tiemout.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToIgniteClientCdcStreamer setAliveCheckTimeout(long aliveCheckTimeout) {
+        this.aliveCheckTimeout = aliveCheckTimeout;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean alive() {
+        long now = System.currentTimeMillis();
+
+        // Update alive value only by timeout.
+        if (now - lastAliveCheck > aliveCheckTimeout) {
+            try {
+                dest.cacheNames();
+
+                lastAliveCheck = now;
+            }
+            catch (ClientException e) {
+                alive = false;
+            }
+        }
+
+        return alive;
     }
 }
