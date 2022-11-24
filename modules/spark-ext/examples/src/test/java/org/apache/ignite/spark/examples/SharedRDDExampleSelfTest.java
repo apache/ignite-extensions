@@ -18,9 +18,13 @@
 package org.apache.ignite.spark.examples;
 
 import org.apache.ignite.examples.spark.SharedRDDExample;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * SharedRDD  examples self test.
@@ -28,6 +32,13 @@ import org.junit.Test;
 public class SharedRDDExampleSelfTest extends GridAbstractExamplesTest {
     /** */
     static final String[] EMPTY_ARGS = new String[0];
+
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(SharedRDDExampleSelfTest.class));
+    }
 
     /**
      * TODO: IGNITE-12054 Only one SparkContext may be running in this JVM (see SPARK-2243).

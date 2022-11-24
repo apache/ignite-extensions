@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteGCETestSuite;
+import org.apache.ignite.util.IgniteGCETestConfiguration;
 
 /**
  * Google Cloud Storage based IP finder tests.
@@ -71,9 +71,9 @@ public class TcpDiscoveryGoogleStorageIpFinderSelfTest
 
         assert finder.isShared() : "Ip finder must be shared by default.";
 
-        finder.setServiceAccountId(IgniteGCETestSuite.getServiceAccountId());
-        finder.setServiceAccountP12FilePath(IgniteGCETestSuite.getP12FilePath());
-        finder.setProjectName(IgniteGCETestSuite.getProjectName());
+        finder.setServiceAccountId(IgniteGCETestConfiguration.getServiceAccountId());
+        finder.setServiceAccountP12FilePath(IgniteGCETestConfiguration.getP12FilePath());
+        finder.setProjectName(IgniteGCETestConfiguration.getProjectName());
 
         // Bucket name must be unique across the whole GCE platform.
         finder.setBucketName(bucketName);

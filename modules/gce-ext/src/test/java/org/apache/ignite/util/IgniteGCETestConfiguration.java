@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.util;
 
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinderSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * Google Compute Engine integration tests.
+ * Google Compute Engine tests configuration.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({TcpDiscoveryGoogleStorageIpFinderSelfTest.class})
-public class IgniteGCETestSuite {
+public class IgniteGCETestConfiguration {
     /**
      * @return Service Account Id.
      */

@@ -1,4 +1,3 @@
-package org.apache.ignite.testsuites;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,18 +14,14 @@ package org.apache.ignite.testsuites;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.util;
 
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.azure.TcpDiscoveryAzureBlobStoreIpFinderSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * Azure integration tests
+ * Azure tests configuration.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({TcpDiscoveryAzureBlobStoreIpFinderSelfTest.class})
-public class IgniteAzureTestSuite {
+public class IgniteAzureTestConfiguration {
     /**
      * @return Account Name
      */

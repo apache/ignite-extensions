@@ -25,7 +25,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteAzureTestSuite;
+import org.apache.ignite.util.IgniteAzureTestConfiguration;
 
 /** */
 public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
@@ -55,9 +55,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
 
         try {
             BlobContainerClient container =
-                new BlobServiceClientBuilder().endpoint(IgniteAzureTestSuite.getEndpoint()).credential(
-                    new StorageSharedKeyCredential(IgniteAzureTestSuite.getAccountName(),
-                        IgniteAzureTestSuite.getAccountKey())).buildClient().getBlobContainerClient(containerName);
+                new BlobServiceClientBuilder().endpoint(IgniteAzureTestConfiguration.getEndpoint()).credential(
+                    new StorageSharedKeyCredential(IgniteAzureTestConfiguration.getAccountName(),
+                        IgniteAzureTestConfiguration.getAccountKey())).buildClient().getBlobContainerClient(containerName);
 
             if (container.exists())
                 container.delete();
@@ -75,9 +75,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
 
         assert finder.isShared() : "Ip finder must be shared by default.";
 
-        finder.setAccountName(IgniteAzureTestSuite.getAccountName());
-        finder.setAccountKey(IgniteAzureTestSuite.getAccountKey());
-        finder.setAccountEndpoint(IgniteAzureTestSuite.getEndpoint());
+        finder.setAccountName(IgniteAzureTestConfiguration.getAccountName());
+        finder.setAccountKey(IgniteAzureTestConfiguration.getAccountKey());
+        finder.setAccountEndpoint(IgniteAzureTestConfiguration.getEndpoint());
 
         finder.setContainerName(containerName);
 

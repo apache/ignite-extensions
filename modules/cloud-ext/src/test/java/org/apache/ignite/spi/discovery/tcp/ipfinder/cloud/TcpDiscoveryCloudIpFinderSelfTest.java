@@ -22,7 +22,7 @@ import java.util.Collection;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.apache.ignite.testsuites.IgniteCloudTestSuite;
+import org.apache.ignite.util.IgniteCloudTestConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -93,14 +93,14 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
         injectLogger(ipFinder);
 
         ipFinder.setProvider(provider);
-        ipFinder.setIdentity(IgniteCloudTestSuite.getAccessKey(provider));
-        ipFinder.setRegions(IgniteCloudTestSuite.getRegions(provider));
-        ipFinder.setZones(IgniteCloudTestSuite.getZones(provider));
+        ipFinder.setIdentity(IgniteCloudTestConfiguration.getAccessKey(provider));
+        ipFinder.setRegions(IgniteCloudTestConfiguration.getRegions(provider));
+        ipFinder.setZones(IgniteCloudTestConfiguration.getZones(provider));
 
         if (provider.equals("google-compute-engine"))
-            ipFinder.setCredentialPath(IgniteCloudTestSuite.getSecretKey(provider));
+            ipFinder.setCredentialPath(IgniteCloudTestConfiguration.getSecretKey(provider));
         else
-            ipFinder.setCredential(IgniteCloudTestSuite.getSecretKey(provider));
+            ipFinder.setCredential(IgniteCloudTestConfiguration.getSecretKey(provider));
 
         Collection<InetSocketAddress> addresses = ipFinder.getRegisteredAddresses();
 
