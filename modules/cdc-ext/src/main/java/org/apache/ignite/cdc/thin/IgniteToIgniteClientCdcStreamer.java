@@ -47,8 +47,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * @see CacheVersionConflictResolverImpl
  */
 public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
-    /** Timeout to refresh "alive" value. */
-    public static final int DFLT_ALIVE_CHECK_TIMEOUT = 60_000;
+    /** Default timeout to refresh "alive" value. */
+    public static final int DFLT_ALIVE_CHECK_TIMEOUT = 5 * 60_000;
 
     /** Ignite thin client configuration. */
     private ClientConfiguration destClientCfg;
@@ -120,7 +120,7 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
         // Update alive value only by timeout.
         if (now - lastAliveCheck > aliveCheckTimeout) {
             try {
-                dest.cacheNames();
+                dest.cluster().state();
 
                 lastAliveCheck = now;
             }

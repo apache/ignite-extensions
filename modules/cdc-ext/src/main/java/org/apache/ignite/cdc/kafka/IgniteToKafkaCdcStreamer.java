@@ -147,9 +147,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of sent mappings. */
     protected AtomicLongMetric mappingsCnt;
 
-    /** Count of metadata updates. */
-    protected byte metaUpdCnt = 0;
-
     /** */
     private List<Future<RecordMetadata>> futs;
 
