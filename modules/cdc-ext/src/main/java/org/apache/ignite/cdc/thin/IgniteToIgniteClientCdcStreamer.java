@@ -102,9 +102,9 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     }
 
     /**
-     * Sets timeout to check aliveness of Ignite client.
+     * Sets timeout to check aliveness of Ignite client in milliseconds.
      *
-     * @param aliveCheckTimeout Alive check tiemout.
+     * @param aliveCheckTimeout Alive check timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     public IgniteToIgniteClientCdcStreamer setAliveCheckTimeout(long aliveCheckTimeout) {
