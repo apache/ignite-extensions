@@ -318,6 +318,12 @@ private[ignite] class IgniteExternalCatalog(igniteContext: IgniteContext)
     override def alterPartitions(db: String, table: String,
         parts: Seq[CatalogTablePartition]): Unit =
         throw new UnsupportedOperationException("unsupported")
+
+    override def getTablesByName(db: String, tables: Seq[String]): Seq[CatalogTable] = tables.map(getTable(db, _))
+
+    override def listViews(db: String, pattern: String): Seq[String] = {
+        throw new UnsupportedOperationException("unsupported")
+    }
 }
 
 object IgniteExternalCatalog {

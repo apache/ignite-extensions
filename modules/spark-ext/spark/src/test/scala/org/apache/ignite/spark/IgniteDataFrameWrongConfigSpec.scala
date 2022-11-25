@@ -21,7 +21,7 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.TEST_CONFIG_FILE
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.IgniteException
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   * Negative tests to check errors in case of wrong configuration.

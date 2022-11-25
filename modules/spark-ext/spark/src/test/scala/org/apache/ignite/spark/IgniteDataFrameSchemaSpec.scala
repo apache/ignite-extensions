@@ -25,8 +25,8 @@ import org.apache.ignite.spark.AbstractDataFrameSpec._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.annotation.meta.field
 

@@ -52,15 +52,19 @@ package object optimization {
       * @param useAlias If true outputs `expr` with alias.
       * @return String representation of expression.
       */
-    def exprToString(expr: Expression, useQualifier: Boolean = false, useAlias: Boolean = true): String = {
+    def exprToString(expr: Expression,
+        useQualifier: Boolean = false,
+        useAlias: Boolean = true,
+        caseSensitive: Boolean = false): String = {
         @tailrec
         def exprToString0(expr: Expression, supportedExpressions: List[SupportedExpressions]): Option[String] =
             if (supportedExpressions.nonEmpty) {
                 val exprStr = supportedExpressions.head.toString(
                     expr,
-                    exprToString(_, useQualifier, useAlias = false),
+                    exprToString(_, useQualifier, useAlias = false, caseSensitive),
                     useQualifier,
-                    useAlias)
+                    useAlias,
+                    caseSensitive)
 
                 exprStr match {
                     case res: Some[String] ⇒
@@ -197,7 +201,7 @@ package object optimization {
       */
     def hasAggregateInside(expr: Expression): Boolean = {
         def hasAggregateInside0(expr: Expression): Boolean = expr match {
-            case AggregateExpression(_, _, _, _) ⇒
+            case AggregateExpression(_, _, _, _, _) ⇒
                 true
 
             case e: Expression ⇒

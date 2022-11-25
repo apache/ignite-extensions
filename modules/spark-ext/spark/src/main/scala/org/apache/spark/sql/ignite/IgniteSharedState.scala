@@ -27,7 +27,7 @@ import org.apache.spark.sql.internal.SharedState
   */
 private[ignite] class IgniteSharedState (
     igniteContext: IgniteContext,
-    sparkContext: SparkContext) extends SharedState(sparkContext) {
+    sparkContext: SparkContext) extends SharedState(sparkContext, initialConfigs = Map.empty[String, String]) {
     /** @inheritdoc */
     override lazy val externalCatalog: ExternalCatalogWithListener = {
         val externalCatalog = new IgniteExternalCatalog(igniteContext)

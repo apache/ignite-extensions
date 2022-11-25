@@ -17,11 +17,14 @@
 
 package org.apache.ignite.spark.impl.optimization
 
-import java.text.SimpleDateFormat
+import org.apache.ignite.spark.impl.QueryUtils.quoteStringIfNeeded
 
+import java.text.SimpleDateFormat
 import org.apache.spark.sql.catalyst.expressions.{Expression, _}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
+
+import java.time.ZoneOffset
 
 /**
   * Object to support some 'simple' expressions like aliases.
@@ -38,7 +41,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case Alias(child, _) ⇒
             checkChild(child)
 
-        case Cast(child, dataType, _) ⇒
+        case Cast(child, dataType, _, _) ⇒
             checkChild(child) && castSupported(from = child.dataType, to = dataType)
 
         case _ ⇒
@@ -47,7 +50,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case l: Literal ⇒
             if (l.value == null)
                 Some("null")
@@ -73,7 +76,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
                             //Internal representation of DateType is Int.
                             //So we converting from internal spark representation to CAST call.
                             case days: Integer ⇒
-                                val date = new java.util.Date(DateTimeUtils.daysToMillis(days))
+                                val date = new java.util.Date(DateTimeUtils.microsToMillis(
+                                    DateTimeUtils.daysToMicros(days, ZoneOffset.UTC)))
 
                                 Some(s"CAST('${dateFormat.get.format(date)}' AS DATE)")
 
@@ -88,11 +92,12 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
         case ar: AttributeReference ⇒
             val name =
                 if (useQualifier)
-                    // TODO: add ticket to handle seq with two elements with qualifier for database name: related to the [SPARK-19602][SQL] ticket
-                    ar.qualifier.map(_ + "." + ar.name).find(_ => true).getOrElse(ar.name)
+                    ar.qualifier
+                        .map(quoteStringIfNeeded(_, caseSensitive))
+                        .map(_ + "." + quoteStringIfNeeded(ar.name, caseSensitive))
+                        .find(_ => true).getOrElse(ar.name)
                 else
-                    ar.name
-
+                    quoteStringIfNeeded(ar.name, caseSensitive)
             if (ar.metadata.contains(ALIAS) &&
                 !isAliasEqualColumnName(ar.metadata.getString(ALIAS), ar.name) &&
                 useAlias) {
@@ -106,7 +111,7 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
             else
                 Some(childToString(child))
 
-        case Cast(child, dataType, _) ⇒
+        case Cast(child, dataType, _, _) ⇒
             Some(s"CAST(${childToString(child)} AS ${toSqlType(dataType)})")
 
         case SortOrder(child, direction, _, _) ⇒

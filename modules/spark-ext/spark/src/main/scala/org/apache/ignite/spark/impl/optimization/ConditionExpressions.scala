@@ -78,7 +78,7 @@ private[optimization] object ConditionExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
+        useAlias: Boolean, caseSensitive: Boolean): Option[String] = expr match {
         case EqualTo(left, right) ⇒
             Some(s"${childToString(left)} = ${childToString(right)}")
 

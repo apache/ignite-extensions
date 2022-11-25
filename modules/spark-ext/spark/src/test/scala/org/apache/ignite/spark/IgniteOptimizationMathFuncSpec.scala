@@ -23,8 +23,9 @@ import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import java.lang.{Double ⇒ JDouble, Long ⇒ JLong}
+import org.scalatestplus.junit.JUnitRunner
+
+import java.lang.{Double => JDouble, Long => JLong}
 
 /**
   */
@@ -136,8 +137,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("ATAN2") {
             val df = igniteSession.sql("SELECT ATAN2(val, 0.0) FROM numbers WHERE id = 1")
 
-            checkOptimizationResult(df, "SELECT ATAN2(val, 0.0) AS \"ATAN2(val, CAST(0.0 AS DOUBLE))\" " +
-                "FROM numbers WHERE id = 1")
+            checkOptimizationResult(df, "SELECT ATAN2(VAL, 0.0) FROM NUMBERS WHERE ID = 1")
 
             val data = Tuple1(.0)
 
@@ -147,8 +147,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("MOD") {
             val df = igniteSession.sql("SELECT val % 9 FROM numbers WHERE id = 8")
 
-            checkOptimizationResult(df, "SELECT val % 9.0 as \"(val % CAST(9 AS DOUBLE))\" " +
-                "FROM numbers WHERE id = 8")
+            checkOptimizationResult(df, "SELECT VAL % 9.0 AS \"(VAL % 9)\" FROM NUMBERS WHERE ID = 8")
 
             val data = Tuple1(6.0)
 
@@ -193,8 +192,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("POWER") {
             val df = igniteSession.sql("SELECT POWER(val, 3) FROM numbers WHERE id = 4")
 
-            checkOptimizationResult(df, "SELECT POWER(val, 3.0) as \"POWER(val, CAST(3 AS DOUBLE))\" FROM numbers " +
-                "WHERE id = 4")
+            checkOptimizationResult(df, "SELECT POWER(VAL, 3.0) AS \"POWER(VAL, 3)\" FROM NUMBERS WHERE ID = 4")
 
             val data = Tuple1(8.0)
 
@@ -257,8 +255,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("BITAND") {
             val df = igniteSession.sql("SELECT int_val&1 FROM numbers WHERE id = 15")
 
-            checkOptimizationResult(df, "SELECT BITAND(int_val, 1) as \"(int_val & CAST(1 AS BIGINT))\" FROM numbers " +
-                "WHERE id = 15")
+            checkOptimizationResult(df, "SELECT BITAND(INT_VAL, 1) AS \"(INT_VAL & 1)\" FROM NUMBERS WHERE ID = 15")
 
             val data = Tuple1(1)
 
@@ -268,8 +265,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("BITOR") {
             val df = igniteSession.sql("SELECT int_val|1 FROM numbers WHERE id = 16")
 
-            checkOptimizationResult(df, "SELECT BITOR(int_val, 1) as \"(int_val | CAST(1 AS BIGINt))\" FROM numbers " +
-                "WHERE id = 16")
+            checkOptimizationResult(df, "SELECT BITOR(INT_VAL, 1) AS \"(INT_VAL | 1)\" FROM NUMBERS WHERE ID = 16")
 
             val data = Tuple1(3)
 
@@ -279,8 +275,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
         it("BITXOR") {
             val df = igniteSession.sql("SELECT int_val^1 FROM numbers WHERE id = 17")
 
-            checkOptimizationResult(df, "SELECT BITXOR(int_val, 1) AS \"(int_val ^ CAST(1 AS BIGINT))\" FROM numbers " +
-                "WHERE id = 17")
+            checkOptimizationResult(df, "SELECT BITXOR(INT_VAL, 1) AS \"(INT_VAL ^ 1)\" FROM NUMBERS WHERE ID = 17")
 
             val data = Tuple1(2)
 

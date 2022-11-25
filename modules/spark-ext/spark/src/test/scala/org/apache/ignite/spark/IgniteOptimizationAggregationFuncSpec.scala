@@ -19,13 +19,14 @@ package org.apache.ignite.spark
 
 import java.lang.{Double => JDouble, Long => JLong}
 
+import java.lang.{Double => JDouble, Long => JLong}
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */
@@ -45,7 +46,13 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
         }
 
         it("AVG - DECIMAL") {
-            //TODO: add test for ticket IGNITE-12432
+            val df = igniteSession.sql("SELECT AVG(decimal_val) FROM numbers WHERE id >= 18")
+
+            checkOptimizationResult(df, "SELECT AVG(decimal_val) FROM numbers WHERE id >= 18")
+
+            val data = Tuple1(new java.math.BigDecimal(3.75).setScale( 7))
+
+            checkQueryData(df, data)
         }
 
         it("AVG - DOUBLE") {
@@ -88,8 +95,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data)
         }
 
-        // TODO: Fix Decimal support IGNITE-12054
-        ignore("SUM - DECIMAL - 1") {
+        it("SUM - DECIMAL - 1") {
             val df = igniteSession.sql("SELECT SUM(decimal_val) FROM numbers WHERE id IN (18, 19, 20)")
 
             checkOptimizationResult(df, "SELECT SUM(decimal_val) FROM numbers WHERE id IN (18, 19, 20)")
@@ -101,8 +107,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
             checkQueryData(df, data)
         }
 
-        // TODO: Fix Decimal support IGNITE-12054
-        ignore("SUM - DECIMAL - 2") {
+        it("SUM - DECIMAL - 2") {
             val df = igniteSession.sql("SELECT SUM(decimal_val) FROM numbers WHERE id IN (18, 19, 20, 21)")
 
             checkOptimizationResult(df, "SELECT SUM(decimal_val) FROM numbers WHERE id IN (18, 19, 20, 21)")
@@ -133,7 +138,7 @@ class IgniteOptimizationAggregationFuncSpec extends AbstractDataFrameSpec {
               |    id LONG,
               |    val DOUBLE,
               |    int_val LONG,
-              |    decimal_val DECIMAL(5, 5),
+              |    decimal_val DECIMAL(38, 3),
               |    PRIMARY KEY (id)) WITH "backups=1"
             """.stripMargin)).getAll
 

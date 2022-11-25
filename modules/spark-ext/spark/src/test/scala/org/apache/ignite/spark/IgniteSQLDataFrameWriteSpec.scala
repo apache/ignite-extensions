@@ -26,8 +26,8 @@ import org.apache.spark.sql.SaveMode.{Append, Ignore, Overwrite}
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.apache.spark.sql.functions._
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */

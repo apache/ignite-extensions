@@ -21,11 +21,11 @@ import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import java.lang.{Double ⇒ JDouble, Long ⇒ JLong}
 
+import java.lang.{Double => JDouble, Long => JLong}
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
+import org.scalatestplus.junit.JUnitRunner
 
 /**
   */
@@ -67,7 +67,7 @@ class IgniteOptimizationSystemFuncSpec extends AbstractDataFrameSpec {
         it("IFNULL") {
             val df = igniteSession.sql("SELECT IFNULL(int_val1, int_val2) FROM numbers WHERE id IN (1, 2, 3)")
 
-            checkOptimizationResult(df, "SELECT COALESCE(int_val1, int_val2) as \"ifnull(default.numbers.`int_val1`, default.numbers.`int_val2`)\" FROM numbers WHERE id IN (1, 2, 3)")
+            checkOptimizationResult(df, "SELECT COALESCE(INT_VAL1, INT_VAL2) AS \"IFNULL(INT_VAL1, INT_VAL2)\" FROM NUMBERS WHERE ID IN (1, 2, 3)")
 
             val data = (1, 2, 3)
 

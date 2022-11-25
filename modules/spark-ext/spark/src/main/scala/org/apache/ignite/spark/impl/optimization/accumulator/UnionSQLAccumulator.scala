@@ -19,6 +19,7 @@ package org.apache.ignite.spark.impl.optimization.accumulator
 
 import org.apache.ignite.spark.impl.optimization.{IgniteQueryContext, exprToString, toAttributeReference}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, NamedExpression, SortOrder}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 /**
   * Accumulator to store info about UNION query.
@@ -35,18 +36,20 @@ private[apache] case class UnionSQLAccumulator(
     override def compileQuery(prettyPrint: Boolean = false, nestedQuery: Boolean = false): String = {
         val delim = if (prettyPrint) "\n" else " "
         val tab = if (prettyPrint) "  " else ""
+        val caseSensitiveEnabled = isCaseSensitiveEnabled(igniteQueryContext)
 
         var query = children.map(_.compileQuery(prettyPrint, nestedQuery = true)).mkString(s"${delim}UNION$delim")
 
         query = orderBy match {
             case Some(sortOrders) ⇒
-                query + s"${delim}ORDER BY ${sortOrders.map(exprToString(_)).mkString(s",$delim$tab")}"
+                query + s"${delim}ORDER BY ${sortOrders
+                    .map(exprToString(_, caseSensitive = caseSensitiveEnabled)).mkString(s",$delim$tab")}"
 
             case None ⇒ query
         }
 
         if (limit.isDefined) {
-            query += s" LIMIT ${exprToString(limit.get)}"
+            query += s" LIMIT ${exprToString(limit.get, caseSensitive = caseSensitiveEnabled)}"
 
             if (nestedQuery)
                 query = s"SELECT * FROM ($query)"
@@ -56,8 +59,12 @@ private[apache] case class UnionSQLAccumulator(
     }
 
     /** @inheritdoc */
-    override def simpleString: String =
-        s"UnionSQLAccumulator(orderBy: ${orderBy.map(_.map(exprToString(_)).mkString(", ")).getOrElse("[]")})"
+    override def simpleString(maxFields: Int): String = {
+        val caseSensitiveEnabled = isCaseSensitiveEnabled(igniteQueryContext)
+
+        s"UnionSQLAccumulator(orderBy: ${orderBy.map(_.map(exprToString(_, caseSensitive = caseSensitiveEnabled))
+            .mkString(", ")).getOrElse("[]")})"
+    }
 
     /** @inheritdoc */
     override def withOutputExpressions(outputExpressions: Seq[NamedExpression]): QueryAccumulator =
@@ -77,4 +84,6 @@ private[apache] case class UnionSQLAccumulator(
 
     /** @inheritdoc */
     override def withLocalLimit(localLimit: Expression): QueryAccumulator =  copy(localLimit = Some(localLimit))
+
+    override protected def withNewChildrenInternal(newChildren: IndexedSeq[LogicalPlan]): LogicalPlan = copy()
 }

@@ -27,10 +27,10 @@ import org.apache.spark.sql.types._
 private[optimization] object AggregateExpressions extends SupportedExpressions {
     /** @inheritdoc */
     def apply(expr: Expression, checkChild: (Expression) ⇒ Boolean): Boolean = expr match {
-        case AggregateExpression(aggregateFunction, _, _, _) ⇒
+        case AggregateExpression(aggregateFunction, _, _, _, _) ⇒
             checkChild(aggregateFunction)
 
-        case Average(child) ⇒
+        case Average(child, _) ⇒
             checkChild(child)
 
         case Count(children) ⇒
@@ -42,7 +42,7 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
         case Min(child) ⇒
             checkChild(child)
 
-        case Sum(child) ⇒
+        case Sum(child, _) ⇒
             checkChild(child)
 
         case _ ⇒
@@ -51,8 +51,8 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
 
     /** @inheritdoc */
     override def toString(expr: Expression, childToString: Expression ⇒ String, useQualifier: Boolean,
-        useAlias: Boolean): Option[String] = expr match {
-        case AggregateExpression(aggregateFunction, _, isDistinct, _) ⇒
+        useAlias: Boolean, caseSensitive:Boolean): Option[String] = expr match {
+        case AggregateExpression(aggregateFunction, _, isDistinct, _, _) ⇒
             aggregateFunction match {
                 case Count(children) ⇒
                     if (isDistinct)
@@ -71,7 +71,7 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
                     Some(childToString(aggregateFunction))
             }
 
-        case Average(child) ⇒
+        case Average(child, _) ⇒
             child.dataType match {
                 case DecimalType() | DoubleType ⇒
                     Some(s"AVG(${childToString(child)})")

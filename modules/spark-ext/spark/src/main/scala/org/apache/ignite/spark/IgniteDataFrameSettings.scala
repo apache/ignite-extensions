@@ -17,6 +17,8 @@
 
 package org.apache.ignite.spark
 
+import org.apache.spark.sql.ignite.IgniteOptimization
+
 /**
   */
 object IgniteDataFrameSettings {
@@ -192,7 +194,7 @@ object IgniteDataFrameSettings {
       * If `true` then all Ignite optimization of Spark SQL statements will be disabled.
       * Default value is `false`.
       *
-      * @see [[org.apache.spark.sql.ignite.IgniteOptimization]]
+      * @see [[IgniteOptimization]]
       */
     val OPTION_DISABLE_SPARK_SQL_OPTIMIZATION = "ignite.disableSparkSQLOptimization"
 }
