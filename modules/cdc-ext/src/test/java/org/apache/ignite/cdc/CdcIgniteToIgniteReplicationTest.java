@@ -133,8 +133,6 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
                         cliCnt += view.size();
                     }
 
-                    System.out.println("cliCnt = " + cliCnt);
-
                     return cliCnt >= srcCluster.length;
                 },
                 30_000
