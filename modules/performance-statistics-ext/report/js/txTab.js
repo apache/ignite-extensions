@@ -24,11 +24,13 @@ const TX_COLORS = {
 
 const txSearchCachesSelect = $('#txSearchCaches');
 const txSearchNodesSelect = $('#txSearchNodes');
+const txSearchNodesCPSelect = $('#txSearchCpNodes');
 const txCharts = $("#txCharts");
 
 function drawTxCharts() {
     var cacheId = txSearchCachesSelect.val();
     var nodeId = txSearchNodesSelect.val();
+    var cpNodeId = txSearchNodesCPSelect.val()
 
     txCharts.empty();
 
@@ -37,14 +39,18 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
-        new Chart(document.getElementById(txChartId), {
+        let datasets = prepareTxDatasets(nodeId, cacheId, opName)
+
+        let chart = new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
-                datasets: prepareTxDatasets(nodeId, cacheId, opName)
+                datasets: datasets,
+                labels: datasets.find(ds => ds.data.length > 0) ? undefined : [undefined]
             },
             options: {
                 scales: {
-                    xAxes: [{
+                    x: {
+                        display: true,
                         type: 'time',
                         time: {
                             displayFormats: {
@@ -54,34 +60,75 @@ function drawTxCharts() {
                                 'hour': 'HH:mm'
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
+                            text: 'Date'
                         },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
-                    }]
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount of operations'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    },
+                    y1: {
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Сount of pages write throttle'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
                 },
-                legend: {
-                    display: true
+                plugins: {
+                    legend: {
+                        display: true,
+                        onClick: (e, legendItem, legend) => {
+                            let index = legendItem.datasetIndex;
+
+                            if (legendItem.text === LABELS.CHECKPOINTS){
+                                if(legendItem.hidden)
+                                    chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
+                                else
+                                    chart.options.annotations = []
+                            }
+
+                            let ci = legend.chart;
+
+                            let meta = ci.getDatasetMeta(index)
+
+                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null
+
+                            ci.update();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (i) => getLabel(i),
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
+                    }
                 },
-                title: {
-                    display: true,
-                    text: "Count of [" + opName + "]",
-                    fontSize: 20
-                },
-                animation: false
+                animation: false,
             }
         })
+
+        chart.options.annotations = getCheckointsBoxes(cpNodeId, chart.scales.y.end)
+        chart.update()
     });
 
     txCharts.prepend('<canvas class="my-4" id="txHistogram" height="80""></canvas>');
@@ -93,31 +140,30 @@ function drawTxCharts() {
             datasets: prepareTxHistogramDatasets(nodeId, cacheId)
         },
         options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Histogram of transaction durations",
+                    fontSize: 20
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     gridLines: {
                         offsetGridLines: true
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Duration of transaction'
+                        text: 'Duration of transaction'
                     }
-                }],
-                yAxes: [{
+                },
+                y: {
                     display: true,
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Count of transactions'
+                        text: 'Count of transactions'
                     }
-                }]
-            },
-            legend: {
-                display: false
-            },
-            title: {
-                display: true,
-                text: "Histogram of transaction durations",
-                fontSize: 20
+                }
             },
             animation: false
         }
@@ -154,10 +200,10 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     var datasetData = [];
 
     $.each(txData[opName], function (time, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]})
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
         data: datasetData,
@@ -171,6 +217,13 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     };
 
     datasets.push(dataset);
+
+    let nodeIdCP = searchNodesCPsSelect.val()
+
+    if (nodeIdCP) {
+        datasets.push(checkpointDataset)
+        datasets.push(getPagesWriteThrottleDataset(nodeIdCP))
+    }
 
     return datasets;
 }
@@ -190,7 +243,8 @@ function buildTxHistogramBuckets() {
     return buckets;
 }
 
-buildSelectCaches(txSearchCachesSelect, drawTxCharts);
-buildSelectNodes(txSearchNodesSelect, drawTxCharts);
+buildSelectCaches(txSearchCachesSelect, drawTxCharts, 'All nodes');
+buildSelectNodes(txSearchNodesSelect, drawTxCharts, 'All nodes');
+buildSelectNodes(txSearchNodesCPSelect, drawTxCharts, 'All checkpoint nodes', true);
 
 drawTxCharts();

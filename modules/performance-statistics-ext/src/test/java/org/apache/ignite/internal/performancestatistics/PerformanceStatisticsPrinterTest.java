@@ -30,20 +30,19 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.internal.performancestatistics.PerformanceStatisticsTestUtils.TEST_NODE_ID;
+import static org.apache.ignite.internal.performancestatistics.PerformanceStatisticsTestUtils.createStatistics;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
@@ -56,7 +55,6 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -65,9 +63,6 @@ import static org.junit.Assert.fail;
  * Tests the performance statistics printer.
  */
 public class PerformanceStatisticsPrinterTest {
-    /** Test node ID. */
-    private static final UUID NODE_ID = UUID.randomUUID();
-
     /** */
     @Before
     public void beforeTest() throws Exception {
@@ -89,9 +84,9 @@ public class PerformanceStatisticsPrinterTest {
             writer.transaction(GridIntList.asList(0), 0, 0, true);
             writer.transaction(GridIntList.asList(0), 0, 0, false);
             writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, 0, 0, true);
-            writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
-            writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
-            writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
+            writer.queryReads(GridCacheQueryType.SQL_FIELDS, TEST_NODE_ID, 0, 0, 0);
+            writer.task(new IgniteUuid(TEST_NODE_ID, 0), "task", 0, 0, 0);
+            writer.job(new IgniteUuid(TEST_NODE_ID, 0), 0, 0, 0, true);
             writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             writer.pagesWriteThrottle(0, 0);
         });
@@ -124,7 +119,7 @@ public class PerformanceStatisticsPrinterTest {
 
             UUID nodeId = UUID.fromString(json.get("nodeId").asText());
 
-            assertEquals(NODE_ID, nodeId);
+            assertEquals(TEST_NODE_ID, nodeId);
         });
 
         assertTrue("Expected operations:" + ops, ops.isEmpty());
@@ -142,8 +137,8 @@ public class PerformanceStatisticsPrinterTest {
                 writer.transaction(GridIntList.asList(0), startTime, 0, true);
                 writer.transaction(GridIntList.asList(0), startTime, 0, false);
                 writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, startTime, 0, true);
-                writer.task(new IgniteUuid(NODE_ID, 0), "", startTime, 0, 0);
-                writer.job(new IgniteUuid(NODE_ID, 0), 0, startTime, 0, true);
+                writer.task(new IgniteUuid(TEST_NODE_ID, 0), "", startTime, 0, 0);
+                writer.job(new IgniteUuid(TEST_NODE_ID, 0), 0, startTime, 0, true);
                 writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, startTime, 0, 0, 0);
                 writer.pagesWriteThrottle(startTime, 0);
             }
@@ -257,19 +252,6 @@ public class PerformanceStatisticsPrinterTest {
         assertTrue("Expected operations: " + opsById, opsById.values().stream().allMatch(List::isEmpty));
     }
 
-    /** Writes statistics through passed writer. */
-    private void createStatistics(Consumer<FilePerformanceStatisticsWriter> c) throws Exception {
-        FilePerformanceStatisticsWriter writer = new FilePerformanceStatisticsWriter(new TestKernalContext(NODE_ID));
-
-        writer.start();
-
-        waitForCondition(() -> U.field((Object)U.field(writer, "fileWriter"), "runner") != null, 30_000);
-
-        c.accept(writer);
-
-        writer.stop();
-    }
-
     /**
      * @param args Additional program arguments.
      * @param c Consumer to handle operations.
@@ -308,28 +290,10 @@ public class PerformanceStatisticsPrinterTest {
 
                 UUID nodeId = UUID.fromString(json.get("nodeId").asText());
 
-                assertEquals(NODE_ID, nodeId);
+                assertEquals(TEST_NODE_ID, nodeId);
 
                 c.accept(json);
             }
-        }
-    }
-
-    /** Test kernal context. */
-    private static class TestKernalContext extends GridTestKernalContext {
-        /** Node ID. */
-        private final UUID nodeId;
-
-        /** @param nodeId Node ID. */
-        public TestKernalContext(UUID nodeId) {
-            super(new JavaLogger());
-
-            this.nodeId = nodeId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public UUID localNodeId() {
-            return nodeId;
         }
     }
 }

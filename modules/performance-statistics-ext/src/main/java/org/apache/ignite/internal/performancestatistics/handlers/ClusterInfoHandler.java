@@ -114,6 +114,14 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
+        long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
+        long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
+        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
+        nodesIds.add(nodeId);
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
         ArrayNode nodes = MAPPER.createArrayNode();
 
