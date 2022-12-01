@@ -42,5 +42,6 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteOptimizationDateFuncSpec,
     new IgniteOptimizationDisableEnableSpec,
     new IgniteSparkSessionSpec,
-    new IgniteRDDSpec
+    new IgniteRDDSpec,
+    new IgniteQueryCompilatorSpec
 )
