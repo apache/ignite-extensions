@@ -17,13 +17,20 @@
 
 package org.apache.ignite.testsuites;
 
-import org.junit.platform.suite.api.SelectPackages;
+import org.apache.ignite.spring.sessions.EmbeddedIgniteIndexedSessionRepositoryITest;
+import org.apache.ignite.spring.sessions.IgniteHttpSessionConfigurationTest;
+import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepositoryTest;
+import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
 /**
  * Ignite Spring Session Test Suite
  */
 @Suite
-@SelectPackages("org.apache.ignite")
+@SelectClasses({
+    EmbeddedIgniteIndexedSessionRepositoryITest.class,
+    IgniteHttpSessionConfigurationTest.class,
+    IgniteIndexedSessionRepositoryTest.class
+})
 public class IgniteSpringSessionTestSuite {
 }
