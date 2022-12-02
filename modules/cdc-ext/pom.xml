@@ -46,6 +46,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
             <scope>test</scope>
@@ -98,12 +104,6 @@
             <version>${kafka.version}</version>
             <classifier>test</classifier>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
         </dependency>
 
         <dependency>
