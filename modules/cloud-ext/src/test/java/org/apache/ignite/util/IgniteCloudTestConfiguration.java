@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.LinkedList;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinderSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * Ignite Cloud integration test.
+ * Ignite Cloud tests configuration.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({TcpDiscoveryCloudIpFinderSelfTest.class})
-public class IgniteCloudTestSuite {
+public class IgniteCloudTestConfiguration {
     /**
      * <a href="http://jclouds.apache.org/guides/google/">Service Account email<a/> for GCE.
      * <a href="http://jclouds.apache.org/guides/aws/">Access Key ID</a> for Amazon.

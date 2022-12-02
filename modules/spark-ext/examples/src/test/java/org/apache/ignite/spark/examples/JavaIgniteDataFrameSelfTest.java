@@ -21,14 +21,25 @@ import org.apache.ignite.examples.spark.JavaIgniteCatalogExample;
 import org.apache.ignite.examples.spark.JavaIgniteDataFrameExample;
 import org.apache.ignite.examples.spark.JavaIgniteDataFrameJoinExample;
 import org.apache.ignite.examples.spark.JavaIgniteDataFrameWriteExample;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  */
 public class JavaIgniteDataFrameSelfTest extends GridAbstractExamplesTest {
     /** */
     static final String[] EMPTY_ARGS = new String[0];
+
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(JavaIgniteDataFrameSelfTest.class));
+    }
 
     /**
      * @throws Exception If failed.
