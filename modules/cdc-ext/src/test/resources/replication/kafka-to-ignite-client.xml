@@ -25,17 +25,17 @@
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="client.cfg" class="org.apache.ignite.configuration.ClientConfiguration">
         <property name="addresses">
-            <list>{HOST_ADDRESSES}</list>
+            <list>
+                <value>{HOST_ADDRESSES}</value>
+            </list>
         </property>
     </bean>
 
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
         <property name="caches">
-            <util:list>
-                <bean class="java.lang.String">
-                    <constructor-arg type="String" value="{REPLICATED_CACHE}" />
-                </bean>
-            </util:list>
+            <list>
+                <value>{REPLICATED_CACHE}</value>
+            </list>
         </property>
         <property name="topic" value="{TOPIC}" />
         <property name="metadataTopic" value="{METADATA_TOPIC}" />
