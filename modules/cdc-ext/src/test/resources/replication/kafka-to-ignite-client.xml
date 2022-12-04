@@ -38,7 +38,6 @@
             </list>
         </property>
         <property name="topic" value="{TOPIC}" />
-        <property name="metadataTopic" value="{METADATA_TOPIC}" />
         <property name="kafkaPartsFrom" value="{PARTS_FROM}"/>
         <property name="kafkaPartsTo" value="{PARTS_TO}"/>
         <property name="threadCount" value="{THREAD_CNT}"/>

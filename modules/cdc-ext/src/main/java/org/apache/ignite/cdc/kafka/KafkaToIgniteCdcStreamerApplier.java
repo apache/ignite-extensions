@@ -116,7 +116,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
-    /** Metadata updater. */
+    /** Binary context. */
     private final BinaryContext ctx;
 
     /** Consumers. */
@@ -254,7 +254,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     }
 
     /**
-     * Shared method for updating metadata.
+     * Shared method for a metadata updating.
      *
      * @param ctx Binary context.
      * @param log Logger.

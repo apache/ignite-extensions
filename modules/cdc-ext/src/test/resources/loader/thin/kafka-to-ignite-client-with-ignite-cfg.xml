@@ -46,7 +46,6 @@
 
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
         <property name="topic" value="ignite" />
-        <property name="metadataTopic" value="ignite-metadata" />
         <property name="kafkaPartsFrom" value="0" />
         <property name="kafkaPartsTo" value="16" />
     </bean>
