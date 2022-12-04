@@ -26,7 +26,7 @@
     <bean id="client.cfg" class="org.apache.ignite.configuration.ClientConfiguration">
         <property name="addresses">
             <list>
-                <value>{HOST_ADDRESSES}</value>
+                {HOST_ADDRESSES}
             </list>
         </property>
     </bean>
