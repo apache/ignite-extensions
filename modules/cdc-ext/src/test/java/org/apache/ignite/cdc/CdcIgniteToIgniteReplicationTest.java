@@ -25,6 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -92,8 +93,11 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
                     .setDestinationClientConfiguration(new ClientConfiguration()
                         .setAddresses(hostAddresses(dest)));
             }
-            else
-                streamer = new IgniteToIgniteCdcStreamer().setDestinationIgniteConfiguration(destCfg);
+            else {
+                streamer = new IgniteToIgniteCdcStreamer().setDestinationIgniteConfiguration(
+                    new IgniteConfiguration(destCfg).setFailureHandler(new StopNodeOrHaltFailureHandler(true, 30_000))
+                );
+            }
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
@@ -146,7 +150,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         for (IgniteInternalFuture<?> cdcFut : cdcFuts) {
             assertTrue(
                 "Waiting for clients fail and crash ignite-cdc",
-                waitForCondition(cdcFut::isDone, getTestTimeout())
+                waitForCondition(cdcFut::isDone, 30_000)
             );
         }
     }
