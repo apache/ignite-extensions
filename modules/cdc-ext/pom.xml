@@ -71,6 +71,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.12</artifactId>
             <version>${kafka.version}</version>
@@ -89,6 +95,12 @@
             <version>${kafka.version}</version>
             <classifier>test</classifier>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
