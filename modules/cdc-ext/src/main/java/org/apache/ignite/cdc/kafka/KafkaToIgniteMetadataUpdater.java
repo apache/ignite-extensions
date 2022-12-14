@@ -19,17 +19,22 @@ package org.apache.ignite.cdc.kafka;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 
@@ -88,8 +93,22 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        Duration reqTimeoutDuration = Duration.ofMillis(kafkaReqTimeout);
+
+        Set<TopicPartition> assignment = cnsmr.assignment();
+
+        Map<TopicPartition, OffsetAndMetadata> committedOffsets = cnsmr.committed(assignment, reqTimeoutDuration);
+        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(assignment, reqTimeoutDuration);
+
+        boolean skipMetaUpdates = !(F.isEmpty(assignment) || F.isEmpty(committedOffsets) || F.isEmpty(endOffsets)) &&
+            assignment.stream()
+                .allMatch(p -> committedOffsets.get(p).offset() == endOffsets.get(p));
+
+        if (skipMetaUpdates)
+            return;
+
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(reqTimeoutDuration);
 
             if (recs.count() == 0)
                 return;
@@ -108,7 +127,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
-            cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
+            cnsmr.commitSync(reqTimeoutDuration);
         }
     }
 
