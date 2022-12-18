@@ -52,8 +52,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Log. */
     private final IgniteLogger log;
 
-    /** The maximum time to complete Kafka related requests, in milliseconds. */
-    private final long kafkaReqTimeout;
+    /** The maximum duration to complete Kafka related requests. */
+    private final Duration reqTimeoutDuration;
 
     /** */
     private final KafkaConsumer<Void, byte[]> cnsmr;
@@ -74,8 +74,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         this.ctx = ctx;
-        this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
         this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
+
+        reqTimeoutDuration = Duration.ofMillis(streamerCfg.getKafkaRequestTimeout());
 
         Properties kafkaProps = new Properties();
 
@@ -93,18 +94,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
-        Duration reqTimeoutDuration = Duration.ofMillis(kafkaReqTimeout);
-
-        Set<TopicPartition> assignment = cnsmr.assignment();
-
-        Map<TopicPartition, OffsetAndMetadata> committedOffsets = cnsmr.committed(assignment, reqTimeoutDuration);
-        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(assignment, reqTimeoutDuration);
-
-        boolean skipMetaUpdates = !(F.isEmpty(assignment) || F.isEmpty(committedOffsets) || F.isEmpty(endOffsets)) &&
-            assignment.stream()
-                .allMatch(p -> committedOffsets.get(p).offset() == endOffsets.get(p));
-
-        if (skipMetaUpdates)
+        if (canSkipMetaUpdates())
             return;
 
         while (true) {
@@ -129,6 +119,24 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
             cnsmr.commitSync(reqTimeoutDuration);
         }
+    }
+
+    /**
+     * Check that we can skip metadata updates. If there is any lag in metadata topic or there is no information
+     * about assignment or commited offsets, then updates can not be skipped.
+     */
+    private boolean canSkipMetaUpdates() {
+        Set<TopicPartition> assignment = cnsmr.assignment();
+
+        if (F.isEmpty(assignment))
+            return false;
+
+        Map<TopicPartition, OffsetAndMetadata> committedOffsets = cnsmr.committed(assignment, reqTimeoutDuration);
+        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(assignment, reqTimeoutDuration);
+
+        return !(F.isEmpty(committedOffsets) || F.isEmpty(endOffsets)) &&
+            assignment.stream()
+                .allMatch(p -> committedOffsets.get(p).offset() == endOffsets.get(p));
     }
 
     /** {@inheritDoc} */
