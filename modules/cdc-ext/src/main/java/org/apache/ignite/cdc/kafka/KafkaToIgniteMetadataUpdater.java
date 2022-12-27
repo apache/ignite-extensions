@@ -142,6 +142,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         cnsmr.wakeup();
+
+        cnsmr.close();
     }
 
     /** {@inheritDoc} */
