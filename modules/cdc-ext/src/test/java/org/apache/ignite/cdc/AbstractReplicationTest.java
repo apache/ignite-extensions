@@ -60,6 +60,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.logging.log4j.util.Supplier;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -266,9 +267,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Active/Passive mode means changes made only in one cluster. */
     @Test
     public void testActivePassiveReplication() throws Exception {
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
-
-        try {
+        withCdc(() -> startActivePassiveCdc(ACTIVE_PASSIVE_CACHE), futs -> {
             IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE);
 
             // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
@@ -289,11 +288,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             checkMetrics();
 
             assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
-        }
-        finally {
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.cancel();
-        }
+        });
     }
 
     /** Replication with complex SQL key. Data inserted via SQL. */
@@ -335,9 +330,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         IntStream.range(0, KEYS_CNT).forEach(i -> addData.accept(srcCluster[0], i));
 
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(name);
-
-        try {
+        withCdc(() -> startActivePassiveCdc(name), futs -> {
             Function<Integer, GridAbsPredicate> waitForTblSz = expSz -> () -> {
                 long cnt = (Long)executeSql(destCluster[0], "SELECT COUNT(*) FROM " + name).get(0).get(0);
 
@@ -348,7 +341,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             checkMetrics();
 
-            List<List<?>> data = executeSql(destCluster[0], "SELECT ID, SUBID, NAME, ORGID FROM " + name + " ORDER BY ID");
+            List<List<?>> data = executeSql(destCluster[0], "SELECT ID, SUBID, NAME, ORGID FROM " + name +
+                " ORDER BY ID");
 
             for (int i = 0; i < KEYS_CNT; i++) {
                 assertEquals(i, data.get(i).get(0));
@@ -362,11 +356,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             assertTrue(waitForCondition(waitForTblSz.apply(0), getTestTimeout()));
 
             checkMetrics();
-        }
-        finally {
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.cancel();
-        }
+        });
     }
 
     /** Active/Passive mode means changes made only in one cluster. */
@@ -381,9 +371,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         IntStream.range(0, KEYS_CNT).forEach(id -> executeSql(srcCluster[0], insertQry, id, "Name" + id));
 
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc("T1");
-
-        try {
+        withCdc(() -> startActivePassiveCdc("T1"), futs -> {
             Function<Integer, GridAbsPredicate> waitForTblSz = expSz -> () -> {
                 long cnt = (Long)executeSql(destCluster[0], "SELECT COUNT(*) FROM T1").get(0).get(0);
 
@@ -406,11 +394,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             assertTrue(waitForCondition(waitForTblSz.apply(0), getTestTimeout()));
 
             checkMetrics();
-        }
-        finally {
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.cancel();
-        }
+        });
     }
 
     /** Active/Active mode means changes made in both clusters. */
@@ -427,20 +411,14 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         runAsync(generateData(ACTIVE_ACTIVE_CACHE, destCluster[destCluster.length - 1],
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 
-        List<IgniteInternalFuture<?>> futs = startActiveActiveCdc();
-
-        try {
+        withCdc(this::startActiveActiveCdc, futs -> {
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
             runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 == 0).forEach(srcCache::remove));
             runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 != 0).forEach(destCache::remove));
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
-        }
-        finally {
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.cancel();
-        }
+        });
     }
 
     /** Test that destination cluster applies expiration policy on received entries. */
@@ -451,9 +429,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE, factory);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE, factory);
 
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
-
-        try {
+        withCdc(() -> startActivePassiveCdc(ACTIVE_PASSIVE_CACHE), futs -> {
             srcCache.putAll(F.asMap(0, ConflictResolvableTestData.create()));
 
             assertTrue(srcCache.containsKey(0));
@@ -466,11 +442,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             log.warning(">>>>>> Waiting for removing in destination cache");
             assertTrue(waitForCondition(() -> !destCache.containsKey(0), 20_000));
-        }
-        finally {
-            for (IgniteInternalFuture<?> fut : futs)
-                fut.cancel();
-        }
+        });
     }
 
     /** */
@@ -627,6 +599,36 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         assertNotNull(longMetric.apply(EVTS_CNT));
     }
 
+    /**
+     * @param cdcStarter Supplier of started CDC futures.
+     * @param action Test action.
+     */
+    private void withCdc(Supplier<List<IgniteInternalFuture<?>>> cdcStarter,
+        ConsumerX<List<IgniteInternalFuture<?>>> action) throws Exception {
+        List<IgniteInternalFuture<?>> futs = cdcStarter.get();
+
+        try {
+            action.accept(futs);
+        }
+        finally {
+            try {
+                cdcs.forEach(CdcMain::stop);
+
+                // Expected, that non-CdcMain futures are in tail
+                if (cdcs.size() != futs.size()) {
+                    List<IgniteInternalFuture<?>> cdcMainFuts = futs.subList(0, cdcs.size());
+
+                    for (IgniteInternalFuture<?> cdcMainFut : cdcMainFuts)
+                        cdcMainFut.get();
+                }
+            }
+            finally {
+                for (IgniteInternalFuture<?> fut : futs)
+                    fut.cancel();
+            }
+        }
+    }
+
     /** */
     private static class TestKey {
         /** Id. */
@@ -669,5 +671,14 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
         /** Thin client. */
         THIN_CLIENT;
+    }
+
+    /**
+     *
+     */
+    @FunctionalInterface
+    private interface ConsumerX<T> {
+        /** */
+        void accept(T t) throws Exception;
     }
 }

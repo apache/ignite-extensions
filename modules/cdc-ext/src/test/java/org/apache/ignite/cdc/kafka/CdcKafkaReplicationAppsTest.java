@@ -29,12 +29,14 @@ import java.util.stream.Collectors;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
@@ -122,9 +124,22 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PROPS_PATH, kafkaPropsPath);
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
-        return runAsync(
-            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
+        CdcCommandLineStartup cdcCmdLineStartup = new CdcCommandLineStartup();
+
+        IgniteInternalFuture<?> fut = runAsync(
+            () -> cdcCmdLineStartup.start(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
         );
+
+        try {
+            waitForCondition(() -> cdcCmdLineStartup.cdc() != null, getTestTimeout());
+
+            cdcs.add(cdcCmdLineStartup.cdc());
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new RuntimeException(e);
+        }
+
+        return fut;
     }
 
     /** {@inheritDoc} */
