@@ -23,15 +23,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import kafka.security.authorizer.AclAuthorizer$;
 import kafka.security.authorizer.AclEntry$;
-import kafka.server.Defaults$;
-import kafka.server.KafkaConfig$;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
@@ -50,27 +45,22 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.acl.AccessControlEntry;
 import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
-import org.apache.kafka.common.network.ListenerName;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.resource.ResourcePattern;
 import org.apache.kafka.common.security.auth.KafkaPrincipal;
+import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.security.plain.PlainLoginModule;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.kafka.clients.CommonClientConfigs.SECURITY_PROTOCOL_CONFIG;
 import static org.apache.kafka.common.acl.AclOperation.READ;
 import static org.apache.kafka.common.acl.AclOperation.WRITE;
 import static org.apache.kafka.common.acl.AclPermissionType.ALLOW;
-import static org.apache.kafka.common.config.SaslConfigs.SASL_JAAS_CONFIG;
-import static org.apache.kafka.common.config.SaslConfigs.SASL_MECHANISM;
-import static org.apache.kafka.common.config.internals.BrokerSecurityConfigs.SASL_ENABLED_MECHANISMS_CONFIG;
 import static org.apache.kafka.common.resource.PatternType.LITERAL;
 import static org.apache.kafka.common.resource.PatternType.PREFIXED;
 import static org.apache.kafka.common.resource.ResourceType.GROUP;
 import static org.apache.kafka.common.resource.ResourceType.TOPIC;
-import static org.apache.kafka.common.security.auth.SecurityProtocol.SASL_PLAINTEXT;
-import static org.apache.kafka.common.security.plain.internals.PlainSaslServer.PLAIN_MECHANISM;
 
 /**
  * Tests for kafka replication.
@@ -91,31 +81,19 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     /** */
     public static final int DFLT_PARTS = 16;
 
-    /** Client username. Used by producers and consumers. */
-    public static final String CLIENT_USER = "client";
+    /** JAAS prefix for authentication configuration. */
+    public static final String JAAS_PREFIX = PlainLoginModule.class.getName() + " required";
 
-    /** Client user password. */
-    public static final String CLIENT_PASSWORD = "client_password";
+    /** Kafka principal string for client. */
+    public static final String CLIENT_PRINCIPAL = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, "client").toString();
 
-    /** Kafka principal string for client user. */
-    public static final String CLIENT_PRINCIPAL = new KafkaPrincipal(KafkaPrincipal.USER_TYPE, CLIENT_USER).toString();
-
-    /** Write permission for client user. */
+    /** Write permission for client. */
     public static final AccessControlEntry CLIENT_ALLOW_WRITE =
         new AccessControlEntry(CLIENT_PRINCIPAL, AclEntry$.MODULE$.WildcardHost(), WRITE, ALLOW);
 
     /** Read permission for client. */
     public static final AccessControlEntry CLIENT_ALLOW_READ =
         new AccessControlEntry(CLIENT_PRINCIPAL, AclEntry$.MODULE$.WildcardHost(), READ, ALLOW);
-
-    /** Admin user ame. */
-    public static final String ADMIN_USER = "admin";
-
-    /** Admin password. */
-    public static final String ADMIN_PASSWORD = "admin_password";
-
-    /** JAAS prefix for authentication configuration. */
-    public static final String JAAS_PREFIX = PlainLoginModule.class.getName() + " required ";
 
     /** */
     private static EmbeddedKafkaCluster KAFKA = null;
@@ -290,10 +268,9 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, "10000");
 
         // Authentication.
-        props.put(SASL_MECHANISM, PLAIN_MECHANISM);
-        props.put(SECURITY_PROTOCOL_CONFIG, SASL_PLAINTEXT.name());
-        props.put(SASL_JAAS_CONFIG, JAAS_PREFIX + String.format("username=\"%s\" password=\"%s\";", CLIENT_USER,
-            CLIENT_PASSWORD));
+        props.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
+        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, SecurityProtocol.SASL_PLAINTEXT.toString());
+        props.put("sasl.jaas.config", JAAS_PREFIX + " username=\"client\" password=\"client_password\";");
 
         return props;
     }
@@ -306,47 +283,40 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         props.put(CommonClientConfigs.REQUEST_TIMEOUT_MS_CONFIG, "10000");
 
         // Authentication.
-        props.put(SASL_MECHANISM, PLAIN_MECHANISM);
-        props.put(SECURITY_PROTOCOL_CONFIG, SASL_PLAINTEXT.name());
-        props.put(SASL_JAAS_CONFIG, JAAS_PREFIX + String.format("username=\"%s\" password=\"%s\";", ADMIN_USER,
-            ADMIN_PASSWORD));
+        props.put("sasl.mechanism", "PLAIN");
+        props.put("security.protocol", "SASL_PLAINTEXT");
+        props.put("sasl.jaas.config", JAAS_PREFIX + " username=\"admin\" password=\"admin_password\";");
 
         return props;
     }
 
     /** */
     protected Properties kafkaBrokerConfig() {
-        String brokerCredentials = String.format("username=\"%s\" password=\"%s\"", ADMIN_USER, ADMIN_PASSWORD);
-        String adminCredentials = String.format("user_%s=\"%s\"", ADMIN_USER, ADMIN_PASSWORD);
-        String clientCredentials = String.format("user_%s=\"%s\"", CLIENT_USER, CLIENT_PASSWORD);
+        String brokerCredentials = "username=\"admin\" password=\"admin_password\"";
+        String adminCredentials = "user_admin=\"admin_password\"";
+        String clientCredentials = "user_client=\"client_password\"";
 
-        String jaasSrvCfg = String.format("%s%s %s %s;", JAAS_PREFIX, brokerCredentials, adminCredentials,
+        String jaasSrvCfg = String.format("%s %s %s %s;", JAAS_PREFIX, brokerCredentials, adminCredentials,
             clientCredentials);
 
         Properties brokerCfg = new Properties();
 
-        ListenerName listenerName = ListenerName.forSecurityProtocol(SASL_PLAINTEXT);
-        int port = Defaults$.MODULE$.Port();
-
-        // Listener.
-        brokerCfg.put(KafkaConfig$.MODULE$.ListenersProp(), String.format("%s://localhost:%d", listenerName.value(),
-            port));
+        // Listeners.
+        brokerCfg.put("listeners", "SASL_PLAINTEXT://localhost:9092");
+        brokerCfg.put("sasl.enabled.mechanisms", "PLAIN");
+        brokerCfg.put("sasl.mechanism.inter.broker.protocol", "PLAIN");
 
         // Property "security.inter.broker.protocol" is not used, because it is mutually exclusive to
         // the below "inter.broker.listener.name" one, which in turn is used in KafkaEmbedded#brokerList
         // to determine listener ports.
-        brokerCfg.put(KafkaConfig$.MODULE$.InterBrokerListenerNameProp(), listenerName.value());
-
-        String listenerSaslJaasProp = listenerName.saslMechanismConfigPrefix(PLAIN_MECHANISM) + SASL_JAAS_CONFIG;
+        brokerCfg.put("inter.broker.listener.name", "SASL_PLAINTEXT");
 
         // Authentication.
-        brokerCfg.put(listenerSaslJaasProp, jaasSrvCfg);
-        brokerCfg.put(SASL_ENABLED_MECHANISMS_CONFIG, "PLAIN");
-        brokerCfg.put(KafkaConfig$.MODULE$.SaslMechanismInterBrokerProtocolProp(), "PLAIN");
+        brokerCfg.put("listener.name.sasl_plaintext.plain.sasl.jaas.config", jaasSrvCfg);
 
         // Authorization.
-        brokerCfg.put(KafkaConfig$.MODULE$.AuthorizerClassNameProp(), "kafka.security.authorizer.AclAuthorizer");
-        brokerCfg.put(AclAuthorizer$.MODULE$.SuperUsersProp(), "User:" + ADMIN_USER);
+        brokerCfg.put("authorizer.class.name", "kafka.security.authorizer.AclAuthorizer");
+        brokerCfg.put("super.users", "User:admin");
 
         return brokerCfg;
     }
@@ -373,12 +343,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             .all()
             .get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        createAcls(adminClient, topicNames);
-    }
-
-    /** */
-    private void createAcls(AdminClient adminClient, String[] topicNames) throws InterruptedException, ExecutionException,
-        TimeoutException {
         List<AclBinding> aclBindings = new ArrayList<>();
 
         for (String topic : topicNames) {
@@ -393,7 +357,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         String kafkaIgniteStreamerGrp = clientProperties().getProperty(ConsumerConfig.GROUP_ID_CONFIG);
 
-        AclBinding consumerStreamerGrpReadAcl = new AclBinding(
+        AclBinding consumerStreamerGrpRead = new AclBinding(
             new ResourcePattern(GROUP, kafkaIgniteStreamerGrp, LITERAL),
             CLIENT_ALLOW_READ);
 
@@ -401,8 +365,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             new ResourcePattern(GROUP, "ignite-metadata-update", PREFIXED),
             CLIENT_ALLOW_READ);
 
-        // Group read permission is necessary to commit offsets
-        aclBindings.add(consumerStreamerGrpReadAcl);
+        // Group read is necessary to commit offsets
+        aclBindings.add(consumerStreamerGrpRead);
         aclBindings.add(consumerMetadataGrpReadAcl);
 
         CreateAclsResult createAclsResult = adminClient.createAcls(aclBindings);
