@@ -96,7 +96,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
             file.deleteOnExit();
 
             try (FileOutputStream fos = new FileOutputStream(file)) {
-                clientProperties().store(fos, null);
+                kafkaProperties().store(fos, null);
             }
 
             kafkaPropsPath = "file://" + file.getAbsolutePath();
