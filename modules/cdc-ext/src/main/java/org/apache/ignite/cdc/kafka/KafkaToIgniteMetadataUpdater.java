@@ -52,8 +52,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Log. */
     private final IgniteLogger log;
 
-    /** The maximum duration to complete Kafka related requests. */
-    private final Duration reqTimeoutDuration;
+    /** The maximum time to complete Kafka related requests, in milliseconds. */
+    private final long kafkaReqTimeout;
 
     /** */
     private final KafkaConsumer<Void, byte[]> cnsmr;
@@ -74,9 +74,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
         KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         this.ctx = ctx;
+        this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
         this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
-
-        reqTimeoutDuration = Duration.ofMillis(streamerCfg.getKafkaRequestTimeout());
 
         Properties kafkaProps = new Properties();
 
@@ -98,7 +97,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
             return;
 
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(reqTimeoutDuration);
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
             if (recs.count() == 0)
                 return;
@@ -117,7 +116,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
-            cnsmr.commitSync(reqTimeoutDuration);
+            cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
         }
     }
 
@@ -131,8 +130,10 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
         if (F.isEmpty(assignment))
             return false;
 
-        Map<TopicPartition, OffsetAndMetadata> committedOffsets = cnsmr.committed(assignment, reqTimeoutDuration);
-        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(assignment, reqTimeoutDuration);
+        Map<TopicPartition, OffsetAndMetadata> committedOffsets = cnsmr.committed(assignment,
+            Duration.ofMillis(kafkaReqTimeout));
+
+        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(assignment, Duration.ofMillis(kafkaReqTimeout));
 
         return !(F.isEmpty(committedOffsets) || F.isEmpty(endOffsets)) &&
             assignment.stream()
