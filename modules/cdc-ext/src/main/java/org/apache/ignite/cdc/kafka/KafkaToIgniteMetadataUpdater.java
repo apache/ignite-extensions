@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.kafka;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -137,7 +138,11 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
         return !(F.isEmpty(committedOffsets) || F.isEmpty(endOffsets)) &&
             assignment.stream()
-                .allMatch(p -> committedOffsets.get(p).offset() == endOffsets.get(p));
+                .allMatch(p -> {
+                    OffsetAndMetadata meta = committedOffsets.get(p);
+
+                    return meta != null && Objects.equals(meta.offset(), endOffsets.get(p));
+                });
     }
 
     /** {@inheritDoc} */
