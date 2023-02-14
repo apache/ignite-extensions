@@ -19,6 +19,8 @@ package org.apache.ignite.cdc.kafka;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -26,10 +28,12 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 
@@ -55,6 +59,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
+
+    /** Offsets. */
+    private Map<TopicPartition, Long> offsets;
 
     /**
      * @param ctx Binary context.
@@ -88,11 +95,24 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(cnsmr.assignment(), Duration.ofMillis(kafkaReqTimeout));
+
+        // If we have an information, that offsets in metadata topic has not changed, we can skip polling loop.
+        if (!F.isEmpty(endOffsets) && F.eqNotOrdered(offsets, endOffsets))
+            return;
+
+        offsets = new HashMap<>(endOffsets);
+
+        long pollTimeout = kafkaReqTimeout;
+
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(pollTimeout));
 
             if (recs.count() == 0)
                 return;
+
+            // Further polls can be performed with a small timeout.
+            pollTimeout = 100;
 
             if (log.isInfoEnabled())
                 log.info("Polled from meta topic [rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
