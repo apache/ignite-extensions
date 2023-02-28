@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
+
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder;
 
 /**
  * This example demonstrates starting Ignite cluster with configured {@link TcpDiscoveryZookeeperIpFinder}
@@ -43,9 +44,11 @@ public class ZookeeperIpFinderExample {
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String[] args) {
-        try (Ignite server1 = Ignition.start(configuration("server1"));
-             Ignite server2 = Ignition.start(configuration("server2"))) {
+    public static void main(String... args) {
+        String zkConnStr = args.length == 0 ? ZK_CONNECT_STRING : args[0];
+
+        try (Ignite server1 = Ignition.start(configuration("server1", zkConnStr));
+             Ignite server2 = Ignition.start(configuration("server2", zkConnStr))) {
             System.out.println();
             System.out.println("Zookeeper Ip Finder example started.");
 
@@ -59,13 +62,14 @@ public class ZookeeperIpFinderExample {
      * Returns a new instance of Ignite configuration.
      *
      * @param igniteInstanceName Ignite instance name.
+     * @param zkConnStr Zookeper connect string.
      */
-    private static IgniteConfiguration configuration(String igniteInstanceName) {
+    private static IgniteConfiguration configuration(String igniteInstanceName, String zkConnStr) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi()
             .setIpFinder(new TcpDiscoveryZookeeperIpFinder()
-                .setZkConnectionString(ZK_CONNECT_STRING)));
+                .setZkConnectionString(zkConnStr)));
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
