@@ -38,6 +38,9 @@ public class ZookeeperIpFinderExampleTest extends GridCommonAbstractTest {
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
+        // remove stale system properties
+        System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
+
         zkCluster = new TestingCluster(1);
 
         zkCluster.start();
