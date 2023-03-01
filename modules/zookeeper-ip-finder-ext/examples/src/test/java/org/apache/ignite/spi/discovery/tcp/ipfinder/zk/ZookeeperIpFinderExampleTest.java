@@ -19,13 +19,20 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.utils.CloseableUtils;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
+public class ZookeeperIpFinderExampleTest extends GridCommonAbstractTest {
     /** The ZK cluster instance, from curator-test. */
     private TestingCluster zkCluster;
+
+    /**
+     * Default constructor.
+     */
+    public ZookeeperIpFinderExampleTest() {
+        super(false);
+    }
 
     /** */
     @Override public void beforeTest() throws Exception {
@@ -39,6 +46,8 @@ public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
     /** */
     @Override public void afterTest() throws Exception {
         super.afterTest();
+
+        stopAllGrids();
 
         if (zkCluster != null)
             CloseableUtils.closeQuietly(zkCluster);
