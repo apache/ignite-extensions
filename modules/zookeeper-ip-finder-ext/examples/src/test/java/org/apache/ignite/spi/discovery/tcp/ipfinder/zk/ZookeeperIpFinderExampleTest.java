@@ -27,18 +27,11 @@ public class ZookeeperIpFinderExampleTest extends GridCommonAbstractTest {
     /** The ZK cluster instance, from curator-test. */
     private TestingCluster zkCluster;
 
-    /**
-     * Default constructor.
-     */
-    public ZookeeperIpFinderExampleTest() {
-        super(false);
-    }
-
     /** */
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
-        // remove stale system properties
+        // Remove stale system properties.
         System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
 
         zkCluster = new TestingCluster(1);
