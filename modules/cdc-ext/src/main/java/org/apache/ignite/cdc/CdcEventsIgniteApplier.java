@@ -93,16 +93,18 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDrInfo toValue(int cacheId, Object val, GridCacheVersion ver) {
+    @Override protected GridCacheDrInfo toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
         CacheObject cacheObj;
+
+        Object val = evt.value();
 
         if (val instanceof CacheObject)
             cacheObj = (CacheObject)val;
         else
             cacheObj = new CacheObjectImpl(val, null);
 
-        return cache(cacheId).configuration().getExpiryPolicyFactory() != null ?
-            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE) :
+        return evt.ttl() != CU.TTL_ETERNAL ?
+            new GridCacheDrExpirationInfo(cacheObj, ver, evt.ttl(), EXPIRE_TIME_CALCULATE) :
             new GridCacheDrInfo(cacheObj, ver);
     }
 

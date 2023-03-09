@@ -87,7 +87,7 @@ public abstract class AbstractCdcEventsApplier<K, V> {
             if (evt.value() != null) {
                 evtsApplied += applyIf(currCacheId, () -> isApplyBatch(updBatch, key), hasRemoves);
 
-                updBatch.put(key, toValue(currCacheId, evt.value(), ver));
+                updBatch.put(key, toValue(currCacheId, evt, ver));
             }
             else {
                 evtsApplied += applyIf(currCacheId, hasUpdates, () -> isApplyBatch(rmvBatch, key));
@@ -109,13 +109,12 @@ public abstract class AbstractCdcEventsApplier<K, V> {
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
      * @return Number of applied events.
-     * @throws IgniteCheckedException In case of error.
      */
     private int applyIf(
         int cacheId,
         BooleanSupplier applyUpd,
         BooleanSupplier applyRmv
-    ) throws IgniteCheckedException {
+    ) {
         int evtsApplied = 0;
 
         if (applyUpd.getAsBoolean()) {
@@ -152,7 +151,7 @@ public abstract class AbstractCdcEventsApplier<K, V> {
     protected abstract K toKey(CdcEvent evt);
 
     /** @return Value. */
-    protected abstract V toValue(int cacheId, Object val, GridCacheVersion ver);
+    protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);
 
     /** Stores DR data. */
     protected abstract void putAllConflict(int cacheId, Map<K, V> drMap);
