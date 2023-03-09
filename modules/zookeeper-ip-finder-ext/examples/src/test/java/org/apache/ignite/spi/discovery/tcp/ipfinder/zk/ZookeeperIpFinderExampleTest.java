@@ -22,6 +22,8 @@ import org.apache.curator.utils.CloseableUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 import org.junit.Test;
 
+import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING;
+
 /** */
 public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
     /** The ZK cluster instance, from curator-test. */
@@ -31,12 +33,11 @@ public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
-        // Remove stale system properties.
-        System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
-
         zkCluster = new TestingCluster(1);
 
         zkCluster.start();
+
+        System.getProperties().put(PROP_ZK_CONNECTION_STRING, zkCluster.getConnectString());
     }
 
     /** */
@@ -50,8 +51,6 @@ public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
     /** */
     @Test
     public void testExample() {
-        String connStr = zkCluster.getConnectString();
-
-        ZookeeperIpFinderExample.main(connStr);
+        ZookeeperIpFinderExample.main(EMPTY_ARGS);
     }
 }

@@ -24,6 +24,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
+import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING;
+
 /**
  * This example demonstrates starting Ignite cluster with configured {@link TcpDiscoveryZookeeperIpFinder}
  * to discover other nodes.
@@ -37,18 +39,16 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  */
 public class ZookeeperIpFinderExample {
     /** The Apache ZooKeeper connection string. Comma separated host:port pairs, each corresponding to a zk server. */
-    private static final String ZK_CONNECT_STRING = "localhost:2181";
+    private static final String ZK_CONNECT_STRING = System.getProperty(PROP_ZK_CONNECTION_STRING, "localhost:2181");
 
     /**
      * Start example.
      *
      * @param args Command line arguments, none required.
      */
-    public static void main(String... args) {
-        String zkConnStr = args.length == 0 ? ZK_CONNECT_STRING : args[0];
-
-        try (Ignite server1 = Ignition.start(configuration("server1", zkConnStr));
-             Ignite server2 = Ignition.start(configuration("server2", zkConnStr))) {
+    public static void main(String[] args) {
+        try (Ignite server1 = Ignition.start(configuration("server1"));
+             Ignite server2 = Ignition.start(configuration("server2"))) {
             System.out.println();
             System.out.println("Zookeeper Ip Finder example started.");
 
@@ -62,14 +62,13 @@ public class ZookeeperIpFinderExample {
      * Returns a new instance of Ignite configuration.
      *
      * @param igniteInstanceName Ignite instance name.
-     * @param zkConnStr Zookeper connect string.
      */
-    private static IgniteConfiguration configuration(String igniteInstanceName, String zkConnStr) {
+    private static IgniteConfiguration configuration(String igniteInstanceName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi()
             .setIpFinder(new TcpDiscoveryZookeeperIpFinder()
-                .setZkConnectionString(zkConnStr)));
+                .setZkConnectionString(ZK_CONNECT_STRING)));
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 
