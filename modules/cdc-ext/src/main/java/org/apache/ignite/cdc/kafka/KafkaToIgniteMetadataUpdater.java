@@ -111,7 +111,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
             if (recs.count() == 0)
                 return;
 
-            // Further polls can be performed with a small timeout.
+            // Next polls can be performed with a small timeout.
             pollTimeout = 100;
 
             if (log.isInfoEnabled())
