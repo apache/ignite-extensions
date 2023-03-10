@@ -26,7 +26,6 @@ import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -61,7 +60,7 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
 
     /** {@inheritDoc} */
     @Override protected T3<Object, GridCacheVersion, Long> toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
-        return new T3<>(evt.value(), ver, evt.ttl());
+        return new T3<>(evt.value(), ver, evt.expireTime());
     }
 
     /** {@inheritDoc} */

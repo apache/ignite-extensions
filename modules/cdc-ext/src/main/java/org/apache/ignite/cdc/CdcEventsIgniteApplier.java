@@ -103,8 +103,8 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
         else
             cacheObj = new CacheObjectImpl(val, null);
 
-        return evt.ttl() != CU.TTL_ETERNAL ?
-            new GridCacheDrExpirationInfo(cacheObj, ver, evt.ttl(), EXPIRE_TIME_CALCULATE) :
+        return evt.expireTime() != CU.EXPIRE_TIME_ETERNAL ?
+            new GridCacheDrExpirationInfo(cacheObj, ver, CU.TTL_ETERNAL, evt.expireTime()) :
             new GridCacheDrInfo(cacheObj, ver);
     }
 
