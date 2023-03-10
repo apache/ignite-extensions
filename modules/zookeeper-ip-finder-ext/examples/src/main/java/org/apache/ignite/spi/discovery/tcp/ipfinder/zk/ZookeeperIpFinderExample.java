@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
+
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder;
 
 /**
  * This example demonstrates starting Ignite cluster with configured {@link TcpDiscoveryZookeeperIpFinder}
