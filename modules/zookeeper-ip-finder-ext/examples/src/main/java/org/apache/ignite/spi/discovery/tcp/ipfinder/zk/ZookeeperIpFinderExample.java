@@ -24,8 +24,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
-import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING;
-
 /**
  * This example demonstrates starting Ignite cluster with configured {@link TcpDiscoveryZookeeperIpFinder}
  * to discover other nodes.
@@ -39,7 +37,7 @@ import static org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookee
  */
 public class ZookeeperIpFinderExample {
     /** The Apache ZooKeeper connection string. Comma separated host:port pairs, each corresponding to a zk server. */
-    private static final String ZK_CONNECT_STRING = System.getProperty(PROP_ZK_CONNECTION_STRING, "localhost:2181");
+    private static final String ZK_CONNECT_STRING = "localhost:2181";
 
     /**
      * Start example.

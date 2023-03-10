@@ -37,7 +37,7 @@ public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
 
         zkCluster.start();
 
-        System.getProperties().put(PROP_ZK_CONNECTION_STRING, zkCluster.getConnectString());
+        System.setProperty(PROP_ZK_CONNECTION_STRING, zkCluster.getConnectString());
     }
 
     /** */
@@ -46,6 +46,8 @@ public class ZookeeperIpFinderExampleTest extends GridAbstractExamplesTest {
 
         if (zkCluster != null)
             CloseableUtils.closeQuietly(zkCluster);
+
+        System.clearProperty(PROP_ZK_CONNECTION_STRING);
     }
 
     /** */
