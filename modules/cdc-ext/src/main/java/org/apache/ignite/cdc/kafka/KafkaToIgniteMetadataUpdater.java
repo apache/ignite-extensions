@@ -60,7 +60,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** Offsets. */
+    /** Offsets from the last successfull metadata update. */
     private Map<TopicPartition, Long> offsets;
 
     /**
@@ -95,24 +95,21 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
-        Map<TopicPartition, Long> endOffsets = cnsmr.endOffsets(cnsmr.assignment(), Duration.ofMillis(kafkaReqTimeout));
+        // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
+        // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
+        // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
+        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(cnsmr.assignment(), Duration.ofMillis(kafkaReqTimeout));
 
-        // If we have an information, that offsets in metadata topic has not changed, we can skip polling loop.
-        if (!F.isEmpty(endOffsets) && F.eqNotOrdered(offsets, endOffsets))
+        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0))
             return;
 
-        offsets = new HashMap<>(endOffsets);
-
-        long pollTimeout = kafkaReqTimeout;
+        offsets = new HashMap<>(offsets0);
 
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(pollTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
             if (recs.count() == 0)
                 return;
-
-            // Next polls can be performed with a small timeout.
-            pollTimeout = 100;
 
             if (log.isInfoEnabled())
                 log.info("Polled from meta topic [rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
