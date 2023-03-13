@@ -97,7 +97,8 @@ public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStre
 
     /** {@inheritDoc} */
     @Override protected void initLogger() throws Exception {
-        log = U.initLogger(null, "kafka-ignite-streamer", UUID.randomUUID(), U.defaultWorkDirectory());
+        if (log == null)
+            log = U.initLogger(null, "kafka-ignite-streamer", UUID.randomUUID(), U.defaultWorkDirectory());
     }
 
     /** {@inheritDoc} */

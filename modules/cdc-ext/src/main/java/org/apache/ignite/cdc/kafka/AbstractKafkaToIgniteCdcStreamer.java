@@ -205,6 +205,14 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     /** Init logger. */
     protected abstract void initLogger() throws Exception;
 
+    /**
+     * Explicitly set logger.
+     */
+    public void logger(IgniteLogger log) {
+        if (this.log == null)
+            this.log = log;
+    }
+
     /** */
     protected abstract void runx() throws Exception;
 

@@ -532,7 +532,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteCache<Integer, ConflictResolvableTestData> createCache(IgniteEx ignite, String name) {
+    protected IgniteCache<Integer, ConflictResolvableTestData> createCache(IgniteEx ignite, String name) {
         return createCache(ignite, name, null);
     }
 
