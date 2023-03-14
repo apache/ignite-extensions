@@ -446,7 +446,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Test that destination cluster applies expiration policy on received entries. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 10));
+        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.MINUTES, 2));
 
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE, factory);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE, factory);
@@ -465,7 +465,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             assertTrue(waitForCondition(() -> !srcCache.containsKey(0), getTestTimeout()));
 
             log.warning(">>>>>> Waiting for removing in destination cache");
-            assertTrue(waitForCondition(() -> !destCache.containsKey(0), 20_000));
+
+            Duration ttl = factory.create().getExpiryForCreation();
+
+            assertTrue(waitForCondition(
+                () -> !destCache.containsKey(0),
+                2 * TimeUnit.MILLISECONDS.convert(ttl.getDurationAmount(), ttl.getTimeUnit())
+            ));
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.Date;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -34,9 +35,6 @@ import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT_CHANGED;
 
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the destination cluster.
@@ -102,6 +100,10 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
             cacheObj = (CacheObject)val;
         else
             cacheObj = new CacheObjectImpl(val, null);
+
+        //TODO: check how to minimize test partitions count to reduce test duration.
+        System.out.println("CdcEventsIgniteApplier.toValue - " + evt.expireTime() + ", date = " + new Date(evt.expireTime()));
+        System.out.println("(System.currentTimeMillis() - evt.expireTime()) = " + (evt.expireTime() - System.currentTimeMillis()));
 
         return evt.expireTime() != CU.EXPIRE_TIME_ETERNAL ?
             new GridCacheDrExpirationInfo(cacheObj, ver, CU.TTL_ETERNAL, evt.expireTime()) :
