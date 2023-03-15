@@ -35,6 +35,9 @@ import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
+
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the destination cluster.
  *
@@ -100,8 +103,8 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
         else
             cacheObj = new CacheObjectImpl(val, null);
 
-        return evt.expireTime() != CU.EXPIRE_TIME_ETERNAL ?
-            new GridCacheDrExpirationInfo(cacheObj, ver, CU.TTL_ETERNAL, evt.expireTime()) :
+        return evt.expireTime() != EXPIRE_TIME_ETERNAL ?
+            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_ETERNAL, evt.expireTime()) :
             new GridCacheDrInfo(cacheObj, ver);
     }
 
