@@ -54,6 +54,8 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
             "start=" + oldEntry.isStartVersion() +
             ", oldVer=" + oldEntry.version() +
             ", newVer=" + newEntry.version() +
+            ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
+            ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
             ", old=" + oldVal +
             ", new=" + newVal +
             ", res=" + res + ']');
