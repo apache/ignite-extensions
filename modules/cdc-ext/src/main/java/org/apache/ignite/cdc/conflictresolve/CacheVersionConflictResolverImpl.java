@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -88,7 +89,31 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        if (isUseNew(ctx, oldEntry, newEntry))
+        boolean expireExists = oldEntry.ttl() != CU.TTL_ETERNAL
+            || newEntry.ttl() != CU.TTL_ETERNAL
+            || oldEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL
+            || newEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL;
+
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+
+        if (expireExists) {
+            if (newEntry.expireTime() > oldEntry.expireTime()) {
+                res.merge(
+                    useNew ? newEntry.value(ctx) : oldEntry.value(ctx),
+                    newEntry.ttl(),
+                    newEntry.expireTime()
+                );
+            }
+            else {
+                res.merge(
+                    useNew ? newEntry.value(ctx) : oldEntry.value(ctx),
+                    oldEntry.ttl(),
+                    oldEntry.expireTime()
+                );
+            }
+
+        }
+        else if (useNew)
             res.useNew();
         else
             res.useOld();

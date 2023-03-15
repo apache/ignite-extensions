@@ -109,12 +109,13 @@ public abstract class AbstractCdcEventsApplier<K, V> {
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
      * @return Number of applied events.
+     * @throws IgniteCheckedException In case of error.
      */
     private int applyIf(
         int cacheId,
         BooleanSupplier applyUpd,
         BooleanSupplier applyRmv
-    ) {
+    ) throws IgniteCheckedException {
         int evtsApplied = 0;
 
         if (applyUpd.getAsBoolean()) {

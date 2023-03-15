@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Date;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -100,10 +99,6 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
             cacheObj = (CacheObject)val;
         else
             cacheObj = new CacheObjectImpl(val, null);
-
-        //TODO: check how to minimize test partitions count to reduce test duration.
-        System.out.println("CdcEventsIgniteApplier.toValue - " + evt.expireTime() + ", date = " + new Date(evt.expireTime()));
-        System.out.println("(System.currentTimeMillis() - evt.expireTime()) = " + (evt.expireTime() - System.currentTimeMillis()));
 
         return evt.expireTime() != CU.EXPIRE_TIME_ETERNAL ?
             new GridCacheDrExpirationInfo(cacheObj, ver, CU.TTL_ETERNAL, evt.expireTime()) :

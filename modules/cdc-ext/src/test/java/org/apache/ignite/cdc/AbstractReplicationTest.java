@@ -446,7 +446,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Test that destination cluster applies expiration policy on received entries. */
     @Test
     public void testWithExpiryPolicy() throws Exception {
-        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.MINUTES, 2));
+        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.SECONDS, 30));
 
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE, factory);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE, factory);
