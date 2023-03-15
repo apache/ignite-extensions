@@ -111,7 +111,6 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     oldEntry.expireTime()
                 );
             }
-
         }
         else if (useNew)
             res.useNew();
