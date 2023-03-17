@@ -17,12 +17,17 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.ConflictResolvableTestData;
@@ -32,19 +37,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.MemorizingAppender;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
-import org.apache.logging.log4j.Level;
-import org.junit.Assume;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.logging.log4j.Level.DEBUG;
 
 /**
  * Tests for kafka replication.
@@ -68,12 +76,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     /** */
     private static EmbeddedKafkaCluster KAFKA = null;
 
-    /** */
-    private static final LogListener logListener = LogListener.matches("Offsets unchanged, poll skipped").build();
-
-    /** */
-    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -88,8 +90,6 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         KAFKA.createTopic(DEST_SRC_TOPIC, DFLT_PARTS, 1);
         KAFKA.createTopic(SRC_DEST_META_TOPIC, 1, 1);
         KAFKA.createTopic(DEST_SRC_META_TOPIC, 1, 1);
-
-        testLog.registerListener(logListener);
     }
 
     /** {@inheritDoc} */
@@ -106,37 +106,86 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         });
 
         waitForCondition(() -> KAFKA.getAllTopicsInCluster().isEmpty(), getTestTimeout());
-
-        testLog.clearListeners();
-        logListener.reset();
     }
 
     /** */
     @Test
-    public void testMetadataUpdateSkipped() throws Exception {
-        // Skip test in sublass.
-        Assume.assumeTrue(getClass().isAssignableFrom(CdcKafkaReplicationTest.class));
-
-        resetLog4j(Level.DEBUG, false, KafkaToIgniteMetadataUpdater.class.getCanonicalName());
-
+    public void testMetadataUpdateSkipMessage() throws Exception {
         IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_PASSIVE_CACHE);
         IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_PASSIVE_CACHE);
 
-        assertFalse("Unexpected metadata skip messages", logListener.check());
+        T2<MemorizingAppender, PropertyChangeListener> logCfg = configureDebugLogging(KafkaToIgniteMetadataUpdater.class);
+
+        MemorizingAppender metaSkipAppender = logCfg.get1();
+        PropertyChangeListener cfgChangeLsnr = logCfg.get2();
 
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
 
         try {
-            srcCache.putAll(F.asMap(0, ConflictResolvableTestData.create()));
+            runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster[0], IntStream.range(0, KEYS_CNT)));
 
-            assertTrue(waitForCondition(() -> destCache.containsKey(0), getTestTimeout()));
+            waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
-            assertTrue("Metadata update was not skipped", logListener.check());
+            LogEvent logEvt = metaSkipAppender.events()
+                .stream()
+                .filter(evt0 -> "Offsets unchanged, poll skipped".equals(evt0.getMessage().getFormattedMessage()))
+                .findAny()
+                .orElse(null);
+
+            assertNotNull("Metadata skip message was not found", logEvt);
+            assertEquals("Incorrect log event level", DEBUG, logEvt.getLevel());
         }
         finally {
+            // IMPORTANT: In order to eliminate recursive calls, remove listener prior to removing of MemorizingAppender.
+            LoggerContext.getContext(false).removePropertyChangeListener(cfgChangeLsnr);
+            metaSkipAppender.removeSelfFrom(KafkaToIgniteMetadataUpdater.class);
+
             for (IgniteInternalFuture<?> fut : futs)
                 fut.cancel();
         }
+    }
+
+    /** */
+    private T2<MemorizingAppender, PropertyChangeListener> configureDebugLogging(Class<?> cls)
+        throws IgniteCheckedException {
+        String clsName = cls.getName();
+
+        // TODO Replace with a default constructor after fix:
+        MemorizingAppender appender = new MemorizingAppender() {
+            @Override public void append(LogEvent evt) {
+                super.append(evt.toImmutable());
+            }
+        };
+        appender.start();
+
+        resetLog4j(DEBUG, false, clsName);
+        appender.installSelfOn(cls);
+
+        LoggerContext logCtx = LoggerContext.getContext(false);
+
+        // We need to re-apply desired test config, because calling of U#initLogger can lead to a full reconfiguration
+        // of the Log4J2Logger in method Log4j2Logger#setApplicationAndNode.
+        PropertyChangeListener cfgChangeLsnr = new PropertyChangeListener() {
+            /** {@inheritDoc} */
+            @Override public void propertyChange(PropertyChangeEvent evt) {
+                Configuration ctxCfg = logCtx.getConfiguration();
+
+                Map<String, Appender> appenders = ctxCfg.getLoggerConfig(clsName).getAppenders();
+
+                if (appenders.isEmpty()) {
+                    LoggerConfig logCfg = new LoggerConfig(clsName, DEBUG, true);
+
+                    ctxCfg.addLogger(clsName, logCfg);
+
+                    logCfg.addAppender(appender, DEBUG, null);
+                    logCtx.updateLoggers();
+                }
+            }
+        };
+
+        logCtx.addPropertyChangeListener(cfgChangeLsnr);
+
+        return new T2<>(appender, cfgChangeLsnr);
     }
 
     /** {@inheritDoc} */
@@ -273,21 +322,15 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
-        AbstractKafkaToIgniteCdcStreamer streamer;
-
         if (clientType == ClientType.THIN_CLIENT) {
             ClientConfiguration clientCfg = new ClientConfiguration();
 
             clientCfg.setAddresses(hostAddresses(dest));
 
-            streamer = new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg);
+            return runAsync(new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg));
         }
         else
-            streamer = new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg);
-
-        streamer.logger(testLog);
-
-        return runAsync(streamer);
+            return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
     }
 
     /** */

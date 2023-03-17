@@ -142,7 +142,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public static final byte DEST_CLUSTER_ID = 2;
 
     /** */
-    private enum WaitDataMode {
+    protected enum WaitDataMode {
         /** */
         EXISTS,
 
