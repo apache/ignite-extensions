@@ -136,16 +136,16 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
         TestBinaryContext binCtx = new TestBinaryContext(BinaryNoopMetadataHandler.instance(),
             new IgniteConfiguration(), log);
 
-        // #updateMetadata will be called twice for each partition.
-        CountDownLatch metaLatch = new CountDownLatch(PARTS_CNT * 2);
+        CountDownLatch metaLatch = new CountDownLatch(PARTS_CNT);
 
         List<IgniteInternalFuture<?>> applierFuts = runAppliers(binCtx, PARTS_CNT, streamerConfiguration(), metaLatch);
 
-        try (KafkaProducer<Void, byte[]> producer = new KafkaProducer<>(producerProps())) {
+        try (KafkaProducer<Void, byte[]> producer = new KafkaProducer<>(producerProperties())) {
             sendMetadataAndMarkers(producer, PARTS_CNT);
 
+            // All appliers should process metadata update markers faster than KAFKA_REQ_TIMEOUT * PARTS_CNT.
             assertTrue("Appliers has not updated metadata",
-                metaLatch.await(KAFKA_REQ_TIMEOUT * 3, TimeUnit.MILLISECONDS));
+                metaLatch.await(KAFKA_REQ_TIMEOUT * (PARTS_CNT - 1), TimeUnit.MILLISECONDS));
 
             for (IgniteInternalFuture<?> fut : applierFuts)
                 assertFalse("Future finished: err=" + X.getFullStackTrace(fut.error()), fut.isDone());
@@ -162,8 +162,8 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             assertEquals("Unexpected 'clsName'", "testMapping", clsName);
         }
         finally {
-            for (IgniteInternalFuture<?> applierFut : applierFuts)
-                applierFut.cancel();
+            for (IgniteInternalFuture<?> fut : applierFuts)
+                fut.cancel();
         }
     }
 
@@ -174,11 +174,8 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
         recs.add(new ProducerRecord<>(META_TOPIC, U.toBytes(TEST_METADATA)));
         recs.add(new ProducerRecord<>(META_TOPIC, U.toBytes(TEST_MAPPING)));
 
-        // Send two markers first for type, second for mapping.
-        for (int p = 0; p < partsCnt; p++) {
+        for (int p = 0; p < partsCnt; p++)
             recs.add(new ProducerRecord<>(EVT_TOPIC, p, null, META_UPDATE_MARKER));
-            recs.add(new ProducerRecord<>(EVT_TOPIC, p, null, META_UPDATE_MARKER));
-        }
 
         for (ProducerRecord<Void, byte[]> rec : recs)
             producer.send(rec).get(KAFKA_REQ_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -189,20 +186,21 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
         KafkaToIgniteCdcStreamerConfiguration cfg, CountDownLatch metaLatch) {
         AtomicBoolean stopped = new AtomicBoolean();
 
-        KafkaToIgniteMetadataUpdater metadataUpdater = new KafkaToIgniteMetadataUpdater(binCtx, log, consumerProps(), cfg);
+        KafkaToIgniteMetadataUpdater metadataUpdater = new KafkaToIgniteMetadataUpdater(binCtx, log, consumerProperties(), cfg);
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         // Create one applier per partition, i.e. one thread per partition.
         for (int i = 0; i < appliersCnt; i++) {
             TestKafkaToIgniteCdcStreamerApplier streamerApplier = new TestKafkaToIgniteCdcStreamerApplier(
-                () -> new CdcEventsIgniteClientApplier(null, 0, log), /* Dummy applier, should not be called */
+                // Dummy applier, client won't be called:
+                () -> new CdcEventsIgniteClientApplier(null, 0, log),
                 log,
-                consumerProps(),
+                consumerProperties(),
                 cfg.getTopic(),
                 i,
                 i + 1,
-                Collections.singleton(1), /* Dummy cacheIds, should not be empty. */
+                Collections.emptySet(),
                 0,
                 cfg.getKafkaRequestTimeout(),
                 metadataUpdater,
@@ -217,7 +215,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Properties consumerProps() {
+    private Properties consumerProperties() {
         Properties props = new Properties();
 
         props.put(BOOTSTRAP_SERVERS_CONFIG, kafkaCluster.bootstrapServers());
@@ -231,7 +229,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Properties producerProps() {
+    private Properties producerProperties() {
         Properties props = new Properties();
 
         props.put(BOOTSTRAP_SERVERS_CONFIG, kafkaCluster.bootstrapServers());
@@ -269,13 +267,13 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
-            // 'false' will be returned if metadata update performed.
             boolean retVal = super.filterAndPossiblyUpdateMetadata(rec);
 
+            // retVal will be 'false' if metadata update has been performed in super method.
             if (!retVal) {
                 metaLatch.countDown();
 
-                log.warning(">>>>>> Meta update latch counted down.");
+                log.warning(">>>>>> Meta update latch has been counted down.");
             }
 
             return retVal;
