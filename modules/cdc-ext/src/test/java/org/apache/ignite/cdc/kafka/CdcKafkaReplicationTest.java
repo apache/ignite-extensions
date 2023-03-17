@@ -150,7 +150,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         throws IgniteCheckedException {
         String clsName = cls.getName();
 
-        // TODO Replace with a default constructor after fix:
+        // TODO Replace with a default constructor after fix: https://issues.apache.org/jira/browse/IGNITE-19063
         MemorizingAppender appender = new MemorizingAppender() {
             @Override public void append(LogEvent evt) {
                 super.append(evt.toImmutable());
