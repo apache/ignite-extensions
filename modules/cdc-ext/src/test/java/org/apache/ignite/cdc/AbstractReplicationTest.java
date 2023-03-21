@@ -142,7 +142,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public static final byte DEST_CLUSTER_ID = 2;
 
     /** */
-    protected enum WaitDataMode {
+    private enum WaitDataMode {
         /** */
         EXISTS,
 
@@ -532,7 +532,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected IgniteCache<Integer, ConflictResolvableTestData> createCache(IgniteEx ignite, String name) {
+    private IgniteCache<Integer, ConflictResolvableTestData> createCache(IgniteEx ignite, String name) {
         return createCache(ignite, name, null);
     }
 

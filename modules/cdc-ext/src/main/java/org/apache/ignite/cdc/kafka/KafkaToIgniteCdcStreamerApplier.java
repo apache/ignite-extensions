@@ -234,7 +234,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param rec Record to filter.
      * @return {@code True} if record should be pushed down.
      */
-    protected boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
+    private boolean filterAndPossiblyUpdateMetadata(ConsumerRecord<Integer, byte[]> rec) {
         byte[] val = rec.value();
 
         if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
