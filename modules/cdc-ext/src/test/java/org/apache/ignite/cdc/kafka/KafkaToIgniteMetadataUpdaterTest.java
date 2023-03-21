@@ -124,7 +124,6 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
             // Poll skip expected.
             updater.updateMetadata();
-            updater.updateMetadata();
             assertTrue(POLL_SKIP_LISTENER.check());
         }
     }

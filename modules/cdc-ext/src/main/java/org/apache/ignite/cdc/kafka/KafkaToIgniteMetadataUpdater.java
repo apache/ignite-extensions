@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -63,6 +65,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Offsets from the last successfull metadata update. */
     private Map<TopicPartition, Long> offsets;
 
+    /** Metadata topic. */
+    private final String metadataTopic;
+
     /**
      * @param ctx Binary context.
      * @param log Logger.
@@ -90,15 +95,25 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
         cnsmr = new KafkaConsumer<>(kafkaProps);
 
-        cnsmr.subscribe(Collections.singletonList(streamerCfg.getMetadataTopic()));
+        metadataTopic = streamerCfg.getMetadataTopic();
+
+        cnsmr.subscribe(Collections.singletonList(metadataTopic));
     }
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        // TODO Remove and use 'cnsmr.assignment()' after fix: https://issues.apache.org/jira/browse/IGNITE-18992
+        Set<TopicPartition> partitions = cnsmr.assignment().isEmpty() ?
+            cnsmr.partitionsFor(metadataTopic, Duration.ofMillis(kafkaReqTimeout))
+                .stream()
+                .map(pInfo -> new TopicPartition(metadataTopic, pInfo.partition()))
+                .collect(Collectors.toSet()) :
+            cnsmr.assignment();
+
         // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
         // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
-        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(cnsmr.assignment(), Duration.ofMillis(kafkaReqTimeout));
+        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(partitions, Duration.ofMillis(kafkaReqTimeout));
 
         if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
             if (log.isDebugEnabled())
