@@ -19,17 +19,23 @@ package org.apache.ignite.cdc.kafka;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
 
@@ -55,6 +61,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
+
+    /** Offsets from the last successful metadata update. */
+    private Map<TopicPartition, Long> offsets;
+
+    /** Metadata topic partitions. */
+    private final Set<TopicPartition> parts;
 
     /**
      * @param ctx Binary context.
@@ -83,11 +95,37 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
         cnsmr = new KafkaConsumer<>(kafkaProps);
 
-        cnsmr.subscribe(Collections.singletonList(streamerCfg.getMetadataTopic()));
+        String metaTopic = streamerCfg.getMetadataTopic();
+
+        parts = cnsmr.partitionsFor(metaTopic, Duration.ofMillis(kafkaReqTimeout))
+            .stream()
+            .map(pInfo -> new TopicPartition(metaTopic, pInfo.partition()))
+            .collect(Collectors.toSet());
+
+        if (parts.size() != 1) {
+            this.log.warning("Metadata topic '" + metaTopic + "' has " + parts.size() + " partitions. " +
+                "In order to read data with guaranteed order set number of partitions to 1");
+        }
+
+        cnsmr.subscribe(Collections.singletonList(metaTopic));
     }
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
+        // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
+        // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
+        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
+
+        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
+            if (log.isDebugEnabled())
+                log.debug("Offsets unchanged, poll skipped");
+
+            return;
+        }
+
+        offsets = new HashMap<>(offsets0);
+
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
