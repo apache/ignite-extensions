@@ -62,7 +62,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** */
     private final AtomicLong rcvdEvts = new AtomicLong();
 
-    /** Offsets from the last successfull metadata update. */
+    /** Offsets from the last successful metadata update. */
     private Map<TopicPartition, Long> offsets;
 
     /** Metadata topic partitions. */
