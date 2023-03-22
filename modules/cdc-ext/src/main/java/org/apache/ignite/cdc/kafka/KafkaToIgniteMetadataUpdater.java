@@ -103,6 +103,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
         // TODO Remove and use 'cnsmr.assignment()' after fix: https://issues.apache.org/jira/browse/IGNITE-18992
+        // Assigmnent could be empty, when subscription is used, thus request of topic partitions should be perfromed.
         Set<TopicPartition> partitions = cnsmr.assignment().isEmpty() ?
             cnsmr.partitionsFor(metadataTopic, Duration.ofMillis(kafkaReqTimeout))
                 .stream()
