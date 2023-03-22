@@ -65,8 +65,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     /** Offsets from the last successfull metadata update. */
     private Map<TopicPartition, Long> offsets;
 
-    /** Metadata topic. */
-    private final String metadataTopic;
+    /** Metadata topic partitions. */
+    private final Set<TopicPartition> parts;
 
     /**
      * @param ctx Binary context.
@@ -95,18 +95,23 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
 
         cnsmr = new KafkaConsumer<>(kafkaProps);
 
-        metadataTopic = streamerCfg.getMetadataTopic();
+        String metaTopic = streamerCfg.getMetadataTopic();
 
-        cnsmr.subscribe(Collections.singletonList(metadataTopic));
+        parts = cnsmr.partitionsFor(metaTopic, Duration.ofMillis(kafkaReqTimeout))
+            .stream()
+            .map(pInfo -> new TopicPartition(metaTopic, pInfo.partition()))
+            .collect(Collectors.toSet());
+
+        if (parts.size() != 1) {
+            log.warning("Metadata topic '" + metaTopic + "' has" + parts.size() + " partitions. " +
+                "In order to read data with guaranteed order set number of partitions to 1");
+        }
+
+        cnsmr.subscribe(Collections.singletonList(metaTopic));
     }
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
-        Set<TopicPartition> parts = cnsmr.partitionsFor(metadataTopic, Duration.ofMillis(kafkaReqTimeout))
-                .stream()
-                .map(pInfo -> new TopicPartition(metadataTopic, pInfo.partition()))
-                .collect(Collectors.toSet());
-
         // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
         // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
