@@ -103,7 +103,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
             .collect(Collectors.toSet());
 
         if (parts.size() != 1) {
-            log.warning("Metadata topic '" + metaTopic + "' has" + parts.size() + " partitions. " +
+            this.log.warning("Metadata topic '" + metaTopic + "' has " + parts.size() + " partitions. " +
                 "In order to read data with guaranteed order set number of partitions to 1");
         }
 
