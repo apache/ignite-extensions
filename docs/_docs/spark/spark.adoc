@@ -24,6 +24,7 @@ Spark module dependency in the following way (replace `${ignite-spark-ext.versio
 [tabs]
 --
 tab:pom.xml[]
+
 [source,xml]
 ----
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -50,7 +51,10 @@ if you run the application by using the spark-submit command, or add them to you
 
 NOTE: We support any minor version of Scala 2.12, Spark 3.2 and all versions of Apache Ignite.
 
+[tabs]
+--
 tab:pom.xml[]
+
 [source,xml]
 ----
     ...
@@ -125,3 +129,4 @@ tab:pom.xml[]
     ...
 </project>
 ----
+--
