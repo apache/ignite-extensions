@@ -62,6 +62,7 @@
         <module>modules/yarn-ext</module>
         <module>modules/cloud-ext</module>
         <module>modules/osgi-ext</module>
+        <module>modules/ssh-ext</module>
     </modules>
 
     <profiles>
