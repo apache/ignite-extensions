@@ -179,8 +179,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
         }
 
         try {
-            for (int i = 0; i < threadCnt + 1; i++)
-                runners.get(i).join();
+            for (Thread run: runners)
+                run.join();
         }
         catch (InterruptedException e) {
             stopped.set(true);
