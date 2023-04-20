@@ -46,7 +46,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandWithSubs;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.PositionalArgument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
@@ -215,7 +215,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         visitCommandParams(
             cmd.args(),
             fld -> {
-                assert !fld.getAnnotation(PositionalArgument.class).optional();
+                assert !fld.getAnnotation(Argument.class).optional();
 
                 path.append("/{").append(formattedName(fld.getName(), PARAM_WORDS_DELIM)).append('}');
 
@@ -223,7 +223,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                     .style(SIMPLE)
                     .in("path")
                     .name(formattedName(fld.getName(), PARAM_WORDS_DELIM))
-                    .description(fld.getAnnotation(PositionalArgument.class).description())
+                    .description(fld.getAnnotation(Argument.class).description())
                     .example(valueExample(fld)));
             },
             fldCnsmr,

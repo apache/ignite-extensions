@@ -17,28 +17,27 @@
 
 package org.apache.ignite.internal.management.openapi;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 
-import javax.servlet.http.HttpServlet;
+import javax.servlet.Servlet;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.executeAndPrint;
-import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
-import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedName;
-import static org.apache.ignite.internal.management.api.CommandUtils.parseVal;
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
 
 /** */
-public class ManagementApiServlet extends HttpServlet {
+public class ManagementApiServlet extends AbstractCommandInvoker implements Servlet {
     /** */
     private final IgniteEx grid;
 
@@ -52,10 +51,16 @@ public class ManagementApiServlet extends HttpServlet {
     }
 
     /** {@inheritDoc} */
-    @Override protected void doGet(
-        HttpServletRequest req,
-        HttpServletResponse resp
-    ) throws IOException {
+    @Override public void service(ServletRequest req0, ServletResponse res0) throws ServletException, IOException {
+        if (!(req0 instanceof HttpServletRequest))
+            throw new IllegalArgumentException("Not http");
+
+        HttpServletRequest req = (HttpServletRequest) req0;
+        HttpServletResponse resp = (HttpServletResponse) res0;
+
+        if (!"GET".equals(req.getMethod()))
+            throw new IllegalArgumentException("Only GET requests supported");
+
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType(TEXT_PLAIN);
         resp.setCharacterEncoding("UTF-8");
@@ -65,59 +70,49 @@ public class ManagementApiServlet extends HttpServlet {
         if (!uri.startsWith(root))
             throw new IllegalArgumentException("Wrong URI: " + uri);
 
-        String[] cmdPathAndPosArgs = uri.substring(root.length() + 1).split("/");
+        String[] cmdPath = uri.substring(root.length() + 1).split("/");
 
-        if (cmdPathAndPosArgs.length == 0)
+        if (cmdPath.length == 0)
             throw new IllegalArgumentException("Empty command path: " + uri);
 
-        Command<?, ?, ?> cmd =
-            grid.context().commands().command(fromFormattedName(cmdPathAndPosArgs[0], CMD_WORDS_DELIM));
+        Command<?, ?, ?> cmd = command(Arrays.asList(cmdPath).iterator());
 
-        if (cmd == null)
-            throw new IllegalArgumentException("Unknown command: " + cmdPathAndPosArgs[0]);
+        Map<String, String> params = new HashMap<>();
 
-        AtomicInteger i = new AtomicInteger(1);
-
-        while (cmd instanceof CommandsRegistry && i.get() < cmdPathAndPosArgs.length) {
-            Command<?, ?, ?> cmd0 =
-                ((CommandsRegistry)cmd).command(fromFormattedName(cmdPathAndPosArgs[i.get()], CMD_WORDS_DELIM));
-
-            if (cmd0 == null)
-                break;
-
-            cmd = cmd0;
-
-            i.incrementAndGet();
+        for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
+            if (F.isEmpty(e.getValue()))
+                params.put(e.getKey(), "");
+            else if (e.getValue().length == 1)
+                params.put(e.getKey(), e.getValue()[0]);
+            else
+                throw new IllegalArgumentException("Array format is comma separated single parameter");
         }
 
-        parseAndExecute(req, resp, cmdPathAndPosArgs, cmd, i);
+        execute(cmd, params, resp.getWriter()::println);
     }
 
-    /** */
-    private <A extends IgniteDataTransferObject> void parseAndExecute(
-        HttpServletRequest req,
-        HttpServletResponse resp,
-        String[] cmdPathAndPosArgs,
-        Command<A, ?, ?> cmd,
-        AtomicInteger i
-    ) throws IOException {
-        try {
-            A arg = CommandUtils.arguments(
-                cmd.args(),
-                (fld, pos) -> i.get() + pos < cmdPathAndPosArgs.length
-                    ? parseVal(cmdPathAndPosArgs[i.get() + pos], fld.getType())
-                    : null,
-                fld -> {
-                    String val = req.getParameter(formattedName(fld.getName(), CMD_WORDS_DELIM));
+    /** {@inheritDoc} */
+    @Override public IgniteEx grid() {
+        return grid;
+    }
 
-                    return val == null ? null : parseVal(val, fld.getType());
-                }
-            );
+    /** {@inheritDoc} */
+    @Override public void init(ServletConfig config) throws ServletException {
+        // No-op.
+    }
 
-            executeAndPrint(grid, cmd, arg, resp.getWriter()::println);
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
+    /** {@inheritDoc} */
+    @Override public ServletConfig getServletConfig() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getServletInfo() {
+        return ManagementApiServlet.class.getSimpleName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroy() {
+        // No-op.
     }
 }
