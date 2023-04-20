@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.openapi;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.AbstractCommandInvoker;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.util.lang.PeekableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 
 import javax.servlet.Servlet;
@@ -32,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
@@ -51,7 +53,7 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
     }
 
     /** {@inheritDoc} */
-    @Override public void service(ServletRequest req0, ServletResponse res0) throws ServletException, IOException {
+    @Override public void service(ServletRequest req0, ServletResponse res0) throws IOException {
         if (!(req0 instanceof HttpServletRequest))
             throw new IllegalArgumentException("Not http");
 
@@ -70,12 +72,20 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
         if (!uri.startsWith(root))
             throw new IllegalArgumentException("Wrong URI: " + uri);
 
-        String[] cmdPath = uri.substring(root.length() + 1).split("/");
+        String cmdPath = uri.substring(root.length() + 1);
 
-        if (cmdPath.length == 0)
+        if (cmdPath.length() == 0)
             throw new IllegalArgumentException("Empty command path: " + uri);
 
-        Command<?, ?, ?> cmd = command(Arrays.asList(cmdPath).iterator());
+        Iterator<String> iter = Arrays.asList(cmdPath.split("/")).iterator();
+
+        Command<?, ?, ?> cmd = command(
+            grid.commands(),
+            new PeekableIterator<>(iter),
+            false
+        );
+
+        assert !iter.hasNext();
 
         Map<String, String> params = new HashMap<>();
 
