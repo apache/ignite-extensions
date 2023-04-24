@@ -25,7 +25,6 @@ import org.apache.ignite.internal.util.typedef.F;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -107,7 +106,7 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServletConfig config) throws ServletException {
+    @Override public void init(ServletConfig config) {
         // No-op.
     }
 
