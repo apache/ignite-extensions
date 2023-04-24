@@ -79,7 +79,7 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
         Iterator<String> iter = Arrays.asList(cmdPath.split("/")).iterator();
 
         Command<?, ?, ?> cmd = command(
-            grid.commands(),
+            grid.context().commands(),
             new PeekableIterator<>(iter),
             false
         );
