@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
@@ -35,6 +36,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.clients.consumer.OffsetCommitCallback;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
@@ -46,7 +49,7 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
 /** */
-public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
+public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommitCallback {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -63,7 +66,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /** Offsets from the last successful metadata update. */
-    private Map<TopicPartition, Long> offsets;
+    private final AtomicReference<Map<TopicPartition, Long>> offsets = new AtomicReference<>();
 
     /** Metadata topic partitions. */
     private final Set<TopicPartition> parts;
@@ -117,14 +120,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
         Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
 
-        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
+        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets.get(), offsets0)) {
             if (log.isDebugEnabled())
                 log.debug("Offsets unchanged, poll skipped");
 
             return;
         }
-
-        offsets = new HashMap<>(offsets0);
 
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
@@ -146,8 +147,23 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable {
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
-            cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
+            cnsmr.commitAsync(this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onComplete(Map<TopicPartition, OffsetAndMetadata> committed, Exception err) {
+        if (err != null) {
+            log.warning("Commit error:", err);
+
+            return;
+        }
+
+        Map<TopicPartition, Long> offsets0 = new HashMap<>();
+
+        committed.forEach((tp, offAndMeta) -> offsets0.put(tp, offAndMeta.offset()));
+
+        offsets.set(offsets0);
     }
 
     /** {@inheritDoc} */
