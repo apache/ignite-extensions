@@ -163,6 +163,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
         committed.forEach((tp, offAndMeta) -> offsets0.put(tp, offAndMeta.offset()));
 
+        if (log.isDebugEnabled())
+            log.debug("Offset committed: " + offsets0);
+
         offsets.set(offsets0);
     }
 
