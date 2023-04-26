@@ -120,7 +120,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
         Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
 
-        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets.get(), offsets0)) {
+        if (F.eqNotOrdered(offsets.get(), offsets0)) {
             if (log.isDebugEnabled())
                 log.debug("Offsets unchanged, poll skipped");
 
@@ -130,8 +130,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         while (true) {
             ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
 
-            if (recs.count() == 0)
+            if (recs.count() == 0) {
+                if (log.isDebugEnabled())
+                    log.debug("Empty poll from meta topic");
+
                 return;
+            }
 
             if (log.isInfoEnabled())
                 log.info("Polled from meta topic [rcvdEvts=" + rcvdEvts.addAndGet(recs.count()) + ']');
@@ -147,6 +151,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
                     throw new IllegalArgumentException("Unknown meta type[type=" + data + ']');
             }
 
+            // Offsets updated only after commit.
             cnsmr.commitAsync(this);
         }
     }
