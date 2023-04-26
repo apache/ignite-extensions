@@ -17,16 +17,6 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
@@ -43,6 +33,15 @@ import org.apache.kafka.clients.consumer.OffsetCommitCallback;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
+
+import java.time.Duration;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerBinaryMeta;
 import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerMapping;
@@ -68,10 +67,10 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     private final AtomicLong rcvdEvts = new AtomicLong();
 
     /** Offsets from the last successful metadata update. */
-    private final AtomicReference<Map<TopicPartition, Long>> offsets = new AtomicReference<>();
+    private volatile Map<TopicPartition, Long> offsets;
 
     /** Possible commit error. */
-    private final AtomicReference<Exception> err = new AtomicReference<>();
+    private volatile Exception err;
 
     /** Metadata topic partitions. */
     private final Set<TopicPartition> parts;
@@ -120,15 +119,15 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
-        if (err.get() != null)
-            throw new IgniteException(err.get());
+        if (err != null)
+            throw new IgniteException(err);
 
         // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
         // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
         Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
 
-        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets.get(), offsets0)) {
+        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
             if (log.isDebugEnabled())
                 log.debug("Offsets unchanged, poll skipped");
 
@@ -169,7 +168,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         if (err != null) {
             log.warning("Commit error:", err);
 
-            this.err.compareAndSet(null, err);
+            this.err = err;
 
             return;
         }
@@ -181,7 +180,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         if (log.isDebugEnabled())
             log.debug("Offset committed: " + offsets0);
 
-        offsets.set(offsets0);
+        offsets = offsets0;
     }
 
     /** {@inheritDoc} */
