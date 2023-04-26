@@ -201,7 +201,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onTypes(Iterator<BinaryType> types) {
         sendAll(
             types,
-            t -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+            t -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
             typesCnt
         );
 
@@ -212,7 +212,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onMappings(Iterator<TypeMapping> mappings) {
         sendAll(
             mappings,
-            m -> new ProducerRecord<>(metadataTopic, IgniteUtils.toBytes(m)),
+            m -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(m)),
             mappingsCnt
         );
 
