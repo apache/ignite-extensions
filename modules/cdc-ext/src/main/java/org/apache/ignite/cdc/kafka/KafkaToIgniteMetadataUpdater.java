@@ -26,6 +26,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
@@ -67,6 +69,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
     /** Offsets from the last successful metadata update. */
     private final AtomicReference<Map<TopicPartition, Long>> offsets = new AtomicReference<>();
+
+    /** Possible commit error. */
+    private final AtomicReference<Exception> err = new AtomicReference<>();
 
     /** Metadata topic partitions. */
     private final Set<TopicPartition> parts;
@@ -115,6 +120,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
     public synchronized void updateMetadata() {
+        if (err.get() != null)
+            throw new IgniteException(err.get());
+
         // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
         // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
@@ -160,6 +168,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     @Override public void onComplete(Map<TopicPartition, OffsetAndMetadata> committed, Exception err) {
         if (err != null) {
             log.warning("Commit error:", err);
+
+            this.err.compareAndSet(null, err);
 
             return;
         }
