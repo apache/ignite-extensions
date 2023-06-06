@@ -69,18 +69,6 @@ public class IgniteSinkTask extends SinkTask {
 
         streamer = IgniteContext.getIgnite().dataStreamer(cacheName);
 
-        if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
-            streamer.allowOverwrite(
-                Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
-
-        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
-            streamer.perNodeBufferSize(
-                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE)));
-
-        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS))
-            streamer.perNodeParallelOperations(
-                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
-
         if (props.containsKey(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS)) {
             String transformerCls = props.get(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
             if (transformerCls != null && !transformerCls.isEmpty()) {
@@ -96,6 +84,18 @@ public class IgniteSinkTask extends SinkTask {
                 }
             }
         }
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
+            streamer.allowOverwrite(
+                Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
+            streamer.perNodeBufferSize(
+                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE)));
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS))
+            streamer.perNodeParallelOperations(
+                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
 
         stopped = false;
     }
