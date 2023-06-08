@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 
@@ -109,17 +108,30 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
     @Override public Map<String, JsonNode> results() {
         ObjectNode sqlRes = MAPPER.createObjectNode();
         ObjectNode scanRes = MAPPER.createObjectNode();
+        ObjectNode indexRes = MAPPER.createObjectNode();
 
         buildResult(GridCacheQueryType.SQL_FIELDS, sqlRes);
         buildResult(GridCacheQueryType.SCAN, scanRes);
+        buildResult(GridCacheQueryType.INDEX, indexRes);
 
         ArrayNode topSlowSql = MAPPER.createArrayNode();
         ArrayNode topSlowScan = MAPPER.createArrayNode();
+        ArrayNode topSlowIndex = MAPPER.createArrayNode();
 
         buildTopSlowResult(GridCacheQueryType.SQL_FIELDS, topSlowSql);
         buildTopSlowResult(GridCacheQueryType.SCAN, topSlowScan);
+        buildTopSlowResult(GridCacheQueryType.INDEX, topSlowIndex);
 
-        return F.asMap("sql", sqlRes, "scan", scanRes, "topSlowSql", topSlowSql, "topSlowScan", topSlowScan);
+        Map<String, JsonNode> res = new HashMap<>();
+
+        res.put("sql", sqlRes);
+        res.put("scan", scanRes);
+        res.put("index", indexRes);
+        res.put("topSlowSql", topSlowSql);
+        res.put("topSlowScan", topSlowScan);
+        res.put("topSlowIndex", topSlowIndex);
+
+        return res;
     }
 
     /** Builds JSON. */
