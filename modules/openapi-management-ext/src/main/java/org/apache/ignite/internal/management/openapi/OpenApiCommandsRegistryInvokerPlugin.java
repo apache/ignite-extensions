@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.management.openapi;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
 import io.swagger.v3.jaxrs2.integration.OpenApiServlet;
 import io.swagger.v3.oas.integration.GenericOpenApiContextBuilder;
 import io.swagger.v3.oas.integration.OpenApiContextLocator;
@@ -44,9 +51,8 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.management.api.CommandWithSubs;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
-import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
@@ -55,15 +61,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
-
 import static io.swagger.v3.oas.integration.api.OpenApiContext.OPENAPI_CONTEXT_ID_KEY;
 import static io.swagger.v3.oas.models.parameters.Parameter.StyleEnum.SIMPLE;
 import static java.util.Collections.singletonList;
@@ -71,8 +68,9 @@ import static javax.servlet.DispatcherType.REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.PARAM_WORDS_DELIM;
-import static org.apache.ignite.internal.management.api.CommandUtils.formattedName;
+import static org.apache.ignite.internal.management.api.CommandUtils.executable;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
+import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
@@ -122,8 +120,8 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         String protocol = "http";
 
         api.info(new Info()
-            .title("Ignite management API")
-            .description("This endpoint expose Apache Ignite management API methods")
+            .title("Ignite Management API")
+            .description("This endpoint expose Apache Ignite management API commands")
             .version(IgniteVersionUtils.VER_STR)
         ).servers(singletonList(
             new io.swagger.v3.oas.models.servers.Server()
@@ -131,7 +129,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                 .description("Ignite node[id=" + grid.localNode().id() + ']')
         ));
 
-        grid.commands().forEach(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        grid.commandsRegistry().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
 
         try {
             SwaggerConfiguration cfg = new SwaggerConfiguration();
@@ -179,17 +177,15 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
     }
 
     /** */
-    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?, ?> cmd) {
+    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?> cmd) {
         if (cmd instanceof CommandsRegistry) {
-            parents.add(formattedName(name, CMD_WORDS_DELIM));
+            parents.add(toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM));
 
-            ((Iterable<Map.Entry<String, Command<?, ?, ?>>>)cmd).forEach(
-                cmd0 -> register(cmd0.getKey(), parents, cmd0.getValue())
-            );
+            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> register(cmd0.getKey(), parents, cmd0.getValue()));
 
             parents.remove(parents.size() - 1);
 
-            if (!((CommandWithSubs)cmd).canBeExecuted())
+            if (!executable(cmd))
                 return;
         }
 
@@ -198,14 +194,14 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         for (String parent : parents)
             path.append('/').append(parent);
 
-        path.append('/').append(formattedName(name, CMD_WORDS_DELIM));
+        path.append('/').append(toFormattedCommandName(name.getClass()));
 
         List<Parameter> params = new ArrayList<>();
 
         Consumer<Field> fldCnsmr = fld -> params.add(new Parameter()
             .style(SIMPLE)
             .in("query")
-            .name(formattedName(fld.getName(), CMD_WORDS_DELIM))
+            .name(CommandUtils.toFormattedFieldName(fld))
             .schema(schema(fld.getType()))
             .description(fld.getAnnotation(Argument.class).description())
             .example(valueExample(fld))
@@ -213,16 +209,16 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         // TODO: support oneOf in spec.
         visitCommandParams(
-            cmd.args(),
+            cmd.argClass(),
             fld -> {
                 assert !fld.getAnnotation(Argument.class).optional();
 
-                path.append("/{").append(formattedName(fld.getName(), PARAM_WORDS_DELIM)).append('}');
+                path.append("/{").append(toFormattedFieldName(fld)).append('}');
 
                 params.add(new Parameter()
                     .style(SIMPLE)
                     .in("path")
-                    .name(formattedName(fld.getName(), PARAM_WORDS_DELIM))
+                    .name(toFormattedFieldName(fld))
                     .description(fld.getAnnotation(Argument.class).description())
                     .example(valueExample(fld)));
             },
@@ -247,6 +243,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         ));
     }
 
+    /** */
     private Schema<?> schema(Class<?> cls) {
         if (cls == Float.class || cls == float.class)
             return new NumberSchema().format("float");

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.openapi;
 
+import java.io.IOException;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -25,7 +26,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  *
@@ -37,8 +37,8 @@ public class HeaderFilter implements Filter {
         ServletResponse resp,
         FilterChain chain
     ) throws ServletException, IOException {
-        HttpServletResponse response = (HttpServletResponse) resp;
-        HttpServletRequest request = (HttpServletRequest) req;
+        HttpServletResponse response = (HttpServletResponse)resp;
+        HttpServletRequest request = (HttpServletRequest)req;
 
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("X-Frame-Options", "SAMEORIGIN");

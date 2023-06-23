@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.management.openapi;
 
+import java.io.Serializable;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteVersionUtils;
@@ -29,13 +31,10 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
-import java.util.UUID;
-
 /** */
 public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvider {
     /** */
-    private OpenApiCommandsRegistryInvokerPlugin invoker = new OpenApiCommandsRegistryInvokerPlugin();
+    private OpenApiCommandsRegistryInvokerPlugin plugin = new OpenApiCommandsRegistryInvokerPlugin();
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -54,12 +53,12 @@ public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvi
 
     /** {@inheritDoc} */
     @Override public IgnitePlugin plugin() {
-        return invoker;
+        return plugin;
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
-        invoker.context(ctx);
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+        plugin.context(ctx);
     }
 
     /** {@inheritDoc} */
@@ -68,13 +67,13 @@ public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvi
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
-        invoker.onIgniteStart();
+    @Override public void onIgniteStart() {
+        plugin.onIgniteStart();
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-        invoker.onIgniteStop();
+        plugin.onIgniteStop();
     }
 
     /** {@inheritDoc} */

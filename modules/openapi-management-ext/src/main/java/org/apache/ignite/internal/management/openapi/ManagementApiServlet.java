@@ -17,28 +17,27 @@
 
 package org.apache.ignite.internal.management.openapi;
 
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.AbstractCommandInvoker;
-import org.apache.ignite.internal.management.api.Command;
-import org.apache.ignite.internal.util.lang.PeekableIterator;
-import org.apache.ignite.internal.util.typedef.F;
-
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandUtils;
+import org.apache.ignite.internal.management.api.CommandsRegistry;
 
+import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
 
 /** */
-public class ManagementApiServlet extends AbstractCommandInvoker implements Servlet {
+public class ManagementApiServlet implements Servlet {
     /** */
     private final IgniteEx grid;
 
@@ -56,15 +55,11 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
         if (!(req0 instanceof HttpServletRequest))
             throw new IllegalArgumentException("Not http");
 
-        HttpServletRequest req = (HttpServletRequest) req0;
-        HttpServletResponse resp = (HttpServletResponse) res0;
+        HttpServletRequest req = (HttpServletRequest)req0;
+        HttpServletResponse resp = (HttpServletResponse)res0;
 
         if (!"GET".equals(req.getMethod()))
             throw new IllegalArgumentException("Only GET requests supported");
-
-        resp.setStatus(HttpServletResponse.SC_OK);
-        resp.setContentType(TEXT_PLAIN);
-        resp.setCharacterEncoding("UTF-8");
 
         String uri = req.getRequestURI();
 
@@ -78,16 +73,37 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
 
         Iterator<String> iter = Arrays.asList(cmdPath.split("/")).iterator();
 
-        Command<?, ?, ?> cmd = command(
-            grid.context().commands(),
-            new PeekableIterator<>(iter),
-            false
-        );
+        if (!iter.hasNext()) {
+            respondWithError("Empty command", SC_INTERNAL_SERVER_ERROR, resp);
 
-        assert !iter.hasNext();
+            return;
+        }
 
-        Map<String, String> params = new HashMap<>();
+        Command<?, ?> cmd = grid.commandsRegistry();
 
+        while (iter.hasNext()) {
+            cmd = ((CommandsRegistry<?, ?>)cmd).command(iter.next());
+
+            if (cmd == null) {
+                respondWithError("Unknown command", SC_NOT_FOUND, resp);
+
+                return;
+            }
+        }
+
+        if (!CommandUtils.executable(cmd)) {
+            respondWithError("Command can't be execute", SC_INTERNAL_SERVER_ERROR, resp);
+
+            return;
+        }
+
+        resp.setStatus(SC_OK);
+        resp.setContentType(TEXT_PLAIN);
+        resp.setCharacterEncoding("UTF-8");
+
+        resp.getWriter().println("Hello, world!");
+
+/*
         for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
             if (F.isEmpty(e.getValue()))
                 params.put(e.getKey(), "");
@@ -96,13 +112,18 @@ public class ManagementApiServlet extends AbstractCommandInvoker implements Serv
             else
                 throw new IllegalArgumentException("Array format is comma separated single parameter");
         }
+*/
 
-        execute(cmd, params, resp.getWriter()::println);
+        //execute(cmd, params, resp.getWriter()::println);
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteEx grid() {
-        return grid;
+    /** */
+    private static void respondWithError(String msg, int status, HttpServletResponse resp) throws IOException {
+        resp.setStatus(status);
+        resp.setContentType(TEXT_PLAIN);
+        resp.setCharacterEncoding("UTF-8");
+
+        resp.getWriter().print(msg);
     }
 
     /** {@inheritDoc} */
