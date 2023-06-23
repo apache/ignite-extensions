@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.management.openapi;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.Function;
 import javax.servlet.Servlet;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletRequest;
@@ -27,9 +29,13 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
@@ -39,14 +45,17 @@ import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegis
 /** */
 public class ManagementApiServlet implements Servlet {
     /** */
-    private final IgniteEx grid;
+    private final IgniteEx ignite;
 
     /** */
     private final String root;
 
     /** */
+    static Object res;
+
+    /** */
     public ManagementApiServlet(IgniteEx grid, String root) {
-        this.grid = grid;
+        this.ignite = grid;
         this.root = root;
     }
 
@@ -79,7 +88,7 @@ public class ManagementApiServlet implements Servlet {
             return;
         }
 
-        Command<?, ?> cmd = grid.commandsRegistry();
+        Command<?, ?> cmd = ignite.commandsRegistry();
 
         while (iter.hasNext()) {
             cmd = ((CommandsRegistry<?, ?>)cmd).command(iter.next());
@@ -97,33 +106,40 @@ public class ManagementApiServlet implements Servlet {
             return;
         }
 
-        resp.setStatus(SC_OK);
-        resp.setContentType(TEXT_PLAIN);
-        resp.setCharacterEncoding("UTF-8");
-
-        resp.getWriter().println("Hello, world!");
-
-/*
-        for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
-            if (F.isEmpty(e.getValue()))
-                params.put(e.getKey(), "");
-            else if (e.getValue().length == 1)
-                params.put(e.getKey(), e.getValue()[0]);
-            else
-                throw new IllegalArgumentException("Array format is comma separated single parameter");
+        try {
+            invoke(cmd, req, resp);
         }
-*/
+        catch (GridClientException e) {
+            respondWithError(e.getMessage(), SC_INTERNAL_SERVER_ERROR, resp);
+        }
+    }
 
-        //execute(cmd, params, resp.getWriter()::println);
+    /** */
+    private <A extends IgniteDataTransferObject> void invoke(
+        Command<A, ?> cmd,
+        HttpServletRequest req,
+        HttpServletResponse resp
+    ) throws IOException, GridClientException {
+        CommandInvoker<A> invoker = new CommandInvoker<>(cmd, new ParamsToArgument<A>(cmd.argClass(), req).argument(), ignite);
+
+        if (invoker.prepare(resp.getWriter()::println))
+            res = invoker.invoke(resp.getWriter()::println, false);
+
+        commonResponse(resp, SC_OK);
     }
 
     /** */
     private static void respondWithError(String msg, int status, HttpServletResponse resp) throws IOException {
+        commonResponse(resp, status);
+
+        resp.getWriter().print(msg);
+    }
+
+    /** */
+    private static void commonResponse(HttpServletResponse resp, int status) {
         resp.setStatus(status);
         resp.setContentType(TEXT_PLAIN);
         resp.setCharacterEncoding("UTF-8");
-
-        resp.getWriter().print(msg);
     }
 
     /** {@inheritDoc} */
@@ -144,5 +160,33 @@ public class ManagementApiServlet implements Servlet {
     /** {@inheritDoc} */
     @Override public void destroy() {
         // No-op.
+    }
+
+    /** */
+    private static class ParamsToArgument<A extends IgniteDataTransferObject> implements Function<Field, Object> {
+        /** */
+        private final HttpServletRequest req;
+
+        /** */
+        private final Class<? extends A> argCls;
+
+        /** */
+        private ParamsToArgument(Class<? extends A> argCls, HttpServletRequest req) {
+            this.argCls = argCls;
+            this.req = req;
+        }
+
+        /** */
+        public A argument() {
+            // This will map vals to argument fields.
+            return CommandUtils.argument(argCls, (fld, pos) -> apply(fld), this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object apply(Field field) {
+            String val = req.getParameter(field.getName());
+
+            return !F.isEmpty(val) ? CommandUtils.parseVal(val, field.getType()) : null;
+        }
     }
 }
