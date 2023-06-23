@@ -23,15 +23,19 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.junit.Assert.assertEquals;
@@ -53,7 +57,9 @@ public class PerformanceStatisticsReportSelfTest {
         ) {
             client.context().performanceStatistics().startCollectStatistics();
 
-            IgniteCache<Object, Object> cache = client.createCache("cache");
+            IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>("cache")
+                .setQueryEntities(F.asList(new QueryEntity()
+                    .setValueType(Integer.class.getName()))));
 
             cache.put(1, 1);
             cache.get(1);
@@ -86,6 +92,8 @@ public class PerformanceStatisticsReportSelfTest {
             cache.query(new ScanQuery<>((key, val) -> true)).getAll();
 
             cache.query(new SqlFieldsQuery("select * from sys.tables")).getAll();
+
+            cache.query(new IndexQuery<>(Integer.class).setCriteria(gt("_KEY", 0))).getAll();
 
             client.context().performanceStatistics().stopCollectStatistics();
 
