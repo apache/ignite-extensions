@@ -106,22 +106,15 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
     private IgniteLogger log;
 
     /** */
-    private IgniteEx grid;
-
-    /** */
     private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
 
     /** */
     private Server srv;
 
     /** */
-    private final OpenAPI api = new OpenAPI();
-
-    /** */
     public void context(PluginContext ctx, OpenApiCommandsRegistryInvokerPluginConfiguration cfg) {
         this.ctx = ctx;
         this.cfg = cfg;
-        grid = (IgniteEx)ctx.grid();
         log = ctx.log(OpenApiCommandsRegistryInvokerPlugin.class);
     }
 
@@ -140,10 +133,10 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
                 tryStart();
 
-                for (Connector cnctr : srv.getConnectors()) {
-                    if (cnctr instanceof NetworkConnector) {
-                        port = ((NetworkConnector)cnctr).getPort();
-                        host = ((NetworkConnector)cnctr).getHost();
+                for (Connector conn : srv.getConnectors()) {
+                    if (conn instanceof NetworkConnector) {
+                        port = ((NetworkConnector)conn).getPort();
+                        host = ((NetworkConnector)conn).getHost();
 
                         break;
                     }
@@ -204,7 +197,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         handler.addServlet(apiExposeServlet, "/api/*");
         handler.addServlet(
-            new ServletHolder(new ManagementApiServlet(grid, this.cfg.getRootUri())),
+            new ServletHolder(new ManagementApiServlet((IgniteEx)ctx.grid(), this.cfg.getRootUri())),
             this.cfg.getRootUri() + "/*"
         );
         handler.addFilter(HeaderFilter.class, "/*", EnumSet.of(REQUEST));
@@ -214,23 +207,24 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         srv.start();
     }
 
-    /** */
+    /**  */
     private void initApiDescription() throws OpenApiConfigurationException {
+        OpenAPI api = new OpenAPI();
+
         api.info(new Info()
             .title("Ignite Management API")
             .description("This endpoint expose Apache Ignite management API commands")
             .version(IgniteVersionUtils.VER_STR)
-        ).servers(singletonList(
-            new io.swagger.v3.oas.models.servers.Server()
-                .url("http://" + cfg.getHost() + ":" + cfg.getPort() + cfg.getRootUri())
-                .description("Ignite node[id=" + grid.localNode().id() + ']')
+        ).servers(singletonList(new io.swagger.v3.oas.models.servers.Server()
+            .url("http://" + cfg.getHost() + ":" + cfg.getPort() + cfg.getRootUri())
+            .description("Ignite node[id=" + ctx.grid().cluster().localNode().id() + ']')
         ));
 
         LinkedList<Command<?, ?>> path = new LinkedList<>();
 
-        grid.commandsRegistry().commands().forEachRemaining(cmd -> {
+        ((IgniteEx)ctx.grid()).commandsRegistry().commands().forEachRemaining(cmd -> {
             path.push(cmd.getValue());
-            register(path);
+            addToApi(api, path);
             path.pop();
         });
 
@@ -249,12 +243,16 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
     }
 
-    /** */
-    public void register(LinkedList<Command<?, ?>> path) {
+    /**
+     * Adds command to API description.
+     * @param api API description.
+     * @param path Path to the command in {@link CommandsRegistry} hierarchy.
+     */
+    public void addToApi(OpenAPI api, LinkedList<Command<?, ?>> path) {
         if (path.peek() instanceof CommandsRegistry) {
             ((CommandsRegistry<?, ?>)path.peek()).commands().forEachRemaining(cmd0 -> {
                 path.push(cmd0.getValue());
-                register(path);
+                addToApi(api, path);
                 path.pop();
             });
 
@@ -298,6 +296,10 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         ));
     }
 
+    /**
+     * @param path Path to the command in {@link CommandsRegistry} hierarchy.
+     * @return URI to call command via REST interface.
+     */
     public static String commandUri(LinkedList<Command<?, ?>> path) {
         StringBuilder uri = new StringBuilder();
 
@@ -322,14 +324,20 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         return uri.toString();
     }
 
-    /** */
+    /**
+     * @param fld Argument class field.
+     * @return URL parameter name.
+     */
     public static String parameterName(Field fld) {
         String name = CommandUtils.toFormattedFieldName(fld);
 
         return name.startsWith(NAME_PREFIX) ? name.substring(2) : name;
     }
 
-    /** */
+    /**
+     * @param cls Argument class field type.
+     * @return Schema description for class.
+     */
     private Schema<?> schema(Class<?> cls) {
         if (cls == Float.class || cls == float.class)
             return new NumberSchema().format("float");

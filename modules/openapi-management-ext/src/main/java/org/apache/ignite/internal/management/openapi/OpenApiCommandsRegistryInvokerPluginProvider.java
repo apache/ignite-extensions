@@ -34,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class OpenApiCommandsRegistryInvokerPluginProvider
     implements PluginProvider<OpenApiCommandsRegistryInvokerPluginConfiguration> {
+    /** */
     private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
 
     /** */

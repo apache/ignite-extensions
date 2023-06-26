@@ -69,6 +69,7 @@ public class OpenApiInvoker implements GridCommandHandlerFactoryAbstractTest.Tes
     /** */
     private IgniteEx ignite;
 
+    /** */
     private OkHttpClient cli = new OkHttpClient();
 
     /** */
@@ -119,6 +120,7 @@ public class OpenApiInvoker implements GridCommandHandlerFactoryAbstractTest.Tes
         }
     }
 
+    /** */
     private String cmdURL(ConnectionAndSslParameters<IgniteDataTransferObject> p) {
         StringBuilder url = new StringBuilder();
 
