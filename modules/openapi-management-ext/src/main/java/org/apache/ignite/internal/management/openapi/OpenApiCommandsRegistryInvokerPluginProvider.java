@@ -32,7 +32,10 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvider {
+public class OpenApiCommandsRegistryInvokerPluginProvider
+    implements PluginProvider<OpenApiCommandsRegistryInvokerPluginConfiguration> {
+    private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
+
     /** */
     private OpenApiCommandsRegistryInvokerPlugin plugin = new OpenApiCommandsRegistryInvokerPlugin();
 
@@ -58,7 +61,7 @@ public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvi
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-        plugin.context(ctx);
+        plugin.context(ctx, cfg == null ? new OpenApiCommandsRegistryInvokerPluginConfiguration() : cfg);
     }
 
     /** {@inheritDoc} */
@@ -104,5 +107,10 @@ public class OpenApiCommandsRegistryInvokerPluginProvider implements PluginProvi
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         // No-op.
+    }
+
+    /** */
+    public void setConfig(OpenApiCommandsRegistryInvokerPluginConfiguration cfg) {
+        this.cfg = cfg;
     }
 }

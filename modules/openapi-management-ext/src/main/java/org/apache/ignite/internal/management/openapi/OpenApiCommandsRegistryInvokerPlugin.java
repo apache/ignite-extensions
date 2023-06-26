@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.management.openapi;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.BindException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import io.swagger.v3.jaxrs2.integration.OpenApiServlet;
 import io.swagger.v3.oas.integration.GenericOpenApiContextBuilder;
+import io.swagger.v3.oas.integration.OpenApiConfigurationException;
 import io.swagger.v3.oas.integration.OpenApiContextLocator;
 import io.swagger.v3.oas.integration.SwaggerConfiguration;
 import io.swagger.v3.oas.integration.api.OpenApiContext;
@@ -47,8 +52,8 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
@@ -56,6 +61,8 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -67,10 +74,9 @@ import static java.util.Collections.singletonList;
 import static javax.servlet.DispatcherType.REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
-import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.NAME_PREFIX;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
 import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedCommandName;
-import static org.apache.ignite.internal.management.api.CommandUtils.toFormattedFieldName;
 import static org.apache.ignite.internal.management.api.CommandUtils.valueExample;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
@@ -85,10 +91,13 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
     public static final String API_ID = "ignite-management-api";
 
     /** */
-    public static final String INVOKER_BASE_URL = "/management";
+    public static final String TEXT_PLAIN = "text/plain";
 
     /** */
-    public static final String TEXT_PLAIN = "text/plain";
+    public static final String ATTR_OPENAPI_PORT = IgniteNodeAttributes.ATTR_PREFIX + "openapi.plugin.port";
+
+    /** */
+    public static final String ATTR_OPENAPI_HOST = IgniteNodeAttributes.ATTR_PREFIX + "openapi.plugin.host";
 
     /** */
     private PluginContext ctx;
@@ -100,108 +109,165 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
     private IgniteEx grid;
 
     /** */
+    private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
+
+    /** */
     private Server srv;
 
     /** */
     private final OpenAPI api = new OpenAPI();
 
     /** */
-    public void context(PluginContext ctx) {
+    public void context(PluginContext ctx, OpenApiCommandsRegistryInvokerPluginConfiguration cfg) {
         this.ctx = ctx;
+        this.cfg = cfg;
         grid = (IgniteEx)ctx.grid();
         log = ctx.log(OpenApiCommandsRegistryInvokerPlugin.class);
     }
 
     /** */
     public void onIgniteStart() {
-        // TODO: make this configurable.
-        int port = 8080;
-        String host = "localhost";
-        String protocol = "http";
+        log.info("Starting OpenApi invoker plugin[cfg=" + cfg + ']');
 
+        try {
+            initApiDescription();
+
+            int port = -1;
+            String host = null;
+
+            if (cfg.getServer() != null) {
+                srv = cfg.getServer();
+
+                tryStart();
+
+                for (Connector cnctr : srv.getConnectors()) {
+                    if (cnctr instanceof NetworkConnector) {
+                        port = ((NetworkConnector)cnctr).getPort();
+                        host = ((NetworkConnector)cnctr).getHost();
+
+                        break;
+                    }
+                }
+
+                log.info("OpenApi invoker started[port=" + port + ']');
+            }
+            else {
+                port = cfg.getPort();
+                host = cfg.getHost();
+
+                while (port <= cfg.getPort() + cfg.getPortRange()) {
+                    try {
+                        srv = new Server();
+
+                        ServerConnector connector = new ServerConnector(srv);
+
+                        connector.setPort(port);
+                        connector.setHost(cfg.getHost());
+
+                        srv.addConnector(connector);
+
+                        tryStart();
+
+                        log.info("OpenApi invoker started[port=" + port + ']');
+
+                        break;
+                    }
+                    catch (IOException e) {
+                        if (!(e.getCause() instanceof BindException))
+                            throw new IgniteException(e);
+
+                        port++;
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
+
+            ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_OPENAPI_PORT, port);
+            ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_OPENAPI_HOST, host);
+        }
+        catch (Exception e) {
+            srv = null;
+
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    private void tryStart() throws Exception {
+        ServletContextHandler handler = new ServletContextHandler();
+
+        ServletHolder apiExposeServlet = new ServletHolder(OpenApiServlet.class);
+
+        apiExposeServlet.setInitParameter(OPENAPI_CONTEXT_ID_KEY, API_CTX_ID);
+
+        handler.addServlet(apiExposeServlet, "/api/*");
+        handler.addServlet(
+            new ServletHolder(new ManagementApiServlet(grid, this.cfg.getRootUri())),
+            this.cfg.getRootUri() + "/*"
+        );
+        handler.addFilter(HeaderFilter.class, "/*", EnumSet.of(REQUEST));
+
+        srv.setHandler(handler);
+
+        srv.start();
+    }
+
+    /** */
+    private void initApiDescription() throws OpenApiConfigurationException {
         api.info(new Info()
             .title("Ignite Management API")
             .description("This endpoint expose Apache Ignite management API commands")
             .version(IgniteVersionUtils.VER_STR)
         ).servers(singletonList(
             new io.swagger.v3.oas.models.servers.Server()
-                .url(protocol + "://" + host + ":" + port + INVOKER_BASE_URL)
+                .url("http://" + cfg.getHost() + ":" + cfg.getPort() + cfg.getRootUri())
                 .description("Ignite node[id=" + grid.localNode().id() + ']')
         ));
 
-        grid.commandsRegistry().commands().forEachRemaining(cmd -> register(cmd.getKey(), new LinkedList<>(), cmd.getValue()));
+        LinkedList<Command<?, ?>> path = new LinkedList<>();
 
-        try {
-            SwaggerConfiguration cfg = new SwaggerConfiguration();
+        grid.commandsRegistry().commands().forEachRemaining(cmd -> {
+            path.push(cmd.getValue());
+            register(path);
+            path.pop();
+        });
 
-            cfg.setId(API_ID);
-            cfg.setOpenAPI(api);
-            cfg.prettyPrint(true);
+        SwaggerConfiguration cfg = new SwaggerConfiguration();
 
-            OpenApiContext ctx = new GenericOpenApiContextBuilder<>()
-                .ctxId(API_CTX_ID)
-                .openApiConfiguration(cfg)
-                .buildContext(true);
+        cfg.setId(API_ID);
+        cfg.setOpenAPI(api);
+        cfg.prettyPrint(true);
 
-            OpenApiContextLocator.getInstance().putOpenApiContext(API_CTX_ID, ctx);
+        OpenApiContext ctx = new GenericOpenApiContextBuilder<>()
+            .ctxId(API_CTX_ID)
+            .openApiConfiguration(cfg)
+            .buildContext(true);
 
-            srv = new Server();
+        OpenApiContextLocator.getInstance().putOpenApiContext(API_CTX_ID, ctx);
 
-            ServerConnector connector = new ServerConnector(srv);
-
-            connector.setPort(port);
-            connector.setHost(host);
-
-            srv.addConnector(connector);
-
-            ServletContextHandler handler = new ServletContextHandler();
-
-            ServletHolder apiExposeServlet = new ServletHolder(OpenApiServlet.class);
-
-            apiExposeServlet.setInitParameter(OPENAPI_CONTEXT_ID_KEY, API_CTX_ID);
-
-            handler.addServlet(apiExposeServlet, "/api/*");
-            handler.addServlet(
-                new ServletHolder(new ManagementApiServlet(grid, INVOKER_BASE_URL)),
-                INVOKER_BASE_URL + "/*"
-            );
-            handler.addFilter(HeaderFilter.class, "/*", EnumSet.of(REQUEST));
-
-            srv.setHandler(handler);
-
-            srv.start();
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
     }
 
     /** */
-    public <A extends IgniteDataTransferObject> void register(String name, List<String> parents, Command<A, ?> cmd) {
-        if (cmd instanceof CommandsRegistry) {
-            parents.add(toFormattedCommandName(cmd.getClass(), CMD_WORDS_DELIM));
+    public void register(LinkedList<Command<?, ?>> path) {
+        if (path.peek() instanceof CommandsRegistry) {
+            ((CommandsRegistry<?, ?>)path.peek()).commands().forEachRemaining(cmd0 -> {
+                path.push(cmd0.getValue());
+                register(path);
+                path.pop();
+            });
 
-            ((CommandsRegistry<?, ?>)cmd).commands().forEachRemaining(cmd0 -> register(cmd0.getKey(), parents, cmd0.getValue()));
-
-            parents.remove(parents.size() - 1);
-
-            if (!executable(cmd))
+            if (!executable(path.peek()))
                 return;
         }
-
-        StringBuilder path = new StringBuilder();
-
-        for (String parent : parents)
-            path.append('/').append(parent);
-
-        path.append('/').append(toFormattedCommandName(name.getClass()));
 
         List<Parameter> params = new ArrayList<>();
 
         Consumer<Field> fldCnsmr = fld -> params.add(new Parameter()
             .style(SIMPLE)
             .in("query")
-            .name(CommandUtils.toFormattedFieldName(fld))
+            .name(parameterName(fld))
             .schema(schema(fld.getType()))
             .description(fld.getAnnotation(Argument.class).description())
             .example(valueExample(fld))
@@ -209,19 +275,8 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         // TODO: support oneOf in spec.
         visitCommandParams(
-            cmd.argClass(),
-            fld -> {
-                assert !fld.getAnnotation(Argument.class).optional();
-
-                path.append("/{").append(toFormattedFieldName(fld)).append('}');
-
-                params.add(new Parameter()
-                    .style(SIMPLE)
-                    .in("path")
-                    .name(toFormattedFieldName(fld))
-                    .description(fld.getAnnotation(Argument.class).description())
-                    .example(valueExample(fld)));
-            },
+            path.peek().argClass(),
+            fldCnsmr,
             fldCnsmr,
             (optional, flds) -> flds.forEach(fldCnsmr)
         );
@@ -229,9 +284,9 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         Content plainText = new Content().addMediaType(TEXT_PLAIN, new MediaType());
 
         api.path(
-            path.toString(),
+            commandUri(path),
             new PathItem().get(new Operation()
-                .description(cmd.description())
+                .description(path.peek().description())
                 .parameters(params)
                 .responses(new ApiResponses()
                     .addApiResponse(Integer.toString(SC_OK), new ApiResponse()
@@ -241,6 +296,37 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                         .description("Error text")
                         .content(plainText)))
         ));
+    }
+
+    public static String commandUri(LinkedList<Command<?, ?>> path) {
+        StringBuilder uri = new StringBuilder();
+
+        for (int i = path.size() - 1; i >= 0; i--) {
+            String cmdUri;
+
+            if (i == (path.size() - 1))
+                cmdUri = toFormattedCommandName(path.get(i).getClass());
+            else {
+                String parentUri = toFormattedCommandName(path.get(i + 1).getClass());
+
+                cmdUri = toFormattedCommandName(path.get(i).getClass());
+
+                assert cmdUri.startsWith(parentUri);
+
+                cmdUri = cmdUri.substring(parentUri.length() + 1);
+            }
+
+            uri.append('/').append(cmdUri);
+        }
+
+        return uri.toString();
+    }
+
+    /** */
+    public static String parameterName(Field fld) {
+        String name = CommandUtils.toFormattedFieldName(fld);
+
+        return name.startsWith(NAME_PREFIX) ? name.substring(2) : name;
     }
 
     /** */
@@ -268,6 +354,15 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
             return new StringSchema();
         else if (cls.isArray())
             return new ArraySchema().items(schema(cls.getComponentType()));
+        else if (cls.isEnum()) {
+            StringSchema enm = new StringSchema();
+
+            enm.setEnum(Arrays.stream(cls.getEnumConstants())
+                .map(cons -> ((Enum<?>)cons).name())
+                .collect(Collectors.toList()));
+
+            return enm;
+        }
 
         throw new IllegalArgumentException("Type not supported: " + cls);
     }

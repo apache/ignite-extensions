@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.openapi;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -36,11 +37,16 @@ import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 
+import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
+import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.parameterName;
 
 /** */
 public class ManagementApiServlet implements Servlet {
@@ -91,7 +97,7 @@ public class ManagementApiServlet implements Servlet {
         Command<?, ?> cmd = ignite.commandsRegistry();
 
         while (iter.hasNext()) {
-            cmd = ((CommandsRegistry<?, ?>)cmd).command(iter.next());
+            cmd = ((CommandsRegistry<?, ?>)cmd).command(fromFormattedCommandName(iter.next(), CMD_WORDS_DELIM));
 
             if (cmd == null) {
                 respondWithError("Unknown command", SC_NOT_FOUND, resp);
@@ -109,8 +115,16 @@ public class ManagementApiServlet implements Servlet {
         try {
             invoke(cmd, req, resp);
         }
-        catch (GridClientException e) {
-            respondWithError(e.getMessage(), SC_INTERNAL_SERVER_ERROR, resp);
+        catch (Throwable e) {
+            commonResponse(resp, X.hasCause(e, IllegalArgumentException.class) ? SC_BAD_REQUEST : SC_INTERNAL_SERVER_ERROR);
+
+            PrintWriter writer = resp.getWriter();
+
+            writer.println("Failed to perform operation.");
+            writer.println(errorMessage(e));
+
+            if (e instanceof IllegalArgumentException)
+                writer.println("Check arguments. " + errorMessage(e));
         }
     }
 
@@ -183,10 +197,29 @@ public class ManagementApiServlet implements Servlet {
         }
 
         /** {@inheritDoc} */
-        @Override public Object apply(Field field) {
-            String val = req.getParameter(field.getName());
+        @Override public Object apply(Field fld) {
+            String val = req.getParameter(parameterName(fld));
 
-            return !F.isEmpty(val) ? CommandUtils.parseVal(val, field.getType()) : null;
+            return !F.isEmpty(val) ? CommandUtils.parseVal(val, fld.getType()) : null;
         }
+    }
+
+    /**
+     * Generates readable error message from exception
+     * @param e Exctption
+     * @return error message
+     */
+    public static String errorMessage(Throwable e) {
+        String msg = e.getMessage();
+
+        if (F.isEmpty(msg))
+            msg = e.getClass().getName();
+        else if (msg.startsWith("Failed to handle request")) {
+            int p = msg.indexOf("err=");
+
+            msg = msg.substring(p + 4, msg.length() - 1);
+        }
+
+        return msg;
     }
 }

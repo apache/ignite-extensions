@@ -15,27 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.openapi;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPluginConfiguration;
+import org.junit.BeforeClass;
 
-/**
- *
- */
-public class OpenApiSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new OpenApiCommandsRegistryInvokerPluginProvider());
-    }
-
-    /** */
-    @Test
-    public void testExportOpenApiDefinition() throws Exception {
-        startGrid(0);
-
-        Thread.sleep(3 * 60_000);
+/** */
+public class OpenApiTestSuite extends IgniteControlUtilityTestSuite {
+    @BeforeClass
+    public static void setUp() {
+        OpenApiCommandsRegistryInvokerPluginConfiguration.DFLT_PORT_RANGE = 10;
     }
 }
