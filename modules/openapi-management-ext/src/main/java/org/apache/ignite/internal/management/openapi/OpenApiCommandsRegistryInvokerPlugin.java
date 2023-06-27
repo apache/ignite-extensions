@@ -26,7 +26,7 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import io.swagger.v3.jaxrs2.integration.OpenApiServlet;
 import io.swagger.v3.oas.integration.GenericOpenApiContextBuilder;
@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -284,21 +285,20 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         List<Parameter> params = new ArrayList<>();
 
-        Consumer<Field> fldCnsmr = fld -> params.add(new Parameter()
+        BiConsumer<ArgumentGroup, Field> fldCnsmr = (argGrp, fld) -> params.add(new Parameter()
             .style(SIMPLE)
             .in("query")
             .name(parameterName(fld))
             .schema(schema(fld.getType()))
             .description(fld.getAnnotation(Argument.class).description())
             .example(valueExample(fld))
-            .required(!fld.getAnnotation(Argument.class).optional()));
+            .required(argGrp == null && !fld.getAnnotation(Argument.class).optional()));
 
-        // TODO: support oneOf in spec.
         visitCommandParams(
             path.peek().argClass(),
-            fldCnsmr,
-            fldCnsmr,
-            (optional, flds) -> flds.forEach(fldCnsmr)
+            fld -> fldCnsmr.accept(null, fld),
+            fld -> fldCnsmr.accept(null, fld),
+            (argGrp, flds) -> flds.forEach(fld -> fldCnsmr.accept(argGrp, fld))
         );
 
         Content plainText = new Content().addMediaType(TEXT_PLAIN, new MediaType());
