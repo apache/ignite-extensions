@@ -51,13 +51,16 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
@@ -81,22 +84,38 @@ import static org.apache.ignite.internal.management.api.CommandUtils.valueExampl
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
 
 /**
+ * Plugin expose management API commands via REST interface.
+ * <a href="https://www.openapis.org/">Open API</a> used to describe commands.
  *
+ * @see <a href="https://swagger.io/">Swagger</a>
+ * @see <a href="https://www.openapis.org/">Open API</a>
+ * @see Command
+ * @see CommandsRegistry
+ * @see IgniteCommandRegistry
+ * @see IgniteEx#commandsRegistry()
  */
 public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
-    /** */
+    /** Init parameter name for {@link OpenApiServlet} to expose API description. */
     public static final String API_CTX_ID = "ignite-management-api-ctx";
 
-    /** */
+    /** Ignite management API name. */
     public static final String API_ID = "ignite-management-api";
 
     /** */
     public static final String TEXT_PLAIN = "text/plain";
 
-    /** */
+    /**
+     * Node attribute to store port used by endpoint.
+     * @see GridKernalContext#addNodeAttribute(String, Object)
+     * @see IgniteClusterNode#attribute(String)
+     */
     public static final String ATTR_OPENAPI_PORT = IgniteNodeAttributes.ATTR_PREFIX + "openapi.plugin.port";
 
-    /** */
+    /**
+     * Node attribute to store host used by endpoint.
+     * @see GridKernalContext#addNodeAttribute(String, Object)
+     * @see IgniteClusterNode#attribute(String)
+     */
     public static final String ATTR_OPENAPI_HOST = IgniteNodeAttributes.ATTR_PREFIX + "openapi.plugin.host";
 
     /** */
@@ -197,8 +216,8 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         handler.addServlet(apiExposeServlet, "/api/*");
         handler.addServlet(
-            new ServletHolder(new ManagementApiServlet((IgniteEx)ctx.grid(), this.cfg.getRootUri())),
-            this.cfg.getRootUri() + "/*"
+            new ServletHolder(new ManagementApiServlet((IgniteEx)ctx.grid(), cfg.getRootUri())),
+            cfg.getRootUri() + "/*"
         );
         handler.addFilter(HeaderFilter.class, "/*", EnumSet.of(REQUEST));
 
@@ -207,7 +226,10 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
         srv.start();
     }
 
-    /**  */
+    /**
+     * Creates and pass to Open API internals Ignite Management API descrption.
+     * @throws OpenApiConfigurationException If failed.
+     */
     private void initApiDescription() throws OpenApiConfigurationException {
         OpenAPI api = new OpenAPI();
 

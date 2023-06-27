@@ -24,11 +24,10 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- *
+ * This filter setup headers to allow browser query endpoint from other pages.
  */
 public class HeaderFilter implements Filter {
     /** {@inheritDoc} */
@@ -38,7 +37,6 @@ public class HeaderFilter implements Filter {
         FilterChain chain
     ) throws ServletException, IOException {
         HttpServletResponse response = (HttpServletResponse)resp;
-        HttpServletRequest request = (HttpServletRequest)req;
 
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("X-Frame-Options", "SAMEORIGIN");

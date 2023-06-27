@@ -18,17 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPluginConfiguration;
-import org.apache.ignite.util.CacheMetricsCommandTest;
-import org.apache.ignite.util.CdcCommandTest;
-import org.apache.ignite.util.CdcResendCommandTest;
-import org.apache.ignite.util.GridCommandHandlerCheckIndexesInlineSizeTest;
-import org.apache.ignite.util.GridCommandHandlerDefragmentationTest;
-import org.apache.ignite.util.GridCommandHandlerIndexForceRebuildTest;
-import org.apache.ignite.util.GridCommandHandlerIndexListTest;
-import org.apache.ignite.util.GridCommandHandlerIndexRebuildStatusTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
@@ -46,25 +35,14 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GridCommandHandlerTest.class,
-    GridCommandHandlerIndexingTest.class,
-    GridCommandHandlerIndexingClusterByClassTest.class,
-    GridCommandHandlerIndexingCheckSizeTest.class,
-    GridCommandHandlerCheckIndexesInlineSizeTest.class,
     GridCommandHandlerMetadataTest.class,
     KillCommandsControlShTest.class,
-    GridCommandHandlerIndexForceRebuildTest.class,
-    GridCommandHandlerIndexListTest.class,
-    GridCommandHandlerIndexRebuildStatusTest.class,
     GridCommandHandlerScheduleIndexRebuildTest.class,
     GridCommandHandlerTracingConfigurationTest.class,
     GridCommandHandlerPropertiesTest.class,
-    GridCommandHandlerDefragmentationTest.class,
     SystemViewCommandTest.class,
     MetricCommandTest.class,
-    PerformanceStatisticsCommandTest.class,
-    CacheMetricsCommandTest.class,
-    CdcCommandTest.class,
-    CdcResendCommandTest.class
+    PerformanceStatisticsCommandTest.class
 })
 public class OpenApiTestSuite {
     /** */

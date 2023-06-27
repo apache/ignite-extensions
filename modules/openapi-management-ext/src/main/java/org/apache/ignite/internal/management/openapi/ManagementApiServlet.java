@@ -48,25 +48,32 @@ import static org.apache.ignite.internal.management.api.CommandUtils.fromFormatt
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
 import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.parameterName;
 
-/** */
+/**
+ * Servlet handles requests to invoke commands.
+ */
 public class ManagementApiServlet implements Servlet {
-    /** */
+    /** Local Ignite node. */
     private final IgniteEx ignite;
 
-    /** */
-    private final String root;
+    /**
+     * Root URI
+     * @see OpenApiCommandsRegistryInvokerPluginConfiguration#getRootUri()
+     */
+    private final String rootUri;
 
     /** */
     static Object res;
 
     /** */
-    public ManagementApiServlet(IgniteEx grid, String root) {
+    public ManagementApiServlet(IgniteEx grid, String rootUri) {
         this.ignite = grid;
-        this.root = root;
+        this.rootUri = rootUri;
     }
 
     /** {@inheritDoc} */
     @Override public void service(ServletRequest req0, ServletResponse res0) throws IOException {
+        res = null;
+
         if (!(req0 instanceof HttpServletRequest))
             throw new IllegalArgumentException("Not http");
 
@@ -78,10 +85,10 @@ public class ManagementApiServlet implements Servlet {
 
         String uri = req.getRequestURI();
 
-        if (!uri.startsWith(root))
+        if (!uri.startsWith(rootUri))
             throw new IllegalArgumentException("Wrong URI: " + uri);
 
-        String cmdPath = uri.substring(root.length() + 1);
+        String cmdPath = uri.substring(rootUri.length() + 1);
 
         if (cmdPath.length() == 0)
             throw new IllegalArgumentException("Empty command path: " + uri);

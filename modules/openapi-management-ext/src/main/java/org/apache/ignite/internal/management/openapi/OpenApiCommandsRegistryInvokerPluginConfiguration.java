@@ -38,19 +38,19 @@ public class OpenApiCommandsRegistryInvokerPluginConfiguration implements Plugin
     /** */
     public static final String DFLT_ROOT_URI = "/management";
 
-    /** */
+    /** Port to bind endpoint to. */
     private int port = DFLT_PORT;
 
-    /** */
+    /** Port range to try to bind if {@link #port} already used. */
     private int portRange = DFLT_PORT_RANGE;
 
-    /** */
+    /** Host to bind endpoint to. */
     private String host = DFLT_HOST;
 
-    /** */
+    /** Root URI. */
     private String rootUri = DFLT_ROOT_URI;
 
-    /** */
+    /** Preconfigured jetty server to use if custom setup required: SSL, etc. */
     private Server server;
 
     /** */
