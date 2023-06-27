@@ -30,7 +30,7 @@ public class OpenApiCommandsRegistryInvokerPluginConfiguration implements Plugin
      * Default port range.
      * {@code 0} means that plugin will not try to use other ports to bind web server in case default port already used.
      */
-    public static int DFLT_PORT_RANGE = 0;
+    public static int DFLT_PORT_RANGE = 10;
 
     /** Default host. */
     public static final String DFLT_HOST = "localhost";
