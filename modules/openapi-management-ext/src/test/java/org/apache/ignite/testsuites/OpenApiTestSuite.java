@@ -19,10 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPluginConfiguration;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
-import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
-import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
-import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.KillCommandsControlShTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
@@ -37,9 +34,6 @@ import org.junit.runners.Suite;
     GridCommandHandlerTest.class,
     GridCommandHandlerMetadataTest.class,
     KillCommandsControlShTest.class,
-    GridCommandHandlerScheduleIndexRebuildTest.class,
-    GridCommandHandlerTracingConfigurationTest.class,
-    GridCommandHandlerPropertiesTest.class,
     SystemViewCommandTest.class,
     MetricCommandTest.class,
     PerformanceStatisticsCommandTest.class
