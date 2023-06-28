@@ -71,6 +71,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 
 import static io.swagger.v3.oas.integration.api.OpenApiContext.OPENAPI_CONTEXT_ID_KEY;
 import static io.swagger.v3.oas.models.parameters.Parameter.StyleEnum.SIMPLE;
@@ -161,8 +162,6 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                         break;
                     }
                 }
-
-                log.info("OpenApi invoker started[port=" + port + ']');
             }
             else {
                 port = cfg.getPort();
@@ -181,8 +180,6 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
                         tryStart();
 
-                        log.info("OpenApi invoker started[port=" + port + ']');
-
                         break;
                     }
                     catch (IOException e) {
@@ -196,6 +193,8 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                     }
                 }
             }
+
+            log.info("OpenApi invoker started[rootURL=http://" + host + ":" + port + cfg.getRootUri() + ']');
 
             ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_OPENAPI_PORT, port);
             ((IgniteEx)ctx.grid()).context().addNodeAttribute(ATTR_OPENAPI_HOST, host);
@@ -220,7 +219,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
             new ServletHolder(new ManagementApiServlet((IgniteEx)ctx.grid(), cfg.getRootUri())),
             cfg.getRootUri() + "/*"
         );
-        handler.addFilter(HeaderFilter.class, "/*", EnumSet.of(REQUEST));
+        handler.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(REQUEST));
 
         srv.setHandler(handler);
 
@@ -263,7 +262,6 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
             .buildContext(true);
 
         OpenApiContextLocator.getInstance().putOpenApiContext(API_CTX_ID, ctx);
-
     }
 
     /**

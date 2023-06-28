@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.openapi;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.plugin.CachePluginContext;
@@ -37,12 +36,12 @@ public class OpenApiCommandsRegistryInvokerPluginProvider
     /** */
     private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
 
-    /** */
-    private OpenApiCommandsRegistryInvokerPlugin plugin = new OpenApiCommandsRegistryInvokerPlugin();
+    /** Plugin instance. */
+    private final OpenApiCommandsRegistryInvokerPlugin plugin = new OpenApiCommandsRegistryInvokerPlugin();
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "JMX invoker of CommandRegistry";
+        return "REST invoker of management commands";
     }
 
     /** {@inheritDoc} */
@@ -101,12 +100,12 @@ public class OpenApiCommandsRegistryInvokerPluginProvider
     }
 
     /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+    @Override public void start(PluginContext ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+    @Override public void stop(boolean cancel) {
         // No-op.
     }
 

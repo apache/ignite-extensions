@@ -85,7 +85,7 @@ public class ManagementApiServlet implements Servlet {
 
         String uri = req.getRequestURI();
 
-        if (!uri.startsWith(rootUri))
+        if (!uri.startsWith(rootUri) || uri.equals(rootUri))
             throw new IllegalArgumentException("Wrong URI: " + uri);
 
         String cmdPath = uri.substring(rootUri.length() + 1);
@@ -213,7 +213,7 @@ public class ManagementApiServlet implements Servlet {
 
     /**
      * Generates readable error message from exception
-     * @param e Exctption
+     * @param e Exception.
      * @return error message
      */
     public static String errorMessage(Throwable e) {
