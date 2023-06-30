@@ -619,23 +619,23 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric)
         throws IgniteInterruptedCheckedException {
-        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
-        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
-
-        assertTrue(committedSegIdx <= curSegIdx);
-
-        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
-        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
-
-//        assertTrue(waitForCondition(() -> {
-//            long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
-//            long curSegIdx = longMetric.apply(CUR_SEG_IDX);
+//        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
+//        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 //
-//            return committedSegIdx <= curSegIdx;
-//        }, getTestTimeout()));
+//        assertTrue(committedSegIdx <= curSegIdx);
 //
-//        assertTrue(waitForCondition(() -> longMetric.apply(COMMITTED_SEG_OFFSET) >= 0, getTestTimeout()));
-//        assertTrue(waitForCondition(() -> longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0, getTestTimeout()));
+//        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
+//        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+
+        assertTrue(waitForCondition(() -> {
+            long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
+            long curSegIdx = longMetric.apply(CUR_SEG_IDX);
+
+            return committedSegIdx <= curSegIdx;
+        }, getTestTimeout()));
+
+        assertTrue(waitForCondition(() -> longMetric.apply(COMMITTED_SEG_OFFSET) >= 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0, getTestTimeout()));
 
         for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
             assertTrue(new File(strMetric.apply(m)).exists());
