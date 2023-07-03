@@ -45,8 +45,8 @@ import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
 import static org.apache.ignite.internal.management.api.CommandUtils.fromFormattedCommandName;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.TEXT_PLAIN;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.parameterName;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.TEXT_PLAIN;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.parameterName;
 
 /**
  * Servlet handles requests to invoke commands.
@@ -57,7 +57,7 @@ public class ManagementApiServlet implements Servlet {
 
     /**
      * Root URI
-     * @see OpenApiCommandsRegistryInvokerPluginConfiguration#getRootUri()
+     * @see OpenApiCommandsInvokerPluginConfiguration#getRootUri()
      */
     private final String rootUri;
 

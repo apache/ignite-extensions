@@ -17,13 +17,12 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPluginConfiguration;
+import org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPluginConfiguration;
+import org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPluginSelfTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
-import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.KillCommandsControlShTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
-import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -31,10 +30,9 @@ import org.junit.runners.Suite;
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCommandHandlerTest.class,
+    OpenApiCommandsInvokerPluginSelfTest.class,
     GridCommandHandlerMetadataTest.class,
     KillCommandsControlShTest.class,
-    SystemViewCommandTest.class,
     MetricCommandTest.class,
     PerformanceStatisticsCommandTest.class
 })
@@ -44,6 +42,6 @@ public class OpenApiTestSuite {
     public static void setUp() {
         // By default, port range is disabled.
         // Setting up some ports for test to allow starting of several jetty instances on single host.
-        OpenApiCommandsRegistryInvokerPluginConfiguration.DFLT_PORT_RANGE = 10;
+        OpenApiCommandsInvokerPluginConfiguration.DFLT_PORT_RANGE = 10;
     }
 }
