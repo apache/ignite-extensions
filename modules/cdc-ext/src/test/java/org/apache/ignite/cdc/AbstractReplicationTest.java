@@ -319,6 +319,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     public void doTestActivePassiveSqlDataReplicationComplexKey(String name, BiConsumer<IgniteEx, Integer> addData) throws Exception {
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
         String createTbl = "CREATE TABLE IF NOT EXISTS " + name + "(" +
             "    ID INT NOT NULL, " +
             "    SUBID VARCHAR NOT NULL, " +
@@ -328,7 +330,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             "    WITH \"CACHE_NAME=" + name + "," +
             "KEY_TYPE=" + TestKey.class.getName() + "," +
             "VALUE_TYPE=" + TestVal.class.getName() + "," +
-            "ATOMICITY=" + atomicity.name() + "\";";
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
 
         executeSql(srcCluster[0], createTbl);
         executeSql(destCluster[0], createTbl);
@@ -372,7 +376,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** Active/Passive mode means changes made only in one cluster. */
     @Test
     public void testActivePassiveSqlDataReplication() throws Exception {
-        String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"CACHE_NAME=T1,VALUE_TYPE=T1Type\"";
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
+        String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"" +
+            "CACHE_NAME=T1," +
+            "VALUE_TYPE=T1Type," +
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
+
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
         String deleteQry = "DELETE FROM T1";
 
