@@ -151,7 +151,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static final int KEYS_CNT = 10;
+    public static final int KEYS_CNT = 500;
 
     /** */
     protected static IgniteEx[] srcCluster;
@@ -619,14 +619,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric)
         throws IgniteInterruptedCheckedException {
-//        long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
-//        long curSegIdx = longMetric.apply(CUR_SEG_IDX);
-//
-//        assertTrue(committedSegIdx <= curSegIdx);
-//
-//        assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
-//        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
-
         assertTrue(waitForCondition(() -> {
             long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
             long curSegIdx = longMetric.apply(CUR_SEG_IDX);
