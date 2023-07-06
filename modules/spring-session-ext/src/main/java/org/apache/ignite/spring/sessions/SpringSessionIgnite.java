@@ -24,10 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.client.IgniteClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
- * Qualifier annotation for a {@link Ignite} to be injected in
+ * Qualifier annotation for a {@link Ignite} or a {@link IgniteClient} to be injected in
  * {@link IgniteIndexedSessionRepository}.
  *
  */

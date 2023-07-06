@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
@@ -40,13 +39,9 @@ import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.spring.sessions.proxy.SessionProxy;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.session.DelegatingIndexResolver;
 import org.springframework.session.FindByIndexNameSessionRepository;
@@ -64,26 +59,21 @@ import org.springframework.util.Assert;
 
 /**
  * A {@link org.springframework.session.SessionRepository} implementation that stores
- * sessions in Apache Ignite distributed {@link IgniteCache}.
+ * sessions in Apache Ignite distributed {@link SessionProxy}.
  *
  * <p>
  * An example of how to create a new instance can be seen below:
- *
  * <pre class="code">
  * IgniteConfiguration config = new IgniteConfiguration();
- *
  * // ... configure Ignite ...
- *
  * Ignite ignite = IgnitionEx.start(config);
- *
  * IgniteIndexedSessionRepository sessionRepository =
  *         new IgniteIndexedSessionRepository(ignite);
  * </pre>
  *
  * In order to support finding sessions by principal name using
  * {@link #findByIndexNameAndIndexValue(String, String)} method, custom configuration of
- * {@link IgniteCache} supplied to this implementation is required.
- *
+ * {@link SessionProxy} supplied to this implementation is required.
  * This implementation listens for events on the Ignite-backed SessionRepository and
  * translates those events into the corresponding Spring Session events. Publish the
  * Spring Session events with the given {@link ApplicationEventPublisher}.
@@ -112,9 +102,6 @@ public class IgniteIndexedSessionRepository
     private static final Log logger = LogFactory.getLog(IgniteIndexedSessionRepository.class);
 
     /** */
-    private final Ignite ignite;
-
-    /** */
     private ApplicationEventPublisher eventPublisher = (event) -> {
     };
 
@@ -128,58 +115,47 @@ public class IgniteIndexedSessionRepository
     private IndexResolver<Session> indexResolver = new DelegatingIndexResolver<>(new PrincipalNameIndexResolver<>());
 
     /** */
-    private String sessionMapName = DEFAULT_SESSION_MAP_NAME;
-
-    /** */
     private FlushMode flushMode = FlushMode.ON_SAVE;
 
     /** */
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
     /** */
-    private IgniteCache<String, IgniteSession> sessions;
+    private final SessionProxy sessions;
 
     /** */
     private CacheEntryListenerConfiguration<String, IgniteSession> listenerConfiguration;
 
     /**
      * Create a new {@link IgniteIndexedSessionRepository} instance.
-     * @param ignite the {@link Ignite} instance to use for managing sessions
+     * @param sessions the {@link SessionProxy} instance to use for managing sessions
      */
-    public IgniteIndexedSessionRepository(Ignite ignite) {
-        Assert.notNull(ignite, "Ignite must not be null");
-        this.ignite = ignite;
-    }
-
-    /** */
-    @PostConstruct
-    public void init() {
-        final CacheConfiguration<String, IgniteSession> configuration = new CacheConfiguration<String, IgniteSession>(
-                this.sessionMapName).setIndexedTypes(String.class, IgniteSession.class);
-
-        if (this.defaultMaxInactiveInterval != null)
-            configuration.setExpiryPolicyFactory(TouchedExpiryPolicy
-                    .factoryOf(new javax.cache.expiry.Duration(TimeUnit.SECONDS, this.defaultMaxInactiveInterval)));
-
-        this.sessions = this.ignite.getOrCreateCache(configuration);
-
+    public IgniteIndexedSessionRepository(SessionProxy sessions) {
+        Assert.notNull(sessions, "Session proxy must not be null");
+        this.sessions = sessions;
+        
         this.listenerConfiguration = new CacheEntryListenerConfiguration<String, IgniteSession>() {
+            /** {@inheritDoc} */
             @Override public Factory<CacheEntryListener<? super String, ? super IgniteSession>> getCacheEntryListenerFactory() {
-                return (Factory<CacheEntryListener<? super String, ? super IgniteSession>>)() -> IgniteIndexedSessionRepository.this;
+                return () -> IgniteIndexedSessionRepository.this;
             }
 
+            /** {@inheritDoc} */
             @Override public boolean isOldValueRequired() {
                 return true;
             }
 
+            /** {@inheritDoc} */
             @Override public Factory<CacheEntryEventFilter<? super String, ? super IgniteSession>> getCacheEntryEventFilterFactory() {
                 return null;
             }
 
+            /** {@inheritDoc} */
             @Override public boolean isSynchronous() {
                 return false;
             }
         };
+
         this.sessions.registerCacheEntryListener(this.listenerConfiguration);
     }
 
@@ -221,15 +197,6 @@ public class IgniteIndexedSessionRepository
     }
 
     /**
-     * Set the name of map used to store sessions.
-     * @param sessionMapName the session map name
-     */
-    public void setSessionMapName(String sessionMapName) {
-        Assert.hasText(sessionMapName, "Map name must not be empty");
-        this.sessionMapName = sessionMapName;
-    }
-
-    /**
      * Sets the flush mode. Default flush mode is {@link FlushMode#ON_SAVE}.
      * @param flushMode the new flush mode
      */
@@ -247,7 +214,7 @@ public class IgniteIndexedSessionRepository
         this.saveMode = saveMode;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public IgniteSession createSession() {
         MapSession cached = new MapSession();
         if (this.defaultMaxInactiveInterval != null)
@@ -258,7 +225,7 @@ public class IgniteIndexedSessionRepository
         return session;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void save(IgniteSession session) {
         if (session.isNew)
             ttlSessions(session.getMaxInactiveInterval()).put(session.getId(), session);
@@ -269,17 +236,15 @@ public class IgniteIndexedSessionRepository
             ttlSessions(session.getMaxInactiveInterval()).put(session.getId(), session);
         }
         else if (session.hasChanges()) {
-            if (session.maxInactiveIntervalChanged) {
+            if (session.maxInactiveIntervalChanged)
                 ttlSessions(session.getMaxInactiveInterval()).replace(session.getId(), session);
-            }
-            else {
+            else
                 this.sessions.replace(session.getId(), session);
-            }
         }
         session.clearChangeFlags();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public IgniteSession findById(String id) {
         IgniteSession saved = this.sessions.get(id);
         if (saved == null)
@@ -293,17 +258,17 @@ public class IgniteIndexedSessionRepository
         return saved;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void deleteById(String id) {
         this.sessions.remove(id);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public Map<String, IgniteSession> findByIndexNameAndIndexValue(String indexName, String indexValue) {
         if (!PRINCIPAL_NAME_INDEX_NAME.equals(indexName))
             return Collections.emptyMap();
 
-        final FieldsQueryCursor<List<?>> cursor = this.sessions
+        final QueryCursor<List<?>> cursor = this.sessions
                 .query(new SqlFieldsQuery("SELECT * FROM IgniteSession WHERE principal='" + indexValue + "'"));
 
         if (cursor == null)
@@ -314,16 +279,16 @@ public class IgniteIndexedSessionRepository
         Map<String, IgniteSession> sessionMap = new HashMap<>(sessions.size());
 
         sessions.forEach((List<?> res) -> {
-            final MapSession session = (MapSession)res.get(0);
+            final MapSession session = (MapSession)res.get(1);
             final IgniteSession value = new IgniteSession(session, false);
-            value.principal = (String)res.get(1);
+            value.principal = (String)res.get(2);
             sessionMap.put(session.getId(), value);
         });
 
         return sessionMap;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void onCreated(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
             throws CacheEntryListenerException {
         events.forEach((event) -> {
@@ -337,7 +302,7 @@ public class IgniteIndexedSessionRepository
         });
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
         throws CacheEntryListenerException {
         events.forEach((event) -> {
@@ -348,7 +313,7 @@ public class IgniteIndexedSessionRepository
         });
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void onRemoved(Iterable<CacheEntryEvent<? extends String, ? extends IgniteSession>> events)
             throws CacheEntryListenerException {
         events.forEach((event) -> {
@@ -367,7 +332,7 @@ public class IgniteIndexedSessionRepository
      * @param duration expiry duration for IgniteSession.
      * @return cache with custom duration expiry policy.
      */
-    private IgniteCache<String, IgniteSession> ttlSessions(Duration duration) {
+    private SessionProxy ttlSessions(Duration duration) {
         return this.sessions.withExpiryPolicy(createPolicy(duration));
     }
 
@@ -384,38 +349,29 @@ public class IgniteIndexedSessionRepository
      * A custom implementation of {@link Session} that uses a {@link MapSession} as the
      * basis for its mapping. It keeps track if changes have been made since last save.
      */
-    final class IgniteSession implements Session {
-
+    public class IgniteSession implements Session {
         /** */
-        @QuerySqlField
         private final MapSession delegate;
 
         /** */
-        @GridDirectTransient
         private boolean isNew;
 
         /** */
-        @GridDirectTransient
         private boolean sessionIdChanged;
 
         /** */
-        @GridDirectTransient
         private boolean lastAccessedTimeChanged;
 
         /** */
-        @GridDirectTransient
         private boolean maxInactiveIntervalChanged;
 
         /** */
-        @GridDirectTransient
         private String originalId;
 
         /** */
-        @GridDirectTransient
         private Map<String, Object> delta = new HashMap<>();
 
         /** */
-        @QuerySqlField(index = true)
         private String principal;
 
         /**
@@ -432,53 +388,53 @@ public class IgniteIndexedSessionRepository
 
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void setLastAccessedTime(Instant lastAccessedTime) {
             this.delegate.setLastAccessedTime(lastAccessedTime);
             this.lastAccessedTimeChanged = true;
             flushImmediateIfNecessary();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean isExpired() {
             return this.delegate.isExpired();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Instant getCreationTime() {
             return this.delegate.getCreationTime();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public String getId() {
             return this.delegate.getId();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public String changeSessionId() {
             String newSessionId = this.delegate.changeSessionId();
             this.sessionIdChanged = true;
             return newSessionId;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Instant getLastAccessedTime() {
             return this.delegate.getLastAccessedTime();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void setMaxInactiveInterval(Duration interval) {
             this.delegate.setMaxInactiveInterval(interval);
             this.maxInactiveIntervalChanged = true;
             flushImmediateIfNecessary();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Duration getMaxInactiveInterval() {
             return this.delegate.getMaxInactiveInterval();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public <T> T getAttribute(String attributeName) {
             T attributeValue = this.delegate.getAttribute(attributeName);
             if (attributeValue != null
@@ -488,12 +444,12 @@ public class IgniteIndexedSessionRepository
             return attributeValue;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Set<String> getAttributeNames() {
             return this.delegate.getAttributeNames();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void setAttribute(String attributeName, Object attributeValue) {
             this.delegate.setAttribute(attributeName, attributeValue);
             this.delta.put(attributeName, attributeValue);
@@ -506,7 +462,7 @@ public class IgniteIndexedSessionRepository
             flushImmediateIfNecessary();
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void removeAttribute(String attributeName) {
             setAttribute(attributeName, null);
         }
@@ -536,7 +492,7 @@ public class IgniteIndexedSessionRepository
                 IgniteIndexedSessionRepository.this.save(this);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -548,7 +504,7 @@ public class IgniteIndexedSessionRepository
             return this.delegate.equals(session.delegate);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(this.delegate);
         }

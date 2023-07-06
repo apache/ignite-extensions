@@ -23,9 +23,9 @@ import org.apache.ignite.Ignition;
 /**
  * Utility class for Ignite integration tests.
  */
-final class IgniteITestUtils {
+final class IgniteTestUtils {
     /** */
-    private IgniteITestUtils() {
+    private IgniteTestUtils() {
     }
 
     /**

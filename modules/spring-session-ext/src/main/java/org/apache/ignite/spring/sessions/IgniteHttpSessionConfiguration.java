@@ -17,11 +17,18 @@ package org.apache.ignite.spring.sessions;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spring.sessions.proxy.ClientSessionProxy;
+import org.apache.ignite.spring.sessions.proxy.IgniteSessionProxy;
+import org.apache.ignite.spring.sessions.proxy.SessionProxy;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -61,7 +68,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
     /** */
-    private Ignite ignite;
+    private SessionProxy sessions;
 
     /** */
     private ApplicationEventPublisher applicationEventPublisher;
@@ -113,13 +120,20 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
      * @param ignite Ignite instance provider.
      */
     @Autowired
-    public void setIgnite(@SpringSessionIgnite ObjectProvider<Ignite> springSessionIgnite,
-                          ObjectProvider<Ignite> ignite) {
-        Ignite igniteToUse = springSessionIgnite.getIfAvailable();
-        if (igniteToUse == null)
-            igniteToUse = ignite.getObject();
+    public void setSessions(
+        @SpringSessionIgnite ObjectProvider<Object> springSessionIgnite,
+        ObjectProvider<Ignite> ignite,
+        ObjectProvider<IgniteClient> cli
+    ) {
+        Object connObj = springSessionIgnite.getIfAvailable();
 
-        this.ignite = igniteToUse;
+        if (connObj == null)
+            connObj = ignite.getIfAvailable();
+
+        if (connObj == null)
+            connObj = cli.getIfAvailable();
+
+        this.sessions = createSessionProxy(connObj);
     }
 
     /**
@@ -150,7 +164,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     /**
      * @param importMetadata Annotation metadata.
      */
-    @Override @SuppressWarnings("deprecation") public void setImportMetadata(AnnotationMetadata importMetadata) {
+    @Override public void setImportMetadata(AnnotationMetadata importMetadata) {
         Map<String, Object> attributeMap = importMetadata
                 .getAnnotationAttributes(EnableIgniteHttpSession.class.getName());
         AnnotationAttributes attributes = AnnotationAttributes.fromMap(attributeMap);
@@ -164,14 +178,44 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /** */
+    private SessionProxy createSessionProxy(Object connObj) {
+        List<SqlFieldsQuery> initQueries = Arrays.asList(
+            new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS IgniteSession (" +
+                " id VARCHAR PRIMARY KEY," +
+                " delegate OTHER," +
+                " principal VARCHAR" +
+                ") WITH \"template=replicated,atomicity=atomic,value_type=org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository$IgniteSession,cache_name=" + sessionMapName + "\""),
+            new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS ignitesession_principal_idx ON IgniteSession (principal);")
+        );
+
+        if (connObj instanceof IgniteEx) {
+            IgniteEx ignite = (IgniteEx)connObj;
+
+            for (SqlFieldsQuery qry : initQueries)
+                U.closeQuiet(ignite.context().query().querySqlFields(qry, true));
+
+            return new IgniteSessionProxy(ignite.cache(sessionMapName));
+        }
+
+        if (connObj instanceof IgniteClient) {
+            IgniteClient cli = (IgniteClient)connObj;
+
+            for (SqlFieldsQuery qry : initQueries)
+                cli.query(qry).getAll();
+
+            return new ClientSessionProxy(cli.cache(sessionMapName));
+        }
+
+        throw new IllegalArgumentException(
+            "Object " + connObj + " can not be used to connect to the Ignite cluster.");
+    }
+
+    /** */
     private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository() {
-        IgniteIndexedSessionRepository sessionRepository = new IgniteIndexedSessionRepository(this.ignite);
+        IgniteIndexedSessionRepository sessionRepository = new IgniteIndexedSessionRepository(this.sessions);
         sessionRepository.setApplicationEventPublisher(this.applicationEventPublisher);
         if (this.indexResolver != null)
             sessionRepository.setIndexResolver(this.indexResolver);
-
-        if (StringUtils.hasText(this.sessionMapName))
-            sessionRepository.setSessionMapName(this.sessionMapName);
 
         sessionRepository.setDefaultMaxInactiveInterval(this.maxInactiveIntervalInSeconds);
         sessionRepository.setFlushMode(this.flushMode);
