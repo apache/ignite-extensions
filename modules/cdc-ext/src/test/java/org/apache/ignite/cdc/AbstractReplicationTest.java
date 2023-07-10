@@ -584,7 +584,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);
 
     /** */
-    protected void checkMetrics() {
+    protected void checkMetrics() throws IgniteInterruptedCheckedException {
         for (int i = 0; i < cdcs.size(); i++) {
             IgniteConfiguration cfg = getFieldValue(cdcs.get(i), "igniteCfg");
 
@@ -617,14 +617,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric) {
+    private void checkMetrics(Function<String, Long> longMetric, Function<String, String> strMetric)
+        throws IgniteInterruptedCheckedException {
         long committedSegIdx = longMetric.apply(COMMITTED_SEG_IDX);
         long curSegIdx = longMetric.apply(CUR_SEG_IDX);
 
         assertTrue(committedSegIdx <= curSegIdx);
 
         assertTrue(longMetric.apply(COMMITTED_SEG_OFFSET) >= 0);
-        assertTrue(longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0);
+        assertTrue(waitForCondition(() -> longMetric.apply(LAST_SEG_CONSUMPTION_TIME) > 0, getTestTimeout()));
 
         for (String m : new String[] {BINARY_META_DIR, MARSHALLER_DIR, CDC_DIR})
             assertTrue(new File(strMetric.apply(m)).exists());
