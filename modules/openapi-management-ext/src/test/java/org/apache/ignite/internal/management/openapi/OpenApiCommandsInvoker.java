@@ -53,13 +53,13 @@ import static org.apache.ignite.internal.commandline.CommandHandler.setupJavaLog
 import static org.apache.ignite.internal.commandline.CommandLogger.errorMessage;
 import static org.apache.ignite.internal.management.api.CommandUtils.isBoolean;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.ATTR_OPENAPI_HOST;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.ATTR_OPENAPI_PORT;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.commandUri;
-import static org.apache.ignite.internal.management.openapi.OpenApiCommandsRegistryInvokerPlugin.parameterName;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.ATTR_OPENAPI_HOST;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.ATTR_OPENAPI_PORT;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.commandUri;
+import static org.apache.ignite.internal.management.openapi.OpenApiCommandsInvokerPlugin.parameterName;
 
 /** */
-public class OpenApiInvoker implements GridCommandHandlerFactoryAbstractTest.TestCommandHandler {
+public class OpenApiCommandsInvoker implements GridCommandHandlerFactoryAbstractTest.TestCommandHandler {
     /** */
     private final IgniteLoggerEx log;
 
@@ -73,12 +73,12 @@ public class OpenApiInvoker implements GridCommandHandlerFactoryAbstractTest.Tes
     private OkHttpClient cli = new OkHttpClient();
 
     /** */
-    public OpenApiInvoker() {
+    public OpenApiCommandsInvoker() {
         this(null);
     }
 
     /** */
-    public OpenApiInvoker(@Nullable IgniteLogger log) {
+    public OpenApiCommandsInvoker(@Nullable IgniteLogger log) {
         this.log = (IgniteLoggerEx)(log == null ? setupJavaLogger("rest-invoker", CommandHandler.class) : log);
     }
 
@@ -124,7 +124,7 @@ public class OpenApiInvoker implements GridCommandHandlerFactoryAbstractTest.Tes
     private String cmdURL(ConnectionAndSslParameters<IgniteDataTransferObject> p) {
         StringBuilder url = new StringBuilder();
 
-        OpenApiCommandsRegistryInvokerPluginConfiguration cfg = new OpenApiCommandsRegistryInvokerPluginConfiguration();
+        OpenApiCommandsInvokerPluginConfiguration cfg = new OpenApiCommandsInvokerPluginConfiguration();
 
         IgniteEx ignite = ignite(p);
 

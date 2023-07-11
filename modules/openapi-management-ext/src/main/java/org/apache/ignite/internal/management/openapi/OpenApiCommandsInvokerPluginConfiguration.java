@@ -22,7 +22,7 @@ import org.apache.ignite.plugin.PluginConfiguration;
 import org.eclipse.jetty.server.Server;
 
 /** */
-public class OpenApiCommandsRegistryInvokerPluginConfiguration implements PluginConfiguration {
+public class OpenApiCommandsInvokerPluginConfiguration implements PluginConfiguration {
     /** Default port to bind to. */
     public static final int DFLT_PORT = 8080;
 
@@ -105,6 +105,6 @@ public class OpenApiCommandsRegistryInvokerPluginConfiguration implements Plugin
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(OpenApiCommandsRegistryInvokerPluginConfiguration.class, this);
+        return S.toString(OpenApiCommandsInvokerPluginConfiguration.class, this);
     }
 }

@@ -31,17 +31,20 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class OpenApiCommandsRegistryInvokerPluginProvider
-    implements PluginProvider<OpenApiCommandsRegistryInvokerPluginConfiguration> {
+public class OpenApiCommandsInvokerPluginProvider
+    implements PluginProvider<OpenApiCommandsInvokerPluginConfiguration> {
     /** */
-    private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
+    public static final String NAME = "REST invoker of management commands";
+
+    /** */
+    private OpenApiCommandsInvokerPluginConfiguration cfg;
 
     /** Plugin instance. */
-    private final OpenApiCommandsRegistryInvokerPlugin plugin = new OpenApiCommandsRegistryInvokerPlugin();
+    private final OpenApiCommandsInvokerPlugin plugin = new OpenApiCommandsInvokerPlugin();
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "REST invoker of management commands";
+        return NAME;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +64,7 @@ public class OpenApiCommandsRegistryInvokerPluginProvider
 
     /** {@inheritDoc} */
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-        plugin.context(ctx, cfg == null ? new OpenApiCommandsRegistryInvokerPluginConfiguration() : cfg);
+        plugin.context(ctx, cfg == null ? new OpenApiCommandsInvokerPluginConfiguration() : cfg);
     }
 
     /** {@inheritDoc} */
@@ -110,7 +113,7 @@ public class OpenApiCommandsRegistryInvokerPluginProvider
     }
 
     /** */
-    public void setConfig(OpenApiCommandsRegistryInvokerPluginConfiguration cfg) {
+    public void setConfig(OpenApiCommandsInvokerPluginConfiguration cfg) {
         this.cfg = cfg;
     }
 }

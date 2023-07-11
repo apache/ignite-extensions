@@ -96,7 +96,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  * @see IgniteCommandRegistry
  * @see IgniteEx#commandsRegistry()
  */
-public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
+public class OpenApiCommandsInvokerPlugin implements IgnitePlugin {
     /** Init parameter name for {@link OpenApiServlet} to expose API description. */
     public static final String API_CTX_ID = "ignite-management-api-ctx";
 
@@ -120,6 +120,9 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
      */
     public static final String ATTR_OPENAPI_HOST = IgniteNodeAttributes.ATTR_PREFIX + "openapi.plugin.host";
 
+    /** Servlet name */
+    public static final String INVOKER_SERVLET = "ignite-management-api-invoker";
+
     /** */
     private PluginContext ctx;
 
@@ -127,16 +130,16 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
     private IgniteLogger log;
 
     /** */
-    private OpenApiCommandsRegistryInvokerPluginConfiguration cfg;
+    private OpenApiCommandsInvokerPluginConfiguration cfg;
 
     /** */
     private Server srv;
 
     /** */
-    public void context(PluginContext ctx, OpenApiCommandsRegistryInvokerPluginConfiguration cfg) {
+    public void context(PluginContext ctx, OpenApiCommandsInvokerPluginConfiguration cfg) {
         this.ctx = ctx;
         this.cfg = cfg;
-        log = ctx.log(OpenApiCommandsRegistryInvokerPlugin.class);
+        log = ctx.log(OpenApiCommandsInvokerPlugin.class);
     }
 
     /** */
@@ -167,6 +170,8 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                 port = cfg.getPort();
                 host = cfg.getHost();
 
+                Exception err = null;
+
                 while (port <= cfg.getPort() + cfg.getPortRange()) {
                     try {
                         srv = new Server();
@@ -180,11 +185,15 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
                         tryStart();
 
+                        err = null;
+
                         break;
                     }
                     catch (IOException e) {
                         if (!(e.getCause() instanceof BindException))
                             throw new IgniteException(e);
+
+                        err = e;
 
                         port++;
                     }
@@ -192,6 +201,9 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
                         throw new IgniteException(e);
                     }
                 }
+
+                if (err != null)
+                    throw err;
             }
 
             log.info("OpenApi invoker started[rootURL=http://" + host + ":" + port + cfg.getRootUri() + ']');
@@ -216,7 +228,7 @@ public class OpenApiCommandsRegistryInvokerPlugin implements IgnitePlugin {
 
         handler.addServlet(apiExposeServlet, "/api/*");
         handler.addServlet(
-            new ServletHolder(new ManagementApiServlet((IgniteEx)ctx.grid(), cfg.getRootUri())),
+            new ServletHolder(INVOKER_SERVLET, new ManagementApiServlet((IgniteEx)ctx.grid(), cfg.getRootUri())),
             cfg.getRootUri() + "/*"
         );
         handler.addFilter(CrossOriginFilter.class, "/*", EnumSet.of(REQUEST));
