@@ -34,7 +34,7 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.CacheStoreSessionListenerAbstractSelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
-import org.apache.ignite.internal.processors.query.h2.DistributedSqlConfiguration;
+import org.apache.ignite.internal.processors.query.h2.DistributedIndexingConfiguration;
 import org.apache.ignite.internal.processors.query.h2.FunctionsManager;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -67,7 +67,7 @@ public class CacheSpringStoreSessionListenerSelfTest extends CacheStoreSessionLi
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        FunctionManager_removeFunctions.invoke(FunctionsManager.class, DistributedSqlConfiguration.DFLT_DISABLED_FUNCS);
+        FunctionManager_removeFunctions.invoke(FunctionsManager.class, DistributedIndexingConfiguration.DFLT_DISABLED_FUNCS);
 
         super.afterTestsStopped();
     }
