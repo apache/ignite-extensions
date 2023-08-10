@@ -267,7 +267,7 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
                     info.props.forEach((propKey, prop) -> {
                         ObjectNode valCntNode = MAPPER.createObjectNode();
 
-                        valCntNode.put("value", prop.get1());
+                        valCntNode.put("value", prop.get2());
                         valCntNode.put("count", prop.get3()[0]);
 
                         node.putIfAbsent(prop.get1(), valCntNode);
