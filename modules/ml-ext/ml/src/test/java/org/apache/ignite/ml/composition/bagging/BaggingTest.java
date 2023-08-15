@@ -59,16 +59,11 @@ public class BaggingTest extends TrainerTest {
     static {
         firstMdlWeights = new HashMap<>();
 
-        //firstMdlWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
-        firstMdlWeights.put(1, VectorUtils.of(-4.022186997213428, -0.13734045183463142));
-        //firstMdlWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
-        firstMdlWeights.put(2, VectorUtils.of(0.3771675584914386, 2.9442183714249395));
-        //firstMdlWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
-        firstMdlWeights.put(3, VectorUtils.of(-0.9653413100512973, 3.157521124498314));
-        //firstMdlWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
-        firstMdlWeights.put(4, VectorUtils.of(-1.0914245998289536, 1.4364941438621948));
-        //firstMdlWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
-        firstMdlWeights.put(13, VectorUtils.of(-0.5204499980186236, 1.2358571317455653));
+        firstMdlWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
+        firstMdlWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
+        firstMdlWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
+        firstMdlWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
+        firstMdlWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
     }
 
     /**

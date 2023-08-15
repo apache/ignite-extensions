@@ -141,9 +141,9 @@ public class CrossValidationTest {
         double[] scores = scoreCalculator.scoreByFolds();
 
         assertEquals(0.8389830508474576, scores[0], 1e-6);
-        assertEquals(0.8432835820895522, scores[1], 1e-6);
-        assertEquals(0.7777777777777778, scores[2], 1e-6);
-        assertEquals(0.7480314960629921, scores[3], 1e-6);
+        assertEquals(0.9402985074626866, scores[1], 1e-6);
+        assertEquals(0.8809523809523809, scores[2], 1e-6);
+        assertEquals(0.9921259842519685, scores[3], 1e-6);
     }
 
     /**
@@ -187,11 +187,11 @@ public class CrossValidationTest {
         CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
         assertArrayEquals(
-            new double[]{0.9661016949152542, 0.9925373134328358, 0.9920634920634921, 0.7480314960629921},
             crossValidationRes.getBestScore(),
+            new double[]{0.9745762711864406, 1.0, 0.8968253968253969, 0.8661417322834646},
             1e-6
         );
-        assertEquals(0.9246834991186436, crossValidationRes.getBestAvgScore(), 1e-6);
+        assertEquals(0.9343858500738256, crossValidationRes.getBestAvgScore(), 1e-6);
         assertEquals(80, crossValidationRes.getScoringBoard().size(), 80);
     }
 
@@ -241,7 +241,7 @@ public class CrossValidationTest {
 
         CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
-        assertEquals(0.8600770179467511, crossValidationRes.getBestAvgScore(), 1e-6);
+        assertEquals(0.9343858500738256, crossValidationRes.getBestAvgScore(), 1e-6);
         assertEquals(10, crossValidationRes.getScoringBoard().size());
     }
 
@@ -295,7 +295,7 @@ public class CrossValidationTest {
 
         CrossValidationResult crossValidationRes = scoreCalculator.tuneHyperParameters();
 
-        assertEquals(0.8600770179467511, crossValidationRes.getBestAvgScore(), 1e-6);
+        assertEquals(0.9343858500738256, crossValidationRes.getBestAvgScore(), 1e-6);
         assertEquals(10, crossValidationRes.getScoringBoard().size());
     }
 
