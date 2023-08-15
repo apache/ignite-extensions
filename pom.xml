@@ -63,6 +63,7 @@
         <module>modules/cloud-ext</module>
         <module>modules/osgi-ext</module>
         <module>modules/ssh-ext</module>
+        <module>modules/ml-ext</module>
     </modules>
 
     <profiles>
