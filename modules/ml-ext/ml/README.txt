@@ -6,6 +6,6 @@ Apache Ignite ML Grid module provides machine learning features, along with invo
 # Local build with javadoc
 
 Run from project root:
-./mvnw clean package -DskipTests -pl modules/ml -am
+mvn clean package -DskipTests -f modules/ml-ext
 
 Find generated jars in target folder.
