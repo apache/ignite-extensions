@@ -25,6 +25,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     H2OMojoParserTest.class
 })
-public class H2OMojoTestSuite {
+public class IgniteMLH2OMojoTestSuite {
     // No-op.
 }
