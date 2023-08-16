@@ -39,10 +39,8 @@ public class Blas implements Serializable {
     /** */
     private static final long serialVersionUID = 124309657712638021L;
 
-    /**
-     * Native implementation of BLAS. F2J implementation will be used as fallback if no native implementation is found.
-     */
-    private static BLAS nativeBlas = BLAS.getInstance();
+    /** */
+    private static BLAS blas = BLAS.getInstance();
 
     /**
      * Performs y += a * x
@@ -66,7 +64,7 @@ public class Blas implements Serializable {
 
     /** */
     private static void axpy(Double a, double[] x, double[] y) {
-        nativeBlas.daxpy(x.length, a, x, 1, y, 1);
+        blas.daxpy(x.length, a, x, 1, y, 1);
     }
 
     /** */
@@ -138,7 +136,7 @@ public class Blas implements Serializable {
      **/
     public static void scal(Double a, Vector x) {
         if (x.isArrayBased())
-            nativeBlas.dscal(x.size(), a, x.getStorage().data(), 1);
+            blas.dscal(x.size(), a, x.getStorage().data(), 1);
         else if (x instanceof SparseVector) {
             Set<Integer> indexes = ((SparseVector)x).indexes();
 
@@ -155,7 +153,7 @@ public class Blas implements Serializable {
      * @param u the upper triangular part of the matrix in a [[DenseVector]](column major)
      */
     public static void spr(Double alpha, DenseVector v, DenseVector u) {
-        nativeBlas.dspr("U", v.size(), alpha, v.getStorage().data(), 1, u.getStorage().data());
+        blas.dspr("U", v.size(), alpha, v.getStorage().data(), 1, u.getStorage().data());
     }
 
     /** */
@@ -209,7 +207,7 @@ public class Blas implements Serializable {
         int nA = a.rowSize();
         int mA = a.columnSize();
 
-        nativeBlas.dsyr("U", x.size(), alpha, x.getStorage().data(), 1, a.getStorage().data(), nA);
+        blas.dsyr("U", x.size(), alpha, x.getStorage().data(), 1, a.getStorage().data(), nA);
 
         // Fill lower triangular part of A
         int i = 0;
@@ -252,9 +250,8 @@ public class Blas implements Serializable {
 
             assert fA != null;
 
-            // Why f2j works?
-            nativeBlas.dgemm("N", "N", a.rowSize(), b.columnSize(), a.columnSize(), alpha, fA,
-                a.rowSize(), fB, b.rowSize(), beta, fC, c.rowSize());
+            blas.dgemm("N", "N", a.rowSize(), b.columnSize(), a.columnSize(), alpha, fA, a.rowSize(), fB,
+                    b.rowSize(), beta, fC, c.rowSize());
 
             if (c instanceof SparseMatrix)
                 MatrixUtil.unflatten(fC, c);
@@ -288,7 +285,7 @@ public class Blas implements Serializable {
         double[] fX = x.getStorage().data();
         double[] fY = y.getStorage().data();
 
-        nativeBlas.dgemv("N", a.rowSize(), a.columnSize(), alpha, fA, a.rowSize(), fX, 1, beta, fY, 1);
+        blas.dgemv("N", a.rowSize(), a.columnSize(), alpha, fA, a.rowSize(), fX, 1, beta, fY, 1);
 
         if (y instanceof SparseVector)
             y.assign(fY);
