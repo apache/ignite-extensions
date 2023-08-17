@@ -41,6 +41,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
