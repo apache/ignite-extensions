@@ -33,20 +33,24 @@ public interface SessionProxy {
      * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
      * instantiate a listener and apply it to those events specified in the configuration.
      *
-     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
+     * @param lsnrCfg a factory and related configuration for creating the listener.
      * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
      *          if some unsupported by thin client properties are set.
      * @see CacheEntryListener
      */
-    public void registerCacheEntryListener(CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> cacheEntryListenerConfiguration);
+    public void registerCacheEntryListener(
+        CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> lsnrCfg
+    );
 
     /**
      * Deregisters a listener, using the {@link CacheEntryListenerConfiguration} that was used to register it.
      *
-     * @param cacheEntryListenerConfiguration the factory and related configuration that was used to create the
+     * @param lsnrCfg the factory and related configuration that was used to create the
      *         listener.
      */
-    public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> cacheEntryListenerConfiguration);
+    public void deregisterCacheEntryListener(
+        CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> lsnrCfg
+    );
 
     /**
      * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on

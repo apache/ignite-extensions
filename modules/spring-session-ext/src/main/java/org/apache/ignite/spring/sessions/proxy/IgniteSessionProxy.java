@@ -40,16 +40,16 @@ public class IgniteSessionProxy implements SessionProxy {
 
     /** {@inheritDoc} */
     @Override public void registerCacheEntryListener(
-        CacheEntryListenerConfiguration<String, IgniteSession> cacheEntryListenerConfiguration
+        CacheEntryListenerConfiguration<String, IgniteSession> lsnrCfg
     ) {
-        cache.registerCacheEntryListener(cacheEntryListenerConfiguration);
+        cache.registerCacheEntryListener(lsnrCfg);
     }
 
     /** {@inheritDoc} */
     @Override public void deregisterCacheEntryListener(
-        CacheEntryListenerConfiguration<String, IgniteSession> cacheEntryListenerConfiguration
+        CacheEntryListenerConfiguration<String, IgniteSession> lsnrCfg
     ) {
-        cache.deregisterCacheEntryListener(cacheEntryListenerConfiguration);
+        cache.deregisterCacheEntryListener(lsnrCfg);
     }
 
     /** {@inheritDoc} */

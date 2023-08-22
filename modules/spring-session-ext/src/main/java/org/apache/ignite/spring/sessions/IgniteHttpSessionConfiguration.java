@@ -59,7 +59,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private Integer maxInactiveIntervalInSeconds = MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
 
     /** */
-    private String sessionMapName = IgniteIndexedSessionRepository.DEFAULT_SESSION_MAP_NAME;
+    private String sesMapName = IgniteIndexedSessionRepository.DEFAULT_SESSION_MAP_NAME;
 
     /** */
     private FlushMode flushMode = FlushMode.ON_SAVE;
@@ -71,13 +71,13 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private SessionProxy sessions;
 
     /** */
-    private ApplicationEventPublisher applicationEventPublisher;
+    private ApplicationEventPublisher applicationEvtPublisher;
 
     /** */
-    private IndexResolver<Session> indexResolver;
+    private IndexResolver<Session> idxResolver;
 
     /** */
-    private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers;
+    private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sesRepoCustomizers;
 
     /**
      * @return Session repository.
@@ -95,10 +95,10 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /**
-     * @param sessionMapName Session map name.
+     * @param sesMapName Session map name.
      */
-    public void setSessionMapName(String sessionMapName) {
-        this.sessionMapName = sessionMapName;
+    public void setSessionMapName(String sesMapName) {
+        this.sesMapName = sesMapName;
     }
 
     /**
@@ -116,16 +116,17 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /**
-     * @param springSessionIgnite Ignite session.
+     * @param springSesIgnite Ignite session.
      * @param ignite Ignite instance provider.
+     * @param cli Ignite client instance provider.
      */
     @Autowired
     public void setSessions(
-        @SpringSessionIgnite ObjectProvider<Object> springSessionIgnite,
+        @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
         ObjectProvider<Ignite> ignite,
         ObjectProvider<IgniteClient> cli
     ) {
-        Object connObj = springSessionIgnite.getIfAvailable();
+        Object connObj = springSesIgnite.getIfAvailable();
 
         if (connObj == null)
             connObj = ignite.getIfAvailable();
@@ -137,44 +138,43 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /**
-     * @param applicationEventPublisher Application event publisher.
+     * @param applicationEvtPublisher Application event publisher.
      */
     @Autowired
-    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
+    public void setApplicationEventPublisher(ApplicationEventPublisher applicationEvtPublisher) {
+        this.applicationEvtPublisher = applicationEvtPublisher;
     }
 
     /**
-     * @param indexResolver Index resolver.
+     * @param idxResolver Index resolver.
      */
     @Autowired(required = false)
-    public void setIndexResolver(IndexResolver<Session> indexResolver) {
-        this.indexResolver = indexResolver;
+    public void setIndexResolver(IndexResolver<Session> idxResolver) {
+        this.idxResolver = idxResolver;
     }
 
     /**
-     * @param sessionRepositoryCustomizers Session repository customizer.
+     * @param sesRepoCustomizers Session repository customizer.
      */
     @Autowired(required = false)
     public void setSessionRepositoryCustomizer(
-            ObjectProvider<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sessionRepositoryCustomizers) {
-        this.sessionRepositoryCustomizers = sessionRepositoryCustomizers.orderedStream().collect(Collectors.toList());
+            ObjectProvider<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sesRepoCustomizers) {
+        this.sesRepoCustomizers = sesRepoCustomizers.orderedStream().collect(Collectors.toList());
     }
 
     /**
      * @param importMetadata Annotation metadata.
      */
     @Override public void setImportMetadata(AnnotationMetadata importMetadata) {
-        Map<String, Object> attributeMap = importMetadata
-                .getAnnotationAttributes(EnableIgniteHttpSession.class.getName());
-        AnnotationAttributes attributes = AnnotationAttributes.fromMap(attributeMap);
-        this.maxInactiveIntervalInSeconds = attributes.getNumber("maxInactiveIntervalInSeconds");
-        String sessionMapNameValue = attributes.getString("sessionMapName");
-        if (StringUtils.hasText(sessionMapNameValue))
-            this.sessionMapName = sessionMapNameValue;
+        Map<String, Object> attrMap = importMetadata.getAnnotationAttributes(EnableIgniteHttpSession.class.getName());
+        AnnotationAttributes attrs = AnnotationAttributes.fromMap(attrMap);
+        this.maxInactiveIntervalInSeconds = attrs.getNumber("maxInactiveIntervalInSeconds");
+        String sesMapNameVal = attrs.getString("sessionMapName");
+        if (StringUtils.hasText(sesMapNameVal))
+            this.sesMapName = sesMapNameVal;
 
-        this.flushMode = attributes.getEnum("flushMode");
-        this.saveMode = attributes.getEnum("saveMode");
+        this.flushMode = attrs.getEnum("flushMode");
+        this.saveMode = attrs.getEnum("saveMode");
     }
 
     /** */
@@ -184,7 +184,9 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
                 " id VARCHAR PRIMARY KEY," +
                 " delegate OTHER," +
                 " principal VARCHAR" +
-                ") WITH \"template=replicated,atomicity=atomic,value_type=org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository$IgniteSession,cache_name=" + sessionMapName + "\""),
+                ") WITH \"template=replicated,atomicity=atomic," +
+                "value_type=org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository$IgniteSession," +
+                "cache_name=" + sesMapName + "\""),
             new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS ignitesession_principal_idx ON IgniteSession (principal);")
         );
 
@@ -194,7 +196,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
             for (SqlFieldsQuery qry : initQueries)
                 U.closeQuiet(ignite.context().query().querySqlFields(qry, true));
 
-            return new IgniteSessionProxy(ignite.cache(sessionMapName));
+            return new IgniteSessionProxy(ignite.cache(sesMapName));
         }
 
         if (connObj instanceof IgniteClient) {
@@ -203,7 +205,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
             for (SqlFieldsQuery qry : initQueries)
                 cli.query(qry).getAll();
 
-            return new ClientSessionProxy(cli.cache(sessionMapName));
+            return new ClientSessionProxy(cli.cache(sesMapName));
         }
 
         throw new IllegalArgumentException(
@@ -212,16 +214,15 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
 
     /** */
     private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository() {
-        IgniteIndexedSessionRepository sessionRepository = new IgniteIndexedSessionRepository(this.sessions);
-        sessionRepository.setApplicationEventPublisher(this.applicationEventPublisher);
-        if (this.indexResolver != null)
-            sessionRepository.setIndexResolver(this.indexResolver);
+        IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(this.sessions);
+        sesRepo.setApplicationEventPublisher(this.applicationEvtPublisher);
+        if (this.idxResolver != null)
+            sesRepo.setIndexResolver(this.idxResolver);
 
-        sessionRepository.setDefaultMaxInactiveInterval(this.maxInactiveIntervalInSeconds);
-        sessionRepository.setFlushMode(this.flushMode);
-        sessionRepository.setSaveMode(this.saveMode);
-        this.sessionRepositoryCustomizers
-                .forEach((sessionRepositoryCustomizer) -> sessionRepositoryCustomizer.customize(sessionRepository));
-        return sessionRepository;
+        sesRepo.setDefaultMaxInactiveInterval(this.maxInactiveIntervalInSeconds);
+        sesRepo.setFlushMode(this.flushMode);
+        sesRepo.setSaveMode(this.saveMode);
+        this.sesRepoCustomizers.forEach((sesRepoCustomizer) -> sesRepoCustomizer.customize(sesRepo));
+        return sesRepo;
     }
 }
