@@ -89,7 +89,7 @@ public class IgniteHttpSessionConfigurationTest {
         IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
         IgniteHttpSessionConfiguration configuration = this.ctx.getBean(IgniteHttpSessionConfiguration.class);
         assertThat(repo).isNotNull();
-        assertThat(getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
+        assertThat(getField(configuration, "sesMapName")).isEqualTo(MAP_NAME);
     }
 
     /** */
@@ -100,7 +100,7 @@ public class IgniteHttpSessionConfigurationTest {
         IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
         IgniteHttpSessionConfiguration configuration = this.ctx.getBean(IgniteHttpSessionConfiguration.class);
         assertThat(repo).isNotNull();
-        assertThat(getField(configuration, "sessionMapName")).isEqualTo(MAP_NAME);
+        assertThat(getField(configuration, "sesMapName")).isEqualTo(MAP_NAME);
     }
 
     /** */
