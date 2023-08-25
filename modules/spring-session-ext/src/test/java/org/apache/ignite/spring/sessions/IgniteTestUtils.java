@@ -1,5 +1,3 @@
-package org.apache.ignite.spring.sessions;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,15 +15,17 @@ package org.apache.ignite.spring.sessions;
  * limitations under the License.
  */
 
+package org.apache.ignite.spring.sessions;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 
 /**
  * Utility class for Ignite integration tests.
  */
-final class IgniteITestUtils {
+final class IgniteTestUtils {
     /** */
-    private IgniteITestUtils() {
+    private IgniteTestUtils() {
     }
 
     /**
