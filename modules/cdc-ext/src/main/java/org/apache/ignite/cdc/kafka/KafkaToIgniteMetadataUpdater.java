@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.kafka;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -38,6 +39,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetCommitCallback;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
@@ -103,7 +105,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
         String metaTopic = streamerCfg.getMetadataTopic();
 
-        parts = cnsmr.partitionsFor(metaTopic, Duration.ofMillis(kafkaReqTimeout))
+        List<PartitionInfo> topicMeta = cnsmr.partitionsFor(metaTopic, Duration.ofMillis(kafkaReqTimeout));
+
+        if (topicMeta == null)
+            throw new IgniteException("Unknown topic: " + metaTopic);
+
+        parts = topicMeta
             .stream()
             .map(pInfo -> new TopicPartition(metaTopic, pInfo.partition()))
             .collect(Collectors.toSet());

@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.Collections;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +42,7 @@ import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.initKafka;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.kafkaProperties;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.removeKafkaTopicsAndWait;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.logging.log4j.Level.DEBUG;
 
@@ -98,6 +100,18 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testThrowsForUnknownTopic() {
+        KafkaToIgniteCdcStreamerConfiguration cfg = streamerConfiguration();
+
+        String topic = "not-existing-topic";
+
+        cfg.setMetadataTopic(topic);
+
+        assertThrows(null, () -> metadataUpdater(cfg), IgniteException.class, "Unknown topic: " + topic);
+    }
+
+    /** */
+    @Test
     public void testUpdateMetadata() throws Exception {
         try (KafkaToIgniteMetadataUpdater updater = metadataUpdater()) {
             CdcConsumer cdcCnsmr = igniteToKafkaCdcStreamer();
@@ -147,6 +161,11 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
     /** */
     private KafkaToIgniteMetadataUpdater metadataUpdater() {
+        return metadataUpdater(streamerConfiguration());
+    }
+
+    /** */
+    private KafkaToIgniteMetadataUpdater metadataUpdater(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
         BinaryContext noOpCtx = new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), log) {
             @Override public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered,
                 boolean onlyLocReg, byte platformId) {
@@ -154,7 +173,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             }
         };
 
-        return new KafkaToIgniteMetadataUpdater(noOpCtx, listeningLog, kafkaProperties(kafka), streamerConfiguration());
+        return new KafkaToIgniteMetadataUpdater(noOpCtx, listeningLog, kafkaProperties(kafka), streamerCfg);
     }
 
     /** */
