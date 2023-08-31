@@ -20,7 +20,6 @@ package org.apache.ignite.spring.sessions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;

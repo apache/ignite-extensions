@@ -25,7 +25,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository;
+import org.apache.ignite.spring.sessions.IgniteSession;
 
 /** Represents Ignite client-independent session operations. */
 public interface SessionProxy {
@@ -33,24 +33,20 @@ public interface SessionProxy {
      * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
      * instantiate a listener and apply it to those events specified in the configuration.
      *
-     * @param lsnrCfg a factory and related configuration for creating the listener.
+     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
      * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
      *          if some unsupported by thin client properties are set.
      * @see CacheEntryListener
      */
-    public void registerCacheEntryListener(
-        CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> lsnrCfg
-    );
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<String, IgniteSession> cacheEntryListenerConfiguration);
 
     /**
      * Deregisters a listener, using the {@link CacheEntryListenerConfiguration} that was used to register it.
      *
-     * @param lsnrCfg the factory and related configuration that was used to create the
+     * @param cacheEntryListenerConfiguration the factory and related configuration that was used to create the
      *         listener.
      */
-    public void deregisterCacheEntryListener(
-        CacheEntryListenerConfiguration<String, IgniteIndexedSessionRepository.IgniteSession> lsnrCfg
-    );
+    public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<String, IgniteSession> cacheEntryListenerConfiguration);
 
     /**
      * Returns cache with the specified expired policy set. This policy will be used for each operation invoked on
@@ -67,7 +63,7 @@ public interface SessionProxy {
      * @param key the key whose associated value is to be returned
      * @return the element, or null, if it does not exist.
      */
-    public IgniteIndexedSessionRepository.IgniteSession get(String key);
+    public IgniteSession get(String key);
 
     /**
      * Associates the specified value with the specified key in the cache.
@@ -75,7 +71,7 @@ public interface SessionProxy {
      * @param key key with which the specified value is to be associated
      * @param val value to be associated with the specified key.
      */
-    public void put(String key, IgniteIndexedSessionRepository.IgniteSession val);
+    public void put(String key, IgniteSession val);
 
     /**
      * Removes the mapping for a key from this cache if it is present.
@@ -110,7 +106,7 @@ public interface SessionProxy {
      *                               configured for the {@link Cache}
      * @see CacheWriter#write
      */
-    public boolean replace(String key, IgniteIndexedSessionRepository.IgniteSession val);
+    public boolean replace(String key, IgniteSession val);
 
     /**
      * Execute SQL query and get cursor to iterate over results.

@@ -22,7 +22,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
+import org.apache.ignite.spring.sessions.IgniteSession;
 
 /**
  * Represents {@link SessionProxy} implementation that uses {@link ClientCache} to perform session operations.
