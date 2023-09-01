@@ -23,7 +23,6 @@ import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheWriter;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.spring.sessions.IgniteSession;
@@ -110,10 +109,22 @@ public interface SessionProxy {
     public boolean replace(String key, IgniteSession val);
 
     /**
-     * {@inheritDoc}
+     * Atomically replaces the entry for a key only if currently mapped to a given value.
      * <p>
-     * For {@link CacheAtomicityMode#ATOMIC} return
-     * value on primary node crash may be incorrect because of the automatic retries.
+     * This is equivalent to performing the following operations as a single atomic action:
+     * <pre><code>
+     * if (cache.containsKey(key) &amp;&amp; equals(cache.get(key), oldValue)) {
+     *  cache.put(key, newValue);
+     * return true;
+     * } else {
+     *  return false;
+     * }
+     * </code></pre>
+     *
+     * @param key Key with which the specified value is associated.
+     * @param oldVal Value expected to be associated with the specified key.
+     * @param newVal Value to be associated with the specified key.
+     * @return <tt>true</tt> if the value was replaced
      */
     public boolean replace(String key, IgniteSession oldVal, IgniteSession newVal);
 
