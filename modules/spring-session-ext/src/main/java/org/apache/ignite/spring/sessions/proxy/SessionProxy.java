@@ -23,6 +23,7 @@ import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheWriter;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.spring.sessions.IgniteSession;
@@ -107,6 +108,14 @@ public interface SessionProxy {
      * @see CacheWriter#write
      */
     public boolean replace(String key, IgniteSession val);
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * For {@link CacheAtomicityMode#ATOMIC} return
+     * value on primary node crash may be incorrect because of the automatic retries.
+     */
+    public boolean replace(String key, IgniteSession oldVal, IgniteSession newVal);
 
     /**
      * Execute SQL query and get cursor to iterate over results.

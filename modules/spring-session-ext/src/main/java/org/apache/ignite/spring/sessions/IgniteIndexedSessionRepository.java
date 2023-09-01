@@ -93,6 +93,13 @@ public class IgniteIndexedSessionRepository
      */
     public static final String DEFAULT_SESSION_MAP_NAME = "spring:session:sessions";
 
+    /**
+     * Maximum of attempts for atomicity replace. If something wrong with IgniteSession, old value can never be equal to
+     * value from repository. In this case replace will never end the loop. If this value is exceeded, then plain
+     * {@link SessionProxy#replace(String, IgniteSession)} will be used.
+     */
+    private static final int MAX_UPDATE_ATTEMPT = 100;
+
     /** */
     private static final Log logger = LogFactory.getLog(IgniteIndexedSessionRepository.class);
 
@@ -109,7 +116,7 @@ public class IgniteIndexedSessionRepository
     private FlushMode flushMode = FlushMode.ON_SAVE;
 
     /** The save mode. */
-    private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
+    private SaveMode saveMode = SaveMode.ALWAYS;
 
     /** The index resolver. */
     private IndexResolver<Session> idxResolver = new DelegatingIndexResolver<>(new PrincipalNameIndexResolver<>());
@@ -173,8 +180,8 @@ public class IgniteIndexedSessionRepository
 
     /**
      * Set the maximum inactive interval in seconds between requests before newly created
-     * sessions will be invalidated. A negative time indicates that the session will never
-     * timeout. The default is 1800 (30 minutes).
+     * sessions will be invalidated. A negative time indicates that the session will never timeout.
+     * The default is 1800 (30 minutes).
      * @param dfltMaxInactiveInterval the maximum inactive interval in seconds
      */
     public void setDefaultMaxInactiveInterval(Integer dfltMaxInactiveInterval) {
@@ -223,14 +230,22 @@ public class IgniteIndexedSessionRepository
     @Override public void save(IgniteSession ses) {
         if (ses.isNew())
             ttlSessions(ses.getMaxInactiveInterval()).put(ses.getId(), ses);
-        else if (ses.hasChangedSessionId()) {
-            String originalId = ses.getDelegate().getOriginalId();
+        else {
+            String originalId = ses.getOriginalId();
 
-            sessions.remove(originalId);
-            ttlSessions(ses.getMaxInactiveInterval()).put(ses.getId(), ses);
+            if (!ses.getId().equals(originalId)) {
+                sessions.remove(originalId);
+
+                ses.resetOriginalId();
+                ttlSessions(ses.getMaxInactiveInterval()).put(ses.getId(), ses);
+            }
+            else if (ses.hasChanges()) {
+                if (saveMode == SaveMode.ALWAYS)
+                    ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), ses);
+                else
+                    updatePartial(ses);
+            }
         }
-        else if (ses.hasChanges())
-            ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), ses);
         
         ses.clearChangeFlags();
     }
@@ -343,5 +358,47 @@ public class IgniteIndexedSessionRepository
     private void flushImmediateIfNecessary(IgniteSession ses) {
         if (flushMode == FlushMode.IMMEDIATE)
             save(ses);
+    }
+
+    /**
+     * @param targetSes Target session.
+     * @param activeSes Active session.
+     */
+    private void copyChanges(IgniteSession targetSes, IgniteSession activeSes) {
+        if (activeSes.isLastAccessedTimeChanged())
+            targetSes.setLastAccessedTime(activeSes.getLastAccessedTime());
+
+        Map<String, Object> changes = activeSes.getAttributesChanges();
+
+        if (!changes.isEmpty())
+            changes.forEach(targetSes::setAttribute);
+    }
+
+    /**
+     * @param ses Session.
+     */
+    private void updatePartial(IgniteSession ses) {
+        IgniteSession oldSes, updatedSes;
+        int attempt = 0;
+
+        do {
+            attempt++;
+
+            oldSes = sessions.get(ses.getId());
+
+            if (oldSes == null)
+                break;
+
+            updatedSes = new IgniteSession(oldSes.getDelegate(), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+            copyChanges(updatedSes, ses);
+
+            if (attempt > MAX_UPDATE_ATTEMPT) {
+                logger.warn("Session maximum update attempts has been reached," +
+                    " 'replace' will be used instead [id=" + updatedSes.getId() + "]");
+
+                ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), updatedSes);
+                break;
+            }
+        } while (ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), oldSes, updatedSes));
     }
 }

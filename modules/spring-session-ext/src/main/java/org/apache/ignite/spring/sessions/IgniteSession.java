@@ -2,6 +2,7 @@ package org.apache.ignite.spring.sessions;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -13,6 +14,7 @@ import org.springframework.session.SaveMode;
 import org.springframework.session.Session;
 
 import static org.springframework.session.FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
+import static org.springframework.session.SaveMode.ON_GET_ATTRIBUTE;
 
 /**
  * A custom implementation of {@link Session} that uses a {@link MapSession} as the basis for its mapping. It keeps
@@ -43,7 +45,7 @@ public class IgniteSession implements Session {
 
     /** */
     @GridDirectTransient
-    private transient boolean attrsChanged;
+    private final transient Map<String, Object> delta = new HashMap<>();
 
     /** The index resolver. */
     @GridDirectTransient
@@ -58,33 +60,33 @@ public class IgniteSession implements Session {
     private final transient Consumer<IgniteSession> flusher;
 
     /**
-     * @param cached The map session.
+     * @param delegate The map session.
      * @param idxResolver The index resolver.
      * @param isNew Is new flag.
      * @param saveMode Mode of tracking and saving session changes to session store.
      * @param flusher Flusher for session store.
      */
     IgniteSession(
-        MapSession cached,
+        MapSession delegate,
         IndexResolver<Session> idxResolver,
         boolean isNew,
         SaveMode saveMode,
         Consumer<IgniteSession> flusher
     ) {
-        this.delegate = cached;
-        this.idxResolver = idxResolver;
+        this.delegate = delegate;
         this.isNew = isNew;
+
+        this.idxResolver = idxResolver;
         this.saveMode = saveMode;
         this.flusher = flusher;
 
-        principal = delegate.getAttribute(PRINCIPAL_NAME_INDEX_NAME);
+        principal = this.delegate.getAttribute(PRINCIPAL_NAME_INDEX_NAME);
 
-        if (isNew) {
-            if (saveMode == SaveMode.ALWAYS)
-                attrsChanged = true;
+        if (this.isNew || this.saveMode == SaveMode.ALWAYS)
+            getAttributeNames().forEach(attrName -> delta.put(attrName, this.delegate.getAttribute(attrName)));
 
-            flusher.accept(this);
-        }
+        if (isNew)
+            this.flusher.accept(this);
     }
 
     /** {@inheritDoc} */
@@ -137,8 +139,8 @@ public class IgniteSession implements Session {
     @Override public <T> T getAttribute(String attrName) {
         T attrVal = this.delegate.getAttribute(attrName);
 
-        if (attrVal != null && saveMode.equals(SaveMode.ON_GET_ATTRIBUTE))
-            attrsChanged = true;
+        if (attrVal != null && saveMode.equals(ON_GET_ATTRIBUTE))
+            delta.put(attrName, attrVal);
 
         return attrVal;
     }
@@ -151,14 +153,16 @@ public class IgniteSession implements Session {
     /** {@inheritDoc} */
     @Override public void setAttribute(String attrName, Object attrVal) {
         delegate.setAttribute(attrName, attrVal);
-        attrsChanged = true;
-        
+        delta.put(attrName, attrVal);
+
         if (SPRING_SECURITY_CONTEXT.equals(attrName)) {
             Map<String, String> indexes = idxResolver.resolveIndexesFor(this);
             String principal = (attrVal != null) ? indexes.get(PRINCIPAL_NAME_INDEX_NAME) : null;
 
             this.principal = principal;
+            
             delegate.setAttribute(PRINCIPAL_NAME_INDEX_NAME, principal);
+            delta.put(PRINCIPAL_NAME_INDEX_NAME, principal);
         }
 
         flusher.accept(this);
@@ -186,15 +190,25 @@ public class IgniteSession implements Session {
     /**
      * @return {@code True} if session is changed.
      */
-    public boolean hasChanges() {
-        return lastAccessedTimeChanged || maxInactiveIntervalChanged || attrsChanged;
+    public Map<String, Object> getAttributesChanges() {
+        return new HashMap<>(delta);
     }
 
     /**
-     * @return {@code True} if session ID is changed.
+     * Get the original session id.
+     * @return the original session id.
+     * @see #changeSessionId()
      */
-    public boolean hasChangedSessionId() {
-        return !delegate.getId().equals(delegate.getOriginalId());
+    public String getOriginalId() {
+        return delegate.getOriginalId();
+    }
+
+    /**
+     * Reset the original session id.
+     * @see #changeSessionId()
+     */
+    public void resetOriginalId() {
+        delegate = new MapSession(delegate);
     }
 
     /** Reset the change flags. */
@@ -202,10 +216,21 @@ public class IgniteSession implements Session {
         isNew = false;
         lastAccessedTimeChanged = false;
         maxInactiveIntervalChanged = false;
-        attrsChanged = false;
+        delta.clear();
+    }
 
-        if (hasChangedSessionId())
-            delegate = new MapSession(delegate);
+    /**
+     * @return Last accessed time changed.
+     */
+    public boolean isLastAccessedTimeChanged() {
+        return lastAccessedTimeChanged;
+    }
+
+    /**
+     * @return Session changed.
+     */
+    public boolean hasChanges() {
+        return lastAccessedTimeChanged || maxInactiveIntervalChanged || !delta.isEmpty();
     }
 
     /** {@inheritDoc} */

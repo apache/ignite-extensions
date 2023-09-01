@@ -78,6 +78,11 @@ public class IgniteSessionProxy implements SessionProxy {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean replace(String key, IgniteSession oldVal, IgniteSession newVal) {
+        return cache.replace(key, oldVal, newVal);
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         return cache.query(qry);
     }
