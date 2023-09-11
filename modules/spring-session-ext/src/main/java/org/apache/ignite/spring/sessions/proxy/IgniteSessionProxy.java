@@ -22,7 +22,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
+import org.apache.ignite.spring.sessions.IgniteSession;
 
 /**
  * Represents {@link SessionProxy} implementation that uses {@link IgniteCache} to perform session operations.
@@ -75,6 +75,11 @@ public class IgniteSessionProxy implements SessionProxy {
     /** {@inheritDoc} */
     @Override public boolean replace(String key, IgniteSession val) {
         return cache.replace(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean replace(String key, IgniteSession oldVal, IgniteSession newVal) {
+        return cache.replace(key, oldVal, newVal);
     }
 
     /** {@inheritDoc} */

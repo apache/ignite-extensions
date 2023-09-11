@@ -57,13 +57,12 @@ public class IgniteHttpSessionConfigurationTest {
     private static final int MAX_INACTIVE_INTERVAL_IN_SECONDS = 600;
 
     /** */
-    private AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+    private final AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 
     /** */
     @AfterEach
     void closeContext() {
-        if (this.ctx != null)
-            this.ctx.close();
+        this.ctx.close();
     }
 
     /** */
@@ -110,7 +109,7 @@ public class IgniteHttpSessionConfigurationTest {
 
         IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
         assertThat(repo).isNotNull();
-        assertThat(getField(repo, "defaultMaxInactiveInterval"))
+        assertThat(getField(repo, "dfltMaxInactiveInterval"))
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
@@ -121,7 +120,7 @@ public class IgniteHttpSessionConfigurationTest {
 
         IgniteIndexedSessionRepository repo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
         assertThat(repo).isNotNull();
-        assertThat(getField(repo, "defaultMaxInactiveInterval"))
+        assertThat(getField(repo, "dfltMaxInactiveInterval"))
                 .isEqualTo(MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 
@@ -230,7 +229,7 @@ public class IgniteHttpSessionConfigurationTest {
         IndexResolver<Session> idxResolver = this.ctx.getBean(IndexResolver.class);
         assertThat(repo).isNotNull();
         assertThat(idxResolver).isNotNull();
-        assertThat(repo).hasFieldOrPropertyWithValue("indexResolver", idxResolver);
+        assertThat(repo).hasFieldOrPropertyWithValue("idxResolver", idxResolver);
     }
 
     /** */
@@ -238,7 +237,7 @@ public class IgniteHttpSessionConfigurationTest {
     void sessionRepositoryCustomizer() {
         registerAndRefresh(SessionRepositoryCustomizerConfiguration.class);
         IgniteIndexedSessionRepository sesRepo = this.ctx.getBean(IgniteIndexedSessionRepository.class);
-        assertThat(sesRepo).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval",
+        assertThat(sesRepo).hasFieldOrPropertyWithValue("dfltMaxInactiveInterval",
                 MAX_INACTIVE_INTERVAL_IN_SECONDS);
     }
 

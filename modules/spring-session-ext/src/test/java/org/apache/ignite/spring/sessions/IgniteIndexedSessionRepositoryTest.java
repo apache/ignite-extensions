@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 import org.apache.ignite.spring.sessions.proxy.SessionProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.FlushMode;
 import org.springframework.session.MapSession;
 
@@ -50,6 +48,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.springframework.session.FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME;
 
 /**
  * Tests for {@link IgniteIndexedSessionRepository}.
@@ -162,7 +161,7 @@ public class IgniteIndexedSessionRepositoryTest {
 
         IgniteSession ses = repo.createSession();
         ses.setAttribute("testName", "testValue");
-        verify(sessions, times(1)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
+        verify(sessions, times(2)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
         verify(sessions, times(1)).put(eq(ses.getId()), eq(ses));
         verify(sessions, times(1)).replace(eq(ses.getId()), eq(ses));
 
@@ -196,7 +195,7 @@ public class IgniteIndexedSessionRepositoryTest {
         ses.removeAttribute("testName");
         verify(sessions, times(1)).put(eq(ses.getId()), eq(ses));
         verify(sessions, times(1)).replace(eq(ses.getId()), eq(ses));
-        verify(sessions, times(1)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
+        verify(sessions, times(2)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
 
         repo.save(ses);
         verifyNoMoreInteractions(sessions);
@@ -228,7 +227,7 @@ public class IgniteIndexedSessionRepositoryTest {
         ses.setLastAccessedTime(Instant.now());
         verify(sessions, times(1)).put(eq(ses.getId()), eq(ses));
         verify(sessions, times(1)).replace(eq(ses.getId()), eq(ses));
-        verify(sessions, times(1)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
+        verify(sessions, times(2)).withExpiryPolicy(eq(createExpiryPolicy(ses)));
 
         repo.save(ses);
         verifyNoMoreInteractions(sessions);
@@ -316,7 +315,7 @@ public class IgniteIndexedSessionRepositoryTest {
     void getSessionExpired() {
         verify(sessions, times(1)).registerCacheEntryListener(any());
 
-        IgniteSession expired = repo.new IgniteSession(new MapSession(), true);
+        IgniteSession expired = repo.createSession();
 
         expired.setLastAccessedTime(Instant.now().minusSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS + 1));
         given(sessions.get(eq(expired.getId()))).willReturn(expired);
@@ -334,7 +333,7 @@ public class IgniteIndexedSessionRepositoryTest {
     void getSessionFound() {
         verify(sessions, times(1)).registerCacheEntryListener(any());
 
-        IgniteSession saved = repo.new IgniteSession(new MapSession(), true);
+        IgniteSession saved = repo.createSession();
         saved.setAttribute("savedName", "savedValue");
         given(sessions.get(eq(saved.getId()))).willReturn(saved);
 
@@ -379,8 +378,7 @@ public class IgniteIndexedSessionRepositoryTest {
 
         String principal = "username";
 
-        Map<String, IgniteSession> sesMap = repo
-                .findByIndexNameAndIndexValue(FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, principal);
+        Map<String, IgniteSession> sesMap = repo.findByIndexNameAndIndexValue(PRINCIPAL_NAME_INDEX_NAME, principal);
 
         assertThat(sesMap).isEmpty();
 
@@ -424,8 +422,7 @@ public class IgniteIndexedSessionRepositoryTest {
             }
         });
 
-        Map<String, IgniteSession> sesMap = repo
-                .findByIndexNameAndIndexValue(FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, principal);
+        Map<String, IgniteSession> sesMap = repo.findByIndexNameAndIndexValue(PRINCIPAL_NAME_INDEX_NAME, principal);
 
         assertThat(sesMap).hasSize(2);
         verify(sessions, times(1)).query(any());

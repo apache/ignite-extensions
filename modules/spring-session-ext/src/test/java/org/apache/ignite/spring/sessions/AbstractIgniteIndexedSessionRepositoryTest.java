@@ -18,7 +18,6 @@
 package org.apache.ignite.spring.sessions;
 
 import java.time.Duration;
-import org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository.IgniteSession;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,15 +27,13 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.session.FindByIndexNameSessionRepository;
 
+import static org.apache.ignite.spring.sessions.IgniteSession.SPRING_SECURITY_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Base class for {@link IgniteIndexedSessionRepository} integration tests.
  */
 abstract class AbstractIgniteIndexedSessionRepositoryTest {
-    /** */
-    private static final String SPRING_SECURITY_CONTEXT = "SPRING_SECURITY_CONTEXT";
-
     /** */
     @Autowired
     protected IgniteIndexedSessionRepository repo;

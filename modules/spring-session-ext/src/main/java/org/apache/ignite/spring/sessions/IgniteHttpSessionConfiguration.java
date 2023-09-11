@@ -185,7 +185,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
                 " delegate OTHER," +
                 " principal VARCHAR" +
                 ") WITH \"template=replicated,atomicity=atomic," +
-                "value_type=org.apache.ignite.spring.sessions.IgniteIndexedSessionRepository$IgniteSession," +
+                "value_type=org.apache.ignite.spring.sessions.IgniteSession," +
                 "cache_name=" + sesMapName + "\""),
             new SqlFieldsQuery("CREATE INDEX IF NOT EXISTS ignitesession_principal_idx ON IgniteSession (principal);")
         );
