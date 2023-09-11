@@ -26,6 +26,7 @@ buildNumber.properties
 bin/
 !/modules/performance-statistics-ext/bin
 !/modules/cdc-ext/bin
+!/modules/ml-ext/ml/src/main/java/org/apache/ignite/ml/preprocessing/encoding/target
 tmp/
 *.tmp
 *.bak
