@@ -26,7 +26,7 @@ import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
 
 import java.lang.{Long => JLong}
-import java.util.{Date => JDate}
+import java.util.{Calendar, Date => JDate}
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.DAYS
@@ -38,6 +38,10 @@ class IgniteOptimizationDateFuncSpec extends AbstractDataFrameSpec {
     var igniteSession: IgniteSparkSession = _
 
     val format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss")
+
+    val date: JDate = format.parse("01.01.2017 00:00:00")
+
+    val calendar: Calendar = Calendar.getInstance()
 
     describe("Supported optimized date functions") {
         it(" - CURRENT_TIMESTAMP") {
@@ -135,7 +139,10 @@ class IgniteOptimizationDateFuncSpec extends AbstractDataFrameSpec {
 
             checkOptimizationResult(df)
 
-            val data = Tuple1(1)
+            calendar.setTime(date)
+            val week = calendar.get(Calendar.WEEK_OF_YEAR)
+
+            val data = Tuple1(week)
 
             checkQueryData(df, data)
         }
@@ -205,7 +212,7 @@ class IgniteOptimizationDateFuncSpec extends AbstractDataFrameSpec {
 
         val qry = new SqlFieldsQuery("INSERT INTO dates(id, val) values (?, ?)")
 
-        cache.query(qry.setArgs(1L.asInstanceOf[JLong], format.parse("01.01.2017 00:00:00"))).getAll
+        cache.query(qry.setArgs(1L.asInstanceOf[JLong], date)).getAll
     }
 
     override protected def beforeAll(): Unit = {

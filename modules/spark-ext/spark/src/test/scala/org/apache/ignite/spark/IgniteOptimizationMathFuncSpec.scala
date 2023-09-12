@@ -206,7 +206,7 @@ class IgniteOptimizationMathFuncSpec extends AbstractDataFrameSpec {
 
             val data = (
                 (1, 1),
-                (3, Math.E))
+                (3, Math.exp(1.0)))
 
             checkQueryData(df, data)
         }
