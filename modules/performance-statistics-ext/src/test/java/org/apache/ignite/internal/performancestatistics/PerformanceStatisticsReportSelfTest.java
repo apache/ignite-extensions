@@ -59,8 +59,10 @@ public class PerformanceStatisticsReportSelfTest {
 
             IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>("cache")
                 .setQueryEntities(F.asList(new QueryEntity()
+                    .setKeyType(Integer.class.getName())
                     .setValueType(Integer.class.getName()))));
 
+            cache.put(0, 0);
             cache.put(1, 1);
             cache.get(1);
             cache.remove(1);
@@ -91,7 +93,9 @@ public class PerformanceStatisticsReportSelfTest {
 
             cache.query(new ScanQuery<>((key, val) -> true)).getAll();
 
-            cache.query(new SqlFieldsQuery("select * from sys.tables")).getAll();
+            cache.query(new SqlFieldsQuery("select * from sys.tables").setEnforceJoinOrder(true)).getAll();
+
+            cache.query(new SqlFieldsQuery("select sum(_VAL) from \"cache\".Integer")).getAll();
 
             cache.query(new IndexQuery<>(Integer.class).setCriteria(gt("_KEY", 0))).getAll();
 
