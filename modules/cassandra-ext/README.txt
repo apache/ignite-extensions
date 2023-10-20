@@ -19,7 +19,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-cassandra</artifactId>
+            <artifactId>ignite-cassandra-ext</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
