@@ -595,11 +595,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteInternalCache<K1, V1> withAllowAtomicOpsInTx() {
-        return delegate.get().withAllowAtomicOpsInTx();
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheContext context() {
         return delegate.get().context();
     }
