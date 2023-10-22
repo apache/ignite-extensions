@@ -260,6 +260,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
+        cdcs.forEach(CdcMain::stop);
+
         cleanPersistenceDir();
     }
 
