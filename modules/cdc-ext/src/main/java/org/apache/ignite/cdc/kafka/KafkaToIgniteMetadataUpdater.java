@@ -73,8 +73,8 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     /** Possible commit error. */
     private volatile Exception err;
 
-    /** Metadata topic partitions. */
-    private final Set<TopicPartition> parts;
+    /** Metadata topic partition. */
+    private final Set<TopicPartition> metaPart;
 
     /**
      * @param ctx Binary context.
@@ -110,17 +110,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         if (topicMeta == null)
             throw new IgniteException("Unknown topic: " + metaTopic);
 
-        parts = topicMeta
+        metaPart = topicMeta
             .stream()
-            .map(pInfo -> new TopicPartition(metaTopic, pInfo.partition()))
+            .map(pInfo -> new TopicPartition(metaTopic, 0))
             .collect(Collectors.toSet());
 
-        if (parts.size() != 1) {
-            this.log.warning("Metadata topic '" + metaTopic + "' has " + parts.size() + " partitions. " +
-                "In order to read data with guaranteed order set number of partitions to 1");
-        }
-
-        cnsmr.subscribe(Collections.singletonList(metaTopic));
+        cnsmr.assign(metaPart);
     }
 
     /** Polls all available records from metadata topic and applies it to Ignite. */
@@ -131,7 +126,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         // If there are no new records in topic, method KafkaConsumer#poll blocks up to the specified timeout.
         // In order to eliminate this, we compare current offsets with the offsets from the last metadata update
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
-        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
+        Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(metaPart, Duration.ofMillis(kafkaReqTimeout));
 
         if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
             if (log.isDebugEnabled())
