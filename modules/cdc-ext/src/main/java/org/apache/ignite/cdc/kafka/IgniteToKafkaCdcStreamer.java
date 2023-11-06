@@ -117,6 +117,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Kafka topic partitions count. */
     private int kafkaParts;
 
+    /** Kafka partitions lower bound (inclusive). */
+    private int kafkaPartsFrom = -1;
+
+    /** Kafka partitions higher bound (exclusive). */
+    private int kafkaPartsTo = -1;
+
     /** Kafka properties. */
     private Properties kafkaProps;
 
@@ -187,7 +193,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             filtered,
             evt -> new ProducerRecord<>(
                 evtTopic,
-                evt.partition() % kafkaParts,
+                kafkaPartsFrom + (evt.partition() % kafkaParts),
                 evt.cacheId(),
                 IgniteUtils.toBytes(evt)
             ),
@@ -299,8 +305,18 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
         A.notEmpty(caches, "caches");
-        A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
+        A.ensure(
+            kafkaPartsFrom >= 0,
+            "The Kafka partitions lower bound must be explicitly set to a value greater than or equals to zero.");
+        A.ensure(
+            kafkaPartsTo > 0,
+            "The Kafka partitions upper bound must be explicitly set to a value greater than zero.");
+        A.ensure(
+            kafkaPartsTo > kafkaPartsFrom,
+            "The Kafka partitions upper bound must be greater than the lower bound.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
+
+        kafkaParts = kafkaPartsTo - kafkaPartsFrom;
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
@@ -376,13 +392,25 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
-     * Sets number of Kafka partitions for data topic.
+     * Sets Kafka partitions higher bound (exclusive) for data topic.
      *
-     * @param kafkaParts Number of Kafka partitions for data topic.
+     * @param kafkaPartsTo Higher number of Kafka partitions for data topic (exclusive).
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setKafkaPartitions(int kafkaParts) {
-        this.kafkaParts = kafkaParts;
+    public IgniteToKafkaCdcStreamer setKafkaPartsTo(int kafkaPartsTo) {
+        this.kafkaPartsTo = kafkaPartsTo;
+
+        return this;
+    }
+
+    /**
+     * Sets Kafka partitions lower bound (inclusive) for data topic.
+     *
+     * @param kafkaPartsFrom Lower number of Kafka partitions for data topic (inclusive).
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setKafkaPartsFrom(int kafkaPartsFrom) {
+        this.kafkaPartsFrom = kafkaPartsFrom;
 
         return this;
     }

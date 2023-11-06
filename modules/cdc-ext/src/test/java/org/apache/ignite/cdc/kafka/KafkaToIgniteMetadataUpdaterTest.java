@@ -147,7 +147,8 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
         IgniteToKafkaCdcStreamer streamer = new IgniteToKafkaCdcStreamer()
             .setTopic(SRC_DEST_TOPIC)
             .setMetadataTopic(SRC_DEST_META_TOPIC)
-            .setKafkaPartitions(DFLT_PARTS)
+            .setKafkaPartsFrom(0)
+            .setKafkaPartsTo(DFLT_PARTS)
             .setKafkaProperties(kafkaProperties(kafka))
             .setCaches(Collections.singleton(ACTIVE_PASSIVE_CACHE))
             .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
