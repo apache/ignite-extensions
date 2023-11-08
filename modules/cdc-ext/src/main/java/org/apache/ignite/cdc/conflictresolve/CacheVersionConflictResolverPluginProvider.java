@@ -140,7 +140,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     }
 
     /** @param resolver Conflict resolver. */
-    public void setConflictResolver(CacheVersionConflictResolver resolver){
+    public void setConflictResolver(CacheVersionConflictResolver resolver) {
         this.resolver = resolver;
     }
 

@@ -39,24 +39,26 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
     /** {@inheritDoc} */
     @Test
-    public void testUpdatesReorderFromOtherCluster() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
+    @Override public void testUpdatesReorderFromOtherCluster() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testUpdatesReorderFromOtherCluster, AssertionError.class, "");
     }
 
     /** {@inheritDoc} */
     @Test
-    public void testUpdatesConflict() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
+    @Override public void testUpdatesConflict() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testUpdatesConflict, AssertionError.class, "");
     }
 
     /**
      *
      */
-    private final static class LwwConflictResolver implements CacheVersionConflictResolver {
+    private static final class LwwConflictResolver implements CacheVersionConflictResolver {
+        /**
+         *
+         */
         @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(CacheObjectValueContext ctx,
             GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
-            boolean atomicVerComparator)
-        {
+            boolean atomicVerComparator) {
             GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
             res.useNew();
