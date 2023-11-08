@@ -39,13 +39,15 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testUpdatesReorderFromOtherCluster() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
+    @Override public void testUpdatesReorderFromOtherCluster() {
+        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testUpdatesReorderFromOtherCluster, AssertionError.class, "");
     }
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testUpdatesConflict() { // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
+    @Override public void testUpdatesConflict() {
+        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testUpdatesConflict, AssertionError.class, "");
     }
 
