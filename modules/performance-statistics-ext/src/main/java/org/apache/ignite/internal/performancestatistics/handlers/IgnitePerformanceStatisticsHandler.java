@@ -81,7 +81,8 @@ public interface IgnitePerformanceStatisticsHandler extends PerformanceStatistic
     @Override default void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
         long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
         long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
-        long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
+        long recoveryDataWriteDuration, long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten,
+        int cowPagesWritten) {
         // No-op.
     }
 

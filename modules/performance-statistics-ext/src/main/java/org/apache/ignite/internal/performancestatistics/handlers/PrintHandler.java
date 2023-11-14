@@ -279,8 +279,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     /** {@inheritDoc} */
     @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration, long listenersExecDuration,
         long markDuration, long lockHoldDuration, long pagesWriteDuration, long fsyncDuration,
-        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration, long totalDuration,
-        long cpStartTime, int pagesSize, int dataPagesWritten, int cowPagesWritten) {
+        long walCpRecordFsyncDuration, long writeCpEntryDuration, long splitAndSortCpPagesDuration,
+        long recoveryDataWriteDuration, long totalDuration, long cpStartTime, int pagesSize, int dataPagesWritten,
+        int cowPagesWritten) {
         if (skip(CHECKPOINT, cpStartTime))
             return;
 
@@ -307,6 +308,8 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(writeCpEntryDuration);
         ps.print(",\"splitAndSortCpPagesDuration\":");
         ps.print(splitAndSortCpPagesDuration);
+        ps.print(",\"recoveryDataWriteDuration\":");
+        ps.print(recoveryDataWriteDuration);
         ps.print(",\"totalDuration\":");
         ps.print(totalDuration);
         ps.print(",\"startTime\":");
