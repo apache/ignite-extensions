@@ -317,7 +317,7 @@
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty-http</artifactId>
-            <version>1.0.7</version>
+            <version>1.0.39</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.fasterxml.woodstox/woodstox-core -->
