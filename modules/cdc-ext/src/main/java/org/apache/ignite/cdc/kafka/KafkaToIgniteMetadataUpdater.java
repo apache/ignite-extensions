@@ -141,7 +141,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         }
 
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(300));
 
             if (recs.count() == 0) {
                 if (log.isDebugEnabled())
