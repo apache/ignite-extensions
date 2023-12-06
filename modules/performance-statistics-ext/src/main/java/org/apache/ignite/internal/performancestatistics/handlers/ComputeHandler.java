@@ -135,7 +135,7 @@ public class ComputeHandler implements IgnitePerformanceStatisticsHandler {
 
             ArrayNode jobsJson = MAPPER.createArrayNode();
 
-            for (Job job : F.view(this.jobs.get(task.sesId))) {
+            for (Job job : F.view(jobs.get(task.sesId))) {
                 ObjectNode jobJson = MAPPER.createObjectNode();
 
                 jobJson.put("queuedTime", job.queuedTime);
