@@ -19,25 +19,34 @@ package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -75,6 +84,8 @@ public class PerformanceStatisticsReportSelfTest {
             client.compute().run(() -> {
                 // No-op.
             });
+
+            assertThrowsWithCause(() -> client.compute().execute(new TaskWithoutJobs(), null), IgniteException.class);
 
             IgniteCache<Object, Object> txCache = client.createCache(new CacheConfiguration<>("txCache")
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
@@ -125,6 +136,22 @@ public class PerformanceStatisticsReportSelfTest {
         }
         finally {
             U.delete(new File(U.defaultWorkDirectory()));
+        }
+    }
+
+    /** */
+    private class TaskWithoutJobs extends ComputeTaskAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
+            List subgrid,
+            @Nullable Object arg
+        ) throws IgniteException {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object reduce(List list) throws IgniteException {
+            return null;
         }
     }
 }
