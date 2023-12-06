@@ -140,7 +140,7 @@ public class PerformanceStatisticsReportSelfTest {
     }
 
     /** */
-    private class TaskWithoutJobs extends ComputeTaskAdapter<Object, Object> {
+    private static class TaskWithoutJobs extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
             List subgrid,
