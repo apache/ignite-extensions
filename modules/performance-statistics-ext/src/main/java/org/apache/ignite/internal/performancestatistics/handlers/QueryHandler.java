@@ -142,7 +142,7 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
         Map<String, long[]> actions = rowsById.computeIfAbsent(qryNodeId, node -> new HashMap<>())
             .computeIfAbsent(id, qryId -> new HashMap<>());
 
-        long[] rowsArr = actions.computeIfAbsent(action, act -> new long[] {0});
+        long[] rowsArr = actions.computeIfAbsent(action.intern(), act -> new long[] {0});
 
         rowsArr[0] += rows;
     }
@@ -159,7 +159,10 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
         Map<String, T3<String, String, long[]>> props = propsById.computeIfAbsent(qryNodeId, node -> new HashMap<>())
             .computeIfAbsent(id, qryId -> new HashMap<>());
 
-        T3<String, String, long[]> prop = props.computeIfAbsent(name + '=' + val, nv -> new T3<>(name, val, new long[] {0}));
+        String key = (name + '=' + val).intern();
+
+        T3<String, String, long[]> prop = props.computeIfAbsent(key,
+            nv -> new T3<>(name.intern(), val.intern(), new long[] {0}));
 
         prop.get3()[0]++;
     }
