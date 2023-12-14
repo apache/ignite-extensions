@@ -64,6 +64,7 @@
         <module>modules/osgi-ext</module>
         <module>modules/ssh-ext</module>
         <module>modules/ml-ext</module>
+        <module>modules/cassandra-ext</module>
     </modules>
 
     <profiles>
