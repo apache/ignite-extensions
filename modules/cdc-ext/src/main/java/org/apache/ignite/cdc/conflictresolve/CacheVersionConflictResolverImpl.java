@@ -17,10 +17,15 @@
 
 package org.apache.ignite.cdc.conflictresolve;
 
+import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -85,6 +90,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
+        Object prevStateMeta,
         boolean atomicVerComparator
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
@@ -94,7 +100,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             || oldEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL
             || newEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL;
 
-        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry, prevStateMeta);
 
         if (expireExists) {
             if (newEntry.expireTime() > oldEntry.expireTime()) {
@@ -132,7 +138,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        Object prevStateMeta
     ) {
         if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
             return true;
@@ -144,8 +151,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             return newEntry.version().compareTo(oldEntry.version()) > 0; // New version from the same cluster.
 
         if (conflictResolveFieldEnabled) {
-            Object oldVal = oldEntry.value(ctx);
             Object newVal = newEntry.value(ctx);
+            Object oldVal = oldEntry.value(ctx);
 
             if (oldVal != null && newVal != null) {
                 try {
@@ -158,6 +165,17 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     );
                 }
             }
+
+            Object field = oldVal != null ? value(oldVal) : null;
+
+            if (Objects.equals(field, prevStateMeta)) // Previous value synchronized.
+                return true;
+        }
+        else {
+            GridCacheVersion oldVer = oldEntry.value(ctx) != null ? oldEntry.version() : null;
+
+            if (Objects.equals(oldVer, prevStateMeta)) // Previous value synchronized.
+                return true;
         }
 
         log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
@@ -165,6 +183,18 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         // Ignoring update.
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Object previousStateMetadata(CacheObjectValueContext ctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
+        if (conflictResolveFieldEnabled)
+            return val != null ?
+                value(CacheObjectUtils.unwrapBinaryIfNeeded(ctx, val, true, true, null)) :
+                null;
+        else
+            return ver != null ? ver.conflictVersion() : null;
     }
 
     /** @return Conflict resolve field value. */
