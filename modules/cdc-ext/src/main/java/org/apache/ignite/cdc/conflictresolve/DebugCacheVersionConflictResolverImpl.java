@@ -44,9 +44,10 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
     @Override protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        Object prevStateMeta
     ) {
-        boolean res = super.isUseNew(ctx, oldEntry, newEntry);
+        boolean res = super.isUseNew(ctx, oldEntry, newEntry, prevStateMeta);
 
         Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
         Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
