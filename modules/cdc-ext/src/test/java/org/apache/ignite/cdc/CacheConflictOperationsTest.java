@@ -17,139 +17,29 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cdc.CacheConflictOperationsAbstractTest.Operation.NONE;
+import static org.apache.ignite.cdc.CacheConflictOperationsAbstractTest.Operation.PUT;
+import static org.apache.ignite.cdc.CacheConflictOperationsAbstractTest.Operation.REMOVE;
 
 /**
  * Cache conflict operations test.
  */
-@RunWith(Parameterized.class)
-public class CacheConflictOperationsTest extends GridCommonAbstractTest {
-    /** Cache mode. */
-    @Parameterized.Parameter
-    public CacheAtomicityMode cacheMode;
-
-    /** Other cluster id. */
-    @Parameterized.Parameter(1)
-    public byte otherClusterId;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}, otherClusterId={1}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (CacheAtomicityMode mode : EnumSet.of(ATOMIC, TRANSACTIONAL))
-            for (byte otherClusterId : new byte[] {FIRST_CLUSTER_ID, THIRD_CLUSTER_ID})
-                params.add(new Object[] {mode, otherClusterId});
-
-        return params;
-    }
-
-    /** */
-    private static final byte FIRST_CLUSTER_ID = 1;
-
-    /** */
-    private static final byte SECOND_CLUSTER_ID = 2;
-
-    /** */
-    private static final byte THIRD_CLUSTER_ID = 3;
-
-    /** */
-    private IgniteCache<String, ConflictResolvableTestData> cache;
-
-    /** */
-    private IgniteInternalCache<BinaryObject, BinaryObject> cachex;
-
-    /** */
-    private IgniteEx client;
-
-    /** */
-    private IgniteEx ign;
-
-    /** Listening test logger. */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
-
-        pluginCfg.setClusterId(SECOND_CLUSTER_ID);
-        pluginCfg.setCaches(new HashSet<>(Collections.singleton(DEFAULT_CACHE_NAME)));
-        pluginCfg.setConflictResolveField(conflictResolveField());
-
-        return super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(pluginCfg)
-            .setGridLogger(listeningLog);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        ign = startGrid(1);
-
-        client = startClientGrid(2);
-
-        if (cachex == null || cachex.configuration().getAtomicityMode() != cacheMode) {
-            if (cachex != null)
-                client.cache(DEFAULT_CACHE_NAME).destroy();
-
-            cache = client.createCache(new CacheConfiguration<String, ConflictResolvableTestData>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(cacheMode));
-
-            cachex = client.cachex(DEFAULT_CACHE_NAME);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() {
-        stopAllGrids();
-    }
-
+public class CacheConflictOperationsTest extends CacheConflictOperationsAbstractTest {
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
     @Test
     public void testSimpleUpdates() {
-        String key = "UpdatesWithoutConflict";
+        String key = nextKey();
 
-        put(key);
-        put(key);
+        for (int i = 0; i < 3; i++) {
+            putLocal(key);
+            putLocal(key);
 
-        remove(key);
+            removeLocal(key);
+        }
     }
 
     /**
@@ -158,13 +48,43 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdatesFromOtherClusterWithoutConflict() throws Exception {
-        String key = key("UpdateFromOtherClusterWithoutConflict", otherClusterId);
+        String key = nextKey();
 
-        putConflict(key, 1, true);
+        putFromOther(key, 1, true);
+        putFromOther(key, 2, true);
 
-        putConflict(key, 2, true);
+        removeFromOther(key, 3, true);
 
-        removeConflict(key, 3, true);
+        putFromOther(key, 4, true);
+        putFromOther(key, 5, true);
+
+        removeFromOther(key, 6, true);
+    }
+
+    /**
+     * Tests that {@code IgniteInternalCache#*AllConflict} cache operations works with the conflict resolver
+     * when there are update conflicts.
+     */
+    @Test
+    public void testUpdatesFromOtherClusterWithConflict() throws Exception {
+        String key = nextKey();
+
+        putFromOther(key, 1, true);
+        putFromOther(key, 2, true);
+
+        removeFromOther(key, 3, true);
+
+        putFromOther(key, 3, false);
+        putFromOther(key, 4, true);
+        putFromOther(key, 4, false);
+        putFromOther(key, 4, false);
+
+        removeFromOther(key, 3, false);
+
+        putFromOther(key, 4, false);
+
+        removeFromOther(key, 4, false);
+        removeFromOther(key, 5, true);
     }
 
     /**
@@ -173,202 +93,118 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUpdatesReorderFromOtherCluster() throws Exception {
-        String key = key("UpdateClusterUpdateReorder", otherClusterId);
+        testUpdatesReorderFromOtherCluster(
+            nextKey(),
+            (topVer) -> new GridCacheVersion(topVer, 1, 1, otherClusterId));
 
-        putConflict(key, 2, true);
+        testUpdatesReorderFromOtherCluster(
+            nextKey(),
+            (order) -> new GridCacheVersion(1, order, 1, otherClusterId));
 
-        // Update with the equal or lower order should ignored.
-        putConflict(key, 2, false);
-        putConflict(key, 1, false);
+        testUpdatesReorderFromOtherCluster(
+            nextKey(),
+            (nodeOrder) -> new GridCacheVersion(1, 1, nodeOrder, otherClusterId));
+    }
 
-        // Remove with the equal or lower order should ignored.
-        removeConflict(key, 2, false);
-        removeConflict(key, 1, false);
+    /** */
+    private void testUpdatesReorderFromOtherCluster(String key, Function<Integer, GridCacheVersion> verGen) throws Exception {
+        putFromOther(key, verGen.apply(2), true);
+
+        for (int i = 0; i < 3; i++) {
+            // Update with the equal or lower version should be ignored.
+            putFromOther(key, verGen.apply(2), false);
+            putFromOther(key, verGen.apply(1), false);
+
+            // Remove with the equal or lower version should be ignored.
+            removeFromOther(key, verGen.apply(2), false);
+            removeFromOther(key, verGen.apply(1), false);
+        }
 
         // Remove with the higher order should succeed.
-        putConflict(key, 3, true);
+        putFromOther(key, verGen.apply(3), true);
+    }
 
-        key = key("UpdateClusterUpdateReorder2", otherClusterId);
+    /** Tests cache operations for entry replicated from another cluster. */
+    @Test
+    public void testLocalUpdateWins() throws Exception {
+        String key = nextKey();
 
-        int order = 1;
+        putFromOther(key, true);
 
-        putConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), true);
-
-        // Update with the equal or lower topVer should ignored.
-        putConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), false);
-        putConflict(key, new GridCacheVersion(1, order, 1, otherClusterId), false);
-
-        // Remove with the equal or lower topVer should ignored.
-        removeConflict(key, new GridCacheVersion(2, order, 1, otherClusterId), false);
-        removeConflict(key, new GridCacheVersion(1, order, 1, otherClusterId), false);
-
-        // Remove with the higher topVer should succeed.
-        putConflict(key, new GridCacheVersion(3, order, 1, otherClusterId), true);
-
-        key = key("UpdateClusterUpdateReorder3", otherClusterId);
-
-        int topVer = 1;
-
-        putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), true);
-
-        // Update with the equal or lower nodeOrder should ignored.
-        putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
-        putConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
-
-        // Remove with the equal or lower nodeOrder should ignored.
-        removeConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
-        removeConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
-
-        // Remove with the higher nodeOrder should succeed.
-        putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+        // Local update for other cluster entry should succeed.
+        putLocal(key);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict() throws Exception {
-        String key = key("UpdateThisClusterConflict0", otherClusterId);
-
-        putConflict(key, 1, true);
-
-        // Local remove for other cluster entry should succeed.
-        remove(key);
-
-        // Conflict replicated update should ignored.
-        // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
-        putConflict(key, 2, false);
-
-        key = key("UpdateThisDCConflict1", otherClusterId);
-
-        putConflict(key, 3, true);
-
-        // Local update for other cluster entry should succeed.
-        put(key);
-
-        key = key("UpdateThisDCConflict2", otherClusterId);
-
-        put(key);
-
-        // Conflict replicated remove should ignored.
-        removeConflict(key, 4, false);
-
-        key = key("UpdateThisDCConflict3", otherClusterId);
-
-        put(key);
-
-        // Conflict replicated update succeed only if resolved by field.
-        putConflict(key, 5, conflictResolveField() != null);
-    }
-
-    /** Test switching debug log level for ConflictResolver during runtime */
-    @Test
-    public void testResolveDebug() throws Exception {
-        String key = key("UpdateClusterUpdateReorder", otherClusterId);
-
-        LogListener lsnr = LogListener.matches("isUseNew").build();
-
-        listeningLog.registerListener(lsnr);
-
-        Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
-
-        try {
-            putConflict(key, 1, true);
-
-            putConflict(key, 1, false);
-
-            assertTrue(lsnr.check());
-        }
-        finally {
-            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
-        }
-
-        lsnr.reset();
-
-        putConflict(key, 1, false);
-
-        assertFalse(lsnr.check());
-    }
-
-    /** */
-    private void put(String key) {
-        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
-
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(key);
-
-        cache.put(key, newVal);
-
-        CacheEntry<String, ConflictResolvableTestData> newEntry = cache.getEntry(key);
-
-        assertNull(((CacheEntryVersion)newEntry.version()).otherClusterVersion());
-        assertEquals(newVal, cache.get(key));
-
-        if (oldEntry != null)
-            assertTrue(((CacheEntryVersion)oldEntry.version()).order() < ((CacheEntryVersion)newEntry.version()).order());
-    }
-
-    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
-    private void putConflict(String k, long order, boolean success) throws IgniteCheckedException {
-        putConflict(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
-    }
-
-    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
-    private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
-        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
-
-        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
-        CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
-
-        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
-
-        if (success) {
-            assertEquals(newVer, ((GridCacheVersion)cache.getEntry(k).version()).conflictVersion());
-            assertEquals(newVal, cache.get(k));
-        }
-        else if (oldEntry != null) {
-            assertEquals(oldEntry.getValue(), cache.get(k));
-            assertEquals(oldEntry.version(), cache.getEntry(k).version());
+        for (Operation op1 : new Operation[] {NONE, PUT}) { // From other cluster.
+            for (Operation op2 : new Operation[] {PUT, REMOVE}) { // Local.
+                for (Operation op3 : new Operation[] {PUT, REMOVE}) { // From other cluster.
+                    for (boolean sync : new boolean[] {true, false}) // Sync clusters before the last operation.
+                        testUpdatesConflict(op1, op2, op3, sync);
+                }
+            }
         }
     }
 
     /** */
-    private void remove(String key) {
-        assertTrue(cache.containsKey(key));
+    private void testUpdatesConflict(Operation op1, Operation op2, Operation op3, boolean sync) throws Exception {
+        log.info("Checking: " + op1 + ", " + op2 + ", " + op3 + ", replication=" + sync);
 
-        cache.remove(key);
+        String key = nextKey();
 
-        assertFalse(cache.containsKey(key));
-    }
+        if (op1 == PUT)
+            putFromOther(key, 1, true);
+        else
+            assert op1 == NONE;
 
-    /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
-    private void removeConflict(String k, long order, boolean success) throws IgniteCheckedException {
-        removeConflict(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
-    }
+        if (op2 == PUT)
+            // Local remove always succeed.
+            putLocal(key);
+        else {
+            assert op2 == REMOVE;
 
-    /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
-    private void removeConflict(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
-        assertTrue(cache.containsKey(k));
+            if (op1 == NONE)
+                removeAfterRemove = true;
 
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
-
-        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
-
-        cachex.removeAllConflict(singletonMap(key, ver));
-
-        if (success)
-            assertFalse(cache.containsKey(k));
-        else if (oldEntry != null) {
-            assertEquals(oldEntry.getValue(), cache.get(k));
-            assertEquals(oldEntry.version(), cache.getEntry(k).version());
+            try {
+                // Local remove always succeed.
+                removeLocal(key);
+            }
+            finally {
+                removeAfterRemove = false;
+            }
         }
-    }
 
-    /** */
-    private String key(String key, byte otherClusterId) {
-        return key + otherClusterId + cacheMode;
-    }
+        if (sync)
+            replicateToOther(key);
 
-    /** */
-    protected String conflictResolveField() {
-        return null;
+        // Update is always successful when replication is finished and both clusters have the same state.
+        boolean success = sync;
+
+        if (op2 != REMOVE && op3 != REMOVE) {
+            // Values can be compared via the field when
+            // - previous value exist (was created and was not removed)
+            // - new value contain field (not a remove).
+            // So, update is also successful when can be resolved by field.
+            success |= conflictResolveField() != null;
+        }
+
+        if (op3 == PUT)
+            putFromOther(key, success);
+        else {
+            assert op3 == REMOVE;
+
+            if (op2 == REMOVE)
+                removeAfterRemove = true;
+
+            try {
+                removeFromOther(key, 2, success);
+            }
+            finally {
+                removeAfterRemove = false;
+            }
+        }
     }
 }

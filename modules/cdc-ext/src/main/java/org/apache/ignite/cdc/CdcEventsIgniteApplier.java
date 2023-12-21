@@ -23,10 +23,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -84,28 +82,16 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
 
     /** {@inheritDoc} */
     @Override protected KeyCacheObject toKey(CdcEvent evt) {
-        Object key = evt.key();
-
-        if (key instanceof KeyCacheObject)
-            return (KeyCacheObject)key;
-        else
-            return new KeyCacheObjectImpl(key, null, evt.partition());
+        return evt.keyCacheObject();
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheDrInfo toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
-        CacheObject cacheObj;
-
-        Object val = evt.value();
-
-        if (val instanceof CacheObject)
-            cacheObj = (CacheObject)val;
-        else
-            cacheObj = new CacheObjectImpl(val, null);
+        CacheObject val = evt.valueCacheObject();
 
         return evt.expireTime() != EXPIRE_TIME_ETERNAL ?
-            new GridCacheDrExpirationInfo(cacheObj, ver, TTL_ETERNAL, evt.expireTime()) :
-            new GridCacheDrInfo(cacheObj, ver);
+            new GridCacheDrExpirationInfo(val, ver, TTL_ETERNAL, evt.expireTime()) :
+            new GridCacheDrInfo(val, ver);
     }
 
     /** @return Cache. */
