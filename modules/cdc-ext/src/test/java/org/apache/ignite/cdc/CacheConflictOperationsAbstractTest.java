@@ -36,6 +36,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheTestEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -177,9 +179,9 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
         CacheVersionConflictResolver resolver = cachex.context().conflictResolver();
 
-        CacheObject prevStateMeta = cachex.context().toCacheObject(
-            resolver.previousStateMetadata(
-                cachex.context().cacheObjectContext(), key, cachex.context().toCacheObject(prevValue), prevVersion));
+        GridCacheEntryEx entry = new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
+
+        CacheObject prevStateMeta = cachex.context().toCacheObject(resolver.previousStateMetadata(entry));
 
         cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer, prevStateMeta)));
 
@@ -237,13 +239,11 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
         CacheVersionConflictResolver resolver = cachex.context().conflictResolver();
 
-        CacheObject prevStateMeta = cachex.context().toCacheObject(
-            resolver.previousStateMetadata(
-                cachex.context().cacheObjectContext(), key, cachex.context().toCacheObject(prevValue), prevVersion));
+        GridCacheEntryEx entry = new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
+
+        CacheObject prevStateMeta = cachex.context().toCacheObject(resolver.previousStateMetadata(entry));
 
         cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(null, ver, prevStateMeta)));
-
-       // cachex.removeAllConflict(singletonMap(key, ver));
 
         if (success)
             assertFalse(cache.containsKey(k));

@@ -23,7 +23,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -188,13 +189,25 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /**
      * {@inheritDoc}
      */
-    @Override public Object previousStateMetadata(CacheObjectValueContext ctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver) {
-        if (conflictResolveFieldEnabled)
+    @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
+        if (conflictResolveFieldEnabled) {
+            CacheObjectValueContext ctx = entry.context().cacheObjectContext();
+            CacheObject val = entry.rawGet();
+
             return val != null ?
                 value(CacheObjectUtils.unwrapBinaryIfNeeded(ctx, val, true, true, null)) :
                 null;
-        else
-            return ver != null ? ver.conflictVersion() : null;
+        }
+        else {
+            try {
+                GridCacheVersion ver = entry.version();
+
+                return ver != null ? ver.conflictVersion() : null;
+            }
+            catch (GridCacheEntryRemovedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /** @return Conflict resolve field value. */
