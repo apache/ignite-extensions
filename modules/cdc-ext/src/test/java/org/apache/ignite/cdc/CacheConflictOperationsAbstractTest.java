@@ -179,7 +179,8 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
         CacheVersionConflictResolver resolver = cachex.context().conflictResolver();
 
-        GridCacheEntryEx entry = new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
+        GridCacheEntryEx entry =
+            new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
 
         CacheObject prevStateMeta = cachex.context().toCacheObject(resolver.previousStateMetadata(entry));
 
@@ -239,7 +240,8 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
         CacheVersionConflictResolver resolver = cachex.context().conflictResolver();
 
-        GridCacheEntryEx entry = new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
+        GridCacheEntryEx entry =
+            new GridCacheTestEntryEx(cachex.context(), key, cachex.context().toCacheObject(prevValue), prevVersion, 0);
 
         CacheObject prevStateMeta = cachex.context().toCacheObject(resolver.previousStateMetadata(entry));
 
