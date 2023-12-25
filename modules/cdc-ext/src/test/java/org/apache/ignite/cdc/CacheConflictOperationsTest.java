@@ -126,33 +126,29 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict1() throws Exception {
-        String key = key("UpdateThisClusterConflict1", otherClusterId);
-
-        putFromOther(key, 1, true);
-
-        // Local remove for other cluster entry should succeed.
-        removeLocal(key);
-
-        // Conflict replicated update should be ignored.
-        // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
-        putFromOther(key, 2, false);
+        testUpdatesConflict1(false);
+        testUpdatesConflict1(true);
     }
 
-    /** Tests cache operations for entry replicated from another cluster. */
-    @Test
-    public void testUpdatesConflict1Replicated() throws Exception {
-        String key = key("UpdateThisClusterConflict1Replicated", otherClusterId);
+    /** */
+    private void testUpdatesConflict1(boolean replication) throws Exception {
+        String key = key("UpdateThisClusterConflict1" + (replication ? "Replicated" : ""), otherClusterId);
 
         putFromOther(key, 1, true);
 
         // Local remove for other cluster entry should succeed.
         removeLocal(key);
 
-        replicateToOther(key);
+        if (replication)
+            replicateToOther(key);
 
+        // Non-replicated:
+        // Conflict replicated update should be ignored.
+        // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
+        // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        putFromOther(key, 2, true);
+        putFromOther(key, 2, replication);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -169,50 +165,48 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict3() throws Exception {
-        String key = key("UpdateThisClusterConflict3", otherClusterId);
-
-        putLocal(key);
-
-        // Conflict replicated remove should be ignored.
-        removeFromOther(key, false);
+        testUpdatesConflict3(false);
+        testUpdatesConflict3(true);
     }
 
-    /** Tests cache operations for entry replicated from another cluster. */
-    @Test
-    public void testUpdatesConflict3Replicated() throws Exception {
-        String key = key("UpdateThisClusterConflict3Replicated", otherClusterId);
+    /** */
+    private void testUpdatesConflict3(boolean replication) throws Exception {
+        String key = key("UpdateThisClusterConflict3" + (replication ? "Replicated" : ""), otherClusterId);
 
         putLocal(key);
 
-        replicateToOther(key);
+        if (replication)
+            replicateToOther(key);
 
+        // Non-replicated:
+        // Conflict replicated remove should be ignored.
+        // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        removeFromOther(key, true);
+        removeFromOther(key, replication);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict4() throws Exception {
-        String key = key("UpdateThisClusterConflict4", otherClusterId);
-
-        putLocal(key);
-
-        // Conflict replicated update succeed only if resolved by field.
-        putFromOther(key, conflictResolveField() != null);
+        testUpdatesConflict4(false);
+        testUpdatesConflict4(true);
     }
 
-    /** Tests cache operations for entry replicated from another cluster. */
-    @Test
-    public void testUpdatesConflict4Replicated() throws Exception {
-        String key = key("UpdateThisClusterConflict4Replicated", otherClusterId);
+    /** */
+    private void testUpdatesConflict4(boolean replication) throws Exception {
+        String key = key("UpdateThisClusterConflict4" + (replication ? "Replicated" : ""), otherClusterId);
 
         putLocal(key);
 
-        replicateToOther(key);
+        if (replication)
+            replicateToOther(key);
 
+        // Non-replicated:
+        // Conflict replicated update succeed only if resolved by field.
+        // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        putFromOther(key, true);
+        putFromOther(key, replication || conflictResolveField() != null);
     }
 }
