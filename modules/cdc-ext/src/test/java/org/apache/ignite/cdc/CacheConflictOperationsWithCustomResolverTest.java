@@ -42,10 +42,10 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     public void testSimpleUpdates() {
         String key = "UpdatesWithoutConflict";
 
-        put(key);
-        put(key);
+        putLocal(key);
+        putLocal(key);
 
-        remove(key);
+        removeLocal(key);
     }
 
     /** Tests simple conflicts can be resolved with LWW. */
@@ -53,10 +53,10 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     public void testSimpleConflicts() throws IgniteCheckedException {
         String key = "UpdatesWithConflict";
 
-        put(key);
+        putLocal(key);
 
         // LWW.
-        removeConflict(key, true);
+        removeFromOther(key, true);
     }
 
     /**

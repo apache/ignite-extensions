@@ -34,10 +34,10 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
         String key = "UpdatesWithoutConflict";
 
         for (int i = 0; i < 3; i++) {
-            put(key);
-            put(key);
+            putLocal(key);
+            putLocal(key);
 
-            remove(key);
+            removeLocal(key);
         }
     }
 
@@ -49,15 +49,15 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesFromOtherClusterWithoutConflict() throws Exception {
         String key = key("UpdateFromOtherClusterWithoutConflict", otherClusterId);
 
-        putConflict(key, 1, true);
-        putConflict(key, 2, true);
+        putFromOther(key, 1, true);
+        putFromOther(key, 2, true);
 
-        removeConflict(key, 3, true);
+        removeFromOther(key, 3, true);
 
-        putConflict(key, 4, true);
-        putConflict(key, 5, true);
+        putFromOther(key, 4, true);
+        putFromOther(key, 5, true);
 
-        removeConflict(key, 6, true);
+        removeFromOther(key, 6, true);
     }
 
     /**
@@ -68,22 +68,22 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesFromOtherClusterWithConflict() throws Exception {
         String key = key("UpdateFromOtherClusterWithConflict", otherClusterId);
 
-        putConflict(key, 1, true);
-        putConflict(key, 2, true);
+        putFromOther(key, 1, true);
+        putFromOther(key, 2, true);
 
-        removeConflict(key, 3, true);
+        removeFromOther(key, 3, true);
 
-        putConflict(key, 3, false);
-        putConflict(key, 4, true);
-        putConflict(key, 4, false);
-        putConflict(key, 4, false);
+        putFromOther(key, 3, false);
+        putFromOther(key, 4, true);
+        putFromOther(key, 4, false);
+        putFromOther(key, 4, false);
 
-        removeConflict(key, 3, false);
+        removeFromOther(key, 3, false);
 
-        putConflict(key, 4, false);
+        putFromOther(key, 4, false);
 
-        removeConflict(key, 4, false);
-        removeConflict(key, 5, true);
+        removeFromOther(key, 4, false);
+        removeFromOther(key, 5, true);
     }
 
     /**
@@ -107,20 +107,20 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesReorderFromOtherCluster(String key, Function<Integer, GridCacheVersion> verGen) throws Exception {
-        putConflict(key, verGen.apply(2), true);
+        putFromOther(key, verGen.apply(2), true);
 
         for (int i = 0; i < 3; i++) {
             // Update with the equal or lower version should be ignored.
-            putConflict(key, verGen.apply(2), false);
-            putConflict(key, verGen.apply(1), false);
+            putFromOther(key, verGen.apply(2), false);
+            putFromOther(key, verGen.apply(1), false);
 
             // Remove with the equal or lower version should be ignored.
-            removeConflict(key, verGen.apply(2), false);
-            removeConflict(key, verGen.apply(1), false);
+            removeFromOther(key, verGen.apply(2), false);
+            removeFromOther(key, verGen.apply(1), false);
         }
 
         // Remove with the higher order should succeed.
-        putConflict(key, verGen.apply(3), true);
+        putFromOther(key, verGen.apply(3), true);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -128,14 +128,14 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict1() throws Exception {
         String key = key("UpdateThisClusterConflict1", otherClusterId);
 
-        putConflict(key, 1, true);
+        putFromOther(key, 1, true);
 
         // Local remove for other cluster entry should succeed.
-        remove(key);
+        removeLocal(key);
 
         // Conflict replicated update should be ignored.
         // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
-        putConflict(key, 2, false);
+        putFromOther(key, 2, false);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -143,16 +143,16 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict1Replicated() throws Exception {
         String key = key("UpdateThisClusterConflict1Replicated", otherClusterId);
 
-        putConflict(key, 1, true);
+        putFromOther(key, 1, true);
 
         // Local remove for other cluster entry should succeed.
-        remove(key);
+        removeLocal(key);
 
-        replicate(key);
+        replicateToOther(key);
 
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        putConflict(key, 2, true);
+        putFromOther(key, 2, true);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -160,10 +160,10 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict2() throws Exception {
         String key = key("UpdateThisClusterConflict2", otherClusterId);
 
-        putConflict(key, true);
+        putFromOther(key, true);
 
         // Local update for other cluster entry should succeed.
-        put(key);
+        putLocal(key);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -171,10 +171,10 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict3() throws Exception {
         String key = key("UpdateThisClusterConflict3", otherClusterId);
 
-        put(key);
+        putLocal(key);
 
         // Conflict replicated remove should be ignored.
-        removeConflict(key, false);
+        removeFromOther(key, false);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -182,13 +182,13 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict3Replicated() throws Exception {
         String key = key("UpdateThisClusterConflict3Replicated", otherClusterId);
 
-        put(key);
+        putLocal(key);
 
-        replicate(key);
+        replicateToOther(key);
 
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        removeConflict(key, true);
+        removeFromOther(key, true);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -196,10 +196,10 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict4() throws Exception {
         String key = key("UpdateThisClusterConflict4", otherClusterId);
 
-        put(key);
+        putLocal(key);
 
         // Conflict replicated update succeed only if resolved by field.
-        putConflict(key, conflictResolveField() != null);
+        putFromOther(key, conflictResolveField() != null);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -207,12 +207,12 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict4Replicated() throws Exception {
         String key = key("UpdateThisClusterConflict4Replicated", otherClusterId);
 
-        put(key);
+        putLocal(key);
 
-        replicate(key);
+        replicateToOther(key);
 
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
-        putConflict(key, true);
+        putFromOther(key, true);
     }
 }

@@ -143,7 +143,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** */
-    protected void put(String key) {
+    protected void putLocal(String key) {
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(key);
@@ -160,17 +160,17 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
-    protected void putConflict(String k, boolean success) throws IgniteCheckedException {
-        putConflict(k, 1, success);
+    protected void putFromOther(String k, boolean success) throws IgniteCheckedException {
+        putFromOther(k, 1, success);
     }
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
-    protected void putConflict(String k, long order, boolean success) throws IgniteCheckedException {
-        putConflict(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
+    protected void putFromOther(String k, long order, boolean success) throws IgniteCheckedException {
+        putFromOther(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
     }
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
-    protected void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
+    protected void putFromOther(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
@@ -200,7 +200,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** Replicates entry to the virtual other cluster. */
-    protected void replicate(String k) {
+    protected void replicateToOther(String k) {
         CacheEntry<String, ConflictResolvableTestData> entry = cache.getEntry(k);
 
         prevValue = entry != null ? entry.getValue() : null;
@@ -212,7 +212,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** */
-    protected void remove(String key) {
+    protected void removeLocal(String key) {
         assertTrue(cache.containsKey(key));
 
         cache.remove(key);
@@ -221,17 +221,17 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
-    protected void removeConflict(String k, boolean success) throws IgniteCheckedException {
-        removeConflict(k, 1, success);
+    protected void removeFromOther(String k, boolean success) throws IgniteCheckedException {
+        removeFromOther(k, 1, success);
     }
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
-    protected void removeConflict(String k, long order, boolean success) throws IgniteCheckedException {
-        removeConflict(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
+    protected void removeFromOther(String k, long order, boolean success) throws IgniteCheckedException {
+        removeFromOther(k, new GridCacheVersion(1, order, 1, otherClusterId), success);
     }
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
-    protected void removeConflict(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
+    protected void removeFromOther(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
         assertTrue(cache.containsKey(k));
 
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
