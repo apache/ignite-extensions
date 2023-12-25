@@ -145,13 +145,14 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict3Replicated() throws Exception {
-        String key = key("UpdateThisClusterConflict3", otherClusterId);
+        String key = key("UpdateThisClusterConflict3Replicated", otherClusterId);
 
         put(key);
 
         replicate(key);
 
-        // Conflict replicated remove should be ignored.
+        // Conflict replicated update shouldn't be ignored.
+        // Both clusters had the same state before this change.
         removeConflict(key, true);
     }
 
@@ -164,5 +165,19 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, conflictResolveField() != null);
+    }
+
+    /** Tests cache operations for entry replicated from another cluster. */
+    @Test
+    public void testUpdatesConflict4Replicated() throws Exception {
+        String key = key("UpdateThisClusterConflict4Replicated", otherClusterId);
+
+        put(key);
+
+        replicate(key);
+
+        // Conflict replicated update shouldn't be ignored.
+        // Both clusters had the same state before this change.
+        putConflict(key, true);
     }
 }
