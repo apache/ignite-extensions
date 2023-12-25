@@ -33,10 +33,12 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testSimpleUpdates() {
         String key = "UpdatesWithoutConflict";
 
-        put(key);
-        put(key);
+        for (int i = 0; i < 3; i++) {
+            put(key);
+            put(key);
 
-        remove(key);
+            remove(key);
+        }
     }
 
     /**
@@ -51,6 +53,37 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
         putConflict(key, 2, true);
 
         removeConflict(key, 3, true);
+
+        putConflict(key, 4, true);
+        putConflict(key, 5, true);
+
+        removeConflict(key, 6, true);
+    }
+
+    /**
+     * Tests that {@code IgniteInternalCache#*AllConflict} cache operations works with the conflict resolver
+     * when there are update conflicts.
+     */
+    @Test
+    public void testUpdatesFromOtherClusterWithConflict() throws Exception {
+        String key = key("UpdateFromOtherClusterWithConflict", otherClusterId);
+
+        putConflict(key, 1, true);
+        putConflict(key, 2, true);
+
+        removeConflict(key, 3, true);
+
+        putConflict(key, 3, false);
+        putConflict(key, 4, true);
+        putConflict(key, 4, false);
+        putConflict(key, 4, false);
+
+        removeConflict(key, 3, false);
+
+        putConflict(key, 4, false);
+
+        removeConflict(key, 4, false);
+        removeConflict(key, 5, true);
     }
 
     /**
@@ -76,13 +109,15 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     private void testUpdatesReorderFromOtherCluster(String key, Function<Integer, GridCacheVersion> verGen) throws Exception {
         putConflict(key, verGen.apply(2), true);
 
-        // Update with the equal or lower version should be ignored.
-        putConflict(key, verGen.apply(2), false);
-        putConflict(key, verGen.apply(1), false);
+        for (int i = 0; i < 3; i++) {
+            // Update with the equal or lower version should be ignored.
+            putConflict(key, verGen.apply(2), false);
+            putConflict(key, verGen.apply(1), false);
 
-        // Remove with the equal or lower version should be ignored.
-        removeConflict(key, verGen.apply(2), false);
-        removeConflict(key, verGen.apply(1), false);
+            // Remove with the equal or lower version should be ignored.
+            removeConflict(key, verGen.apply(2), false);
+            removeConflict(key, verGen.apply(1), false);
+        }
 
         // Remove with the higher order should succeed.
         putConflict(key, verGen.apply(3), true);
