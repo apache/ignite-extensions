@@ -22,18 +22,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
-import kafka.utils.ZkUtils;
-import kafka.zk.KafkaZkClient;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkConnection;
 import org.apache.curator.test.TestingServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -70,8 +72,8 @@ public class TestKafkaBroker {
     /** ZooKeeper. */
     private TestingServer zkServer;
 
-    /** Kafka Zookeeper utils. */
-    private ZkUtils zkUtils;
+    /** Kafka Admin Client. */
+    AdminClient admin;
 
     /**
      * Kafka broker constructor.
@@ -97,15 +99,20 @@ public class TestKafkaBroker {
      * @throws InterruptedException If interrupted.
      */
     public void createTopic(String topic, int partitions, int replicationFactor)
-        throws TimeoutException, InterruptedException {
-        List<KafkaServer> servers = new ArrayList<>();
-
-        servers.add(kafkaSrv);
-
-        KafkaZkClient client = kafkaSrv.zkClient();
-
-        TestUtils.createTopic(client, topic, partitions, replicationFactor,
-            scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
+        throws TimeoutException, InterruptedException, IOException, ExecutionException {
+//        List<KafkaServer> servers = new ArrayList<>();
+//
+//        servers.add(kafkaSrv);
+//
+//        KafkaZkClient client = kafkaSrv.zkClient();
+//
+//        TestUtils.createTopic(client, topic, partitions, replicationFactor,
+//            scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
+        admin = AdminClient.create(getKafkaConfig());
+        NewTopic newTopic = new NewTopic(topic, partitions, (short)replicationFactor);
+        Collection<NewTopic> newTopics = Arrays.asList(newTopic);
+        CreateTopicsResult ctr = admin.createTopics(newTopics);
+        ctr.all().get();
     }
 
     /**
@@ -128,8 +135,8 @@ public class TestKafkaBroker {
      * Shuts down test Kafka broker.
      */
     public void shutdown() {
-        if (zkUtils != null)
-            zkUtils.close();
+        if (admin != null)
+            admin.close();
 
         if (kafkaSrv != null)
             kafkaSrv.shutdown();
@@ -169,11 +176,11 @@ public class TestKafkaBroker {
      */
     private void setupZooKeeper() throws Exception {
         zkServer = new TestingServer(ZK_PORT, true);
-
-        Tuple2<ZkClient, ZkConnection> zkTuple = ZkUtils.createZkClientAndConnection(zkServer.getConnectString(),
-            ZK_SESSION_TIMEOUT, ZK_CONNECTION_TIMEOUT);
-
-        zkUtils = new ZkUtils(zkTuple._1(), zkTuple._2(), false);
+//
+//        Tuple2<ZkClient, ZkConnection> zkTuple = ZkUtils.createZkClientAndConnection(zkServer.getConnectString(),
+//            ZK_SESSION_TIMEOUT, ZK_CONNECTION_TIMEOUT);
+//
+//        zkUtils = new ZkUtils(zkTuple._1(), zkTuple._2(), false);
     }
 
     /**
@@ -189,10 +196,12 @@ public class TestKafkaBroker {
         props.put("zookeeper.connect", zkServer.getConnectString());
         props.put("host.name", BROKER_HOST);
         props.put("port", BROKER_PORT);
+        props.put("bootstrap.servers", getBrokerAddress());
         props.put("offsets.topic.replication.factor", "1");
         props.put("log.dir", createTmpDir("_cfg").getAbsolutePath());
         props.put("log.flush.interval.messages", "1");
         props.put("log.flush.interval.ms", "10");
+        props.put("listeners", "PLAINTEXT://" + getBrokerAddress());
 
         return props;
     }
