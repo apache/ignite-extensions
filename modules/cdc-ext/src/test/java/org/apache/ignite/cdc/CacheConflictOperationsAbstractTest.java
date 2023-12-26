@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -86,6 +87,9 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
     /** */
     private static IgniteEx client;
+
+    /** */
+    private static final AtomicInteger incKey = new AtomicInteger();
 
     /** */
     private static final byte FIRST_CLUSTER_ID = 1;
@@ -256,8 +260,8 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     }
 
     /** */
-    protected String key(String key, byte otherClusterId) {
-        return key + otherClusterId + cacheMode;
+    protected String nextKey() {
+        return "Key_" + incKey.incrementAndGet() + otherClusterId + cacheMode;
     }
 
     /** */

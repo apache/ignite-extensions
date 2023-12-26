@@ -47,7 +47,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
      */
     @Test
     public void testUpdatesFromOtherClusterWithoutConflict() throws Exception {
-        String key = key("UpdateFromOtherClusterWithoutConflict", otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, 1, true);
         putFromOther(key, 2, true);
@@ -66,7 +66,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
      */
     @Test
     public void testUpdatesFromOtherClusterWithConflict() throws Exception {
-        String key = key("UpdateFromOtherClusterWithConflict", otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, 1, true);
         putFromOther(key, 2, true);
@@ -93,15 +93,15 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     @Test
     public void testUpdatesReorderFromOtherCluster() throws Exception {
         testUpdatesReorderFromOtherCluster(
-            key("UpdateClusterUpdateReorder1", otherClusterId),
+            nextKey(),
             (topVer) -> new GridCacheVersion(topVer, 1, 1, otherClusterId));
 
         testUpdatesReorderFromOtherCluster(
-            key("UpdateClusterUpdateReorder2", otherClusterId),
+            nextKey(),
             (order) -> new GridCacheVersion(1, order, 1, otherClusterId));
 
         testUpdatesReorderFromOtherCluster(
-            key("UpdateClusterUpdateReorder3", otherClusterId),
+            nextKey(),
             (nodeOrder) -> new GridCacheVersion(1, 1, nodeOrder, otherClusterId));
     }
 
@@ -126,7 +126,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict() throws Exception {
-        String key = key("UpdateThisClusterConflict", otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, true);
 
@@ -143,7 +143,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesConflict00(boolean replication) throws Exception {
-        String key = key("UpdateThisClusterConflict00" + (replication ? "Replicated" : ""), otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, 1, true);
 
@@ -172,7 +172,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesConflict0(boolean replication) throws Exception {
-        String key = key("UpdateThisClusterConflict0" + (replication ? "Replicated" : ""), otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, 1, true);
 
@@ -201,7 +201,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesConflict1(boolean replication) throws Exception {
-        String key = key("UpdateThisClusterConflict1" + (replication ? "Replicated" : ""), otherClusterId);
+        String key = nextKey();
 
         putFromOther(key, 1, true);
 
@@ -230,7 +230,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesConflict3(boolean replication) throws Exception {
-        String key = key("UpdateThisClusterConflict3" + (replication ? "Replicated" : ""), otherClusterId);
+        String key = nextKey();
 
         putLocal(key);
 
@@ -255,7 +255,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** */
     private void testUpdatesConflict4(boolean replication) throws Exception {
-        String key = key("UpdateThisClusterConflict4" + (replication ? "Replicated" : ""), otherClusterId);
+        String key = nextKey();
 
         putLocal(key);
 
