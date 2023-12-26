@@ -125,7 +125,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
-    public void testUpdatesConflict() throws Exception {
+    public void testLocalUpdateWins() throws Exception {
         String key = nextKey();
 
         putFromOther(key, true);
