@@ -268,4 +268,16 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     protected String conflictResolveField() {
         return null;
     }
+
+    /** */
+    protected enum Operation {
+        /** */
+        NONE,
+
+        /** */
+        PUT,
+
+        /** */
+        REMOVE
+    }
 }
