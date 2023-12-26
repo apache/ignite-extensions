@@ -125,6 +125,17 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
+    public void testUpdatesConflict() throws Exception {
+        String key = key("UpdateThisClusterConflict", otherClusterId);
+
+        putFromOther(key, true);
+
+        // Local update for other cluster entry should succeed.
+        putLocal(key);
+    }
+
+    /** Tests cache operations for entry replicated from another cluster. */
+    @Test
     public void testUpdatesConflict00() throws Exception {
         testUpdatesConflict00(false);
         testUpdatesConflict00(true);
@@ -208,17 +219,6 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
         putFromOther(key, 2, replication);
-    }
-
-    /** Tests cache operations for entry replicated from another cluster. */
-    @Test
-    public void testUpdatesConflict2() throws Exception {
-        String key = key("UpdateThisClusterConflict2", otherClusterId);
-
-        putFromOther(key, true);
-
-        // Local update for other cluster entry should succeed.
-        putLocal(key);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
