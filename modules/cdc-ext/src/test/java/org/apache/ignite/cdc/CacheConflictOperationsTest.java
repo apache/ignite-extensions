@@ -125,6 +125,64 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
+    public void testUpdatesConflict00() throws Exception {
+        testUpdatesConflict00(false);
+        testUpdatesConflict00(true);
+    }
+
+    /** */
+    private void testUpdatesConflict00(boolean replication) throws Exception {
+        String key = key("UpdateThisClusterConflict00" + (replication ? "Replicated" : ""), otherClusterId);
+
+        putFromOther(key, 1, true);
+
+        // Local remove for other cluster entry should succeed.
+        putLocal(key);
+
+        if (replication)
+            replicateToOther(key);
+
+        // Non-replicated:
+        // Conflict replicated update should be ignored.
+        // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
+
+        // Replicated:
+        // Conflict replicated update shouldn't be ignored.
+        // Both clusters had the same state before this change.
+        removeFromOther(key, 2, replication);
+    }
+
+    /** Tests cache operations for entry replicated from another cluster. */
+    @Test
+    public void testUpdatesConflict0() throws Exception {
+        testUpdatesConflict0(false);
+        testUpdatesConflict0(true);
+    }
+
+    /** */
+    private void testUpdatesConflict0(boolean replication) throws Exception {
+        String key = key("UpdateThisClusterConflict0" + (replication ? "Replicated" : ""), otherClusterId);
+
+        putFromOther(key, 1, true);
+
+        // Local remove for other cluster entry should succeed.
+        putLocal(key);
+
+        if (replication)
+            replicateToOther(key);
+
+        // Non-replicated:
+        // Conflict replicated update should be ignored.
+        // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
+
+        // Replicated:
+        // Conflict replicated update shouldn't be ignored.
+        // Both clusters had the same state before this change.
+        putFromOther(key, 2, replication || conflictResolveField() != null);
+    }
+
+    /** Tests cache operations for entry replicated from another cluster. */
+    @Test
     public void testUpdatesConflict1() throws Exception {
         testUpdatesConflict1(false);
         testUpdatesConflict1(true);
@@ -145,6 +203,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
         // Non-replicated:
         // Conflict replicated update should be ignored.
         // Resolve by field value not applicable because after remove operation "old" value doesn't exist.
+
         // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
@@ -180,6 +239,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
         // Non-replicated:
         // Conflict replicated remove should be ignored.
+
         // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
@@ -204,6 +264,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
 
         // Non-replicated:
         // Conflict replicated update succeed only if resolved by field.
+
         // Replicated:
         // Conflict replicated update shouldn't be ignored.
         // Both clusters had the same state before this change.
