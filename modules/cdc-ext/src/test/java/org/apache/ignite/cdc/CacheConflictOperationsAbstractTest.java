@@ -266,7 +266,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
     /** */
     protected String nextKey() {
-        return "Key_" + incKey.incrementAndGet() + otherClusterId + cacheMode;
+        return "Key_" + incKey.incrementAndGet() + "_" + otherClusterId + "_" + cacheMode;
     }
 
     /** */
