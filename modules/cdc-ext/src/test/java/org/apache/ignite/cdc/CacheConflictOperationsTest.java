@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.junit.Test;
@@ -143,21 +145,36 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     public void testUpdatesConflict() throws Exception {
         int cnt = 0;
 
-        for (Operation op1 : new Operation[] {NONE, PUT}) { // From other cluster.
-            for (Operation op2 : new Operation[] {PUT, REMOVE}) { // Local.
-                if (!(op1 == NONE && op2 == REMOVE)) // Avoiding remove after none.
-                    for (Operation op3 : new Operation[] {PUT, REMOVE}) { // From other cluster.
-                        if (op2 != REMOVE || op3 != REMOVE) { // Avoiding remove after remove.
-                            for (boolean replication : new boolean[] {true, false})
-                                testUpdatesConflict(op1, op2, op3, replication);
+        for (Operation op1 : operations(NONE, PUT)) { // From other cluster.
+            for (Operation op2 : operations(PUT, op1 == PUT ? REMOVE : null)) { // Local.
+                for (Operation op3 : operations(PUT, op2 == PUT ? REMOVE : null)) { // From other cluster.
+                    for (boolean replication : new boolean[] {true, false})
+                        testUpdatesConflict(op1, op2, op3, replication);
 
-                            cnt++;
-                        }
-                    }
+                    cnt++;
+                }
             }
         }
 
-        assertEquals(cnt, 5); // Refactoring checker.
+        // Starting from local:
+        //  none -> put -> put
+        //  none -> put -> remove
+        // Starting from other cluster:
+        //  put -> put -> put
+        //  put -> put -> remove
+        //  put -> remove -> put
+        assert cnt == 5 : cnt; // Refactoring checker.
+    }
+
+    private Operation[] operations(Operation... ops) {
+        List<Operation> opList = new ArrayList<>();
+
+        for (Operation op : ops) {
+            if (op != null)
+                opList.add(op);
+        }
+
+        return opList.toArray(new Operation[0]);
     }
 
     /** */
@@ -176,7 +193,6 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
             putLocal(key);
         else {
             assert op2 == REMOVE;
-            assert op1 != NONE;
 
             // Local remove for other cluster entry should succeed.
             removeLocal(key);
@@ -200,7 +216,6 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
             putFromOther(key, success);
         else {
             assert op3 == REMOVE;
-            assert op2 != REMOVE;
 
             removeFromOther(key, 2, success);
         }
