@@ -143,43 +143,19 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests cache operations for entry replicated from another cluster. */
     @Test
     public void testUpdatesConflict() throws Exception {
-        int cnt = 0;
-
-        for (Operation op1 : operations(NONE, PUT)) { // From other cluster.
-            for (Operation op2 : operations(PUT, op1 == PUT ? REMOVE : null)) { // Local.
-                for (Operation op3 : operations(PUT, op2 == PUT ? REMOVE : null)) { // From other cluster.
-                    for (boolean replication : new boolean[] {true, false})
-                        testUpdatesConflict(op1, op2, op3, replication);
-
-                    cnt++;
+        for (Operation op1 : new Operation[] {NONE, PUT}) { // From other cluster.
+            for (Operation op2 : new Operation[] {PUT, REMOVE}) { // Local.
+                for (Operation op3 : new Operation[] {PUT, REMOVE}) { // From other cluster.
+                    for (boolean sync : new boolean[] {true, false}) // Sync clusters before the last operation.
+                        testUpdatesConflict(op1, op2, op3, sync);
                 }
             }
         }
-
-        // Starting from local:
-        //  none -> put -> put
-        //  none -> put -> remove
-        // Starting from other cluster:
-        //  put -> put -> put
-        //  put -> put -> remove
-        //  put -> remove -> put
-        assert cnt == 5 : cnt; // Refactoring checker.
-    }
-
-    private Operation[] operations(Operation... ops) {
-        List<Operation> opList = new ArrayList<>();
-
-        for (Operation op : ops) {
-            if (op != null)
-                opList.add(op);
-        }
-
-        return opList.toArray(new Operation[0]);
     }
 
     /** */
-    private void testUpdatesConflict(Operation op1, Operation op2, Operation op3, boolean replication) throws Exception {
-        log.info("Checking: " + op1 + ", " + op2 + ", " + op3 + ", replication=" + replication);
+    private void testUpdatesConflict(Operation op1, Operation op2, Operation op3, boolean sync) throws Exception {
+        log.info("Checking: " + op1 + ", " + op2 + ", " + op3 + ", replication=" + sync);
 
         String key = nextKey();
 
@@ -189,26 +165,34 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
             assert op1 == NONE;
 
         if (op2 == PUT)
-            // Local remove for other cluster entry should succeed.
+            // Local remove always succeed.
             putLocal(key);
         else {
             assert op2 == REMOVE;
 
-            // Local remove for other cluster entry should succeed.
-            removeLocal(key);
+            if (op1 == NONE)
+                removeAfterRemove = true;
+
+            try {
+                // Local remove always succeed.
+                removeLocal(key);
+            }
+            finally {
+                removeAfterRemove = false;
+            }
         }
 
-        if (replication)
+        if (sync)
             replicateToOther(key);
 
         // Update is always successful when replication is finished and both clusters have the same state.
-        boolean success = replication;
+        boolean success = sync;
 
         if (op2 != REMOVE && op3 != REMOVE) {
             // Values can be compared via the field when
             // - previous value exist (was created and was not removed)
             // - new value contain field (not a remove).
-            // Update is successful when can be resolved by field.
+            // So, update is also successful when can be resolved by field.
             success |= conflictResolveField() != null;
         }
 
@@ -217,7 +201,15 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
         else {
             assert op3 == REMOVE;
 
-            removeFromOther(key, 2, success);
+            if (op2 == REMOVE)
+                removeAfterRemove = true;
+
+            try {
+                removeFromOther(key, 2, success);
+            }
+            finally {
+                removeAfterRemove = false;
+            }
         }
     }
 }

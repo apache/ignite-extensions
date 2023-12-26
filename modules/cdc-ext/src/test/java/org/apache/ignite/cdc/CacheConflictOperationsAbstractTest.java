@@ -92,6 +92,9 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     private static final AtomicInteger incKey = new AtomicInteger();
 
     /** */
+    protected static volatile boolean removeAfterRemove;
+
+    /** */
     private static final byte FIRST_CLUSTER_ID = 1;
 
     /** */
@@ -144,6 +147,8 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
             cachex = client.cachex(DEFAULT_CACHE_NAME);
         }
+
+        assert !removeAfterRemove;
     }
 
     /** */
@@ -217,7 +222,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
     /** */
     protected void removeLocal(String key) {
-        assertTrue(cache.containsKey(key));
+        assertTrue(removeAfterRemove ^ cache.containsKey(key));
 
         cache.remove(key);
 
@@ -236,7 +241,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
     /** Removes entry via {@link IgniteInternalCache#removeAllConflict(Map)}. */
     protected void removeFromOther(String k, GridCacheVersion ver, boolean success) throws IgniteCheckedException {
-        assertTrue(cache.containsKey(k));
+        assertTrue(removeAfterRemove ^ cache.containsKey(k));
 
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
 
