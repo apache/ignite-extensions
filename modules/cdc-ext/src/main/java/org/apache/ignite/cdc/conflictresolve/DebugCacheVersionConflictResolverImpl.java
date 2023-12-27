@@ -39,7 +39,6 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
         Object prevStateMeta
-
     ) {
         boolean res = super.isUseNew(ctx, oldEntry, newEntry, prevStateMeta);
 

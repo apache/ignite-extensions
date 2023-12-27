@@ -173,7 +173,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                 return true;
         }
         else {
-            GridCacheVersion oldVer = oldEntry.value(ctx) != null ? oldEntry.version() : null;
+            GridCacheVersion oldVer = oldEntry.value(ctx) != null ? oldEntry.version() : null; // TODO null value version (entry vs row)
 
             if (Objects.equals(oldVer, prevStateMeta)) // Previous value synchronized.
                 return true;
@@ -204,7 +204,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
                 return ver != null ? ver.conflictVersion() : null;
             }
-            catch (GridCacheEntryRemovedException e) {
+            catch (GridCacheEntryRemovedException e) { // TODO
                 throw new RuntimeException(e);
             }
         }
