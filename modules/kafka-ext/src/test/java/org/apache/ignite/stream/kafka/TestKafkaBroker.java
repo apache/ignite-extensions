@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -99,15 +98,7 @@ public class TestKafkaBroker {
      * @throws InterruptedException If interrupted.
      */
     public void createTopic(String topic, int partitions, int replicationFactor)
-        throws TimeoutException, InterruptedException, IOException, ExecutionException {
-//        List<KafkaServer> servers = new ArrayList<>();
-//
-//        servers.add(kafkaSrv);
-//
-//        KafkaZkClient client = kafkaSrv.zkClient();
-//
-//        TestUtils.createTopic(client, topic, partitions, replicationFactor,
-//            scala.collection.JavaConversions.asScalaBuffer(servers), new Properties());
+        throws InterruptedException, IOException, ExecutionException {
         admin = AdminClient.create(getKafkaConfig());
         NewTopic newTopic = new NewTopic(topic, partitions, (short)replicationFactor);
         Collection<NewTopic> newTopics = Arrays.asList(newTopic);
@@ -176,11 +167,6 @@ public class TestKafkaBroker {
      */
     private void setupZooKeeper() throws Exception {
         zkServer = new TestingServer(ZK_PORT, true);
-//
-//        Tuple2<ZkClient, ZkConnection> zkTuple = ZkUtils.createZkClientAndConnection(zkServer.getConnectString(),
-//            ZK_SESSION_TIMEOUT, ZK_CONNECTION_TIMEOUT);
-//
-//        zkUtils = new ZkUtils(zkTuple._1(), zkTuple._2(), false);
     }
 
     /**
