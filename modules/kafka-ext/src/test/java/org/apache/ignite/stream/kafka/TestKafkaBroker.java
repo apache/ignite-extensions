@@ -41,7 +41,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.SystemTime;
-import scala.Tuple2;
 
 /**
  * Kafka Test Broker.
@@ -110,7 +109,7 @@ public class TestKafkaBroker {
      * Sends a message to Kafka broker.
      *
      * @param records List of records.
-     * @return Producer used to send the message.
+     * Producer used to send the message.
      */
     public void sendMessages(List<ProducerRecord<String, String>> records) {
         Producer<String, String> producer = new KafkaProducer<>(getProducerConfig());

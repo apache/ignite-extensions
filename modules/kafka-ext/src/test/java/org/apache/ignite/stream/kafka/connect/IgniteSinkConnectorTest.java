@@ -50,7 +50,6 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
-import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 import org.junit.Test;
 
@@ -111,8 +110,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
             allConnectorClientCfgOverridePlc);
         worker.start();
 
-        herder = new StandaloneHerder(worker, ConnectUtils.clientIdBase(workerCfg),
-            allConnectorClientCfgOverridePlc);
+        herder = new StandaloneHerder(worker, workerCfg.kafkaClusterId(), allConnectorClientCfgOverridePlc);
         herder.start();
     }
 

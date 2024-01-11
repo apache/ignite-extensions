@@ -54,7 +54,6 @@ import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
-import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 import org.junit.Test;
 
@@ -114,8 +113,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
             allConnectorClientCfgOverridePlc);
         worker.start();
 
-        herder = new StandaloneHerder(worker, ConnectUtils.clientIdBase(workerCfg),
-            allConnectorClientCfgOverridePlc);
+        herder = new StandaloneHerder(worker, workerCfg.kafkaClusterId(), allConnectorClientCfgOverridePlc);
         herder.start();
     }
 
@@ -340,7 +338,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * @return Worker configurations.
      * @throws IOException If failed.
      */
-    private Map<String, String> makeWorkerProps() throws IOException {
+    private Map<String, String> makeWorkerProps(){
         Map<String, String> props = new HashMap<>();
 
         props.put("internal.key.converter.schemas.enable", "false");
