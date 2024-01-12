@@ -69,7 +69,7 @@ public class TestKafkaBroker {
     private final TestingServer zkServer;
 
     /** Kafka Admin Client. */
-    AdminClient admin;
+    private AdminClient admin;
 
     /**
      * Kafka broker constructor.
@@ -139,10 +139,10 @@ public class TestKafkaBroker {
 
         try {
             zkServer.stop();
-            }
+        }
         catch (IOException ignored) {
             // No-op.
-            }
+        }
 
         List<String> logDirs = scala.collection.JavaConversions.seqAsJavaList(kafkaCfg.logDirs());
 
