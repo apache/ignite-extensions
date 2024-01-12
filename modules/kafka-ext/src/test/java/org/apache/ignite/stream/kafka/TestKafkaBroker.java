@@ -88,6 +88,18 @@ public class TestKafkaBroker {
     }
 
     /**
+     * @return Existing admin client or creates new
+     * @throws IOException
+     */
+    public synchronized AdminClient admin() throws IOException {
+
+        if (admin == null)
+            admin = AdminClient.create(getKafkaConfig());
+
+        return admin;
+    }
+
+    /**
      * Creates a topic.
      *
      * @param topic Topic name.
@@ -98,7 +110,7 @@ public class TestKafkaBroker {
      */
     public void createTopic(String topic, int partitions, int replicationFactor)
         throws InterruptedException, IOException, ExecutionException {
-        admin = AdminClient.create(getKafkaConfig());
+        admin = admin();
         NewTopic newTopic = new NewTopic(topic, partitions, (short)replicationFactor);
         Collection<NewTopic> newTopics = Arrays.asList(newTopic);
         CreateTopicsResult ctr = admin.createTopics(newTopics);
@@ -109,7 +121,6 @@ public class TestKafkaBroker {
      * Sends a message to Kafka broker.
      *
      * @param records List of records.
-     * Producer used to send the message.
      */
     public void sendMessages(List<ProducerRecord<String, String>> records) {
         Producer<String, String> producer = new KafkaProducer<>(getProducerConfig());

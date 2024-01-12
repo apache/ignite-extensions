@@ -282,7 +282,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     private Map<String, String> makeWorkerProps() {
         Map<String, String> props = new HashMap<>();
 
-
         props.put("internal.key.converter.schemas.enable", "false");
         props.put("internal.value.converter.schemas.enable", "false");
         props.put(WorkerConfig.KEY_CONVERTER_CLASS_CONFIG, "org.apache.kafka.connect.storage.StringConverter");
