@@ -32,7 +32,7 @@
     </parent>
 
     <properties>
-        <kafka.version>2.8.2</kafka.version>
+        <kafka.version>3.4.0</kafka.version>
     </properties>
 
     <artifactId>ignite-cdc-ext</artifactId>
@@ -178,6 +178,14 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
