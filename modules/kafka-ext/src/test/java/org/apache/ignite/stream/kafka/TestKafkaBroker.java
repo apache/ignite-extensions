@@ -21,8 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -33,7 +32,6 @@ import kafka.utils.TestUtils;
 import org.apache.curator.test.TestingServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -62,13 +60,13 @@ public class TestKafkaBroker {
     private static final int BROKER_PORT = 11092;
 
     /** Kafka config. */
-    private KafkaConfig kafkaCfg;
+    private final KafkaConfig kafkaCfg;
 
     /** Kafka server. */
-    private KafkaServer kafkaSrv;
+    private final KafkaServer kafkaSrv;
 
     /** ZooKeeper. */
-    private TestingServer zkServer;
+    private final TestingServer zkServer;
 
     /** Kafka Admin Client. */
     AdminClient admin;
@@ -78,9 +76,11 @@ public class TestKafkaBroker {
      */
     public TestKafkaBroker() {
         try {
-            setupZooKeeper();
+            zkServer = new TestingServer(ZK_PORT, true);
+            kafkaCfg = new KafkaConfig(getKafkaConfig());
+            kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
 
-            setupKafkaServer();
+            kafkaSrv.startup();
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to start Kafka: " + e);
@@ -92,7 +92,6 @@ public class TestKafkaBroker {
      * @throws IOException
      */
     public synchronized AdminClient admin() throws IOException {
-
         if (admin == null)
             admin = AdminClient.create(getKafkaConfig());
 
@@ -109,12 +108,9 @@ public class TestKafkaBroker {
      * @throws InterruptedException If interrupted.
      */
     public void createTopic(String topic, int partitions, int replicationFactor)
-        throws InterruptedException, IOException, ExecutionException {
-        admin = admin();
-        NewTopic newTopic = new NewTopic(topic, partitions, (short)replicationFactor);
-        Collection<NewTopic> newTopics = Arrays.asList(newTopic);
-        CreateTopicsResult ctr = admin.createTopics(newTopics);
-        ctr.all().get();
+        throws IOException, ExecutionException, InterruptedException {
+        admin().createTopics(Collections.singleton(new NewTopic(topic, partitions, (short)replicationFactor)))
+            .all().get();
     }
 
     /**
@@ -123,13 +119,10 @@ public class TestKafkaBroker {
      * @param records List of records.
      */
     public void sendMessages(List<ProducerRecord<String, String>> records) {
-        Producer<String, String> producer = new KafkaProducer<>(getProducerConfig());
-
-        for (ProducerRecord<String, String> rec : records)
-            producer.send(rec);
-
-        producer.flush();
-        producer.close();
+        try (Producer<String, String> producer = new KafkaProducer<>(getProducerConfig())) {
+            for (ProducerRecord<String, String> rec : records)
+                producer.send(rec);
+        }
     }
 
     /**
@@ -139,44 +132,22 @@ public class TestKafkaBroker {
         if (admin != null)
             admin.close();
 
-        if (kafkaSrv != null)
-            kafkaSrv.shutdown();
+        assert kafkaSrv != null;
+        assert zkServer != null;
 
-        if (zkServer != null) {
-            try {
-                zkServer.stop();
+        kafkaSrv.shutdown();
+
+        try {
+            zkServer.stop();
             }
-            catch (IOException ignored) {
-                // No-op.
+        catch (IOException ignored) {
+            // No-op.
             }
-        }
 
         List<String> logDirs = scala.collection.JavaConversions.seqAsJavaList(kafkaCfg.logDirs());
 
         for (String logDir : logDirs)
             U.delete(new File(logDir));
-    }
-
-    /**
-     * Sets up test Kafka broker.
-     *
-     * @throws IOException If failed.
-     */
-    private void setupKafkaServer() throws IOException {
-        kafkaCfg = new KafkaConfig(getKafkaConfig());
-
-        kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
-
-        kafkaSrv.startup();
-    }
-
-    /**
-     * Sets up ZooKeeper test server.
-     *
-     * @throws Exception If failed.
-     */
-    private void setupZooKeeper() throws Exception {
-        zkServer = new TestingServer(ZK_PORT, true);
     }
 
     /**
