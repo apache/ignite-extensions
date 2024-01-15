@@ -107,7 +107,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
         List<PartitionInfo> topicMeta = cnsmr.partitionsFor(metaTopic, Duration.ofMillis(kafkaReqTimeout));
 
-        if (topicMeta == null)
+        if (topicMeta.isEmpty())
             throw new IgniteException("Unknown topic: " + metaTopic);
 
         parts = topicMeta
