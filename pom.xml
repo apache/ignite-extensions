@@ -70,7 +70,7 @@
         <profile>
             <id>use-ignite-src</id>
             <modules>
-                <module>../ignite</module>
+                <module>../ignite2</module>
             </modules>
         </profile>
     </profiles>

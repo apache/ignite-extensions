@@ -42,8 +42,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>8.8.127-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
@@ -55,21 +56,24 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>8.8.127-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
+            <version>8.8.127-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-log4j2</artifactId>
+            <version>8.8.127-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 
