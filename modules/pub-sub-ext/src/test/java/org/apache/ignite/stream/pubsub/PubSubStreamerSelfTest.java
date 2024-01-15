@@ -61,7 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.PROJECT;
 import static org.apache.ignite.stream.pubsub.MockPubSubServer.TOPIC_NAME;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link PubSubStreamer}.
@@ -77,7 +77,7 @@ public class PubSubStreamerSelfTest {
     private static final String SUBSCRIPTION = "ignite_subscription";
 
     /** Count. */
-    private static final int CNT = 100;
+    private static final int CNT = 1000;
 
     /** Messages per request. */
     private static final int MESSAGES_PER_REQUEST = 10;
@@ -209,8 +209,9 @@ public class PubSubStreamerSelfTest {
             pubSubStmr.start();
 
             // Checks all events successfully processed in 10 seconds.
-            assertTrue("Failed to wait latch completion, still wait " + latch.getCount() + " events",
-                latch.await(10, TimeUnit.SECONDS));
+            if (!latch.await(10, TimeUnit.SECONDS)) {
+                fail("Failed to wait latch completion, still wait " + latch.getCount() + " events");
+            }
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));
