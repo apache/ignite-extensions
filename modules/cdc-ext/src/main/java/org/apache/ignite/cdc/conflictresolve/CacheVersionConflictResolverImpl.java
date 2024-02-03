@@ -87,32 +87,19 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator
     ) {
-        GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
+        GridCacheVersionConflictContextEx<K, V> res = new GridCacheVersionConflictContextEx<>(ctx, oldEntry, newEntry);
 
         boolean expireExists = oldEntry.ttl() != CU.TTL_ETERNAL
             || newEntry.ttl() != CU.TTL_ETERNAL
             || oldEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL
             || newEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL;
 
+        if (expireExists)
+            res.useMaxExpireTime();
+
         boolean useNew = isUseNew(ctx, oldEntry, newEntry);
 
-        if (expireExists) {
-            if (newEntry.expireTime() > oldEntry.expireTime()) {
-                res.merge(
-                    useNew ? newEntry.value(ctx) : oldEntry.value(ctx),
-                    newEntry.ttl(),
-                    newEntry.expireTime()
-                );
-            }
-            else {
-                res.merge(
-                    useNew ? newEntry.value(ctx) : oldEntry.value(ctx),
-                    oldEntry.ttl(),
-                    oldEntry.expireTime()
-                );
-            }
-        }
-        else if (useNew)
+        if (useNew)
             res.useNew();
         else
             res.useOld();
