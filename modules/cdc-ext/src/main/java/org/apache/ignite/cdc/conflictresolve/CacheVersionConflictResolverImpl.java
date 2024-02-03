@@ -127,8 +127,12 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
-        if (oldEntry.dataCenterId() == newEntry.dataCenterId())
-            return newEntry.version().compareTo(oldEntry.version()) >= 0; // New version from the same cluster.
+        if (oldEntry.dataCenterId() == newEntry.dataCenterId()) {
+            int cmp = newEntry.version().compareTo(oldEntry.version());
+
+            return cmp > 0 // New version from the same cluster.
+                || (cmp == 0 && newEntry.expireTime() > oldEntry.expireTime()); // Update expire time.
+        }
 
         if (conflictResolveFieldEnabled) {
             Object oldVal = oldEntry.value(ctx);
