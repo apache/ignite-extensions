@@ -55,12 +55,12 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
 
     /** {@inheritDoc} */
     @Override protected Object toKey(CdcEvent evt) {
-        return evt.key();
+        return evt.unwrappedKey();
     }
 
     /** {@inheritDoc} */
     @Override protected T3<Object, GridCacheVersion, Long> toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
-        return new T3<>(evt.value(), ver, evt.expireTime());
+        return new T3<>(evt.unwrappedValue(), ver, evt.expireTime());
     }
 
     /** {@inheritDoc} */
