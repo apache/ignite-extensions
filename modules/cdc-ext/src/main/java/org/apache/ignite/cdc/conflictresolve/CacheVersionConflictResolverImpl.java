@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -87,15 +86,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator
     ) {
-        GridCacheVersionConflictContextEx<K, V> res = new GridCacheVersionConflictContextEx<>(ctx, oldEntry, newEntry);
-
-        boolean expireExists = oldEntry.ttl() != CU.TTL_ETERNAL
-            || newEntry.ttl() != CU.TTL_ETERNAL
-            || oldEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL
-            || newEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL;
-
-        if (expireExists)
-            res.useMaxExpireTime();
+        GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContextEx<>(ctx, oldEntry, newEntry);
 
         boolean useNew = isUseNew(ctx, oldEntry, newEntry);
 
@@ -127,12 +118,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
-        if (oldEntry.dataCenterId() == newEntry.dataCenterId()) {
-            int cmp = newEntry.version().compareTo(oldEntry.version());
-
-            return cmp > 0 // New version from the same cluster.
-                || (cmp == 0 && newEntry.expireTime() > oldEntry.expireTime()); // Update expire time.
-        }
+        if (oldEntry.dataCenterId() == newEntry.dataCenterId())
+            return newEntry.version().compareTo(oldEntry.version()) > 0; // New version from the same cluster.
 
         if (conflictResolveFieldEnabled) {
             Object oldVal = oldEntry.value(ctx);

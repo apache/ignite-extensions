@@ -20,15 +20,17 @@ package org.apache.ignite.cdc.conflictresolve;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntry;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Conflict context implementation that specifies a maximum expire time of conflict entries.
+ */
 public class GridCacheVersionConflictContextEx<K, V> extends GridCacheVersionConflictContext<K, V> {
     /** */
     private GridCacheVersionedEntry<K, V> entryForExpire;
 
     /**
-     * Constructor.
-     *
      * @param ctx Context to get value of cache object.
      * @param oldEntry Old entry.
      * @param newEntry New entry.
@@ -39,11 +41,14 @@ public class GridCacheVersionConflictContextEx<K, V> extends GridCacheVersionCon
         GridCacheVersionedEntry<K, V> newEntry
     ) {
         super(ctx, oldEntry, newEntry);
-    }
 
-    /** */
-    public void useMaxExpireTime() {
-        entryForExpire = newEntry().expireTime() > oldEntry().expireTime() ? newEntry() : oldEntry();
+        boolean expireExists = oldEntry.ttl() != CU.TTL_ETERNAL
+            || newEntry.ttl() != CU.TTL_ETERNAL
+            || oldEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL
+            || newEntry.expireTime() != CU.EXPIRE_TIME_ETERNAL;
+
+        if (expireExists)
+            entryForExpire = newEntry().expireTime() > oldEntry().expireTime() ? newEntry() : oldEntry();
     }
 
     /** {@inheritDoc} */
@@ -54,5 +59,10 @@ public class GridCacheVersionConflictContextEx<K, V> extends GridCacheVersionCon
     /** {@inheritDoc} */
     @Override public long expireTime() {
         return entryForExpire == null ? super.expireTime() : entryForExpire.expireTime();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void merge(@Nullable V mergeVal, long ttl, long expireTime) {
+        assert false;
     }
 }
