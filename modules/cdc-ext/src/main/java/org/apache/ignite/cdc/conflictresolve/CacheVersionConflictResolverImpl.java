@@ -121,6 +121,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.dataCenterId() == newEntry.dataCenterId()) {
             int cmp = newEntry.version().compareTo(oldEntry.version());
 
+            // Ignite sets the expire time to zero on backups for transaction caches.
+            // If CDC is running in onlyPrimary=false mode, then the updates from backups may be applied first.
+            // In this case, a new entry from the primary node should be used to set the expiration time.
+            // See GridDistributedTxRemoteAdapter#commitIfLocked
             if (cmp == 0)
                 return newEntry.expireTime() > oldEntry.expireTime();
 
