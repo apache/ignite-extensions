@@ -86,7 +86,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> newEntry,
         boolean atomicVerComparator
     ) {
-        GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContextEx<>(ctx, oldEntry, newEntry);
+        GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
         boolean useNew = isUseNew(ctx, oldEntry, newEntry);
 
