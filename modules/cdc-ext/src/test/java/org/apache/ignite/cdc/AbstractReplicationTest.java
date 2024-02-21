@@ -35,6 +35,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -49,11 +50,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -258,6 +266,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        checkNoLocalUpdatesOnPassiveCluster();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -571,6 +581,34 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
+    }
+
+    /** */
+    private void checkNoLocalUpdatesOnPassiveCluster() throws IgniteCheckedException {
+        if (srcCluster[0].cache(ACTIVE_PASSIVE_CACHE) == null)
+            return;
+
+        assertTrue(hasLocalUpdates(srcCluster));
+        assertFalse(hasLocalUpdates(destCluster));
+    }
+
+    /** @return {@code True} if cluster has local updates. */
+    private boolean hasLocalUpdates(IgniteEx[] cluster) throws IgniteCheckedException {
+        for (IgniteEx srv : cluster) {
+            WALIterator iter = srv.context().cache().context().wal().replay(null,
+                (type, ptr) -> type == WALRecord.RecordType.DATA_RECORD_V2);
+
+            for (IgniteBiTuple<WALPointer, WALRecord> t : iter) {
+                Collection<DataEntry> locUpdates = F.view(((DataRecord)t.get2()).writeEntries(),
+                    e -> e.cacheId() == CU.cacheId(ACTIVE_PASSIVE_CACHE),
+                    e -> !(e.writeVersion() instanceof GridCacheVersionEx));
+
+                if (!locUpdates.isEmpty())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /** @return Destination cluster host addresses. */
