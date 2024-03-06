@@ -1,0 +1,120 @@
+/*
+ * Copyright 2023 JSC SberTech
+ */
+package org.apache.ignite.gatling
+
+import scala.collection.SortedMap
+import scala.collection.SortedSet
+import scala.language.postfixOps
+
+import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.Predef.group
+import org.apache.ignite.gatling.utils.AbstractGatlingTest
+import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
+import org.apache.ignite.gatling.utils.IgniteSupport
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
+import io.gatling.core.session.ExpressionSuccessWrapper
+import org.junit.Test
+
+/**
+ * Tests PutAll/GetAll operations.
+ */
+class PutAllGetAllTest extends AbstractGatlingTest {
+    /** Class name of simulation */
+    val simulation: String = classOf[PutAllGetAllSimulation].getName
+
+    /** Runs simulation with thin client. */
+    @Test
+    def thinClient(): Unit = runWith(ThinClient)(simulation)
+
+    /** Runs simulation with thick client. */
+    @Test
+    def thickClient(): Unit = runWith(NodeApi)(simulation)
+}
+
+/**
+ * PutAll/GetAll simulation.
+ */
+class PutAllGetAllSimulation extends Simulation with IgniteSupport with StrictLogging {
+
+    private val scn = scenario("Basic")
+        .feed(new BatchFeeder())
+        .ignite(
+            getOrCreateCache("TEST-CACHE-1") backups 1 atomicity ATOMIC mode PARTITIONED as "create",
+            group("run outside of transaction")(
+                asyncOperationsWithCache("TEST-CACHE-1")
+            ),
+            getOrCreateCache("TEST-CACHE-2") atomicity TRANSACTIONAL mode REPLICATED,
+            tx run (
+                syncOperationsWithCache("TEST-CACHE-2")
+            ) as "run in transaction"
+        )
+
+    private def syncOperationsWithCache(cache: String) = ignite(
+        putAll[Int, Int](cache, "#{batch}") as "putAll from session",
+        putAll[Int, Int](cache, SortedMap(7 -> 8, 9 -> 10).expressionSuccess),
+        getAll[Int, Int](cache, keys = SortedSet(1, 7, 100))
+            check (
+                mapResult[Int, Int].transform(map => map.size).is(2),
+                mapResult[Int, Int].transform(map => map(1)).is(2),
+                mapResult[Int, Int].transform(map => map(7)).is(8),
+                entries[Int, Int].count.is(2),
+                entries[Int, Int].exists,
+                entries[Int, Int].findRandom.validate((e: Entry[Int, Int], _: Session) => e.value == e.key + 1)
+            ) as "getAll with one absent",
+        getAll[Int, Int](cache, keys = SortedSet(9, 3, 5))
+            check (
+                mapResult[Int, Int].transform(map => map.size).is(3),
+                mapResult[Int, Int].transform(map => map(3)).is(4),
+                mapResult[Int, Int].transform(map => map(9)),
+                entries[Int, Int].count.is(3),
+                entries[Int, Int].exists,
+                entries[Int, Int].find(2).exists,
+                entries[Int, Int].find(1)
+            ) as "getAll present",
+        removeAll[Int](cache, keys = SortedSet(1, 9)),
+        getAll[Int, Int](cache, keys = SortedSet(1, 9))
+            check (
+                entries[Int, Int].count.is(0),
+                entries[Int, Int].notExists
+            )
+    )
+
+    private def asyncOperationsWithCache(cache: String) = ignite(
+        putAll[Int, Int](cache, "#{batch}") as "putAll from session" async,
+        putAll[Int, Int](cache, SortedMap(7 -> 8, 9 -> 10).expressionSuccess) async,
+        getAll[Int, Int](cache, keys = SortedSet(1, 7, 100))
+            check (
+                mapResult[Int, Int].transform(map => map.size).is(2),
+                mapResult[Int, Int].transform(map => map(1)).is(2),
+                mapResult[Int, Int].transform(map => map(7)).is(8),
+                entries[Int, Int].count.is(2),
+                entries[Int, Int].exists,
+                entries[Int, Int].findRandom.validate((e: Entry[Int, Int], _: Session) => e.value == e.key + 1)
+            ) as "getAll with one absent" async,
+        getAll[Int, Int](cache, keys = SortedSet(9, 3, 5))
+            check (
+                mapResult[Int, Int].transform(map => map.size).is(3),
+                mapResult[Int, Int].transform(map => map(3)).is(4),
+                mapResult[Int, Int].transform(map => map(9)),
+                entries[Int, Int].count.is(3),
+                entries[Int, Int].exists,
+                entries[Int, Int].find(2).exists,
+                entries[Int, Int].find(1)
+            ) as "getAll present" async,
+        removeAll[Int](cache, keys = SortedSet(1, 9)) async,
+        getAll[Int, Int](cache, keys = SortedSet(1, 9))
+            check (
+                entries[Int, Int].count.is(0),
+                entries[Int, Int].notExists
+            ) async
+    )
+
+    setUp(scn.inject(atOnceUsers(1)))
+        .protocols(protocol)
+        .assertions(
+            global.failedRequests.count.is(0)
+        )
+}

@@ -9,10 +9,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.sbt.ignite</groupId>
-        <artifactId>ise-ducktests-parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../parent/pom.xml</relativePath>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-ext-internal</artifactId>
+        <version>1</version>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-gatling-plugin</artifactId>
@@ -31,7 +31,8 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${ignite.version}</version>
+            <scope>provided</scope>
+<!--            <version>${ignite.version}</version>-->
         </dependency>
 
         <dependency>
