@@ -45,7 +45,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
             <scope>provided</scope>
-<!--            <version>${ignite.version}</version>-->
         </dependency>
 
         <dependency>
@@ -76,7 +75,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
-<!--            <version>${ignite.version}</version>-->
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
@@ -84,21 +82,12 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-spring</artifactId>
-<!--            <version>${ignite.version}</version>-->
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
-<!--            <version>${ignite.version}</version>-->
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-tools</artifactId>
-<!--            <version>${ignite.version}</version>-->
             <scope>test</scope>
         </dependency>
 
