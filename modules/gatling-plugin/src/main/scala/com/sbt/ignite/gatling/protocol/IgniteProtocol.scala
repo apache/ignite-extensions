@@ -1,0 +1,120 @@
+/*
+ * Copyright 2023 JSC SberTech
+ */
+package com.sbt.ignite.gatling.protocol
+
+import com.sbt.ignite.gatling.api.IgniteApi
+import io.gatling.core.CoreComponents
+import io.gatling.core.config.GatlingConfiguration
+import io.gatling.core.protocol.Protocol
+import io.gatling.core.protocol.ProtocolKey
+import org.apache.ignite.Ignite
+import org.apache.ignite.client.IgniteClient
+import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.configuration.IgniteConfiguration
+
+/**
+ * Ignite protocol globals.
+ */
+object IgniteProtocol {
+    /** Session key the IgniteApi instance is stored under. */
+    val IgniteApiSessionKey = "__igniteApi__"
+
+    /**
+     * Session key the TransactionApi instance is stored under.
+     *
+     * Presence of the TransactionApi instance in session means that the Ignite transaction is active now.
+     */
+    val TransactionApiSessionKey = "__transactionApi__"
+
+    /**
+     * Session key for explicit locks flag.
+     *
+     * Presence of flag means that explicit locks were created in scenario.
+     */
+    val ExplicitLockWasUsedSessionKey = "__explicitLockWasUsed__"
+
+    /**
+     * Initialise components of the Ignite protocol on simulation start.
+     */
+    val IgniteProtocolKey: ProtocolKey[IgniteProtocol, IgniteComponents] = new ProtocolKey[IgniteProtocol, IgniteComponents] {
+        override def protocolClass: Class[Protocol] =
+            classOf[IgniteProtocol].asInstanceOf[Class[Protocol]]
+
+        override def defaultProtocolValue(configuration: GatlingConfiguration): IgniteProtocol =
+            IgniteProtocolBuilderBase.igniteCfg(new IgniteConfiguration()).build
+
+        /**
+         * Return lambda to init the Ignite protocol components.
+         *
+         * Note, lambda would start new Ignite API instance if none was passed as a protocol configuration parameter
+         * (unless the `explicitClientStart` protocol parameter was used).
+         *
+         * @param coreComponents Gatling core components.
+         * @return Lambda creating Ignite components from the Ignite protocol parameters provided.
+         */
+        override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
+            igniteProtocol => IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
+    }
+}
+
+/**
+ * Ignite protocol parameters.
+ *
+ * @param cfg Ignite API configuration.
+ * @param explicitClientStart If true the default shared instance of Ignite API will not be started before the
+ *                          simulation start and it will not be automatically inserted into the client session
+ *                          upon injection into the scenario. To start Ignite API instance scenario should contain
+ *                          explicit `startIgniteApi` and `closeIgniteApi` actions.
+ */
+case class IgniteProtocol(cfg: IgniteCfg, explicitClientStart: Boolean = false) extends Protocol {
+    /**
+     * Close all opened clients.
+     */
+    def close(): Unit = {
+        cfg match {
+            case cfg: IgniteClientPoolCfg => cfg.pool.close()
+            case _ =>
+        }
+    }
+}
+
+/**
+ * Abstract Ignite API configuration.
+ */
+sealed trait IgniteCfg
+
+/**
+ * Ignite API configuration containing the pre-started Ignite (thin) Client instance.
+ *
+ * @param client Instance of Ignite (thin) Client.
+ */
+case class IgniteClientCfg(client: IgniteClient) extends IgniteCfg
+
+/**
+ * Ignite API configuration containing the pre-started Ignite (thick) node instance.
+ *
+ * @param ignite Instance of the Ignite grid.
+ */
+case class IgniteNodeCfg(ignite: Ignite) extends IgniteCfg
+
+/**
+ * Ignite API configuration containing the Ignite (thin) Client configuration instance.
+ *
+ * @param cfg Ignite (thin) client configuration.
+ */
+case class IgniteClientConfigurationCfg(cfg: ClientConfiguration) extends IgniteCfg
+
+/**
+ * Ignite API configuration containing the Ignite node (thick) configuration instance.
+ *
+ * @param cfg Ignite (thick) node configuration.
+ */
+case class IgniteConfigurationCfg(cfg: IgniteConfiguration) extends IgniteCfg
+
+/**
+ * Ignite API configuration containing the Ignite (thin) Client instances pool.
+ *
+ * @param pool Ignite (thin) client instances pool.
+ */
+case class IgniteClientPoolCfg(pool: IgniteClientPool) extends IgniteCfg
