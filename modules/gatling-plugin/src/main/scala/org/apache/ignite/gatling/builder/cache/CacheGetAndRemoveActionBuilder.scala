@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.gatling.builder.cache
 
-import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
 
 /**
  * Cache entry getAndRemove action builder.

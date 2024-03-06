@@ -18,11 +18,11 @@ package org.apache.ignite.gatling.builder.cache
 
 import java.util.concurrent.locks.Lock
 
-import org.apache.ignite.gatling.action.cache.CacheLockAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.cache.CacheLockAction
 
 /**
  * Cache entry obtain lock action builder.

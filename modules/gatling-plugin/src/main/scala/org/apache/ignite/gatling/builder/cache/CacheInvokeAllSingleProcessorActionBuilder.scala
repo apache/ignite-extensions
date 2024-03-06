@@ -20,12 +20,12 @@ import javax.cache.processor.EntryProcessorResult
 
 import scala.collection.SortedSet
 
-import org.apache.ignite.gatling.action.cache.CacheInvokeAllSingleProcessorAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.cache.CacheEntryProcessor
+import org.apache.ignite.gatling.action.cache.CacheInvokeAllSingleProcessorAction
 
 /**
  * Base invokeAll action builder.

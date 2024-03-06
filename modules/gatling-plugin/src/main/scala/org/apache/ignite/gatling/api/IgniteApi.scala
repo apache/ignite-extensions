@@ -18,6 +18,16 @@ package org.apache.ignite.gatling.api
 
 import scala.util.Try
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.commons.validation.Validation
+import io.gatling.core.session.Session
+import org.apache.ignite.Ignition
+import org.apache.ignite.binary.BinaryObjectBuilder
+import org.apache.ignite.client.ClientCacheConfiguration
+import org.apache.ignite.client.IgniteClient
+import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.gatling.api.node.IgniteNodeApi
 import org.apache.ignite.gatling.api.thin.IgniteThinApi
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
@@ -29,16 +39,6 @@ import org.apache.ignite.gatling.protocol.IgniteConfigurationCfg
 import org.apache.ignite.gatling.protocol.IgniteNodeCfg
 import org.apache.ignite.gatling.protocol.IgniteProtocol
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.validation.Validation
-import io.gatling.core.session.Session
-import org.apache.ignite.Ignition
-import org.apache.ignite.binary.BinaryObjectBuilder
-import org.apache.ignite.client.ClientCacheConfiguration
-import org.apache.ignite.client.IgniteClient
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.configuration.ClientConfiguration
-import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 

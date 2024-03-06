@@ -16,6 +16,11 @@
  */
 package org.apache.ignite.gatling.action.ignite
 
+import io.gatling.core.action.Action
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
+import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.CacheApi
 import org.apache.ignite.gatling.api.IgniteApi
@@ -23,11 +28,6 @@ import org.apache.ignite.gatling.builder.ignite.Configuration
 import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
 import org.apache.ignite.gatling.builder.ignite.ThickConfiguration
 import org.apache.ignite.gatling.builder.ignite.ThinConfiguration
-import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
-import io.gatling.core.session.Session
-import io.gatling.core.structure.ScenarioContext
-import org.apache.ignite.configuration.CacheConfiguration
 
 /**
  * Action for cache create Ignite operation.

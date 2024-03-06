@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.gatling
 
+import io.gatling.core.Predef._
+import io.gatling.core.structure.ChainBuilder
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.GatlingSupport
 import org.apache.ignite.gatling.utils.IgniteSupport
-import io.gatling.core.Predef._
-import io.gatling.core.structure.ChainBuilder
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

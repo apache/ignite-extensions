@@ -18,13 +18,13 @@ package org.apache.ignite.gatling.action.cache
 
 import java.util.concurrent.locks.Lock
 
-import org.apache.ignite.gatling.Predef.IgniteCheck
-import org.apache.ignite.gatling.action.CacheAction
-import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSessionKey
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.Predef.IgniteCheck
+import org.apache.ignite.gatling.action.CacheAction
+import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSessionKey
 
 /**
  * Action for the lock cache entry Ignite operation.

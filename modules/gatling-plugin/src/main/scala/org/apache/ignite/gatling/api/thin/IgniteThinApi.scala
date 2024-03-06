@@ -19,17 +19,17 @@ package org.apache.ignite.gatling.api.thin
 import scala.jdk.FutureConverters.CompletionStageOps
 import scala.util.Try
 
-import org.apache.ignite.gatling.api.CacheApi
-import org.apache.ignite.gatling.api.IgniteApi
-import org.apache.ignite.gatling.api.TransactionApi
-import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
-import org.apache.ignite.gatling.protocol.IgniteClientPool
 import io.gatling.commons.validation.{Failure => ValidationFailure}
 import io.gatling.commons.validation.{Success => ValidationSuccess}
 import io.gatling.commons.validation.Validation
 import org.apache.ignite.binary.BinaryObjectBuilder
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.gatling.api.CacheApi
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.TransactionApi
+import org.apache.ignite.gatling.builder.ignite.SimpleCacheConfiguration
+import org.apache.ignite.gatling.protocol.IgniteClientPool
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 import scalaz.Memo

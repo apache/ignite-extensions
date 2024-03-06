@@ -16,6 +16,12 @@
  */
 package org.apache.ignite.gatling
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
+import io.gatling.core.structure.ChainBuilder
+import org.apache.ignite.Ignition
+import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.protocol.IgniteClientFixedSizePool
 import org.apache.ignite.gatling.protocol.IgniteClientPerThreadPool
@@ -24,12 +30,6 @@ import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.core.Predef._
-import io.gatling.core.structure.ChainBuilder
-import org.apache.ignite.Ignition
-import org.apache.ignite.configuration.ClientConfiguration
-import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
 import org.junit.Test
 

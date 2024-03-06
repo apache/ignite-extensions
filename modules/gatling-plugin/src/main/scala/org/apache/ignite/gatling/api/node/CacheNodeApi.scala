@@ -25,11 +25,11 @@ import scala.collection.SortedSet
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-import org.apache.ignite.gatling.api.CacheApi
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.ignite.IgniteCache
 import org.apache.ignite.cache.CacheEntryProcessor
 import org.apache.ignite.cache.query.SqlFieldsQuery
+import org.apache.ignite.gatling.api.CacheApi
 
 /**
  * Implementation of CacheApi working via the Ignite Node (thick) API.

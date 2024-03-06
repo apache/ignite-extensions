@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.gatling
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.core.Predef._
+import org.apache.ignite.binary.BinaryObject
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.api.node.IgniteNodeApi
@@ -24,10 +28,6 @@ import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.Predef._
-import org.apache.ignite.binary.BinaryObject
 import org.junit.Test
 
 /**

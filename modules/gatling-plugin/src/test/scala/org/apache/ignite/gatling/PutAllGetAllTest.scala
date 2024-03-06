@@ -20,15 +20,15 @@ import scala.collection.SortedMap
 import scala.collection.SortedSet
 import scala.language.postfixOps
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
+import io.gatling.core.session.ExpressionSuccessWrapper
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.core.Predef._
-import io.gatling.core.session.ExpressionSuccessWrapper
 import org.junit.Test
 
 /**

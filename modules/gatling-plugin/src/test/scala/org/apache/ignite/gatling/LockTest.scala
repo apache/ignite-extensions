@@ -24,13 +24,13 @@ import javax.cache.processor.MutableEntry
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
 import org.apache.ignite.gatling.LockTest.getValue
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.core.Predef._
 import org.junit.Test
 
 /**

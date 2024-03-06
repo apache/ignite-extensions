@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.gatling.builder.ignite
 
-import org.apache.ignite.gatling.action.ignite.LambdaAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.ignite.LambdaAction
 
 /**
  * Lambda function action builder.

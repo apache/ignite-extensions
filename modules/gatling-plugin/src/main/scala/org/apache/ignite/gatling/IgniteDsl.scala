@@ -16,6 +16,15 @@
  */
 package org.apache.ignite.gatling
 
+import io.gatling.core.Predef.{group => gatlingGroup}
+import io.gatling.core.Predef.exec
+import io.gatling.core.action.builder.ActionBuilder
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
+import io.gatling.core.structure.ChainBuilder
+import io.gatling.core.structure.ScenarioBuilder
+import org.apache.ignite.binary.BinaryObjectBuilder
+import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.builder.cache.Cache
 import org.apache.ignite.gatling.builder.ignite.Ignite
@@ -26,15 +35,6 @@ import org.apache.ignite.gatling.check.IgniteKeyValueMapResultCheckSupport
 import org.apache.ignite.gatling.check.IgniteSqlCheckSupport
 import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 import org.apache.ignite.gatling.protocol.IgniteProtocolSupport
-import io.gatling.core.Predef.{group => gatlingGroup}
-import io.gatling.core.Predef.exec
-import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.Expression
-import io.gatling.core.session.Session
-import io.gatling.core.structure.ChainBuilder
-import io.gatling.core.structure.ScenarioBuilder
-import org.apache.ignite.binary.BinaryObjectBuilder
-import org.apache.ignite.client.IgniteClient
 
 /**
  * Ignite Gatling DSL functions.

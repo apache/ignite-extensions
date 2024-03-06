@@ -20,13 +20,13 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.language.postfixOps
 
+import io.gatling.core.Predef._
+import io.gatling.core.structure.ChainBuilder
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.Predef.group
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteSupport
-import io.gatling.core.Predef._
-import io.gatling.core.structure.ChainBuilder
 import org.junit.Test
 
 /**

@@ -16,11 +16,6 @@
  */
 package org.apache.ignite.gatling.action
 
-import org.apache.ignite.gatling.api.IgniteApi
-import org.apache.ignite.gatling.api.TransactionApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
-import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 import io.gatling.commons.stats.KO
 import io.gatling.commons.stats.OK
 import io.gatling.commons.stats.Status
@@ -38,6 +33,11 @@ import io.gatling.core.session.Session
 import io.gatling.core.stats.StatsEngine
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.api.TransactionApi
+import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
+import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
 
 /**
  * Base class for all Ignite actions.

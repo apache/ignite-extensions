@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.gatling.protocol
 
-import org.apache.ignite.gatling.api.IgniteApi
 import io.gatling.core.CoreComponents
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.protocol.Protocol
@@ -25,6 +24,7 @@ import org.apache.ignite.Ignite
 import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.gatling.api.IgniteApi
 
 /**
  * Ignite protocol globals.

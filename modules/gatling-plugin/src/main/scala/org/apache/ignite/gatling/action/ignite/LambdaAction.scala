@@ -18,12 +18,12 @@ package org.apache.ignite.gatling.action.ignite
 
 import scala.util.Try
 
-import org.apache.ignite.gatling.action.IgniteAction
-import org.apache.ignite.gatling.api.IgniteApi
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.IgniteAction
+import org.apache.ignite.gatling.api.IgniteApi
 
 /**
  * Action executing the arbitrary lambda function accepting Ignite API instance and session.

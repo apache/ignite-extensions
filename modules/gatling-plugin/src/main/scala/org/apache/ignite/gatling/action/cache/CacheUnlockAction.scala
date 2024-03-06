@@ -18,11 +18,11 @@ package org.apache.ignite.gatling.action.cache
 
 import java.util.concurrent.locks.Lock
 
-import org.apache.ignite.gatling.action.CacheAction
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.CacheAction
 
 /**
  * Action for the unlock cache entry Ignite operation.

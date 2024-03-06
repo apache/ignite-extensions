@@ -16,14 +16,14 @@
  */
 package org.apache.ignite.gatling.builder.cache
 
-import org.apache.ignite.gatling.Predef.SqlCheck
-import org.apache.ignite.gatling.action.cache.CacheSqlAction
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.Predef.SqlCheck
+import org.apache.ignite.gatling.action.cache.CacheSqlAction
 
 /**
  * SQL query action builder.

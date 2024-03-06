@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.gatling.action
 
-import org.apache.ignite.gatling.api.CacheApi
-import org.apache.ignite.gatling.api.TransactionApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSessionKey
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.validation.Failure
 import io.gatling.commons.validation.SuccessWrapper
@@ -27,6 +24,9 @@ import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.api.CacheApi
+import org.apache.ignite.gatling.api.TransactionApi
+import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSessionKey
 
 /**
  * Base action class for cache operations.

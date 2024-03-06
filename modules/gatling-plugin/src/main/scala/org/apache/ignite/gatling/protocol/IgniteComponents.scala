@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.gatling.protocol
 
-import org.apache.ignite.gatling.api.IgniteApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.CoreComponents
 import io.gatling.core.protocol.ProtocolComponents
 import io.gatling.core.session.Session
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 
 /**
  * Ignite gatling protocol components holder.

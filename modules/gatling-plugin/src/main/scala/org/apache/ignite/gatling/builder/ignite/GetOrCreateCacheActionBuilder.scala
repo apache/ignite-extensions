@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.gatling.builder.ignite
 
-import org.apache.ignite.gatling.action.ignite.GetOrCreateCacheAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
@@ -26,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.client.ClientCacheConfiguration
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.gatling.action.ignite.GetOrCreateCacheAction
 
 /**
  * Base get or create cache action builder.

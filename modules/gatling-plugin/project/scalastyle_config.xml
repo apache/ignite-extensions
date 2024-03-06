@@ -309,7 +309,7 @@
   <check level="warning" class="org.scalastyle.scalariform.UnderscoreImportChecker" enabled="true">
     <parameters>
       <parameter name="ignoreRegex">
-        scala\.jdk\.CollectionConverters\._|io\.gatling\.core\.Predef\._|com\.sbt\.ignite\.gatling\.Predef\._
+        scala\.jdk\.CollectionConverters\._|io\.gatling\.core\.Predef\._|org\.apache\.ignite\.gatling\.Predef\._
       </parameter>
     </parameters>
   </check>

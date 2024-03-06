@@ -21,11 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.SortedMap
 import scala.util.Try
 
-import org.apache.ignite.gatling.Predef.igniteProtocol
-import org.apache.ignite.gatling.protocol.IgniteProtocol
 import io.gatling.core.feeder.Feeder
 import io.gatling.core.feeder.Record
 import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.gatling.Predef.igniteProtocol
+import org.apache.ignite.gatling.protocol.IgniteProtocol
 import org.apache.ignite.internal.IgnitionEx
 
 /**

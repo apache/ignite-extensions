@@ -16,9 +16,9 @@
  */
 package org.apache.ignite.gatling.builder.cache
 
-import org.apache.ignite.gatling.Predef.IgniteCheck
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
+import org.apache.ignite.gatling.Predef.IgniteCheck
 
 /**
  * DSL operations for collection of common cache action parameters.

@@ -18,8 +18,8 @@ package org.apache.ignite.gatling.api.thin
 
 import scala.util.Try
 
-import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.client.ClientTransaction
+import org.apache.ignite.gatling.api.TransactionApi
 
 /**
  * Implementation of TransactionApi working via the Ignite (thin) Client API.

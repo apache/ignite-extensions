@@ -16,13 +16,13 @@
  */
 package org.apache.ignite.gatling.action.ignite
 
-import org.apache.ignite.gatling.action.IgniteAction
-import org.apache.ignite.gatling.api.IgniteApi
-import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 import io.gatling.core.action.Action
 import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.IgniteAction
+import org.apache.ignite.gatling.api.IgniteApi
+import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
 
 /**
  * Action for the start Ignite API operation (starts either the thin client or the node working in client mode).

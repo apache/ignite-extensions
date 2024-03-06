@@ -16,12 +16,6 @@
  */
 package org.apache.ignite.gatling.builder.transaction
 
-import org.apache.ignite.gatling.IgniteDslInvalidConfigurationException
-import org.apache.ignite.gatling.action.ignite.TransactionCloseAction
-import org.apache.ignite.gatling.action.ignite.TransactionCommitAction
-import org.apache.ignite.gatling.action.ignite.TransactionRollbackAction
-import org.apache.ignite.gatling.action.ignite.TransactionStartAction
-import org.apache.ignite.gatling.builder.cache.CacheActionCommonParameters
 import io.gatling.core.Predef.exec
 import io.gatling.core.Predef.group
 import io.gatling.core.action.Action
@@ -32,6 +26,12 @@ import io.gatling.core.session.ExpressionSuccessWrapper
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
+import org.apache.ignite.gatling.IgniteDslInvalidConfigurationException
+import org.apache.ignite.gatling.action.ignite.TransactionCloseAction
+import org.apache.ignite.gatling.action.ignite.TransactionCommitAction
+import org.apache.ignite.gatling.action.ignite.TransactionRollbackAction
+import org.apache.ignite.gatling.action.ignite.TransactionStartAction
+import org.apache.ignite.gatling.builder.cache.CacheActionCommonParameters
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 

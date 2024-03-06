@@ -16,10 +16,10 @@
  */
 package org.apache.ignite.gatling.utils
 
-import org.apache.ignite.gatling.utils.IgniteClientApi.IgniteApi
-import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
+import org.apache.ignite.gatling.utils.IgniteClientApi.IgniteApi
+import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
 import org.junit.Assert.assertTrue
 

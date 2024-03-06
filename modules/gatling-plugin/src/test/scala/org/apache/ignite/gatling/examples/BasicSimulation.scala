@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import org.apache.ignite.gatling.Predef._
 import io.gatling.core.Predef._
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.ClientConfiguration
+import org.apache.ignite.gatling.Predef._
 
 /**
  * Basic Ignite Gatling simulation.

@@ -18,14 +18,14 @@ package org.apache.ignite.gatling
 
 import scala.io.Source
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.commons.validation.SuccessWrapper
+import io.gatling.core.Predef._
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.commons.validation.SuccessWrapper
-import io.gatling.core.Predef._
 import org.junit.Test
 
 /**

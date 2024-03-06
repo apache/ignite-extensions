@@ -16,15 +16,15 @@
  */
 package org.apache.ignite.gatling.action.ignite
 
+import io.gatling.core.action.Action
+import io.gatling.core.session.Expression
+import io.gatling.core.session.Session
+import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
 import org.apache.ignite.gatling.api.IgniteApi
 import org.apache.ignite.gatling.api.TransactionApi
 import org.apache.ignite.gatling.builder.transaction.TransactionParameters
 import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKey
-import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
-import io.gatling.core.session.Session
-import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.transactions.TransactionConcurrency
 import org.apache.ignite.transactions.TransactionIsolation
 

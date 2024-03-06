@@ -18,17 +18,17 @@ package org.apache.ignite.gatling
 
 import scala.language.postfixOps
 
+import com.typesafe.scalalogging.StrictLogging
+import io.gatling.core.Predef._
+import io.gatling.core.session.Session
+import org.apache.ignite.Ignite
+import org.apache.ignite.client.IgniteClient
 import org.apache.ignite.gatling.LambdaTest.testCache
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.utils.AbstractGatlingTest
 import org.apache.ignite.gatling.utils.IgniteClientApi.NodeApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.gatling.utils.IgniteSupport
-import com.typesafe.scalalogging.StrictLogging
-import io.gatling.core.Predef._
-import io.gatling.core.session.Session
-import org.apache.ignite.Ignite
-import org.apache.ignite.client.IgniteClient
 import org.junit.Test
 
 /**

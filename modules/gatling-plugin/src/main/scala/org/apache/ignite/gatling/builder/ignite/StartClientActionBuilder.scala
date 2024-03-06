@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.gatling.builder.ignite
 
-import org.apache.ignite.gatling.action.ignite.StartClientAction
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
+import org.apache.ignite.gatling.action.ignite.StartClientAction
 
 /**
  * Start Ignite API instance action builder.
