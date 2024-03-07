@@ -83,13 +83,13 @@ trait GatlingSupport {
      * @param func function to execute.
      * @tparam T exception class to expect.
      */
-    def expecting[T](func: => Unit): Unit = try {
-        func
-    }
-    catch {
-        case ex: Throwable =>
-            assertTrue(ex.isInstanceOf[T] || ex.getCause.isInstanceOf[T])
-    }
+    def expecting[T](func: => Unit): Unit =
+        try
+            func
+        catch {
+            case ex: Throwable =>
+                assertTrue(ex.isInstanceOf[T] || ex.getCause.isInstanceOf[T])
+        }
 }
 
 /**

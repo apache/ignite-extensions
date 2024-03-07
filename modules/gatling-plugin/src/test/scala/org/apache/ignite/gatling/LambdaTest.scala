@@ -108,7 +108,7 @@ class IgniteClientLambdaSimulation extends Simulation with IgniteSupport with St
         .ignite { ignite: IgniteClient =>
             ignite.createCache[Int, Int](testCache)
         }
-        .exec (
+        .exec(
             igniteClientOperations as "named"
         )
 

@@ -46,13 +46,13 @@ trait IgniteClientPool {
 class IgniteClientPerThreadPool(cfg: ClientConfiguration) extends IgniteClientPool {
     private val clients = new ConcurrentLinkedQueue[IgniteClient]()
 
-    private val client = ThreadLocal.withInitial[IgniteClient](() => {
+    private val client = ThreadLocal.withInitial[IgniteClient] { () =>
         val client = Ignition.startClient(cfg)
 
         clients.add(client)
 
         client
-    })
+    }
 
     override def apply(): IgniteClient = client.get()
 
@@ -78,7 +78,6 @@ class IgniteClientFixedSizePool(cfg: ClientConfiguration, size: Int) extends Ign
         clients(ThreadLocalRandom.current().nextInt(size))
     }
 
-    override def close(): Unit = {
+    override def close(): Unit =
         clients.foreach(c => c.close())
-    }
 }

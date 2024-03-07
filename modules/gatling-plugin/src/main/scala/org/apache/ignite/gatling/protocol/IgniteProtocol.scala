@@ -84,12 +84,11 @@ case class IgniteProtocol(cfg: IgniteCfg, explicitClientStart: Boolean = false) 
     /**
      * Close all opened clients.
      */
-    def close(): Unit = {
+    def close(): Unit =
         cfg match {
             case cfg: IgniteClientPoolCfg => cfg.pool.close()
-            case _ =>
+            case _                        =>
         }
-    }
 }
 
 /**

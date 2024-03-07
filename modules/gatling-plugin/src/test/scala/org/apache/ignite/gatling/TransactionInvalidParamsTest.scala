@@ -35,11 +35,10 @@ class TransactionInvalidParamsTest(val simulation: String) extends GatlingSuppor
     /**
      */
     @Test
-    def invalidTxConfig(): Unit = {
+    def invalidTxConfig(): Unit =
         expecting[IgniteDslInvalidConfigurationException] {
             run(simulation)
         }
-    }
 
 }
 
