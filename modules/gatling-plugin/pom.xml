@@ -152,7 +152,7 @@
                 <configuration>
                     <scala>
                         <scalafmt>
-                            <version>3.5.9</version>
+                            <version>3.8.0</version>
                             <file>${project.basedir}/.scalafmt.conf</file>
                         </scalafmt>
                         <licenseHeader>
