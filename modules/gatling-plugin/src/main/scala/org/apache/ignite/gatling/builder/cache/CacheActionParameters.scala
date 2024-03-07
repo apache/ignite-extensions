@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.gatling.builder.cache
 
-import io.gatling.core.session.EmptyStringExpressionSuccess
-import io.gatling.core.session.Expression
 import org.apache.ignite.gatling.Predef.IgniteCheck
 
 /**
@@ -25,7 +23,7 @@ import org.apache.ignite.gatling.Predef.IgniteCheck
  */
 trait CacheActionCommonParameters {
     /** Request name. */
-    var requestName: Expression[String] = EmptyStringExpressionSuccess
+    var requestName: String = ""
 
     /** True if it should operate with binary objects. */
     var withKeepBinary: Boolean = false
@@ -56,11 +54,12 @@ trait CacheActionCommonParameters {
     /**
      * Specify request name for action.
      *
-     * @param newRequestName Request name.
+     * @param requestName Request name.
      * @return itself.
      */
-    def as(newRequestName: Expression[String]): this.type = {
-        requestName = newRequestName
+    def as(requestName: String): this.type = {
+        this.requestName = requestName
+
         this
     }
 }

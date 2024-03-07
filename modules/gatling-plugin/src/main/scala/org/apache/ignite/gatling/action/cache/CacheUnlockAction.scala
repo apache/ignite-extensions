@@ -37,8 +37,8 @@ import org.apache.ignite.gatling.action.CacheAction
  * @param ctx Scenario context.
  */
 class CacheUnlockAction[K, V](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     lock: Expression[Lock],
     keepBinary: Boolean,
     next: Action,
@@ -47,14 +47,15 @@ class CacheUnlockAction[K, V](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, _) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedLock <- lock(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
             val func = cacheApi.unlock(resolvedLock) _
 
-            call(func, resolvedRequestName, session)
+            call(func, session)
         }
     }
 }

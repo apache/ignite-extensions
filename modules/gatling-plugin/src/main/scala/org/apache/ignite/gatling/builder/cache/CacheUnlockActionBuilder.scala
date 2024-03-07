@@ -31,7 +31,7 @@ import org.apache.ignite.gatling.action.cache.CacheUnlockAction
  * @param lock Lock instance.
  */
 class CacheUnlockActionBuilder(
-    cacheName: Expression[String],
+    cacheName: String,
     lock: Expression[Lock]
 ) extends ActionBuilder
     with CacheActionCommonParameters {

@@ -101,7 +101,7 @@ class TransactionSimulation extends Simulation with StrictLogging with IgniteSup
     private val controlFlowOperationsTx = ignite(
         tx isolation REPEATABLE_READ concurrency OPTIMISTIC timeout 3000 run (
             get[Int, Int](cache, s"#{$key}"),
-            doIfOrElse(session => ThreadLocalRandom.current().nextBoolean())(
+            doIfOrElse(_ => ThreadLocalRandom.current().nextBoolean())(
                 put[Int, Int](cache, s"#{$key}", -1)
             )(
                 put[Int, Int](cache, s"#{$key}", -100)

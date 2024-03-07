@@ -31,7 +31,7 @@ import org.apache.ignite.gatling.action.cache.CacheGetAndRemoveAction
  * @param key The cache entry key.
  */
 class CacheGetAndRemoveActionBuilder[K, V](
-    cacheName: Expression[String],
+    cacheName: String,
     key: Expression[K]
 ) extends ActionBuilder
     with CacheActionCommonParameters

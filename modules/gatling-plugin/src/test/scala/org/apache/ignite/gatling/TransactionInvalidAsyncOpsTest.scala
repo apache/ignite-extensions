@@ -36,26 +36,34 @@ class TransactionInvalidAsyncOpsTest extends AbstractGatlingTest {
     /**
      * Tests that check is performed on scenario build stage.
      */
-    @Test(expected = classOf[IgniteDslInvalidConfigurationException])
-    def asyncOp(): Unit = run(classOf[AsyncOpSimulation].getName)
+    @Test
+    def asyncOp(): Unit = expecting[IgniteDslInvalidConfigurationException] {
+        run(classOf[AsyncOpSimulation].getName)
+    }
 
     /**
      * Tests that check is performed on scenario build stage.
      */
-    @Test(expected = classOf[IgniteDslInvalidConfigurationException])
-    def asyncOpInGroup(): Unit = run(classOf[AsyncOpInGroupSimulation].getName)
+    @Test
+    def asyncOpInGroup(): Unit = expecting[IgniteDslInvalidConfigurationException] {
+        run(classOf[AsyncOpInGroupSimulation].getName)
+    }
 
     /**
      * Tests that check is performed on scenario build stage.
      */
-    @Test(expected = classOf[IgniteDslInvalidConfigurationException])
-    def asyncOpInIgnite(): Unit = run(classOf[AsyncOpInIgniteSimulation].getName)
+    @Test
+    def asyncOpInIgnite(): Unit = expecting[IgniteDslInvalidConfigurationException] {
+        run(classOf[AsyncOpInIgniteSimulation].getName)
+    }
 
     /**
      * Tests that check is performed in runtime during the scenario execution.
      */
-    @Test(expected = classOf[Throwable])
-    def asyncOpInControlFlowStatement(): Unit = runWith(NodeApi)(classOf[AsyncOpInControlFlowStatementSimulation].getName)
+    @Test
+    def asyncOpInControlFlowStatement(): Unit = expecting[AssertionError] {
+        runWith(NodeApi)(classOf[AsyncOpInControlFlowStatementSimulation].getName)
+    }
 }
 
 /**
@@ -74,9 +82,9 @@ abstract class BaseInvalidTxAsyncSimulation extends Simulation with IgniteSuppor
 /**
  */
 class AsyncOpSimulation extends BaseInvalidTxAsyncSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx run (
-            get("cache", "key") async
+            get("cache", 1) async
         )
     )
 }
@@ -84,10 +92,10 @@ class AsyncOpSimulation extends BaseInvalidTxAsyncSimulation {
 /**
  */
 class AsyncOpInGroupSimulation extends BaseInvalidTxAsyncSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx run (
             group("")(
-                get("cache", "key") async
+                get("cache", 1) async
             )
         )
     )
@@ -96,10 +104,10 @@ class AsyncOpInGroupSimulation extends BaseInvalidTxAsyncSimulation {
 /**
  */
 class AsyncOpInIgniteSimulation extends BaseInvalidTxAsyncSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx run (
             ignite(
-                get("cache", "key") async
+                get("cache", 1) async
             )
         )
     )
@@ -108,13 +116,13 @@ class AsyncOpInIgniteSimulation extends BaseInvalidTxAsyncSimulation {
 /**
  */
 class AsyncOpInControlFlowStatementSimulation extends BaseInvalidTxAsyncSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         getOrCreateCache("cache") atomicity TRANSACTIONAL,
         tx run (
-            doIfOrElse(session => ThreadLocalRandom.current().nextBoolean())(
-                put("cache", "key", "value 1") async
+            doIfOrElse(_ => ThreadLocalRandom.current().nextBoolean())(
+                put("cache", (1, "v1")) async
             )(
-                put("cache", "key", "value 2") async
+                put("cache", (2, "v2")) async
             ),
             commit
         )

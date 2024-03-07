@@ -33,7 +33,7 @@ import org.apache.ignite.gatling.action.ignite.LambdaAction
  */
 case class LambdaActionBuilder[I](
     function: (I, Session) => Any,
-    requestName: Expression[String] = EmptyStringExpressionSuccess
+    requestName: String = ""
 ) extends ActionBuilder {
     /**
      * Specify request name for action.
@@ -41,7 +41,7 @@ case class LambdaActionBuilder[I](
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+    def as(requestName: String): ActionBuilder = this.copy(requestName = requestName)
 
     override def build(ctx: ScenarioContext, next: Action): Action =
         new LambdaAction(requestName, function, next, ctx)

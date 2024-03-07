@@ -59,7 +59,7 @@ object LockTest {
 class LockSimulation extends Simulation with IgniteSupport with StrictLogging {
     private val cache = "TEST-CACHE"
 
-    private val key = "1"
+    private val key = 1
     private val value = new AtomicInteger(0)
 
     private val scn = scenario("LockedInvoke")
@@ -67,17 +67,17 @@ class LockSimulation extends Simulation with IgniteSupport with StrictLogging {
         .ignite(
             getOrCreateCache(cache) atomicity TRANSACTIONAL,
             lock(cache, key)
-                check entries[String, Lock].transform(_.value).saveAs("lock"),
-            put[String, Int](cache, key, getValue),
-            invoke[String, Int, Unit](cache, key) { e: MutableEntry[String, Int] =>
+                check entries[Int, Lock].transform(_.value).saveAs("lock"),
+            put[Int, Int](cache, key, getValue),
+            invoke[Int, Int, Unit](cache, key) { e: MutableEntry[Int, Int] =>
                 e.setValue(-e.getValue)
             },
-            get[String, Int](cache, key)
+            get[Int, Int](cache, key)
                 check (
-                    entries[String, Int].validate((e: Entry[String, Int], s: Session) =>
+                    entries[Int, Int].validate((e: Entry[Int, Int], s: Session) =>
                         e.value == -s("value").as[Int]
                     ),
-                    entries[String, Int].transform(-_.value).is(getValue)
+                    entries[Int, Int].transform(-_.value).is(getValue)
                 ),
             unlock(cache, "#{lock}"),
             closeIgniteApi
@@ -98,7 +98,7 @@ class LockSimulation extends Simulation with IgniteSupport with StrictLogging {
 class LockWithAsyncOpSimulation extends Simulation with IgniteSupport with StrictLogging {
     private val cache = "TEST-CACHE"
 
-    private val key = "1"
+    private val key = 1
     private val value = new AtomicInteger(0)
 
     private val scn = scenario("LockedInvoke")
@@ -106,8 +106,8 @@ class LockWithAsyncOpSimulation extends Simulation with IgniteSupport with Stric
         .ignite(
             getOrCreateCache(cache) atomicity TRANSACTIONAL,
             lock(cache, key)
-                check entries[String, Lock].transform(_.value).saveAs("lock"),
-            put[String, Int](cache, key, getValue) async,
+                check entries[Int, Lock].transform(_.value).saveAs("lock"),
+            put(cache, (key, getValue)) async,
             unlock(cache, "#{lock}"),
             closeIgniteApi
         )

@@ -42,8 +42,8 @@ import org.apache.ignite.gatling.action.CacheAction
  * @param ctx Scenario context.
  */
 class CacheInvokeAction[K, V, T](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     key: Expression[K],
     entryProcessor: CacheEntryProcessor[K, V, T],
     arguments: Seq[Expression[Any]],
@@ -57,15 +57,17 @@ class CacheInvokeAction[K, V, T](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedKey <- key(session)
+
             resolvedArguments <- resolveArguments(session, arguments)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
             val func = if (async) cacheApi.invokeAsync[T] _ else cacheApi.invoke[T] _
 
-            call(func(resolvedKey, entryProcessor, resolvedArguments), resolvedRequestName, session, checks)
+            call(func(resolvedKey, entryProcessor, resolvedArguments), session, checks)
         }
     }
 }

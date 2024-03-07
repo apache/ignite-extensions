@@ -32,7 +32,7 @@ import org.apache.ignite.gatling.action.cache.CacheRemoveAllAction
  * @param keys Collection of cache entry keys.
  */
 class CacheRemoveAllActionBuilder[K](
-    cacheName: Expression[String],
+    cacheName: String,
     keys: Expression[SortedSet[K]]
 ) extends ActionBuilder
     with CacheActionCommonParameters {

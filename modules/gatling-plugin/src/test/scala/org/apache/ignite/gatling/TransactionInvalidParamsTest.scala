@@ -34,8 +34,13 @@ import org.junit.runners.Parameterized
 class TransactionInvalidParamsTest(val simulation: String) extends GatlingSupport {
     /**
      */
-    @Test(expected = classOf[IgniteDslInvalidConfigurationException])
-    def invalidTxConfig(): Unit = run(simulation)
+    @Test
+    def invalidTxConfig(): Unit = {
+        expecting[IgniteDslInvalidConfigurationException] {
+            run(simulation)
+        }
+    }
+
 }
 
 object TransactionInvalidParamsTest {
@@ -81,7 +86,7 @@ abstract class BaseInvalidTxConfigSimulation extends Simulation with IgniteSuppo
 /**
  */
 class OnlyIsolationSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx isolation READ_COMMITTED run (
             pause(1)
         )
@@ -91,7 +96,7 @@ class OnlyIsolationSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class OnlyConcurrencySimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx concurrency OPTIMISTIC run (
             pause(1)
         )
@@ -101,7 +106,7 @@ class OnlyConcurrencySimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class OnlyTimeoutSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx timeout 10L run (
             pause(1)
         )
@@ -111,7 +116,7 @@ class OnlyTimeoutSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class OnlySizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx size 10 run (
             pause(1)
         )
@@ -121,7 +126,7 @@ class OnlySizeSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class TimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx timeout 10L size 10 run (
             pause(1)
         )
@@ -131,7 +136,7 @@ class TimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class ConcurrencyTimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx concurrency PESSIMISTIC timeout 10L size 10 run (
             pause(1)
         )
@@ -141,7 +146,7 @@ class ConcurrencyTimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation 
 /**
  */
 class IsolationTimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx isolation REPEATABLE_READ timeout 10L size 10 run (
             pause(1)
         )
@@ -151,7 +156,7 @@ class IsolationTimeoutAndSizeSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class ConcurrencyAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx concurrency PESSIMISTIC size 10 run (
             pause(1)
         )
@@ -161,7 +166,7 @@ class ConcurrencyAndSizeSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class IsolationAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx isolation REPEATABLE_READ size 10 run (
             pause(1)
         )
@@ -171,7 +176,7 @@ class IsolationAndSizeSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class ConcurrencyAndTimeoutSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx concurrency PESSIMISTIC timeout 10L run (
             pause(1)
         )
@@ -181,7 +186,7 @@ class ConcurrencyAndTimeoutSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class IsolationAndTimeoutSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx isolation REPEATABLE_READ timeout 10L run (
             pause(1)
         )
@@ -191,7 +196,7 @@ class IsolationAndTimeoutSimulation extends BaseInvalidTxConfigSimulation {
 /**
  */
 class IsolationConcurrencyAndSizeSimulation extends BaseInvalidTxConfigSimulation {
-    override protected def actions = ignite(
+    override protected def actions: ChainBuilder = ignite(
         tx isolation REPEATABLE_READ concurrency OPTIMISTIC size 2 run (
             pause(1)
         )

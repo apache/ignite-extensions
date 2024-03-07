@@ -40,7 +40,7 @@ import scalaz.Memo
  */
 case class IgniteNodeApi(wrapped: Ignite) extends IgniteApi {
 
-    override def cache[K, V]: (String => Validation[CacheApi[K, V]]) = Memo.immutableHashMapMemo[String, Validation[CacheApi[K, V]]] { name =>
+    override def cache[K, V]: String => Validation[CacheApi[K, V]] = Memo.immutableHashMapMemo[String, Validation[CacheApi[K, V]]] { name =>
         Try(wrapped.cache[K, V](name))
             .map(CacheNodeApi[K, V])
             .fold(ex => ValidationFailure(ex.getMessage), ValidationSuccess(_))

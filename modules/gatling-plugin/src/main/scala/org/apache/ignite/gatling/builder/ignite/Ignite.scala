@@ -30,7 +30,7 @@ trait Ignite {
      * @param cacheName Cache name.
      * @return CreateCacheActionBuilderBase
      */
-    def getOrCreateCache[K, V](cacheName: Expression[String]): GetOrCreateCacheActionBuilderBase[K, V] =
+    def getOrCreateCache[K, V](cacheName: String): GetOrCreateCacheActionBuilderBase[K, V] =
         GetOrCreateCacheActionBuilderBase(cacheName)
 
     /**

@@ -16,13 +16,11 @@
  */
 package org.apache.ignite.gatling.builder.transaction
 
+import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.Predef.exec
 import io.gatling.core.Predef.group
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
-import io.gatling.core.session.Expression
-import io.gatling.core.session.ExpressionSuccessWrapper
 import io.gatling.core.structure.ChainBuilder
 import io.gatling.core.structure.ScenarioContext
 import io.gatling.core.util.NameGen
@@ -102,7 +100,7 @@ case class TransactionParameters(
         options.forall(element => element.isEmpty)
 
     override def toString: String =
-        s"[concurrency=${concurrency}, isolation=${isolation}, timeout=${timeout}, size=${size}]"
+        s"[concurrency=$concurrency, isolation=$isolation, timeout=$timeout, size=$size]"
 }
 
 /**
@@ -124,8 +122,8 @@ case class TransactionBuilder(params: TransactionParameters, transactionChain: S
      * @param requestName Request name.
      * @return Full chain of actions.
      */
-    def as(requestName: Expression[String]): ChainBuilder =
-        group(requestName)(
+    def as(requestName: String): ChainBuilder =
+        group(_ => requestName.success)(
             exec(TransactionStartActionBuilder(requestName, params))
                 .exec(transactionChain)
                 .exec(TransactionCloseActionBuilder(requestName))
@@ -136,7 +134,7 @@ case class TransactionBuilder(params: TransactionParameters, transactionChain: S
      *
      * @return Full chain of actions.
      */
-    def build(): ChainBuilder = as(genName("tx").expressionSuccess)
+    def build(): ChainBuilder = as(genName("tx"))
 }
 
 /**
@@ -190,7 +188,7 @@ case class TransactionBuilderParametersStep(params: TransactionParameters) {
     def run(transactionChain: ChainBuilder*): TransactionBuilder = {
         if (!params.areValid) {
             throw new IgniteDslInvalidConfigurationException(
-                s"Wrong combination of transaction configuration parameters specified: ${params}"
+                s"Wrong combination of transaction configuration parameters specified: $params"
             )
         }
 
@@ -217,14 +215,14 @@ case class TransactionBuilderParametersStep(params: TransactionParameters) {
  *
  * @param requestName Request name.
  */
-case class TransactionCommitActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends ActionBuilder {
+case class TransactionCommitActionBuilder(requestName: String = "") extends ActionBuilder {
     /**
      * Specify request name for action.
      *
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+    def as(requestName: String): ActionBuilder = this.copy(requestName = requestName)
 
     /**
      * Builds an action.
@@ -242,14 +240,14 @@ case class TransactionCommitActionBuilder(requestName: Expression[String] = Empt
  *
  * @param requestName Request name.
  */
-case class TransactionRollbackActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends ActionBuilder {
+case class TransactionRollbackActionBuilder(requestName: String = "") extends ActionBuilder {
     /**
      * Specify request name for action.
      *
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+    def as(requestName: String): ActionBuilder = this.copy(requestName = requestName)
 
     /**
      * Builds an action.
@@ -268,7 +266,7 @@ case class TransactionRollbackActionBuilder(requestName: Expression[String] = Em
  * @param requestName Request name.
  * @param params Transaction parameters.
  */
-case class TransactionStartActionBuilder(requestName: Expression[String], params: TransactionParameters) extends ActionBuilder {
+case class TransactionStartActionBuilder(requestName: String, params: TransactionParameters) extends ActionBuilder {
     /**
      * Builds an action.
      *
@@ -285,7 +283,7 @@ case class TransactionStartActionBuilder(requestName: Expression[String], params
  *
  * @param requestName Request name.
  */
-case class TransactionCloseActionBuilder(requestName: Expression[String]) extends ActionBuilder {
+case class TransactionCloseActionBuilder(requestName: String) extends ActionBuilder {
     /**
      * Builds an action.
      *

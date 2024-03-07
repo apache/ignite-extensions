@@ -40,8 +40,8 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSess
  * @param ctx Scenario context.
  */
 class CacheLockAction[K, V](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     key: Expression[K],
     keepBinary: Boolean,
     checks: Seq[IgniteCheck[K, Lock]],
@@ -51,10 +51,11 @@ class CacheLockAction[K, V](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, _) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedKey <- key(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
             val func = (s: Map[K, Lock] => Unit, f: Throwable => Unit) =>
                 cacheApi.lock(resolvedKey)(
@@ -64,7 +65,6 @@ class CacheLockAction[K, V](
 
             call(
                 func,
-                resolvedRequestName,
                 session,
                 checks,
                 updateSession = (session, _: Option[Map[K, Lock]]) => session.set(ExplicitLockWasUsedSessionKey, true)

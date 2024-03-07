@@ -37,7 +37,7 @@ import org.apache.ignite.gatling.action.cache.CacheInvokeAllMapAction
  * @param map Map from cache entry key to CacheEntryProcessor to invoke for this particular entry.
  */
 class CacheInvokeAllMultipleProcessorsActionBuilder[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     map: Expression[SortedMap[K, CacheEntryProcessor[K, V, T]]]
 ) extends ActionBuilder
     with CacheActionCommonParameters

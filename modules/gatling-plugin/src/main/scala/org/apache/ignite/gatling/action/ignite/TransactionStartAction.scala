@@ -17,7 +17,6 @@
 package org.apache.ignite.gatling.action.ignite
 
 import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
@@ -36,20 +35,21 @@ import org.apache.ignite.transactions.TransactionIsolation
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
-class TransactionStartAction(requestName: Expression[String], params: TransactionParameters, next: Action, ctx: ScenarioContext)
+class TransactionStartAction(requestName: String, params: TransactionParameters, next: Action, ctx: ScenarioContext)
     extends IgniteAction("txStart", requestName, ctx, next) {
+
+    override val request: String = actionType
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
+            IgniteActionParameters(igniteApi, _) <- resolveIgniteParameters(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName $actionType")
+            logger.debug(s"session user id: #${session.userId}, before $request $actionType")
 
             val func = txStart(igniteApi, params.concurrency, params.isolation, params.timeout, params.size)
 
             call(
                 func,
-                actionType,
                 session,
                 updateSession = (session, transactionApi: Option[TransactionApi]) =>
                     transactionApi

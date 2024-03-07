@@ -36,8 +36,7 @@
         <scala.version>2.13.8</scala.version>
         <scala.compat.version>2.13</scala.compat.version>
         <scalaz.version>7.3.7</scalaz.version>
-        <gatling.version>3.7.6</gatling.version>
-        <netty.version>2.0.54.Final</netty.version>
+        <gatling.version>3.10.4</gatling.version>
     </properties>
 
     <dependencies>
@@ -51,18 +50,6 @@
             <groupId>io.gatling</groupId>
             <artifactId>gatling-core</artifactId>
             <version>${gatling.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-classes</artifactId>
-            <version>${netty.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <version>${netty.version}</version>
         </dependency>
 
         <dependency>

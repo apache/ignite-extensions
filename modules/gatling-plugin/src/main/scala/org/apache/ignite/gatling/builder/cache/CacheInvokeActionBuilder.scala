@@ -33,7 +33,7 @@ import org.apache.ignite.gatling.action.cache.CacheInvokeAction
  * @param key The cache entry key to run entry processor for.
  */
 case class CacheInvokeActionBuilderBase[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     key: Expression[K]
 ) {
     /**
@@ -66,7 +66,7 @@ case class CacheInvokeActionBuilderBase[K, V, T](
  * @param args Additional arguments to pass to the entry processor.
  */
 case class CacheInvokeActionBuilderProcessorStep[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     key: Expression[K],
     args: Seq[Expression[Any]]
 ) {
@@ -92,7 +92,7 @@ case class CacheInvokeActionBuilderProcessorStep[K, V, T](
  * @param arguments Additional arguments to pass to the entry processor.
  */
 class CacheInvokeActionBuilder[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     key: Expression[K],
     entryProcessor: CacheEntryProcessor[K, V, T],
     arguments: Seq[Expression[Any]]

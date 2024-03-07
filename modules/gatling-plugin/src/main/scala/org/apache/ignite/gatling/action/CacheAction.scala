@@ -21,7 +21,6 @@ import io.gatling.commons.validation.Failure
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.commons.validation.Validation
 import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.api.CacheApi
@@ -34,8 +33,8 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSess
  * @tparam K Type of the cache key.
  * @tparam V Type of the cache value.
  * @param actionType Action type name.
- * @param requestName Name of the request provided via the DSL. May be empty. If so name will be generated as specified
- *                    in the defaultRequestName implementation.
+ * @param requestName Name of the request provided via the DSL. May be empty. If so name will be generated
+ *                    automatically based on action type and cache name.
  * @param ctx Gatling scenario context.
  * @param next Next action to execute in scenario chain.
  * @param cacheName Name of cache.
@@ -44,26 +43,24 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.ExplicitLockWasUsedSess
  */
 abstract class CacheAction[K, V](
     actionType: String,
-    requestName: Expression[String],
+    requestName: String,
     ctx: ScenarioContext,
     next: Action,
-    val cacheName: Expression[String],
+    val cacheName: String,
     val keepBinary: Boolean,
     val async: Boolean = false
 ) extends IgniteAction(actionType, requestName, ctx, next)
     with StrictLogging {
 
-    override val defaultRequestName: Expression[String] =
-        s => cacheName(s).map(cacheName => s"$actionType $cacheName")
+    override val request: String = if (requestName == "") s"$name $cacheName" else requestName
 
     /**
      * Common parameters for cache actions.
      *
-     * @param resolvedRequestName Name of request.
      * @param cacheApi Instance of CacheApi.
      * @param transactionApi Instance of TransactionApi.
      */
-    case class CacheActionParameters(resolvedRequestName: String, cacheApi: CacheApi[K, V], transactionApi: Option[TransactionApi])
+    case class CacheActionParameters(cacheApi: CacheApi[K, V], transactionApi: Option[TransactionApi])
 
     /**
      * Resolves cache action parameters using session context.
@@ -73,22 +70,20 @@ abstract class CacheAction[K, V](
      */
     def resolveCacheParameters(session: Session): Validation[CacheActionParameters] =
         for {
-            IgniteActionParameters(resolvedRequestName, igniteApi, transactionApi) <- resolveIgniteParameters(session)
+            IgniteActionParameters(igniteApi, transactionApi) <- resolveIgniteParameters(session)
 
             explicitLocksWereUsed <- session(ExplicitLockWasUsedSessionKey).asOption[Boolean].success
-
-            resolvedCacheName <- cacheName(session)
 
             cacheApi <- {
                 if (async && (explicitLocksWereUsed.nonEmpty || transactionApi.isDefined)) {
                     Failure("Async Ignite API can not be used in transaction context or along with the explicit locks.")
                 } else {
                     if (keepBinary) {
-                        igniteApi.cache[K, V](resolvedCacheName).map(cache => cache.withKeepBinary())
+                        igniteApi.cache[K, V](cacheName).map(cache => cache.withKeepBinary())
                     } else {
-                        igniteApi.cache[K, V](resolvedCacheName)
+                        igniteApi.cache[K, V](cacheName)
                     }
                 }
             }
-        } yield CacheActionParameters(resolvedRequestName, cacheApi, transactionApi)
+        } yield CacheActionParameters(cacheApi, transactionApi)
 }

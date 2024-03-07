@@ -17,7 +17,6 @@
 package org.apache.ignite.gatling.action.ignite
 
 import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
@@ -32,16 +31,16 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
-class CloseClientAction(requestName: Expression[String], next: Action, ctx: ScenarioContext)
+class CloseClientAction(requestName: String, next: Action, ctx: ScenarioContext)
     extends IgniteAction("close", requestName, ctx, next) {
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         val noOp: (Unit => Unit, Throwable => Unit) => Unit = (s, _) => s.apply(())
 
         for {
-            IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
+            IgniteActionParameters(igniteApi, _) <- resolveIgniteParameters(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $requestName")
 
             val func = protocol.cfg match {
                 case IgniteClientConfigurationCfg(_) | IgniteConfigurationCfg(_) if protocol.explicitClientStart =>
@@ -50,7 +49,7 @@ class CloseClientAction(requestName: Expression[String], next: Action, ctx: Scen
                 case _ => noOp
             }
 
-            call(func, resolvedRequestName, session, updateSession = (session, _: Option[Unit]) => session.remove(IgniteApiSessionKey))
+            call(func, session, updateSession = (session, _: Option[Unit]) => session.remove(IgniteApiSessionKey))
         }
     }
 }

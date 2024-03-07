@@ -28,14 +28,14 @@ import org.apache.ignite.gatling.action.ignite.StartClientAction
  *
  * @param requestName Request name.
  */
-case class StartClientActionBuilder(requestName: Expression[String] = EmptyStringExpressionSuccess) extends ActionBuilder {
+case class StartClientActionBuilder(requestName: String = "") extends ActionBuilder {
     /**
      * Specify request name for action.
      *
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+    def as(requestName: String): ActionBuilder = this.copy(requestName = requestName)
 
     /**
      * Builds an action.

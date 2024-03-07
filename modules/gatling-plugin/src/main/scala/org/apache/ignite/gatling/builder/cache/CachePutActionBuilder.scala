@@ -31,7 +31,7 @@ import org.apache.ignite.gatling.action.cache.CachePutAction
  * @param pair The cache entry key.
  */
 class CachePutActionBuilder[K, V](
-    cacheName: Expression[String],
+    cacheName: String,
     pair: Expression[(K, V)]
 ) extends ActionBuilder
     with CacheActionCommonParameters {

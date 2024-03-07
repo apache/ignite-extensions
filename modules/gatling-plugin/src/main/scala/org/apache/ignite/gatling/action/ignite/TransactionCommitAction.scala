@@ -20,7 +20,6 @@ import io.gatling.commons.validation.Failure
 import io.gatling.commons.validation.Success
 import io.gatling.commons.validation.Validation
 import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.action.IgniteAction
@@ -33,21 +32,23 @@ import org.apache.ignite.gatling.api.TransactionApi
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
-class TransactionCommitAction(requestName: Expression[String], next: Action, ctx: ScenarioContext)
+class TransactionCommitAction(requestName: String, next: Action, ctx: ScenarioContext)
     extends IgniteAction("commit", requestName, ctx, next) {
+
+    override val request: String = actionType
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            IgniteActionParameters(resolvedRequestName, _, transactionApiOptional) <- resolveIgniteParameters(session)
+            IgniteActionParameters(_, transactionApiOptional) <- resolveIgniteParameters(session)
+
             transactionApi <- transactionApiOptional.fold[Validation[TransactionApi]](Failure("no transaction found in session"))(t =>
                 Success(t)
             )
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
             call(
                 transactionApi.commit,
-                resolvedRequestName,
                 session
             )
         }

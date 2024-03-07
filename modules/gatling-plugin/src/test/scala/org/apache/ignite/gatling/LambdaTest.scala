@@ -97,7 +97,7 @@ class IgniteClientLambdaSimulation extends Simulation with IgniteSupport with St
 
         cache.put(session("key").as[Int], session("value").as[Int])
 
-        val value = cache.get(session("key").as[Int])
+        cache.get(session("key").as[Int])
 
         // simulate error in lambda
         throw new RuntimeException("check failed in lambda")
@@ -108,16 +108,13 @@ class IgniteClientLambdaSimulation extends Simulation with IgniteSupport with St
         .ignite { ignite: IgniteClient =>
             ignite.createCache[Int, Int](testCache)
         }
-        .exec {
+        .exec (
             igniteClientOperations as "named"
-        }
-        .exec {
-            igniteClientOperations
-        }
+        )
 
     setUp(scn.inject(atOnceUsers(1)))
         .protocols(protocol)
         .assertions(
-            global.failedRequests.count.is(2)
+            global.failedRequests.count.is(1)
         )
 }

@@ -33,7 +33,7 @@ import org.apache.ignite.gatling.action.cache.CacheGetAllAction
  * @param keys The collection of the cache entry keys.
  */
 class CacheGetAllActionBuilder[K, V](
-    cacheName: Expression[String],
+    cacheName: String,
     keys: Expression[SortedSet[K]]
 ) extends ActionBuilder
     with CacheActionCommonParameters

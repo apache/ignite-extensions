@@ -17,7 +17,6 @@
 package org.apache.ignite.gatling.action.ignite
 
 import io.gatling.core.action.Action
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.configuration.CacheConfiguration
@@ -34,33 +33,31 @@ import org.apache.ignite.gatling.builder.ignite.ThinConfiguration
  *
  * @tparam K Type of the cache key.
  * @tparam V Type of the cache value.
- * @param requestName Name of the request.
+ * @param dslRequestName Name of the request provided via the DSL. May be empty.
  * @param cacheName Name of the cache.
  * @param config Abstract cache configuration.
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
 class GetOrCreateCacheAction[K, V](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    dslRequestName: String,
+    cacheName: String,
     config: Configuration,
     next: Action,
     ctx: ScenarioContext
-) extends IgniteAction("getOrCreateCache", requestName, ctx, next) {
+) extends IgniteAction("getOrCreateCache", dslRequestName, ctx, next) {
 
-    override val defaultRequestName: Expression[String] =
-        s => cacheName(s).map(cacheName => s"$actionType $cacheName")
+    override val request: String = s"$name $cacheName"
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            IgniteActionParameters(resolvedRequestName, igniteApi, _) <- resolveIgniteParameters(session)
-            resolvedCacheName <- cacheName(session)
+            IgniteActionParameters(igniteApi, _) <- resolveIgniteParameters(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
-            val func = getOrCreateCache(igniteApi, resolvedCacheName, config)
+            val func = getOrCreateCache(igniteApi, cacheName, config)
 
-            call(func, resolvedRequestName, session)
+            call(func, session)
         }
     }
 
@@ -75,12 +72,14 @@ class GetOrCreateCacheAction[K, V](
             if (cfg.getName == null) {
                 cfg.setName(cacheName)
             }
+
             igniteApi.getOrCreateCacheByClientConfiguration(cfg)
 
         case ThickConfiguration(cfg) =>
             if (cfg.getName == null) {
                 cfg.setName(cacheName)
             }
+
             igniteApi.getOrCreateCacheByConfiguration(cfg.asInstanceOf[CacheConfiguration[K, V]])
     }
 }

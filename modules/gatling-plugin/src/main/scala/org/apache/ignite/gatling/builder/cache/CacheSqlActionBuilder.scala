@@ -19,7 +19,6 @@ package org.apache.ignite.gatling.builder.cache
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.core.action.Action
 import io.gatling.core.action.builder.ActionBuilder
-import io.gatling.core.session.EmptyStringExpressionSuccess
 import io.gatling.core.session.Expression
 import io.gatling.core.structure.ScenarioContext
 import org.apache.ignite.gatling.Predef.SqlCheck
@@ -36,12 +35,12 @@ import org.apache.ignite.gatling.action.cache.CacheSqlAction
  * @param requestName Request name.
  */
 case class CacheSqlActionBuilder(
-    cacheName: Expression[String],
+    cacheName: String,
     sql: Expression[String],
     argsList: List[Expression[Any]] = List.empty,
     partitionsList: Expression[List[Int]] = _ => List.empty.success,
     checks: Seq[SqlCheck] = Seq.empty,
-    requestName: Expression[String] = EmptyStringExpressionSuccess
+    requestName: String = ""
 ) extends ActionBuilder {
 
     /**
@@ -74,7 +73,7 @@ case class CacheSqlActionBuilder(
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder = this.copy(requestName = requestName)
+    def as(requestName: String): ActionBuilder = this.copy(requestName = requestName)
 
     /**
      * Builds an action.

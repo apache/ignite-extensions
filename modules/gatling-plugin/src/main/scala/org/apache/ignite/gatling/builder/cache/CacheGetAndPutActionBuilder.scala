@@ -32,7 +32,7 @@ import org.apache.ignite.gatling.action.cache.CacheGetAndPutAction
  * @param value The cache entry value.
  */
 class CacheGetAndPutActionBuilder[K, V](
-    cacheName: Expression[String],
+    cacheName: String,
     key: Expression[K],
     value: Expression[V]
 ) extends ActionBuilder

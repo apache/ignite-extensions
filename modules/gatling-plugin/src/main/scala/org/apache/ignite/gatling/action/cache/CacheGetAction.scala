@@ -38,8 +38,8 @@ import org.apache.ignite.gatling.action.CacheAction
  * @param ctx Scenario context.
  */
 class CacheGetAction[K, V](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     key: Expression[K],
     keepBinary: Boolean,
     async: Boolean,
@@ -50,14 +50,15 @@ class CacheGetAction[K, V](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, transactionApi) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedKey <- key(session)
         } yield {
-            logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+            logger.debug(s"session user id: #${session.userId}, before $request")
 
             val func = if (async) cacheApi.getAsync _ else cacheApi.get _
 
-            call(func(resolvedKey), resolvedRequestName, session, checks)
+            call(func(resolvedKey), session, checks)
         }
     }
 }

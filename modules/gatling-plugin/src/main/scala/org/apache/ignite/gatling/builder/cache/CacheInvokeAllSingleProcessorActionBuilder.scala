@@ -37,7 +37,7 @@ import org.apache.ignite.gatling.action.cache.CacheInvokeAllSingleProcessorActio
  * @param keys Collection of the cache keys to run entry processor for.
  */
 case class CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     keys: Expression[SortedSet[K]]
 ) {
     /**
@@ -70,7 +70,7 @@ case class CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T](
  * @param args Additional arguments to pass to the entry processor.
  */
 case class CacheInvokeAllActionBuilderEntryProcessorStep[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     keys: Expression[SortedSet[K]],
     args: Seq[Expression[Any]]
 ) {
@@ -96,7 +96,7 @@ case class CacheInvokeAllActionBuilderEntryProcessorStep[K, V, T](
  * @param entryProcessor Entry processor instance. May be lambda.
  */
 class CacheInvokeAllSingleProcessorActionBuilder[K, V, T](
-    cacheName: Expression[String],
+    cacheName: String,
     keys: Expression[SortedSet[K]],
     entryProcessor: CacheEntryProcessor[K, V, T],
     args: Seq[Expression[Any]]

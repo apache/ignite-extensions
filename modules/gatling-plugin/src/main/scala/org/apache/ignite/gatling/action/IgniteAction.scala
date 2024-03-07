@@ -21,14 +21,12 @@ import io.gatling.commons.stats.OK
 import io.gatling.commons.stats.Status
 import io.gatling.commons.util.Clock
 import io.gatling.commons.validation.Failure
-import io.gatling.commons.validation.Success
 import io.gatling.commons.validation.SuccessWrapper
 import io.gatling.commons.validation.Validation
 import io.gatling.core.Predef._
 import io.gatling.core.action.Action
 import io.gatling.core.action.ChainableAction
 import io.gatling.core.check.Check
-import io.gatling.core.session.Expression
 import io.gatling.core.session.Session
 import io.gatling.core.stats.StatsEngine
 import io.gatling.core.structure.ScenarioContext
@@ -43,19 +41,18 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.TransactionApiSessionKe
  * Base class for all Ignite actions.
  *
  * @param actionType Action type name.
- * @param requestName Name of the request provided via the DSL. May be empty.  If so the defaultRequestName will be used.
+ * @param requestName Name of the request provided via the DSL. May be empty. If so it will be generated from action type name.
  * @param ctx Gatling scenario context.
  * @param next Next action to execute in scenario chain.
  */
-abstract class IgniteAction(val actionType: String, val requestName: Expression[String], val ctx: ScenarioContext, val next: Action)
+abstract class IgniteAction(val actionType: String, val requestName: String, val ctx: ScenarioContext, val next: Action)
     extends ChainableAction
     with NameGen {
-
-    /** @return Default request name if none was provided via the DSL. */
-    def defaultRequestName: Expression[String] = _ => name.success
-
     /** @return Action name. */
     val name: String = genName(actionType)
+
+    /** @return Default request name if none was provided via the DSL. */
+    val request: String = if (requestName == "") name else requestName
 
     /** Clock used to measure time the action takes. */
     val clock: Clock = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.clock
@@ -109,21 +106,18 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
     protected def withSessionCheck(session: Session)(f: => Validation[Unit]): Unit = {
         logger.debug(s"session user id: #${session.userId}, $name")
         f.onFailure { errorMessage =>
-            val resolvedRequestName =
-                requestName(session).toOption.filter(_.nonEmpty).getOrElse(defaultRequestName(session).toOption.getOrElse(name))
-
             logger.error(
-                s"Error in ignite action during session check, user id: #${session.userId}, request name: $resolvedRequestName: $errorMessage"
+                s"Error in ignite action during session check, user id: #${session.userId}, request name: $request: $errorMessage"
             )
 
-            statsEngine.logCrash(session.scenario, session.groups, resolvedRequestName, errorMessage)
+            statsEngine.logCrash(session.scenario, session.groups, request, errorMessage)
 
             statsEngine.logResponse(
                 session.scenario,
                 session.groups,
-                resolvedRequestName,
-                0,
-                0,
+                request,
+                clock.nowMillis,
+                clock.nowMillis,
                 KO,
                 Some("CRASH"),
                 Some(errorMessage)
@@ -142,27 +136,10 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
     /**
      * Common parameters for ignite actions.
      *
-     * @param requestName Name of request.
      * @param igniteApi Instance of IgniteApi.
      * @param transactionApi Instance of TransactionApi. Present in session context if Ignite transaction was started.
      */
-    case class IgniteActionParameters(requestName: String, igniteApi: IgniteApi, transactionApi: Option[TransactionApi])
-
-    /**
-     * Resolves the request name.
-     *
-     * If name is resolved successfully to empty string (it may be either it wasn't specified via DSL
-     * or explicitly configured empty) the default one is used.
-     *
-     * @param session Session
-     * @return Some non-empty request name.
-     */
-    def resolveRequestName(session: Session): Validation[String] =
-        requestName(session) match {
-            case f: Failure => f
-
-            case Success(value) => if (value.isEmpty) defaultRequestName(session) else value.success
-        }
+    case class IgniteActionParameters(igniteApi: IgniteApi, transactionApi: Option[TransactionApi])
 
     /**
      * Resolves ignite action parameters using session context.
@@ -172,12 +149,10 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
      */
     def resolveIgniteParameters(session: Session): Validation[IgniteActionParameters] =
         for {
-            resolvedRequestName <- resolveRequestName(session)
-
             igniteApi <- session(IgniteApiSessionKey).validate[IgniteApi]
 
             transactionApi <- session(TransactionApiSessionKey).asOption[TransactionApi].success
-        } yield IgniteActionParameters(resolvedRequestName, igniteApi, transactionApi)
+        } yield IgniteActionParameters(igniteApi, transactionApi)
 
     /**
      * Calls function from the Ignite API,
@@ -189,7 +164,6 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
      *
      * @tparam R Type of the result.
      * @param func Function to execute (some function from the Ignite API).
-     * @param resolvedRequestName Resolved request name.
      * @param session Session.
      * @param checks List of checks to perform (may be empty).
      * @param updateSession Function to be called to update session on successful function execution. Keep
@@ -199,7 +173,6 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
      */
     def call[R](
         func: (R => Unit, Throwable => Unit) => Unit,
-        resolvedRequestName: String,
         session: Session,
         checks: Seq[Check[R]] = Seq.empty,
         updateSession: (Session, Option[R]) => Session = (s: Session, r: Option[R]) => s
@@ -216,21 +189,19 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
                     result,
                     startTime,
                     finishTime,
-                    resolvedRequestName,
+                    request,
                     session,
                     checks,
                     updateSession
                 )
             },
             ex => {
-                val finishTime = clock.nowMillis
-
-                logger.debug(s"Exception in ignite actions, user id: #${session.userId}, request name: $resolvedRequestName", ex)
+                logger.debug(s"Exception in ignite actions, user id: #${session.userId}, request name: $request", ex)
 
                 handleError(
                     ex,
                     startTime,
-                    resolvedRequestName,
+                    request,
                     session
                 )
             }
@@ -241,7 +212,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
         result: R,
         startTime: Long,
         finishTime: Long,
-        resolvedRequestName: String,
+        request: String,
         session: Session,
         checks: Seq[Check[R]] = Seq.empty,
         updateSession: (Session, Option[R]) => Session
@@ -252,7 +223,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
             case Some(Failure(errorMessage)) =>
                 logAndExecuteNext(
                     updateSession(checkedSession.markAsFailed, Some(result)),
-                    resolvedRequestName,
+                    request,
                     startTime,
                     finishTime,
                     KO,
@@ -263,7 +234,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
             case None =>
                 logAndExecuteNext(
                     updateSession(checkedSession, Some(result)),
-                    resolvedRequestName,
+                    request,
                     startTime,
                     finishTime,
                     OK,
@@ -276,7 +247,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
     private def handleError(
         ex: Throwable,
         startTime: Long,
-        resolvedRequestName: String,
+        request: String,
         session: Session
     ): Unit = {
         session(TransactionApiSessionKey).asOption[TransactionApi].foreach {
@@ -285,7 +256,7 @@ abstract class IgniteAction(val actionType: String, val requestName: Expression[
 
         logAndExecuteNext(
             session.markAsFailed,
-            resolvedRequestName,
+            request,
             startTime,
             clock.nowMillis,
             KO,

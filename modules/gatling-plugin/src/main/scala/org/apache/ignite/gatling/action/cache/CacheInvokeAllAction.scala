@@ -49,24 +49,22 @@ trait CacheInvokeAllAction[K, V, T] extends ArgumentsResolveSupport {
     /**
      * Method executed when the Action received a Session message.
      * @param session Session
-     * @param resolvedRequestName Name of request.
      * @param cacheApi Instance of CacheApi.
      * @param resolvedMap Resolved map from cache entry key to entry processor instance.
      * @param resolvedArguments Resolved entry processor arguments.
      */
     def execute(
         session: Session,
-        resolvedRequestName: String,
         cacheApi: CacheApi[K, V],
         resolvedMap: SortedMap[K, CacheEntryProcessor[K, V, T]],
         resolvedArguments: List[Any]
     ): Unit = {
 
-        logger.debug(s"session user id: #${session.userId}, before $resolvedRequestName")
+        logger.debug(s"session user id: #${session.userId}, before $request")
 
         val func = if (async) cacheApi.invokeAllAsync[T] _ else cacheApi.invokeAll[T] _
 
-        call(func(resolvedMap, resolvedArguments), resolvedRequestName, session, checks)
+        call(func(resolvedMap, resolvedArguments), session, checks)
     }
 }
 
@@ -88,8 +86,8 @@ trait CacheInvokeAllAction[K, V, T] extends ArgumentsResolveSupport {
  * @param ctx Scenario context.
  */
 class CacheInvokeAllMapAction[K, V, T](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     map: Expression[SortedMap[K, CacheEntryProcessor[K, V, T]]],
     val arguments: Seq[Expression[Any]],
     keepBinary: Boolean,
@@ -102,10 +100,12 @@ class CacheInvokeAllMapAction[K, V, T](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, _) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedMap <- map(session)
+
             resolvedArguments <- resolveArguments(session, arguments)
-        } yield execute(session, resolvedRequestName, cacheApi, resolvedMap, resolvedArguments)
+        } yield execute(session, cacheApi, resolvedMap, resolvedArguments)
     }
 }
 
@@ -128,8 +128,8 @@ class CacheInvokeAllMapAction[K, V, T](
  * @param ctx Scenario context.
  */
 class CacheInvokeAllSingleProcessorAction[K, V, T](
-    requestName: Expression[String],
-    cacheName: Expression[String],
+    requestName: String,
+    cacheName: String,
     keys: Expression[SortedSet[K]],
     processor: CacheEntryProcessor[K, V, T],
     val arguments: Seq[Expression[Any]],
@@ -143,14 +143,17 @@ class CacheInvokeAllSingleProcessorAction[K, V, T](
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
-            CacheActionParameters(resolvedRequestName, cacheApi, _) <- resolveCacheParameters(session)
+            CacheActionParameters(cacheApi, _) <- resolveCacheParameters(session)
+
             resolvedKeys <- keys(session)
+
             resolvedArguments <- resolveArguments(session, arguments)
-        } yield execute(session, resolvedRequestName, cacheApi, toSortedMap(resolvedKeys), resolvedArguments)
+        } yield execute(session, cacheApi, toSortedMap(resolvedKeys), resolvedArguments)
     }
 
     private def toSortedMap(resolvedKeys: SortedSet[K]): SortedMap[K, CacheEntryProcessor[K, V, T]] = {
-        implicit val ordering = resolvedKeys.ordering
+        implicit val ordering: Ordering[K] = resolvedKeys.ordering
+
         SortedMap.from(resolvedKeys.unsorted.map(k => (k, processor)))
     }
 }

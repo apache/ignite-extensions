@@ -76,6 +76,20 @@ trait GatlingSupport {
 
         assertTrue("Count of failed gatling events is not zero", Gatling.fromMap(gatlingPropertiesBuilder.build) == 0)
     }
+
+    /**
+     * Execute function expecting the specified exception.
+     *
+     * @param func function to execute.
+     * @tparam T exception class to expect.
+     */
+    def expecting[T](func: => Unit): Unit = try {
+        func
+    }
+    catch {
+        case ex: Throwable =>
+            assertTrue(ex.isInstanceOf[T] || ex.getCause.isInstanceOf[T])
+    }
 }
 
 /**

@@ -33,7 +33,7 @@ import org.apache.ignite.gatling.action.cache.CachePutAllAction
  * @param map Collection of cache entry keys and values.
  */
 class CachePutAllActionBuilder[K, V](
-    cacheName: Expression[String],
+    cacheName: String,
     map: Expression[SortedMap[K, V]]
 ) extends ActionBuilder
     with CacheActionCommonParameters {

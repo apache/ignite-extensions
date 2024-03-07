@@ -38,7 +38,7 @@ import org.apache.ignite.gatling.action.ignite.GetOrCreateCacheAction
  * @tparam V Type of the cache value.
  * @param cacheName Cache name.
  */
-case class GetOrCreateCacheActionBuilderBase[K, V](cacheName: Expression[String]) extends ActionBuilder {
+case class GetOrCreateCacheActionBuilderBase[K, V](cacheName: String) extends ActionBuilder {
     /**
      * Specify number of backup copies.
      *
@@ -102,7 +102,7 @@ case class GetOrCreateCacheActionBuilderBase[K, V](cacheName: Expression[String]
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder =
+    def as(requestName: String): ActionBuilder =
         new GetOrCreateCacheActionBuilder(cacheName, SimpleCacheConfiguration()).as(requestName)
 }
 
@@ -113,7 +113,7 @@ case class GetOrCreateCacheActionBuilderBase[K, V](cacheName: Expression[String]
  * @param simpleConfig Simple cache configuration instance.
  */
 case class GetOrCreateCacheActionBuilderSimpleConfigStep(
-    cacheName: Expression[String],
+    cacheName: String,
     simpleConfig: SimpleCacheConfiguration
 ) extends ActionBuilder {
     /**
@@ -159,7 +159,7 @@ case class GetOrCreateCacheActionBuilderSimpleConfigStep(
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): ActionBuilder =
+    def as(requestName: String): ActionBuilder =
         createCacheActionBuilder.as(requestName)
 
     private def createCacheActionBuilder[K, V]: GetOrCreateCacheActionBuilder[K, V] =
@@ -175,9 +175,9 @@ case class GetOrCreateCacheActionBuilderSimpleConfigStep(
  * @param cacheName Cache name.
  * @param config Cache configuration.
  */
-class GetOrCreateCacheActionBuilder[K, V](cacheName: Expression[String], config: Configuration) extends ActionBuilder {
+class GetOrCreateCacheActionBuilder[K, V](cacheName: String, config: Configuration) extends ActionBuilder {
     /** Request name. */
-    var requestName: Expression[String] = EmptyStringExpressionSuccess
+    var requestName: String = ""
 
     /**
      * Builds an action.
@@ -195,7 +195,7 @@ class GetOrCreateCacheActionBuilder[K, V](cacheName: Expression[String], config:
      * @param requestName Request name.
      * @return itself.
      */
-    def as(requestName: Expression[String]): GetOrCreateCacheActionBuilder[K, V] = {
+    def as(requestName: String): GetOrCreateCacheActionBuilder[K, V] = {
         this.requestName = requestName
         this
     }

@@ -58,7 +58,7 @@ trait Cache {
          * @param value The cache entry value.
          * @return ActionBuilder
          */
-        def apply(cacheName: Expression[String], key: Expression[K], value: Expression[V]): CachePutActionBuilder[K, V] =
+        def apply(cacheName: String, key: Expression[K], value: Expression[V]): CachePutActionBuilder[K, V] =
             new CachePutActionBuilder(cacheName, session => key(session).flatMap(k => value(session).map(v => (k, v))))
 
         /**
@@ -68,7 +68,7 @@ trait Cache {
          * @param pair Tuple containing both cache entry key and value.
          * @return ActionBuilder
          */
-        def apply(cacheName: Expression[String], pair: Expression[(K, V)]): CachePutActionBuilder[K, V] =
+        def apply(cacheName: String, pair: Expression[(K, V)]): CachePutActionBuilder[K, V] =
             new CachePutActionBuilder(cacheName, pair)
     }
 
@@ -81,7 +81,7 @@ trait Cache {
      * @param key The cache entry key.
      * @return ActionBuilder
      */
-    def get[K, V](cacheName: Expression[String], key: Expression[K]): CacheGetActionBuilder[K, V] =
+    def get[K, V](cacheName: String, key: Expression[K]): CacheGetActionBuilder[K, V] =
         new CacheGetActionBuilder(cacheName, key)
 
     /**
@@ -91,7 +91,7 @@ trait Cache {
      * @param query SQL query string.
      * @return ActionBuilder
      */
-    def sql(cacheName: Expression[String], query: Expression[String]): CacheSqlActionBuilder =
+    def sql(cacheName: String, query: Expression[String]): CacheSqlActionBuilder =
         CacheSqlActionBuilder(cacheName, query)
 
     /**
@@ -103,7 +103,7 @@ trait Cache {
      * @param map Collection of the cache entry keys and values.
      * @return ActionBuilder
      */
-    def putAll[K, V](cacheName: Expression[String], map: Expression[SortedMap[K, V]]): CachePutAllActionBuilder[K, V] =
+    def putAll[K, V](cacheName: String, map: Expression[SortedMap[K, V]]): CachePutAllActionBuilder[K, V] =
         new CachePutAllActionBuilder(cacheName, map)
 
     /**
@@ -115,7 +115,7 @@ trait Cache {
      * @param key The cache entry key.
      * @return ActionBuilder
      */
-    def getAndRemove[K, V](cacheName: Expression[String], key: Expression[K]): CacheGetAndRemoveActionBuilder[K, V] =
+    def getAndRemove[K, V](cacheName: String, key: Expression[K]): CacheGetAndRemoveActionBuilder[K, V] =
         new CacheGetAndRemoveActionBuilder(cacheName, key)
 
     /**
@@ -128,7 +128,7 @@ trait Cache {
      * @param value The cache entry value.
      * @return ActionBuilder
      */
-    def getAndPut[K, V](cacheName: Expression[String], key: Expression[K], value: Expression[V]): CacheGetAndPutActionBuilder[K, V] =
+    def getAndPut[K, V](cacheName: String, key: Expression[K], value: Expression[V]): CacheGetAndPutActionBuilder[K, V] =
         new CacheGetAndPutActionBuilder(cacheName, key, value)
 
     /**
@@ -140,7 +140,7 @@ trait Cache {
      * @param keys Collection of the cache entry keys.
      * @return ActionBuilder
      */
-    def getAll[K, V](cacheName: Expression[String], keys: Expression[SortedSet[K]]): CacheGetAllActionBuilder[K, V] =
+    def getAll[K, V](cacheName: String, keys: Expression[SortedSet[K]]): CacheGetAllActionBuilder[K, V] =
         new CacheGetAllActionBuilder(cacheName, keys)
 
     /**
@@ -151,7 +151,7 @@ trait Cache {
      * @param key The cache entry key.
      * @return ActionBuilder
      */
-    def remove[K](cacheName: Expression[String], key: Expression[K]): CacheRemoveActionBuilder[K] =
+    def remove[K](cacheName: String, key: Expression[K]): CacheRemoveActionBuilder[K] =
         new CacheRemoveActionBuilder(cacheName, key)
 
     /**
@@ -162,7 +162,7 @@ trait Cache {
      * @param keys Collection of the cache entry keys.
      * @return ActionBuilder
      */
-    def removeAll[K](cacheName: Expression[String], keys: Expression[SortedSet[K]]): CacheRemoveAllActionBuilder[K] =
+    def removeAll[K](cacheName: String, keys: Expression[SortedSet[K]]): CacheRemoveAllActionBuilder[K] =
         new CacheRemoveAllActionBuilder(cacheName, keys)
 
     /**
@@ -175,7 +175,7 @@ trait Cache {
      * @param key The cache entry key.
      * @return ActionBuilder
      */
-    def invoke[K, V, T](cacheName: Expression[String], key: Expression[K]): CacheInvokeActionBuilderBase[K, V, T] =
+    def invoke[K, V, T](cacheName: String, key: Expression[K]): CacheInvokeActionBuilderBase[K, V, T] =
         CacheInvokeActionBuilderBase[K, V, T](cacheName, key)
 
     /**
@@ -190,7 +190,7 @@ trait Cache {
      * @return ActionBuilder
      */
     def invokeAll[K, V, T](
-        cacheName: Expression[String],
+        cacheName: String,
         keys: Expression[SortedSet[K]]
     ): CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T] =
         CacheInvokeAllSingleProcessorActionBuilderBase[K, V, T](cacheName, keys)
@@ -207,7 +207,7 @@ trait Cache {
      * @return ActionBuilder
      */
     def invokeAll[K, V, T](
-        cacheName: Expression[String],
+        cacheName: String,
         map: Expression[SortedMap[K, CacheEntryProcessor[K, V, T]]]
     ): CacheInvokeAllMultipleProcessorsActionBuilder[K, V, T] =
         new CacheInvokeAllMultipleProcessorsActionBuilder[K, V, T](cacheName, map)
@@ -220,7 +220,7 @@ trait Cache {
      * @param key The cache entry key.
      * @return ActionBuilder
      */
-    def lock[K](cacheName: Expression[String], key: Expression[K]): CacheLockActionBuilder[K] =
+    def lock[K](cacheName: String, key: Expression[K]): CacheLockActionBuilder[K] =
         new CacheLockActionBuilder(cacheName, key)
 
     /**
@@ -230,7 +230,7 @@ trait Cache {
      * @param lock The lock instance to release.
      * @return ActionBuilder
      */
-    def unlock(cacheName: Expression[String], lock: Expression[Lock]): CacheUnlockActionBuilder =
+    def unlock(cacheName: String, lock: Expression[Lock]): CacheUnlockActionBuilder =
         new CacheUnlockActionBuilder(cacheName, lock)
 
     /**
