@@ -46,7 +46,7 @@ class PutGetThinAsyncBenchmark extends Simulation {
         )
 
     private val protocol = igniteProtocol
-        .clientCfgPath("src/test/resources/ignite-thin-config.xml")
+        .clientCfgPath(Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml"))
 
     setUp(scn.inject(
         rampUsersPerSec(0) to 100 during 10.seconds,
