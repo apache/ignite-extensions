@@ -16,11 +16,15 @@
  */
 package org.apache.ignite.gatling.utils
 
+import java.io.File
+
 import io.gatling.app.Gatling
+import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.config.GatlingPropertiesBuilder
 import org.apache.ignite.gatling.utils.IgniteClientApi.IgniteApi
 import org.apache.ignite.gatling.utils.IgniteClientApi.ThinClient
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest
+import org.apache.ignite.internal.util.IgniteUtils
 import org.junit.Assert.assertTrue
 
 /**
@@ -36,6 +40,10 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest with GatlingSu
 
     override protected def afterTest(): Unit = {
         stopAllGrids()
+
+        cleanIgniteDir()
+
+        cleanResultsDir()
 
         super.afterTest()
     }
@@ -57,6 +65,22 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest with GatlingSu
         }
 
         run(simulation)
+    }
+
+    /**
+     * Clean directory gatling stores the simulation results.
+     */
+    protected def cleanResultsDir(): Unit = {
+        val config = GatlingConfiguration.loadForTest()
+
+        IgniteUtils.delete(config.core.directory.results.toFile)
+    }
+
+    /**
+     * Clean ignite directory.
+     */
+    protected def cleanIgniteDir(): Unit = {
+        IgniteUtils.delete(new File(IgniteUtils.defaultWorkDirectory()).getParentFile)
     }
 }
 
