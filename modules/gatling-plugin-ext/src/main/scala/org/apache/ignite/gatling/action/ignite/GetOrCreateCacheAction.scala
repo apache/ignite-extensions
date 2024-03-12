@@ -33,21 +33,21 @@ import org.apache.ignite.gatling.builder.ignite.ThinConfiguration
  *
  * @tparam K Type of the cache key.
  * @tparam V Type of the cache value.
- * @param dslRequestName Name of the request provided via the DSL. May be empty.
+ * @param requestName Name of the request provided via the DSL. May be empty.
  * @param cacheName Name of the cache.
  * @param config Abstract cache configuration.
  * @param next Next action from chain to invoke upon this one completion.
  * @param ctx Scenario context.
  */
 class GetOrCreateCacheAction[K, V](
-    dslRequestName: String,
+    requestName: String,
     cacheName: String,
     config: Configuration,
     next: Action,
     ctx: ScenarioContext
-) extends IgniteAction("getOrCreateCache", dslRequestName, ctx, next) {
+) extends IgniteAction("getOrCreateCache", requestName, ctx, next) {
 
-    override val request: String = s"$name $cacheName"
+    override val request: String = if (requestName == "") s"$name $cacheName" else requestName
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {

@@ -35,7 +35,7 @@ import org.apache.ignite.gatling.api.TransactionApi
 class TransactionRollbackAction(requestName: String, next: Action, ctx: ScenarioContext)
     extends IgniteAction("rollback", requestName, ctx, next) {
 
-    override val request: String = actionType
+    override val request: String = if (requestName == "") actionType else requestName
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {

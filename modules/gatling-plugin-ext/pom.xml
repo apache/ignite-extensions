@@ -35,10 +35,9 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
-        <scala.version>2.13.8</scala.version>
-        <scala.compat.version>2.13</scala.compat.version>
-        <scalaz.version>7.3.7</scalaz.version>
         <gatling.version>3.10.4</gatling.version>
+        <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
+        <scalaz.version>7.3.8</scalaz.version>
     </properties>
 
     <dependencies>
@@ -88,21 +87,14 @@
 
         <dependency>
             <groupId>io.gatling</groupId>
-            <artifactId>gatling-charts</artifactId>
+            <artifactId>gatling-app</artifactId>
             <version>${gatling.version}</version>
-            <scope>runtime</scope>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>io.gatling.highcharts</groupId>
             <artifactId>gatling-charts-highcharts</artifactId>
-            <version>${gatling.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.gatling</groupId>
-            <artifactId>gatling-app</artifactId>
             <version>${gatling.version}</version>
             <scope>test</scope>
         </dependency>
@@ -115,9 +107,8 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.3.2</version>
+                <version>${scala-maven-plugin.version}</version>
                 <configuration>
-                    <scalaCompatVersion>${scala.compat.version}</scalaCompatVersion>
                     <args>
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
@@ -134,7 +125,6 @@
                         </goals>
                         <configuration>
                             <doctitle>Ignite Gatling Plugin</doctitle>
-                            <windowtitle>Ignite Gatling Plugin</windowtitle>
                             <skip>${maven.javadoc.skip}</skip>
                         </configuration>
                     </execution>
@@ -175,7 +165,6 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/libs</outputDirectory>
-                            <!-- Include only runtime and compile dependencies -->
                             <includeScope>runtime</includeScope>
                         </configuration>
                     </execution>

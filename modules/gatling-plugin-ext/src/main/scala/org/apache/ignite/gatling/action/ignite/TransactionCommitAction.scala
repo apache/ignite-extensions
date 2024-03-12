@@ -35,7 +35,7 @@ import org.apache.ignite.gatling.api.TransactionApi
 class TransactionCommitAction(requestName: String, next: Action, ctx: ScenarioContext)
     extends IgniteAction("commit", requestName, ctx, next) {
 
-    override val request: String = actionType
+    override val request: String = if (requestName == "") actionType else requestName
 
     override protected def execute(session: Session): Unit = withSessionCheck(session) {
         for {
