@@ -157,7 +157,7 @@ class ThinClientConfigSimulation extends BaseProtocolSimulation {
 class ThinClientConfigPathSimulation extends BaseProtocolSimulation {
     override def protocol: IgniteProtocol =
         igniteProtocol.clientCfgPath(
-            Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml").getPath
+            Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml")
         )
 }
 

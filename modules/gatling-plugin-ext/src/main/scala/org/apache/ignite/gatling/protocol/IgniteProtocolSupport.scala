@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.gatling.protocol
 
+import java.net.URL
+
 import scala.jdk.CollectionConverters._
 
 import org.apache.ignite.Ignite
@@ -71,17 +73,26 @@ case object IgniteProtocolBuilderBase {
     /**
      * Specify Ignite API as Ignite (thin) client Spring XML configuration file.
      *
-     * @param cfgPath Path to Spring XML configuration file containing the ClientConfiguration bean.
+     * @param cfgUrl URL of Spring XML configuration file containing the ClientConfiguration bean.
      * @return Build step for additional protocol parameters.
      */
-    def clientCfgPath(cfgPath: String): IgniteProtocolBuilderExplicitStartStep = {
+    def clientCfgPath(cfgUrl: URL): IgniteProtocolBuilderExplicitStartStep = {
         val spring: IgniteSpringHelper = SPRING.create(false)
 
-        val clientCfg = spring.loadConfigurations(IgniteUtils.resolveSpringUrl(cfgPath), classOf[ClientConfiguration])
+        val clientCfg = spring.loadConfigurations(cfgUrl, classOf[ClientConfiguration])
             .get1().asScala.head
 
         IgniteProtocolBuilderExplicitStartStep(IgniteClientConfigurationCfg(clientCfg))
     }
+
+    /**
+     * Specify Ignite API as Ignite (thin) client Spring XML configuration file.
+     *
+     * @param cfgPath Path to Spring XML configuration file containing the ClientConfiguration bean.
+     * @return Build step for additional protocol parameters.
+     */
+    def clientCfgPath(cfgPath: String): IgniteProtocolBuilderExplicitStartStep =
+        clientCfgPath(IgniteUtils.resolveSpringUrl(cfgPath))
 
     /**
      * Specify Ignite API as Ignite (thin) Client instances pool.
@@ -113,11 +124,20 @@ case object IgniteProtocolBuilderBase {
     /**
      * Specify Ignite API as Ignite (thick) node Spring XML configuration file.
      *
+     * @param cfgUrl URL of Spring XML configuration file containing the IgniteConfiguration bean.
+     * @return Build step for additional protocol parameters.
+     */
+    def igniteCfgPath(cfgUrl: URL): IgniteProtocolBuilder =
+        IgniteProtocolBuilder(IgniteConfigurationCfg(IgnitionEx.loadConfiguration(cfgUrl).get1()), explicitClientStart = false)
+
+    /**
+     * Specify Ignite API as Ignite (thick) node Spring XML configuration file.
+     *
      * @param cfgPath Path to Spring XML configuration file containing the IgniteConfiguration bean.
      * @return Build step for additional protocol parameters.
      */
     def igniteCfgPath(cfgPath: String): IgniteProtocolBuilder =
-        IgniteProtocolBuilder(IgniteConfigurationCfg(IgnitionEx.loadConfiguration(cfgPath).get1()), explicitClientStart = false)
+        igniteCfgPath(IgniteUtils.resolveSpringUrl(cfgPath))
 }
 
 /**
