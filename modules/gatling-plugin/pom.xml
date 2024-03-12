@@ -25,7 +25,7 @@
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-ext-internal</artifactId>
         <version>1</version>
-        <relativePath>../../../parent-internal/pom.xml</relativePath>
+        <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
     <artifactId>ignite-gatling-plugin</artifactId>
