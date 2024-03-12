@@ -30,7 +30,9 @@
 
     <artifactId>ignite-gatling-plugin</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <description>Apache Ignite plugin for performance testing in Gatling</description>
+
+    <description>Apache Ignite plugin for performance testing with Gatling</description>
+    <url>https://ignite.apache.org</url>
 
     <properties>
         <scala.version>2.13.8</scala.version>
