@@ -14,61 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.gatling.examples
-
-import java.util.concurrent.atomic.AtomicInteger
+import io.gatling.core.Predef._
+import io.netty.util.internal.ThreadLocalRandom
+import org.apache.ignite.gatling.Predef._
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import io.gatling.core.Predef._
-import org.apache.ignite.Ignition
-import org.apache.ignite.configuration.ClientConfiguration
-import org.apache.ignite.gatling.Predef._
-
 /**
  * Basic Ignite Gatling simulation.
  */
-class BasicSimulation extends Simulation {
+class PutGetThinAsyncBenchmark extends Simulation {
     private val cache = "TEST-CACHE"
 
-    private val c = new AtomicInteger(0)
-    private val feeder = Iterator.continually(Map("key" -> c.incrementAndGet(), "value" -> c.incrementAndGet()))
+    private val feeder = Iterator.continually(Map(
+        "key" -> ThreadLocalRandom.current().nextInt(10000),
+        "value" -> ThreadLocalRandom.current().nextInt()
+    ))
 
-    private val scn = scenario("Basic")
+    private val scn = scenario("PutGetThinAsyncBenchmark")
         .feed(feeder)
         .ignite(
-            startIgniteApi,
-            getOrCreateCache(cache).backups(1) as "Create cache",
+            getOrCreateCache(cache).backups(1) as "Get or create cache",
+
             put[Int, Int](cache, "#{key}", "#{value}") as "Put" async,
+
             get[Int, Int](cache, "#{key}")
                 .check(
                     entries[Int, Int].transform(_.value).is("#{value}")
-                ) as "Get" async,
-            closeIgniteApi
+                ) as "Get" async
         )
 
-    before {
-        Ignition.start()
-    }
+    private val protocol = igniteProtocol
+        .clientCfgPath("src/test/resources/ignite-thin-config.xml")
 
-    after {
-        Ignition.allGrids().get(0).close()
-    }
+    setUp(scn.inject(
+        rampUsersPerSec(0) to 100 during 10.seconds,
 
-    private def protocol = igniteProtocol
-        .clientCfg(
-            new ClientConfiguration().setAddresses("localhost:10800")
-        )
-        .withExplicitClientStart
+        constantUsersPerSec(100) during 20.seconds,
 
-    setUp(
-        scn
-            .inject(
-                constantUsersPerSec(10) during 10.seconds,
-                incrementUsersPerSec(1).times(10).eachLevelLasting(1)
-            )
-    ).protocols(protocol)
-        .maxDuration(25.seconds)
+        rampUsersPerSec(100) to 0 during 10.seconds
+    )).protocols(protocol)
+        .maxDuration(40.seconds)
         .assertions(global.failedRequests.count.is(0))
 }
