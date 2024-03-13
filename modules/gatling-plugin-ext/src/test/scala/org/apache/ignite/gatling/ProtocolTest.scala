@@ -102,6 +102,10 @@ abstract class BaseProtocolSimulation extends Simulation with IgniteSupport with
         .feed(feeder)
         .exec(actions)
 
+    after {
+        protocol.close()
+    }
+
     setUp(scn.inject(atOnceUsers(8)))
         .protocols(protocol)
         .assertions(
@@ -120,10 +124,6 @@ class ThinClientFixedSizePoolSimulation extends BaseProtocolSimulation {
                 2
             )
         )
-
-    after {
-        protocol.close()
-    }
 }
 
 /**
@@ -136,10 +136,6 @@ class ThinClientPerThreadPoolSimulation extends BaseProtocolSimulation {
                     .setAddresses(s"${System.getProperty("host")}:${System.getProperty("port")}")
             )
         )
-
-    after {
-        protocol.close()
-    }
 }
 
 /**
@@ -203,10 +199,6 @@ class ThinClientSimulation extends BaseProtocolSimulation {
                     .setAddresses(s"${System.getProperty("host")}:${System.getProperty("port")}")
             )
         )
-
-    after {
-        protocol.close()
-    }
 }
 
 /**

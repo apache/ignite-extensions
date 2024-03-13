@@ -67,7 +67,19 @@ object IgniteProtocol {
          * @return Lambda creating Ignite components from the Ignite protocol parameters provided.
          */
         override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
-            igniteProtocol => IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
+            igniteProtocol => {
+                val components = IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
+
+                igniteProtocol.cfg match {
+                    case IgniteClientConfigurationCfg(_) if !igniteProtocol.explicitClientStart => igniteProtocol.api = components.igniteApi
+
+                    case IgniteConfigurationCfg(_) if !igniteProtocol.explicitClientStart => igniteProtocol.api = components.igniteApi
+
+                    case _ =>
+                }
+
+                components
+            }
     }
 }
 
@@ -79,15 +91,19 @@ object IgniteProtocol {
  *                          simulation start and it will not be automatically inserted into the client session
  *                          upon injection into the scenario. To start Ignite API instance scenario should contain
  *                          explicit `startIgniteApi` and `closeIgniteApi` actions.
+ * @param api Ignite API instance if started during the simulation. Stored here to be able to close it after
+ *            simulation finish.
  */
-case class IgniteProtocol(cfg: IgniteCfg, explicitClientStart: Boolean = false) extends Protocol {
+case class IgniteProtocol(cfg: IgniteCfg, explicitClientStart: Boolean = false, var api: Option[IgniteApi] = None) extends Protocol {
     /**
      * Close all opened clients.
      */
     def close(): Unit =
         cfg match {
             case cfg: IgniteClientPoolCfg => cfg.pool.close()
-            case _                        =>
+            case _: IgniteConfigurationCfg => api.foreach(api => api.close()(_ => (), _ => ()))
+            case _: IgniteClientConfigurationCfg => api.foreach(api => api.close()(_ => (), _ => ()))
+            case _ =>
         }
 }
 
