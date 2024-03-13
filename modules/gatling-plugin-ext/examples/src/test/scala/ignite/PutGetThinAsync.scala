@@ -17,8 +17,11 @@
 package ignite
 
 import io.gatling.core.Predef._
+import io.gatling.core.feeder.Feeder
+import io.gatling.core.structure.ScenarioBuilder
 import io.netty.util.internal.ThreadLocalRandom
 import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -27,14 +30,14 @@ import scala.language.postfixOps
  * Basic Ignite Gatling simulation.
  */
 class PutGetThinAsync extends Simulation {
-    private val cache = "TEST-CACHE"
+    val cache = "TEST-CACHE"
 
-    private val feeder = Iterator.continually(Map(
+    val feeder: Feeder[Int] = Iterator.continually(Map(
         "key" -> ThreadLocalRandom.current().nextInt(10000),
         "value" -> ThreadLocalRandom.current().nextInt()
     ))
 
-    private val scn = scenario("PutGetThinAsyncBenchmark")
+    val scn: ScenarioBuilder = scenario("PutGetThinAsyncBenchmark")
         .feed(feeder)
         .ignite(
             getOrCreateCache(cache).backups(1) as "Get or create cache",
@@ -47,8 +50,10 @@ class PutGetThinAsync extends Simulation {
                 ) as "Get" async
         )
 
-    private val protocol = igniteProtocol
-        .clientCfgPath(Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml"))
+    val protocol: IgniteProtocol = igniteProtocol
+        .clientCfgPath(
+            Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml")
+        )
 
     after {
         protocol.close()

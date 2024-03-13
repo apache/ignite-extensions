@@ -17,9 +17,12 @@
 package ignite
 
 import io.gatling.core.Predef._
+import io.gatling.core.feeder.Feeder
+import io.gatling.core.structure.ScenarioBuilder
 import io.netty.util.internal.ThreadLocalRandom
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.gatling.Predef._
+import org.apache.ignite.gatling.protocol.IgniteProtocol
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -28,14 +31,14 @@ import scala.language.postfixOps
  * Basic Ignite Gatling simulation.
  */
 class PutGetTx extends Simulation {
-    private val cache = "TEST-CACHE"
+    val cache = "TEST-CACHE"
 
-    private val feeder = Iterator.continually(Map(
+    val feeder: Feeder[Int] = Iterator.continually(Map(
         "key" -> ThreadLocalRandom.current().nextInt(10000),
         "value" -> ThreadLocalRandom.current().nextInt()
     ))
 
-    private val scn = scenario("PutGetTxBenchmark")
+    val scn: ScenarioBuilder = scenario("PutGetTx")
         .feed(feeder)
         .ignite(
             getOrCreateCache(cache).backups(1) as "Get or create cache",
@@ -54,8 +57,10 @@ class PutGetTx extends Simulation {
             ) as "transaction"
         )
 
-    private val protocol = igniteProtocol
-        .igniteCfg(new IgniteConfiguration().setClientMode(true)).build
+    val protocol: IgniteProtocol = igniteProtocol
+        .igniteCfg(
+            new IgniteConfiguration().setClientMode(true)
+        )
 
     after {
         protocol.close()
@@ -64,7 +69,9 @@ class PutGetTx extends Simulation {
     setUp(
         scn.inject(
             rampUsersPerSec(0) to 100 during 10.seconds,
+
             constantUsersPerSec(100) during 20.seconds,
+
             rampUsersPerSec(100) to 0 during 10.seconds
         )
     ).protocols(protocol)
