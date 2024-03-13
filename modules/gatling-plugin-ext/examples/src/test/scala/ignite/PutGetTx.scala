@@ -14,8 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package ignite
+
 import io.gatling.core.Predef._
 import io.netty.util.internal.ThreadLocalRandom
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.gatling.Predef._
 
 import scala.concurrent.duration.DurationInt
@@ -24,7 +27,7 @@ import scala.language.postfixOps
 /**
  * Basic Ignite Gatling simulation.
  */
-class PutGetThinAsyncBenchmark extends Simulation {
+class PutGetTx extends Simulation {
     private val cache = "TEST-CACHE"
 
     private val feeder = Iterator.continually(Map(
@@ -32,29 +35,39 @@ class PutGetThinAsyncBenchmark extends Simulation {
         "value" -> ThreadLocalRandom.current().nextInt()
     ))
 
-    private val scn = scenario("PutGetThinAsyncBenchmark")
+    private val scn = scenario("PutGetTxBenchmark")
         .feed(feeder)
         .ignite(
             getOrCreateCache(cache).backups(1) as "Get or create cache",
 
-            put[Int, Int](cache, "#{key}", "#{value}") as "Put" async,
+            tx concurrency PESSIMISTIC isolation REPEATABLE_READ run (
 
-            get[Int, Int](cache, "#{key}")
-                .check(
-                    entries[Int, Int].transform(_.value).is("#{value}")
-                ) as "Get" async
+                put[Int, Int](cache, "#{key}", "#{value}") as "txPut",
+
+                get[Int, Int](cache, "#{key}")
+                    .check(
+                        entries[Int, Int].transform(_.value).is("#{value}")
+                    ) as "txGet",
+
+                commit as "txCommit"
+
+            ) as "transaction"
         )
 
     private val protocol = igniteProtocol
-        .clientCfgPath(Thread.currentThread().getContextClassLoader.getResource("ignite-thin-config.xml"))
+        .igniteCfg(new IgniteConfiguration().setClientMode(true)).build
 
-    setUp(scn.inject(
-        rampUsersPerSec(0) to 100 during 10.seconds,
+    after {
+        protocol.close()
+    }
 
-        constantUsersPerSec(100) during 20.seconds,
-
-        rampUsersPerSec(100) to 0 during 10.seconds
-    )).protocols(protocol)
+    setUp(
+        scn.inject(
+            rampUsersPerSec(0) to 100 during 10.seconds,
+            constantUsersPerSec(100) during 20.seconds,
+            rampUsersPerSec(100) to 0 during 10.seconds
+        )
+    ).protocols(protocol)
         .maxDuration(40.seconds)
         .assertions(global.failedRequests.count.is(0))
 }
