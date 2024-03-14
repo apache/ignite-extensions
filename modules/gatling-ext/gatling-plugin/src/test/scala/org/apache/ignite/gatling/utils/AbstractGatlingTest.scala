@@ -18,6 +18,9 @@ package org.apache.ignite.gatling.utils
 
 import java.io.File
 
+import scala.reflect.ClassTag
+import scala.reflect.classTag
+
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.config.GatlingPropertiesBuilder
@@ -107,12 +110,12 @@ trait GatlingSupport {
      * @param func function to execute.
      * @tparam T exception class to expect.
      */
-    def expecting[T](func: => Unit): Unit =
+    def expecting[T<: Throwable: ClassTag](func: => Unit): Unit =
         try
             func
         catch {
             case ex: Throwable =>
-                assertTrue(ex.isInstanceOf[T] || ex.getCause.isInstanceOf[T])
+                assertTrue(classTag[T].runtimeClass.isInstance(ex) || classTag[T].runtimeClass.isInstance(ex.getCause))
         }
 }
 
