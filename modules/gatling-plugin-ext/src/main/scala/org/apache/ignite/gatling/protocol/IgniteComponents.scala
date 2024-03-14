@@ -17,6 +17,7 @@
 package org.apache.ignite.gatling.protocol
 
 import com.typesafe.scalalogging.StrictLogging
+import io.gatling.commons.util.Clock
 import io.gatling.core.CoreComponents
 import io.gatling.core.protocol.ProtocolComponents
 import io.gatling.core.session.Session
@@ -29,8 +30,10 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
  * @param coreComponents Core Gatling components.
  * @param igniteProtocol Ignite protocol instance.
  * @param igniteApi Shared default Ignite API instance.
+ * @param clock Clock to be used to measure action duration.
  */
-case class IgniteComponents(coreComponents: CoreComponents, igniteProtocol: IgniteProtocol, igniteApi: Option[IgniteApi] = None)
+case class IgniteComponents(coreComponents: CoreComponents, igniteProtocol: IgniteProtocol, igniteApi: Option[IgniteApi] = None,
+    clock: Option[Clock] = None)
     extends ProtocolComponents
     with StrictLogging {
 

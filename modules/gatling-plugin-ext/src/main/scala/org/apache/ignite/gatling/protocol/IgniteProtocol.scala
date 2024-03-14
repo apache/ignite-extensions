@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.gatling.protocol
 
+import io.gatling.commons.util.Clock
 import io.gatling.core.CoreComponents
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.protocol.Protocol
@@ -68,7 +69,8 @@ object IgniteProtocol {
          */
         override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
             igniteProtocol => {
-                val components = IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol))
+                val components = IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol),
+                    Option(System.getProperty("IGNITE_GATLING_USE_NANO_CLOCK")).map(_ => new NanoClock()))
 
                 igniteProtocol.cfg match {
                     case IgniteClientConfigurationCfg(_) if !igniteProtocol.explicitClientStart => igniteProtocol.api = components.igniteApi
@@ -80,6 +82,28 @@ object IgniteProtocol {
 
                 components
             }
+    }
+
+    /**
+     * Clock implementation measuring time in nanoseconds.
+     *
+     * NOTE, it returns nanoseconds from nowMillis() method !!!
+     *
+     * This one is used instead of the default Gatling ones (measuring time in millis) to measure durations of Ignite actions
+     * if IGNITE_GATLING_USE_NANO_CLOCK system property is set. This gives more precision for sub-millis requests.
+     *
+     * Note however that using this clock means the following limitations:
+     *    - Native Gatling report generation doesn't work. So custom reporting should be implemented which would
+     *      directly parse the Gatling generated simulation.log files.
+     *    - Action groups duration measuring doesn't work. So testing scenarios should not contains any groups.
+     */
+    private class NanoClock extends Clock {
+        override def nowSeconds: Long = nowMillis / 1000000
+
+        private val currentTimeMillisReference = System.currentTimeMillis
+        private val nanoTimeReference = System.nanoTime
+
+        override def nowMillis: Long = (System.nanoTime - nanoTimeReference) + currentTimeMillisReference * 1000000
     }
 }
 
