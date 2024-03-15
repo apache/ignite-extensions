@@ -98,7 +98,6 @@ trait GatlingSupport {
         val gatlingPropertiesBuilder = new GatlingPropertiesBuilder
 
         gatlingPropertiesBuilder.simulationClass(simulation)
-        gatlingPropertiesBuilder.noReports()
 
         assertTrue("Count of failed gatling events is not zero", Gatling.fromMap(gatlingPropertiesBuilder.build) == 0)
     }
