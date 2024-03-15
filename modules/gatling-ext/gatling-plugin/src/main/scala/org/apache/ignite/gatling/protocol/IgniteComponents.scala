@@ -32,9 +32,12 @@ import org.apache.ignite.gatling.protocol.IgniteProtocol.IgniteApiSessionKey
  * @param igniteApi Shared default Ignite API instance.
  * @param clock Clock to be used to measure action duration.
  */
-case class IgniteComponents(coreComponents: CoreComponents, igniteProtocol: IgniteProtocol, igniteApi: Option[IgniteApi] = None,
-    clock: Option[Clock] = None)
-    extends ProtocolComponents
+case class IgniteComponents(
+    coreComponents: CoreComponents,
+    igniteProtocol: IgniteProtocol,
+    igniteApi: Option[IgniteApi] = None,
+    clock: Option[Clock] = None
+) extends ProtocolComponents
     with StrictLogging {
 
     /**

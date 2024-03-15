@@ -69,8 +69,12 @@ object IgniteProtocol {
          */
         override def newComponents(coreComponents: CoreComponents): IgniteProtocol => IgniteComponents =
             igniteProtocol => {
-                val components = IgniteComponents(coreComponents, igniteProtocol, IgniteApi(igniteProtocol),
-                    Option(System.getProperty("IGNITE_GATLING_USE_NANO_CLOCK")).map(_ => new NanoClock()))
+                val components = IgniteComponents(
+                    coreComponents,
+                    igniteProtocol,
+                    IgniteApi(igniteProtocol),
+                    Option(System.getProperty("IGNITE_GATLING_USE_NANO_CLOCK")).map(_ => new NanoClock())
+                )
 
                 igniteProtocol.cfg match {
                     case IgniteClientConfigurationCfg(_) if !igniteProtocol.explicitClientStart => igniteProtocol.api = components.igniteApi
@@ -124,10 +128,10 @@ case class IgniteProtocol(cfg: IgniteCfg, explicitClientStart: Boolean = false, 
      */
     def close(): Unit =
         cfg match {
-            case cfg: IgniteClientPoolCfg => cfg.pool.close()
-            case _: IgniteConfigurationCfg => api.foreach(api => api.close()(_ => (), _ => ()))
+            case cfg: IgniteClientPoolCfg        => cfg.pool.close()
+            case _: IgniteConfigurationCfg       => api.foreach(api => api.close()(_ => (), _ => ()))
             case _: IgniteClientConfigurationCfg => api.foreach(api => api.close()(_ => (), _ => ()))
-            case _ =>
+            case _                               =>
         }
 }
 

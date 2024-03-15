@@ -82,9 +82,8 @@ abstract class AbstractGatlingTest extends AbstractThinClientTest with GatlingSu
     /**
      * Clean ignite directory.
      */
-    protected def cleanIgniteDir(): Unit = {
+    protected def cleanIgniteDir(): Unit =
         IgniteUtils.delete(new File(IgniteUtils.defaultWorkDirectory()).getParentFile)
-    }
 }
 
 /**
@@ -110,7 +109,7 @@ trait GatlingSupport {
      * @param func function to execute.
      * @tparam T exception class to expect.
      */
-    def expecting[T<: Throwable: ClassTag](func: => Unit): Unit =
+    def expecting[T <: Throwable: ClassTag](func: => Unit): Unit =
         try
             func
         catch {
