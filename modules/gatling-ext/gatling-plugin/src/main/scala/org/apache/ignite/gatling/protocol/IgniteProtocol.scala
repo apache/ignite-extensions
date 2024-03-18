@@ -64,6 +64,15 @@ object IgniteProtocol {
          * Note, lambda would start new Ignite API instance if none was passed as a protocol configuration parameter
          * (unless the `explicitClientStart` protocol parameter was used).
          *
+         * If IGNITE_GATLING_USE_NANO_CLOCK system property is set substitutes the default Gatling clocks (which
+         * measures time in millis) with clocks measuring time in nanoseconds. This clocks will be used to measure
+         * duration of Ignite actions. This gives more precision for sub-millis requests.
+         *
+         * Note however that using nano clocks means the following limitations:
+         *    - Native Gatling report generation doesn't work. So custom reporting should be implemented which would
+         *      directly parse the Gatling generated simulation.log files.
+         *    - Action groups duration measuring doesn't work. So testing scenarios should not contains any groups.
+         *
          * @param coreComponents Gatling core components.
          * @return Lambda creating Ignite components from the Ignite protocol parameters provided.
          */
@@ -92,14 +101,6 @@ object IgniteProtocol {
      * Clock implementation measuring time in nanoseconds.
      *
      * NOTE, it returns nanoseconds from nowMillis() method !!!
-     *
-     * This one is used instead of the default Gatling ones (measuring time in millis) to measure durations of Ignite actions
-     * if IGNITE_GATLING_USE_NANO_CLOCK system property is set. This gives more precision for sub-millis requests.
-     *
-     * Note however that using this clock means the following limitations:
-     *    - Native Gatling report generation doesn't work. So custom reporting should be implemented which would
-     *      directly parse the Gatling generated simulation.log files.
-     *    - Action groups duration measuring doesn't work. So testing scenarios should not contains any groups.
      */
     private class NanoClock extends Clock {
         override def nowSeconds: Long = nowMillis / 1000000
