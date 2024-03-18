@@ -55,9 +55,13 @@ abstract class IgniteAction(val actionType: String, val requestName: String, val
     val request: String = if (requestName == "") name else requestName
 
     /** Clock used to measure time the action takes. */
-    val clock: Clock = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).clock.getOrElse(
-        ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.clock
-    )
+    val clock: Clock = {
+        val components = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey)
+
+        components.clock.getOrElse(
+            components.coreComponents.clock
+        )
+    }
 
     /** Statistics engine */
     val statsEngine: StatsEngine = ctx.protocolComponentsRegistry.components(IgniteProtocol.IgniteProtocolKey).coreComponents.statsEngine
