@@ -2,13 +2,13 @@
 
 ## Build
 
-```shell
+```bash
 mvn clean package -DskipTests
 ```
 
 ## Run tests
 
-```shell
+```bash
 mvn test
 ```
 
@@ -16,20 +16,20 @@ mvn test
 
 Check coding style
 
-```shell
+```bash
 mvn scalastyle:check -Pcheckstyle
 ```
 
 
 Preview automatic code formatting changes:
 
-```shell
+```bash
 mvn spotless:check
 ```
 
 
 Apply automatic code formatting:
 
-```shell
+```bash
 mvn spotless:apply
 ```
