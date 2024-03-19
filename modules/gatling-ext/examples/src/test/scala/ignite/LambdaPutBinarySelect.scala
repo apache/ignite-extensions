@@ -37,8 +37,9 @@ import scala.util.Random.javaRandomToRandom
  * - Test scenario steps defined both via the Ignite Operations DSL and Ignite Lambda DSL.
  * - DSL for SQL queries.
  * - Ignite gatling protocol configured via pre-started Ignite client node.
+ * - Generate load with rising and decreasing RPS (0 -> 100 -> 0).
  *
- * To run the simulation the Ignite server node should be manually started on the localhost.
+ * Before run simulation start the Ignite server node manually on the localhost.
  */
 class LambdaPutBinarySelect extends Simulation {
     // Start ignite client node to be used to generate the load.
@@ -79,7 +80,7 @@ class LambdaPutBinarySelect extends Simulation {
     ))
 
     // Scenario calling both put and SQL select.
-    private val scn = scenario("")
+    private val scn = scenario("PutBinarySelect")
         .feed(feeder)
         .ignite (
             putOperation as "put",

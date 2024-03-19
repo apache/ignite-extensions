@@ -51,8 +51,10 @@ val scn = scenario("PutGetTx")
 ```
 
 If the operations DSL is used each individual operation (like transaction start, put, get and commit in the above example)
-would be measured and represented in final HTML report separately.  Besides, the gatling group will be created for the
+would be measured and represented separately in the final HTML report.  Besides, the gatling group will be created for the
 transaction to measure it as a whole.
+
+Names of operations to be used in report are specified via the `as` keyword.
 
 Async operations are supported as well via the `async` keyword. The limitation is that it is 
 only available outside the transactions.
@@ -77,7 +79,7 @@ The following operations are supported by the DSL:
     * sql query
     * invoke / invokeAll
     * lock / unlock
-* transaction
+* transactions
     * tx (start transaction)
     * commit
     * rollback
@@ -156,7 +158,7 @@ client should be closed explicitly in the simulation's *after* sections as:
     }
 ```
 
-If the pre-started node or client is used for protocol creation it also should be closed in the 'after' section like:
+If the pre-started node or client is used for protocol creation it also should be closed in the *after* section like:
 ```scala
     val ignite = Ignition.start(new IgniteConfiguration().setClientMode(true))
 

@@ -29,24 +29,30 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 /**
- * Basic Ignite Gatling simulation.
+ * Ignite gatling simulation example demonstrating:
+ *
+ * - Test scenario defined via the Ignite operations DSL.
+ * - Use async variant of Ignite APIs.
+ * - Ignite gatling protocol configured with thin Ignite client pool creating one client per thread.
+ * - Generate maximum possible load using fixed number of threads (16).
+ *
+ * Before run simulation start the Ignite server node manually on the localhost.
  */
 class DslPutAsyncThinPool extends Simulation {
+    // Ensure Gatling engine creates enough threads.
     System.setProperty("io.netty.eventLoopThreads", "16")
-
-    val cache = "TEST-CACHE"
 
     val feeder: Feeder[Int] = Iterator.continually(Map(
         "key" -> ThreadLocalRandom.current().nextInt(10000),
         "value" -> ThreadLocalRandom.current().nextInt()
     ))
 
-    val scn: ScenarioBuilder = scenario("PutGetThinAsyncBenchmark")
+    val scn: ScenarioBuilder = scenario("PutAsyncThinPool")
         .feed(feeder)
         .ignite(
-            getOrCreateCache(cache) as "Get or create cache",
+            getOrCreateCache("cache") as "Get or create cache",
 
-            put[Int, Int](cache, "#{key}", "#{value}") as "Put" async,
+            put[Int, Int]("cache", "#{key}", "#{value}") as "Put" async,
         )
 
     val pool = new IgniteClientPerThreadPool(
@@ -60,7 +66,7 @@ class DslPutAsyncThinPool extends Simulation {
     }
 
     setUp(scn.inject(
-        // Generate maximum load by 16 threads
+        // Generate maximum possible load running 16 threads
         constantConcurrentUsers(16) during 30.seconds
     )).protocols(protocol)
         .assertions(global.failedRequests.count.is(0))

@@ -32,8 +32,9 @@ import scala.language.postfixOps
  * - Test scenario defined via the Ignite operations DSL.
  * - Group Ignite operations in transaction.
  * - Ignite gatling protocol configured via URL of the thin Ignite client Spring XML config file.
+ * - Generate load with fixed RPS (100).
  *
- * To run the simulation the Ignite server node should be manually started on the localhost.
+ * Before run simulation start the Ignite server node manually on the localhost.
  */
 class DslPutGetThinTx extends Simulation {
     /**
@@ -52,7 +53,7 @@ class DslPutGetThinTx extends Simulation {
      *
      * Besides, the gatling group will be created for transaction to measure it as a whole.
      */
-    val scn: ScenarioBuilder = scenario("PutGetTx")
+    val scn: ScenarioBuilder = scenario("PutGetThinTx")
         .feed(feeder)
         .ignite(
             // Create cache if not exists.

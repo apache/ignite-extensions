@@ -18,12 +18,32 @@
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
 
-object Engine extends App {
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.Objects.requireNonNull
 
+/**
+ * Start this object to run example simulations included into this project.
+ *
+ * After start choose a simulation by number entering it from keyboard.
+ */
+object GatlingRunner extends App {
     val props = new GatlingPropertiesBuilder()
         .resourcesDirectory(IDEPathHelper.mavenResourcesDirectory.toString)
         .resultsDirectory(IDEPathHelper.resultsDirectory.toString)
         .binariesDirectory(IDEPathHelper.mavenBinariesDirectory.toString)
 
     Gatling.fromMap(props.build)
+}
+
+object IDEPathHelper {
+    private val projectRootDir = Paths.get(requireNonNull(getClass.getResource("gatling.conf"), "Couldn't locate gatling.conf").toURI).getParent.getParent.getParent
+    private val mavenTargetDirectory = projectRootDir.resolve("target")
+    private val mavenSrcTestDirectory = projectRootDir.resolve("src").resolve("test")
+
+    val mavenSourcesDirectory: Path = mavenSrcTestDirectory.resolve("scala")
+    val mavenResourcesDirectory: Path = mavenSrcTestDirectory.resolve("resources")
+    val mavenBinariesDirectory: Path = mavenTargetDirectory.resolve("test-classes")
+    val resultsDirectory: Path = mavenTargetDirectory.resolve("gatling")
+    val recorderConfigFile: Path = mavenResourcesDirectory.resolve("recorder.conf")
 }
