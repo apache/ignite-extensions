@@ -20,7 +20,7 @@ You may add plugin as dependency in project with your tests. Write this to your 
 
 ## Examples
 
-See [here](examples) the example project based on the [Gatling Maven Plugin](https://gatling.io/docs/current/extensions/maven_plugin/).
+See [here](examples) the example project based on the [Gatling Maven Plugin](https://github.com/gatling/gatling-maven-plugin).
 
 ## Features
 
@@ -56,7 +56,7 @@ transaction to measure it as a whole.
 
 Names of operations to be used in report are specified via the `as` keyword.
 
-Async operations are supported as well via the `async` keyword. The limitation is that it is 
+Async operations are also supported via the `async` keyword. The limitation is that it's 
 only available outside the transactions.
 
 ```scala
