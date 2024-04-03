@@ -6,17 +6,18 @@ with the Ignite Gatling Plugin.
 It uses the [Gatling Maven Plugin](https://github.com/gatling/gatling-maven-plugin)
 which is a currently recommended way to package and maintain Gatling simulations. 
 
+Note, that these example simulations start the Ignite server node by themselves. This is done for simplicity.
+
+In the real testing conditions the Ignite server nodes forming the cluster under the test would be started in some
+other way outside the simulation class.
+
 ## Simulations included
  
 * ignite.DslPutAsyncThinPool
 * ignite.DslPutGetThinTx
 * ignite.LambdaPutBinarySelect
 
-## Run simulations
-
-Before running any simulation included here the Ignite cluster should be started manually. At least one server node should run on localhost.
-
-### Run from command line
+## Run simulation from command line
 
 Individual simulation can be run by maven. Its name should be passed as a *gatling.simulationClass* system property.
 
@@ -26,7 +27,7 @@ For example
 ./mvnw gatling:test -Dgatling.simulationClass=ignite.LambdaPutBinarySelect
 ```
 
-### Run from the IDE
+## Run simulation from the IDE
 
 Simulations may also be started from within the IDE:
  

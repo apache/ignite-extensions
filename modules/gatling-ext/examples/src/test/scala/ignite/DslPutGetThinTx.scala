@@ -22,6 +22,8 @@ import io.gatling.core.structure.ScenarioBuilder
 import io.netty.util.internal.ThreadLocalRandom
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.Ignite
+import org.apache.ignite.Ignition
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -37,6 +39,13 @@ import scala.language.postfixOps
  * Before run simulation start the Ignite server node manually on the localhost.
  */
 class DslPutGetThinTx extends Simulation {
+    // Start server ignite node before the simulation start.
+    //
+    // It is started at the same JVM the simulation would run just for simplicity.
+    // In the real world testing conditions server ignite cluster nodes forming the cluster
+    // under test would be started in some other way, outside the simulation class.
+    private val server: Ignite = Ignition.start()
+
     /**
      * Feeder generating random test data for keys and values.
      */
@@ -87,6 +96,8 @@ class DslPutGetThinTx extends Simulation {
     // Destroy the client node after the simulation.
     after {
         protocol.close()
+
+        server.close()
     }
 
     setUp(

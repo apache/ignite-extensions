@@ -38,15 +38,20 @@ import scala.util.Random.javaRandomToRandom
  * - DSL for SQL queries.
  * - Ignite gatling protocol configured via pre-started Ignite client node.
  * - Generate load with rising and decreasing RPS (0 -> 100 -> 0).
- *
- * Before run simulation start the Ignite server node manually on the localhost.
  */
 class LambdaPutBinarySelect extends Simulation {
+    // Start server ignite node before the simulation start.
+    //
+    // It is started at the same JVM the simulation would run just for simplicity.
+    // In the real world testing conditions server ignite cluster nodes forming the cluster
+    // under test would be started in some other way, outside the simulation class.
+    private val server: Ignite = Ignition.start()
+
     // Start ignite client node to be used to generate the load.
-    private val ignite = Ignition.start(new IgniteConfiguration().setClientMode(true))
+    private val client = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setClientMode(true))
 
     // Create test table before the simulation start.
-    ignite.asInstanceOf[IgniteEx].context().query().querySqlFields(new SqlFieldsQuery(
+    client.asInstanceOf[IgniteEx].context().query().querySqlFields(new SqlFieldsQuery(
         """
             CREATE TABLE IF NOT EXISTS City (
                 Id INT(11),
@@ -88,11 +93,14 @@ class LambdaPutBinarySelect extends Simulation {
         )
 
     // Create protocol using the pre-started ignite client node.
-    val protocol: IgniteProtocol = igniteProtocol.ignite(ignite)
+    val protocol: IgniteProtocol = igniteProtocol.ignite(client)
 
     after {
-        // Close ignite client after simulation end.
-        ignite.close()
+        // Close ignite client node simulation end.
+        client.close()
+
+        // Close ignite server node simulation end.
+        server.close()
     }
 
     setUp(

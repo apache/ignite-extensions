@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.ClientConfiguration
 import org.apache.ignite.gatling.Predef._
 import org.apache.ignite.gatling.protocol.IgniteClientPerThreadPool
 import org.apache.ignite.gatling.protocol.IgniteProtocol
+import org.apache.ignite.Ignite
+import org.apache.ignite.Ignition
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -35,10 +37,15 @@ import scala.language.postfixOps
  * - Use async variant of Ignite APIs.
  * - Ignite gatling protocol configured with thin Ignite client pool creating one client per thread.
  * - Generate maximum possible load using fixed number of threads (16).
- *
- * Before run simulation start the Ignite server node manually on the localhost.
  */
 class DslPutAsyncThinPool extends Simulation {
+    // Start server ignite node before the simulation start.
+    //
+    // It is started at the same JVM the simulation would run just for simplicity.
+    // In the real world testing conditions server ignite cluster nodes forming the cluster
+    // under test would be started in some other way, outside the simulation class.
+    private val server: Ignite = Ignition.start()
+
     // Ensure Gatling engine creates enough threads.
     System.setProperty("io.netty.eventLoopThreads", "16")
 
@@ -63,6 +70,8 @@ class DslPutAsyncThinPool extends Simulation {
 
     after {
         pool.close()
+
+        server.close()
     }
 
     setUp(scn.inject(
