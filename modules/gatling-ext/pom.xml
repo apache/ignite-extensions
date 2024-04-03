@@ -35,6 +35,7 @@
 
     <properties>
         <gatling.version>3.10.4</gatling.version>
+        <gatling-maven-plugin.version>4.8.2</gatling-maven-plugin.version>
         <scala-maven-plugin.version>4.8.1</scala-maven-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -76,6 +77,14 @@
                         <phase/>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <version>${gatling-maven-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>

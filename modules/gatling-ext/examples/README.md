@@ -21,17 +21,16 @@ other way outside the simulation class.
 
 Individual simulation can be run by maven. Its name should be passed as a *gatling.simulationClass* system property.
 
-For example
-
 ```bash
-./mvnw gatling:test -Dgatling.simulationClass=ignite.LambdaPutBinarySelect
+cd modules/gatling-ext
+mvn gatling:test -Dgatling.simulationClass=ignite.LambdaPutBinarySelect
 ```
 
 ## Run simulation from the IDE
 
 Simulations may also be started from within the IDE:
  
-- Open pom.xml as a project in IDE.
+- Open `modules/gatling-ext/pom.xml` as a project in IDE.
 - Start the *GatlingRunner* object.
 - Choose index of the simulation from the printed list entering it from keyboard and press Enter.
 - Enter the optional run description.

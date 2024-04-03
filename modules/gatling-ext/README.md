@@ -18,6 +18,15 @@ You may add plugin as dependency in project with your tests. Write this to your 
         </dependency>
 ```
 
+## Build
+
+To build everything and run all tests and examples from command line do the following:
+
+```
+cd ignite-extensions
+mvn clean package -f modules/gatling-ext
+```
+
 ## Examples
 
 See [here](examples) the example project based on the [Gatling Maven Plugin](https://github.com/gatling/gatling-maven-plugin).
