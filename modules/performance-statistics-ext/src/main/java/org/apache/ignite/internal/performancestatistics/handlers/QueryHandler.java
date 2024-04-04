@@ -46,10 +46,10 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  *          "logicalReads" : $logicalReads,
  *          "physicalReads" : $physicalReads,
  *          "failures" : $failures,
- *          "properties" : {
- *              $propName : {"value" : $propValue, "count" : $propCount},
+ *          "properties" : [
+ *              {"name" : $propName, "value" : $propValue, "count" : $propCount},
  *              ...
- *          },
+ *          ],
  *          "rows" : {
  *              $action : $rowsCount,
  *              ...
@@ -68,10 +68,10 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  *      "logicalReads" : $logicalReads,
  *      "physicalReads" : $physicalReads,
  *      "success" : $success,
- *      "properties" : {
- *          $propName : {"value" : $propValue, "count" : $propCount},
+ *      "properties" : [
+ *          {"name" : $propName, "value" : $propValue, "count" : $propCount},
  *          ...
- *      },
+ *      ],
  *      "rows" : {
  *          $action : $rowsCount,
  *          ...
@@ -83,6 +83,10 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
 public class QueryHandler implements IgnitePerformanceStatisticsHandler {
     /**  Queries results: queryType -> queryText -> aggregatedInfo. */
     private final Map<GridCacheQueryType, Map<String, AggregatedQueryInfo>> aggrQuery =
+        new EnumMap<>(GridCacheQueryType.class);
+
+    /**  Queries results: queryType -> nodeId -> queryId -> aggregatedInfo. */
+    private final Map<GridCacheQueryType, Map<UUID, Map<Long, AggregatedQueryInfo>>> aggrQryById =
         new EnumMap<>(GridCacheQueryType.class);
 
     /** Parsed reads: queryType -> queryNodeId -> queryId -> reads. */
@@ -134,6 +138,13 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
         long logicalReads,
         long physicalReads
     ) {
+        AggregatedQueryInfo info = aggregatedQueryInfoById(type, qryNodeId, id);
+
+        if (info != null) {
+            info.mergeReads(logicalReads, physicalReads);
+            return;
+        }
+
         Map<Long, long[]> ids = readsById.computeIfAbsent(type, queryType -> new HashMap<>())
             .computeIfAbsent(qryNodeId, node -> new HashMap<>());
 
@@ -152,6 +163,13 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
         String action,
         long rows
     ) {
+        AggregatedQueryInfo info = aggregatedQueryInfoById(type, qryNodeId, id);
+
+        if (info != null) {
+            info.mergeRows(action.intern(), rows);
+            return;
+        }
+
         Map<String, long[]> actions = rowsById.computeIfAbsent(qryNodeId, node -> new HashMap<>())
             .computeIfAbsent(id, qryId -> new HashMap<>());
 
@@ -169,10 +187,17 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
         String name,
         String val
     ) {
+        String key = (name + '=' + val).intern();
+
+        AggregatedQueryInfo info = aggregatedQueryInfoById(type, qryNodeId, id);
+
+        if (info != null) {
+            info.mergeProperty(key, name.intern(), val.intern(), 1);
+            return;
+        }
+
         Map<String, T3<String, String, long[]>> props = propsById.computeIfAbsent(qryNodeId, node -> new HashMap<>())
             .computeIfAbsent(id, qryId -> new HashMap<>());
-
-        String key = (name + '=' + val).intern();
 
         T3<String, String, long[]> prop = props.computeIfAbsent(key,
             nv -> new T3<>(name.intern(), val.intern(), new long[] {0}));
@@ -211,6 +236,19 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
     }
 
     /**
+     * Gets aggregeted query info by global query id.
+     * @param type Query type.
+     * @param nodeId Query originator node id.
+     * @param id Query id.
+     * @return Aggregated query info.
+     */
+    private AggregatedQueryInfo aggregatedQueryInfoById(GridCacheQueryType type, UUID nodeId, long id) {
+        Map<UUID, Map<Long, AggregatedQueryInfo>> typeAggrs = aggrQryById.get(type);
+        Map<Long, AggregatedQueryInfo> nodeAggrs = typeAggrs == null ? null : typeAggrs.get(nodeId);
+        return nodeAggrs == null ? null : nodeAggrs.get(id);
+    }
+
+    /**
      * Aggregates query reads/rows/properties and remove detailed info.
      */
     private void aggregateQuery(Query qry) {
@@ -221,46 +259,32 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
 
         AggregatedQueryInfo info = typeAggrs.get(qry.text);
 
+        aggrQryById.computeIfAbsent(qry.type, t -> new HashMap<>())
+            .computeIfAbsent(qry.queryNodeId, n -> new HashMap<>())
+            .put(qry.id, info);
+
         // Reads.
         Map<UUID, Map<Long, long[]>> typeReads = readsById.get(qry.type);
         Map<Long, long[]> nodeReads = typeReads == null ? null : typeReads.get(qry.queryNodeId);
         long[] qryReads = nodeReads == null ? null : nodeReads.remove(qry.id);
 
-        if (qryReads != null) {
-            info.logicalReads += qryReads[0];
-            info.physicalReads += qryReads[1];
-        }
+        if (qryReads != null)
+            info.mergeReads(qryReads[0], qryReads[1]);
 
         if (qry.type == GridCacheQueryType.SQL_FIELDS) {
             // Properties.
             Map<Long, Map<String, T3<String, String, long[]>>> nodeProps = propsById.get(qry.queryNodeId);
             Map<String, T3<String, String, long[]>> qryProps = nodeProps == null ? null : nodeProps.remove(qry.id);
 
-            if (!F.isEmpty(qryProps)) {
-                qryProps.forEach((propKey0, prop0) -> info.props.compute(propKey0, (propKey1, prop1) -> {
-                    if (prop1 == null)
-                        return new T3<>(prop0.get1(), prop0.get2(), new long[] {prop0.get3()[0]});
-                    else {
-                        prop1.get3()[0] += prop0.get3()[0];
-                        return prop1;
-                    }
-                }));
-            }
+            if (!F.isEmpty(qryProps))
+                qryProps.forEach((propKey, prop) -> info.mergeProperty(propKey, prop.get1(), prop.get2(), prop.get3()[0]));
 
             // Rows.
             Map<Long, Map<String, long[]>> nodeRows = rowsById.get(qry.queryNodeId);
             Map<String, long[]> qryRows = nodeRows == null ? null : nodeRows.remove(qry.id);
 
-            if (!F.isEmpty(qryRows)) {
-                qryRows.forEach((act0, rows0) -> info.rows.compute(act0, (act1, rows1) -> {
-                    if (rows1 == null)
-                        return new long[] {rows0[0]};
-                    else {
-                        rows1[0] += rows0[0];
-                        return rows1;
-                    }
-                }));
-            }
+            if (!F.isEmpty(qryRows))
+                qryRows.forEach((act, rows) -> info.mergeRows(act, rows[0]));
         }
     }
 
@@ -293,15 +317,16 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
                 sql.put("failures", info.failures);
 
                 if (!F.isEmpty(info.props)) {
-                    ObjectNode node = MAPPER.createObjectNode();
+                    ArrayNode node = MAPPER.createArrayNode();
 
                     info.props.forEach((propKey, prop) -> {
                         ObjectNode valCntNode = MAPPER.createObjectNode();
 
+                        valCntNode.put("name", prop.get1());
                         valCntNode.put("value", prop.get2());
                         valCntNode.put("count", prop.get3()[0]);
 
-                        node.putIfAbsent(prop.get1(), valCntNode);
+                        node.add(valCntNode);
                     });
 
                     sql.putIfAbsent("properties", node);
@@ -351,16 +376,17 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
 
             if (type == GridCacheQueryType.SQL_FIELDS) {
                 if (propsById.containsKey(query.queryNodeId) && propsById.get(query.queryNodeId).containsKey(query.id)) {
-                    ObjectNode node = MAPPER.createObjectNode();
+                    ArrayNode node = MAPPER.createArrayNode();
 
                     Collection<T3<String, String, long[]>> props = propsById.get(query.queryNodeId).get(query.id).values();
 
                     props.forEach(prop -> {
                         ObjectNode valCntNode = MAPPER.createObjectNode();
+                        valCntNode.put("name", prop.get1());
                         valCntNode.put("value", prop.get2());
                         valCntNode.put("count", prop.get3()[0]);
 
-                        node.putIfAbsent(prop.get1(), valCntNode);
+                        node.add(valCntNode);
                     });
 
                     json.putIfAbsent("properties", node);
@@ -410,6 +436,23 @@ public class QueryHandler implements IgnitePerformanceStatisticsHandler {
             if (!success)
                 failures += 1;
         }
+
+        /** */
+        public void mergeReads(long logicalReads, long physicalReads) {
+            this.logicalReads += logicalReads;
+            this.physicalReads += physicalReads;
+        }
+
+        /** */
+        public void mergeRows(String action, long cnt) {
+            rows.computeIfAbsent(action, act -> new long[] {0})[0] += cnt;
+        }
+
+        /** */
+        public void mergeProperty(String key, String name, String val, long cnt) {
+            props.computeIfAbsent(key, k -> new T3<>(name, val, new long[] {0})).get3()[0] += cnt;
+        }
+
     }
 
     /** Query. */
