@@ -39,7 +39,7 @@ import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -325,11 +326,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             throw new RuntimeException(e);
         }
 
-        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
-        this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
-        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+        MetricRegistryImpl regImpl = (MetricRegistryImpl)mreg;
+
+        this.evtsCnt = regImpl.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.lastMsgTs = regImpl.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        this.bytesSnt = regImpl.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
+        this.typesCnt = regImpl.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = regImpl.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
 
         futs = new ArrayList<>(maxBatchSz);
     }

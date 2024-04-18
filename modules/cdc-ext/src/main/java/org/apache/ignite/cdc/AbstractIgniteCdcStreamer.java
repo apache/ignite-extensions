@@ -27,11 +27,12 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
@@ -106,10 +107,12 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
             .boxed()
             .collect(Collectors.toSet());
 
-        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
-        this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        MetricRegistryImpl regImpl = (MetricRegistryImpl)mreg;
+
+        this.evtsCnt = regImpl.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.typesCnt = regImpl.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = regImpl.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+        this.lastEvtTs = regImpl.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
     /** {@inheritDoc} */
