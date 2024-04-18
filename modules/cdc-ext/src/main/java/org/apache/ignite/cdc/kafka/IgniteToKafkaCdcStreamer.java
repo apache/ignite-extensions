@@ -295,7 +295,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry reg) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -326,13 +326,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             throw new RuntimeException(e);
         }
 
-        MetricRegistryImpl regImpl = (MetricRegistryImpl)mreg;
+        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = regImpl.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.lastMsgTs = regImpl.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
-        this.bytesSnt = regImpl.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
-        this.typesCnt = regImpl.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = regImpl.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
 
         futs = new ArrayList<>(maxBatchSz);
     }

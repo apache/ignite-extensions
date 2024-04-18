@@ -99,7 +99,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     protected IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry reg) {
         A.notEmpty(caches, "caches");
 
         cachesIds = caches.stream()
@@ -107,12 +107,12 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
             .boxed()
             .collect(Collectors.toSet());
 
-        MetricRegistryImpl regImpl = (MetricRegistryImpl)mreg;
+        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = regImpl.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.typesCnt = regImpl.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = regImpl.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
-        this.lastEvtTs = regImpl.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
+        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
     }
 
     /** {@inheritDoc} */
