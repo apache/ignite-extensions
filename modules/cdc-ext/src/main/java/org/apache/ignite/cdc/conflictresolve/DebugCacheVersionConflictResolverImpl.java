@@ -69,6 +69,8 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
             return super.value(val);
         }
         catch (Exception e) {
+            log.debug("Can't resolve field value [field=" + conflictResolveField + ", val=" + val + ']');
+
             return val;
         }
     }
