@@ -45,10 +45,10 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
         Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
 
         if (oldVal != null)
-            oldVal = value(oldVal);
+            oldVal = debugValue(oldVal);
 
         if (newVal != null)
-            newVal = value(newVal);
+            newVal = debugValue(newVal);
 
         log.debug("isUseNew[" +
             "start=" + oldEntry.isStartVersion() +
@@ -61,6 +61,18 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
             ", res=" + res + ']');
 
         return res;
+    }
+
+    /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
+    private Object debugValue(Object val) {
+        try {
+            return super.value(val);
+        }
+        catch (Exception e) {
+            log.debug("Can't resolve field value [field=" + conflictResolveField + ", val=" + val + ']');
+
+            return val;
+        }
     }
 
     /** {@inheritDoc} */

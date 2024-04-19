@@ -57,7 +57,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @see CacheVersionConflictResolverImpl
      */
     @GridToStringInclude
-    private final String conflictResolveField;
+    protected final String conflictResolveField;
 
     /** Logger. */
     protected final IgniteLogger log;
