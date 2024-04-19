@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.client.thin.ClientBinary;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.metric.MetricRegistry;
 
 /**
  * Change Data Consumer that streams all data changes to destination cluster through Ignite thin client.
