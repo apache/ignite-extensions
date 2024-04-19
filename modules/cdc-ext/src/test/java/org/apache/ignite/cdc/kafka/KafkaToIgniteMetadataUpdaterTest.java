@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.cdc.TypeMappingImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -154,7 +154,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(streamer, "log", listeningLog.getLogger(IgniteToKafkaCdcStreamer.class));
 
-        streamer.start(new MetricRegistry("test", null, null, log));
+        streamer.start(new MetricRegistryImpl("test", null, null, log));
 
         return streamer;
     }
