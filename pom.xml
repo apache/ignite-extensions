@@ -48,7 +48,6 @@
         <module>modules/spring-tx-ext</module>
         <module>modules/spring-cache-ext</module>
         <module>modules/spring-session-ext/spring-session-ext</module>
-        <module>modules/spring-session-ext/spring-session-ext-3</module>
         <module>modules/cdc-ext</module>
         <module>modules/aws-ext</module>
         <module>modules/azure-ext</module>
@@ -73,6 +72,15 @@
             <id>use-ignite-src</id>
             <modules>
                 <module>../ignite</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>spring-6-extensions</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <modules>
+                <module>modules/spring-session-ext/spring-session-3.x-ext</module>
             </modules>
         </profile>
     </profiles>
