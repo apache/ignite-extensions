@@ -21,10 +21,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite-extensions</artifactId>
     <version>1.0.0</version> <!-- NOTE: This is a dummy version, it will never be released. -->
     <packaging>pom</packaging>
+
+    <parent>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent-ext-internal</artifactId>
+        <version>1</version>
+        <relativePath>parent-internal</relativePath>
+    </parent>
 
     <modules>
         <module>modules/apache-license-gen</module>
