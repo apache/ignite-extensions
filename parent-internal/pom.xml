@@ -193,6 +193,15 @@
             </build>
         </profile>
         <profile>
+            <id>java-9+</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
             <id>java-15+</id>
             <activation>
                 <jdk>[15,)</jdk>
@@ -201,13 +210,19 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <!-- Do not bring ignite logic -->
+                        <inherited>false</inherited>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <forkCount>1</forkCount>
                             <argLine>
                                 --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
                                 --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-opens java.base/jdk.internal.ref=ALL-UNNAMED
+                                --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
                                 --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
                                 --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
                                 --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
@@ -225,10 +240,39 @@
                                 --add-opens=java.base/java.time=ALL-UNNAMED
                                 --add-opens=java.base/sun.security.ssl=ALL-UNNAMED
                                 --add-opens=java.base/sun.security.x509=ALL-UNNAMED
-                                --add-opens java.base/sun.net.util=ALL-UNNAMED
+                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
                                 --add-opens=java.sql/java.sql=ALL-UNNAMED
-                                --add-opens java.base/java.nio=ALL-UNNAMED
                             </argLine>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>io.gatling</groupId>
+                        <artifactId>gatling-maven-plugin</artifactId>
+                        <configuration>
+                            <jvmArgs>
+                                <jvmArg>--add-opens=java.base/jdk.internal.access=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.net=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.nio=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.security.cert=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.util.concurrent=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.lang.invoke=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/java.time=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/sun.security.ssl=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/sun.security.x509=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.base/sun.net.util=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.sql/java.sql=ALL-UNNAMED</jvmArg>
+                            </jvmArgs>
                         </configuration>
                     </plugin>
                 </plugins>
