@@ -37,6 +37,7 @@
     <properties>
         <spring-boot.version>2.2.13.RELEASE</spring-boot.version>
         <spring.data.version>2.2.13.RELEASE</spring.data.version>
+        <spring.data32.version>3.2.5</spring.data32.version>
         <spring53.version>5.3.19</spring53.version>
         <spring61.version>6.1.6</spring61.version>
 
