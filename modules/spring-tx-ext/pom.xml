@@ -36,6 +36,7 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
+        <maven.compiler.release>17</maven.compiler.release>
         <xstream.version>1.4.8</xstream.version>
     </properties>
 
