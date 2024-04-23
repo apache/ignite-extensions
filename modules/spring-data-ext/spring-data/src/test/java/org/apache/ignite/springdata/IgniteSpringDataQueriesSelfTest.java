@@ -87,7 +87,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
      * Performs context destroy after tests.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        ctx.destroy();
+        ctx.close();
     }
 
     /** */

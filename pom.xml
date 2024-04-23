@@ -42,7 +42,6 @@
         <module>modules/camel-ext</module>
         <module>modules/jms11-ext</module>
         <module>modules/kafka-ext</module>
-        <module>modules/spring-data-ext</module>
         <module>modules/spring-data-commons</module>
         <module>modules/performance-statistics-ext</module>
         <module>modules/spring-tx-ext</module>
@@ -80,6 +79,7 @@
             <modules>
                 <module>modules/spring-session-ext</module>
                 <module>modules/spring-cache-ext</module>
+                <module>modules/spring-data-ext</module>
             </modules>
         </profile>
     </profiles>

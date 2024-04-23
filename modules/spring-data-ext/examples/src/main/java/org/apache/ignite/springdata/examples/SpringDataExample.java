@@ -86,7 +86,7 @@ public class SpringDataExample {
         System.out.println("\n>>> Repository size: " + repo.count());
 
         // Destroying the context.
-        ctx.destroy();
+        ctx.close();
     }
 
     /**
