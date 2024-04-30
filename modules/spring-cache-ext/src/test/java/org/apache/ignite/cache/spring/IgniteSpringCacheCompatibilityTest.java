@@ -61,7 +61,9 @@ public class IgniteSpringCacheCompatibilityTest extends IgniteCompatibilityAbstr
         "5.0.0.RELEASE",
         "5.1.0.RELEASE",
         "5.2.0.RELEASE",
-        "5.3.0"
+        "5.3.0",
+        "6.0.0",
+        "6.1.0"
     );
 
     /** */
