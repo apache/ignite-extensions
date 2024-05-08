@@ -81,13 +81,13 @@ public class H2OMojoModelParserExample {
 
                     HashMap<String, Double> testObj = new HashMap<>();
 
-                    for (String keyValueString : testDataStr.split(" ")) {
-                        String[] keyVal = keyValueString.split(":");
+                    for (String keyValStr : testDataStr.split(" ")) {
+                        String[] keyVal = keyValStr.split(":");
 
                         if (keyVal.length == 2)
                             testObj.put("C" + (1 + Integer.parseInt(keyVal[0])), Double.parseDouble(keyVal[1]));
                         else
-                            actual = keyValueString;
+                            actual = keyValStr;
                     }
 
                     double prediction = mdl.predict(VectorUtils.of(testObj)).get();

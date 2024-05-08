@@ -443,7 +443,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
         info("Start Gridify test with Default AOP Task and exception in Deployment Mode : " + depMode);
 
-        boolean isException = false;
+        boolean ex = false;
 
         try {
             startGrid();
@@ -455,7 +455,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
         catch (ExternalGridifyException e) {
             info("@Gridify method gridifyDefaultException(0) returns exception: " + e);
 
-            isException = true;
+            ex = true;
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -467,7 +467,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
             stopGrid();
         }
 
-        if (!isException)
+        if (!ex)
             fail("@Gridify method gridifyDefaultException(0) does not return any exception.");
     }
 

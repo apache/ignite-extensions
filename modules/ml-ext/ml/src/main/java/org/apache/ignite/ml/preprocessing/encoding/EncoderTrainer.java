@@ -469,7 +469,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
             assert targetCounters.length == row.size() : "Base preprocessor must return exactly "
                 + targetCounters.length + " features";
 
-        double targetValue = row.features().get(targetLabelIndex);
+        double targetVal = row.features().get(targetLabelIndex);
 
         for (int i = 0; i < targetCounters.length; i++) {
             if (handledIndices.contains(i)) {
@@ -491,7 +491,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                 TargetCounter targetCounter = targetCounters[i];
                 targetCounter.setTargetCount(targetCounter.getTargetCount() + 1);
-                targetCounter.setTargetSum(targetCounter.getTargetSum() + targetValue);
+                targetCounter.setTargetSum(targetCounter.getTargetSum() + targetVal);
 
                 Map<String, Long> categoryCounts = targetCounter.getCategoryCounts();
 
@@ -504,10 +504,10 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
 
                 Map<String, Double> categoryTargetSum = targetCounter.getCategoryTargetSum();
                 if (categoryTargetSum.containsKey(strVal)) {
-                    categoryTargetSum.put(strVal, categoryTargetSum.get(strVal) + targetValue);
+                    categoryTargetSum.put(strVal, categoryTargetSum.get(strVal) + targetVal);
                 }
                 else {
-                    categoryTargetSum.put(strVal, targetValue);
+                    categoryTargetSum.put(strVal, targetVal);
                 }
             }
         }

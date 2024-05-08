@@ -102,18 +102,18 @@ public class TcpDiscoveryCloudIpFinderSelfTest extends
         else
             ipFinder.setCredential(IgniteCloudTestConfiguration.getSecretKey(provider));
 
-        Collection<InetSocketAddress> addresses = ipFinder.getRegisteredAddresses();
+        Collection<InetSocketAddress> addrs = ipFinder.getRegisteredAddresses();
 
-        for (InetSocketAddress addr : addresses)
+        for (InetSocketAddress addr : addrs)
             info("Registered instance: " + addr.getAddress().getHostAddress() + ":" + addr.getPort());
 
-        ipFinder.unregisterAddresses(addresses);
+        ipFinder.unregisterAddresses(addrs);
 
-        assert addresses.size() == ipFinder.getRegisteredAddresses().size();
+        assert addrs.size() == ipFinder.getRegisteredAddresses().size();
 
         ipFinder.registerAddresses(ImmutableList.of(
             new InetSocketAddress("192.168.0.1", TcpDiscoverySpi.DFLT_PORT)));
 
-        assert addresses.size() == ipFinder.getRegisteredAddresses().size();
+        assert addrs.size() == ipFinder.getRegisteredAddresses().size();
     }
 }

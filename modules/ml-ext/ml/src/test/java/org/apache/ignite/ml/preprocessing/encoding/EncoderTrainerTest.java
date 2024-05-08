@@ -239,10 +239,10 @@ public class EncoderTrainerTest extends TrainerTest {
 
         DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        EncoderTrainer<Integer, Object[]> labelEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
+        EncoderTrainer<Integer, Object[]> lblEncTrainer = new EncoderTrainer<Integer, Object[]>()
             .withEncoderType(EncoderType.LABEL_ENCODER);
 
-        EncoderPreprocessor<Integer, Object[]> preprocessor = labelEncoderTrainer.fit(
+        EncoderPreprocessor<Integer, Object[]> preprocessor = lblEncTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
             vectorizer

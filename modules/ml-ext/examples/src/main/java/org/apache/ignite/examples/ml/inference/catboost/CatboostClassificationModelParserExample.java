@@ -86,8 +86,8 @@ public class CatboostClassificationModelParserExample {
             try (Model<NamedVector, Future<Double>> mdl = mdlBuilder.build(reader, parser);
                  Scanner testDataScanner = new Scanner(testData);
                  Scanner testExpResultsScanner = new Scanner(testExpRes)) {
-                String header = testDataScanner.nextLine();
-                String[] columns = header.split(",");
+                String hdr = testDataScanner.nextLine();
+                String[] columns = hdr.split(",");
 
                 while (testDataScanner.hasNextLine()) {
                     String testDataStr = testDataScanner.nextLine();

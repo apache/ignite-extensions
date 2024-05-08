@@ -133,10 +133,10 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (!initGuard.compareAndSet(false, true))
             return;
 
-        String sysPropZkConnString = IgniteSystemProperties.getString(PROP_ZK_CONNECTION_STRING);
+        String sysPropZkConnStr = IgniteSystemProperties.getString(PROP_ZK_CONNECTION_STRING);
 
-        if (sysPropZkConnString != null && !sysPropZkConnString.trim().isEmpty())
-            zkConnectionString = sysPropZkConnString;
+        if (sysPropZkConnStr != null && !sysPropZkConnStr.trim().isEmpty())
+            zkConnectionString = sysPropZkConnStr;
 
         if (log.isInfoEnabled())
             log.info("Initializing ZooKeeper IP Finder.");
@@ -184,10 +184,10 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (log.isDebugEnabled())
             log.debug("Getting registered addresses from ZooKeeper IP Finder.");
 
-        Collection<ServiceInstance<IgniteInstanceDetails>> serviceInstances;
+        Collection<ServiceInstance<IgniteInstanceDetails>> srvcInstances;
 
         try {
-            serviceInstances = discovery.queryForInstances(serviceName);
+            srvcInstances = discovery.queryForInstances(serviceName);
         }
         catch (Exception e) {
             log.warning("Error while getting registered addresses from ZooKeeper IP Finder.", e);
@@ -196,7 +196,7 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         Set<InetSocketAddress> answer = new HashSet<>();
 
-        for (ServiceInstance<IgniteInstanceDetails> si : serviceInstances)
+        for (ServiceInstance<IgniteInstanceDetails> si : srvcInstances)
             answer.add(new InetSocketAddress(si.getAddress(), si.getPort()));
 
         if (log.isInfoEnabled())

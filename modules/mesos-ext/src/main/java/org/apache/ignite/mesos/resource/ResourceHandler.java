@@ -79,9 +79,9 @@ public class ResourceHandler extends AbstractHandler {
 
         String fileName = path[path.length - 1];
 
-        String servicePath = url.substring(0, url.length() - fileName.length());
+        String srvcPath = url.substring(0, url.length() - fileName.length());
 
-        switch (servicePath) {
+        switch (srvcPath) {
             case IGNITE_PREFIX:
                 handleRequest(response, "application/zip-archive", igniteDir + "/" + fileName);
 

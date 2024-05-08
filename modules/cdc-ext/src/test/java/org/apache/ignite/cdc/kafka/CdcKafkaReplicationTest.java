@@ -249,11 +249,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         EmbeddedKafkaCluster kafka = curKafka;
 
         if (kafka == null) {
-            Properties brokerProperties = new Properties();
+            Properties props = new Properties();
 
-            brokerProperties.put("auto.create.topics.enable", "false");
+            props.put("auto.create.topics.enable", "false");
 
-            kafka = new EmbeddedKafkaCluster(1, brokerProperties);
+            kafka = new EmbeddedKafkaCluster(1, props);
 
             kafka.start();
         }

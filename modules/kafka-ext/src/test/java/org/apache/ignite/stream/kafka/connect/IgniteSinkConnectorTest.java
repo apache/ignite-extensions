@@ -226,7 +226,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * @return Map of key value messages.
      */
     private Map<String, String> produceStream(String topic, boolean keyless) {
-        List<ProducerRecord<String, String>> messages = new ArrayList<>(EVENT_CNT);
+        List<ProducerRecord<String, String>> msgs = new ArrayList<>(EVENT_CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -239,7 +239,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
             String msg = topic + ":" + String.valueOf(evt) + "_" + runtime;
 
-            messages.add(new ProducerRecord<>(topic, key, msg));
+            msgs.add(new ProducerRecord<>(topic, key, msg));
 
             if (!keyless)
                 keyValMap.put(key, msg);
@@ -247,7 +247,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
                 keyValMap.put(topic + ":" + String.valueOf(evt), String.valueOf(runtime));
         }
 
-        kafkaBroker.sendMessages(messages);
+        kafkaBroker.sendMessages(msgs);
 
         return keyValMap;
     }

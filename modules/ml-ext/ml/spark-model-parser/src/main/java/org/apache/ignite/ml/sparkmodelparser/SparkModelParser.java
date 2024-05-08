@@ -481,8 +481,8 @@ public class SparkModelParser {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
 
-                    final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
-                    NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
+                    final SimpleGroup nodeDataGrp = (SimpleGroup)g.getGroup(1, 0);
+                    NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGrp);
 
                     if (nodesByTreeId.containsKey(treeID)) {
                         Map<Integer, NodeData> nodesByNodeId = nodesByTreeId.get(treeID);
@@ -545,9 +545,9 @@ public class SparkModelParser {
                 for (int i = 0; i < rows; i++) {
                     final SimpleGroup g = (SimpleGroup)recordReader.read();
                     final int treeID = g.getInteger(0, 0);
-                    final SimpleGroup nodeDataGroup = (SimpleGroup)g.getGroup(1, 0);
+                    final SimpleGroup nodeDataGrp = (SimpleGroup)g.getGroup(1, 0);
 
-                    NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGroup);
+                    NodeData nodeData = extractNodeDataFromParquetRow(nodeDataGrp);
 
                     if (nodesByTreeId.containsKey(treeID)) {
                         Map<Integer, NodeData> nodesByNodeId = nodesByTreeId.get(treeID);
@@ -783,14 +783,14 @@ public class SparkModelParser {
      */
     private static Vector readSVMCoefficients(SimpleGroup g) {
         Vector coefficients;
-        Group coeffGroup = g.getGroup(0, 0).getGroup(3, 0);
+        Group coeffGrp = g.getGroup(0, 0).getGroup(3, 0);
 
-        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+        final int amountOfCoefficients = coeffGrp.getFieldRepetitionCount(0);
 
         coefficients = new DenseVector(amountOfCoefficients);
 
         for (int j = 0; j < amountOfCoefficients; j++) {
-            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            double coefficient = coeffGrp.getGroup(0, j).getDouble(0, 0);
             coefficients.set(j, coefficient);
         }
         return coefficients;
@@ -813,14 +813,14 @@ public class SparkModelParser {
      */
     private static Vector readLinRegCoefficients(SimpleGroup g) {
         Vector coefficients;
-        Group coeffGroup = g.getGroup(1, 0).getGroup(3, 0);
+        Group coeffGrp = g.getGroup(1, 0).getGroup(3, 0);
 
-        final int amountOfCoefficients = coeffGroup.getFieldRepetitionCount(0);
+        final int amountOfCoefficients = coeffGrp.getFieldRepetitionCount(0);
 
         coefficients = new DenseVector(amountOfCoefficients);
 
         for (int j = 0; j < amountOfCoefficients; j++) {
-            double coefficient = coeffGroup.getGroup(0, j).getDouble(0, 0);
+            double coefficient = coeffGrp.getGroup(0, j).getDouble(0, 0);
             coefficients.set(j, coefficient);
         }
         return coefficients;

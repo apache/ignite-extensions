@@ -56,18 +56,18 @@ public class SharedRDDExample {
             .set("spark.executor.instances", "2");
 
         // Spark context.
-        JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
+        JavaSparkContext sparkCtx = new JavaSparkContext(sparkConf);
 
         // Adjust the logger to exclude the logs of no interest.
         Configurator.setRootLevel(Level.ERROR);
         Configurator.setLevel("org.apache.ignite", Level.INFO);
 
         // Creates Ignite context with specific configuration and runs Ignite in the embedded mode.
-        JavaIgniteContext<Integer, Integer> igniteContext = new JavaIgniteContext<Integer, Integer>(
-            sparkContext, "config/spark/example-shared-rdd.xml", false);
+        JavaIgniteContext<Integer, Integer> igniteCtx = new JavaIgniteContext<Integer, Integer>(
+            sparkCtx, "config/spark/example-shared-rdd.xml", false);
 
         // Create a Java Ignite RDD of Type (Int,Int) Integer Pair.
-        JavaIgniteRDD<Integer, Integer> sharedRDD = igniteContext.<Integer, Integer>fromCache("sharedRDD");
+        JavaIgniteRDD<Integer, Integer> sharedRDD = igniteCtx.<Integer, Integer>fromCache("sharedRDD");
 
         // Define data to be stored in the Ignite RDD (cache).
         List<Integer> data = new ArrayList<>(20);
@@ -77,7 +77,7 @@ public class SharedRDDExample {
         }
 
         // Preparing a Java RDD.
-        JavaRDD<Integer> javaRDD = sparkContext.<Integer>parallelize(data);
+        JavaRDD<Integer> javaRDD = sparkCtx.<Integer>parallelize(data);
 
         // Fill the Ignite RDD in with Int pairs. Here Pairs are represented as Scala Tuple2.
         sharedRDD.savePairs(javaRDD.<Integer, Integer>mapToPair(new PairFunction<Integer, Integer, Integer>() {
@@ -121,6 +121,6 @@ public class SharedRDDExample {
         df.show();
 
         // Close IgniteContext on all the workers.
-        igniteContext.close(true);
+        igniteCtx.close(true);
     }
 }

@@ -163,15 +163,15 @@ public class Blas implements Serializable {
         double av;
         double[] uData = u.getStorage().data();
 
-        for (Integer nonDefaultInd : v.indexes()) {
-            startInd += (nonDefaultInd - prevNonDfltInd) * (nonDefaultInd + prevNonDfltInd + 1) / 2;
-            av = alpha * v.get(nonDefaultInd);
+        for (Integer nonDflt : v.indexes()) {
+            startInd += (nonDflt - prevNonDfltInd) * (nonDflt + prevNonDfltInd + 1) / 2;
+            av = alpha * v.get(nonDflt);
 
             for (Integer i : v.indexes())
-                if (i <= nonDefaultInd)
+                if (i <= nonDflt)
                     uData[startInd + i] += av * v.getX(i);
 
-            prevNonDfltInd = nonDefaultInd;
+            prevNonDfltInd = nonDflt;
         }
     }
 

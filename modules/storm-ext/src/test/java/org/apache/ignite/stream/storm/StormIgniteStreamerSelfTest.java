@@ -126,7 +126,7 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
                     builder.setSpout("test-spout", testStormSpout);
                     builder.setBolt("ignite-bolt", stormStreamer, STORM_EXECUTORS).shuffleGrouping("test-spout");
 
-                    StormTopology topology = builder.createTopology();
+                    StormTopology top = builder.createTopology();
 
                     // Prepares a mock data for the spout.
                     MockedSources mockedSources = new MockedSources();
@@ -140,16 +140,16 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     IgniteCache<Integer, String> cache = ignite.cache(TEST_CACHE);
 
-                    CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
+                    CompleteTopologyParam completeTopParam = new CompleteTopologyParam();
 
-                    completeTopologyParam.setTimeoutMs(10000);
-                    completeTopologyParam.setMockedSources(mockedSources);
-                    completeTopologyParam.setStormConf(conf);
+                    completeTopParam.setTimeoutMs(10000);
+                    completeTopParam.setMockedSources(mockedSources);
+                    completeTopParam.setStormConf(conf);
 
                     // Checks the cache doesn't contain any entries yet.
                     assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
-                    Testing.completeTopology(cluster, topology, completeTopologyParam);
+                    Testing.completeTopology(cluster, top, completeTopParam);
 
                     // Checks events successfully processed in 20 seconds.
                     assertTrue(latch.await(10, TimeUnit.SECONDS));

@@ -182,7 +182,7 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         initComputeService();
 
-        Collection<InetSocketAddress> addresses = new LinkedList<>();
+        Collection<InetSocketAddress> addrs = new LinkedList<>();
 
         try {
             Set<NodeMetadata> nodes;
@@ -201,17 +201,17 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
                     continue;
 
                 for (String addr : metadata.getPrivateAddresses())
-                    addresses.add(new InetSocketAddress(addr, 0));
+                    addrs.add(new InetSocketAddress(addr, 0));
 
                 for (String addr : metadata.getPublicAddresses())
-                    addresses.add(new InetSocketAddress(addr, 0));
+                    addrs.add(new InetSocketAddress(addr, 0));
             }
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to get registered addresses for the provider: " + provider, e);
         }
 
-        return addresses;
+        return addrs;
     }
 
     /** {@inheritDoc} */
@@ -357,17 +357,17 @@ public class TcpDiscoveryCloudIpFinder extends TcpDiscoveryIpFinderAdapter {
 
                     ctxBuilder.credentials(identity, credential);
 
-                    Properties properties = new Properties();
-                    properties.setProperty(Constants.PROPERTY_SO_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
-                    properties.setProperty(Constants.PROPERTY_CONNECTION_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
+                    Properties props = new Properties();
+                    props.setProperty(Constants.PROPERTY_SO_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
+                    props.setProperty(Constants.PROPERTY_CONNECTION_TIMEOUT, JCLOUD_CONNECTION_TIMEOUT);
 
                     if (!F.isEmpty(regions))
-                        properties.setProperty(LocationConstants.PROPERTY_REGIONS, keysSetToStr(regions));
+                        props.setProperty(LocationConstants.PROPERTY_REGIONS, keysSetToStr(regions));
 
                     if (!F.isEmpty(zones))
-                        properties.setProperty(LocationConstants.PROPERTY_ZONES, keysSetToStr(zones));
+                        props.setProperty(LocationConstants.PROPERTY_ZONES, keysSetToStr(zones));
 
-                    ctxBuilder.overrides(properties);
+                    ctxBuilder.overrides(props);
 
                     computeService = ctxBuilder.buildView(ComputeServiceContext.class).getComputeService();
 

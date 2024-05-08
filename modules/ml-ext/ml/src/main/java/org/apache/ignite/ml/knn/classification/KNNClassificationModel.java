@@ -66,9 +66,9 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @return Label with max votes for it.
      */
     private Double election(List<LabeledVector<Double>> neighbours, Vector pnt) {
-        Collection<GroupedNeighbours> groups = groupByLabel(neighbours);
+        Collection<GroupedNeighbours> grps = groupByLabel(neighbours);
 
-        return election(groups, pnt);
+        return election(grps, pnt);
     }
 
     /**
@@ -119,21 +119,21 @@ public class KNNClassificationModel extends KNNModel<Double> {
      * @return Collection of grouped neighbours (each group contains neighbours with the same label).
      */
     private Collection<GroupedNeighbours> groupByLabel(List<LabeledVector<Double>> neighbours) {
-        Map<Double, GroupedNeighbours> groups = new HashMap<>();
+        Map<Double, GroupedNeighbours> grps = new HashMap<>();
 
         for (LabeledVector<Double> neighbour : neighbours) {
             double lb = neighbour.label();
 
-            GroupedNeighbours groupedNeighbours = groups.get(lb);
+            GroupedNeighbours groupedNeighbours = grps.get(lb);
             if (groupedNeighbours == null) {
                 groupedNeighbours = new GroupedNeighbours(lb);
-                groups.put(lb, groupedNeighbours);
+                grps.put(lb, groupedNeighbours);
             }
 
             groupedNeighbours.addNeighbour(neighbour.features());
         }
 
-        return Collections.unmodifiableCollection(groups.values());
+        return Collections.unmodifiableCollection(grps.values());
     }
 
     /**

@@ -37,10 +37,10 @@ public class TestEventTransformer implements EventTransformer<Event, String, Int
     private Map<String, Integer> transform(Event event) {
         final Map<String, Integer> map = new HashMap<>();
 
-        String eventStr = new String(event.getBody());
+        String evtStr = new String(event.getBody());
 
-        if (!eventStr.isEmpty()) {
-            String[] tokens = eventStr.split(":"); // Expects column-delimited one line.
+        if (!evtStr.isEmpty()) {
+            String[] tokens = evtStr.split(":"); // Expects column-delimited one line.
 
             map.put(tokens[0].trim(), Integer.valueOf(tokens[1].trim()));
         }
@@ -57,8 +57,8 @@ public class TestEventTransformer implements EventTransformer<Event, String, Int
     @Nullable @Override public Map<String, Integer> transform(List<Event> events) {
         final Map<String, Integer> map = new HashMap<>();
 
-        for (Event event : events) {
-            map.putAll(transform(event));
+        for (Event evt : events) {
+            map.putAll(transform(evt));
         }
 
         return map;

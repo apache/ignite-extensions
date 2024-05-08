@@ -137,8 +137,8 @@ public class IgniteExamplesMLTestSuite {
             dirs.add(new File(resources.nextElement().getFile()));
 
         List<Class> classes = new ArrayList<>();
-        for (File directory : dirs)
-            classes.addAll(findClasses(directory, pkgName, clsNamePtrn));
+        for (File dir : dirs)
+            classes.addAll(findClasses(dir, pkgName, clsNamePtrn));
 
         return classes;
     }

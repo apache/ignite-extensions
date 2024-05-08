@@ -436,8 +436,8 @@ public class IgniteIndexedSessionRepositoryTest {
         ses.setAttribute("attribute1", "value1");
         ses.setAttribute("attribute2", "value2");
 
-        for (String attributeName : ses.getAttributeNames())
-            ses.removeAttribute(attributeName);
+        for (String attrName : ses.getAttributeNames())
+            ses.removeAttribute(attrName);
 
         assertThat(ses.getAttributeNames()).isEmpty();
     }

@@ -320,26 +320,26 @@ public class IgniteSchedulerSelfTest {
      */
     @Test
     public void testIgniteFramework() throws Exception {
-        final String mesosUserValue = "userAAAAA";
-        final String mesosRoleValue = "role1";
+        final String mesosUserVal = "userAAAAA";
+        final String mesosRoleVal = "role1";
 
         IgniteFramework igniteFramework = new IgniteFramework() {
             @Override protected String getUser() {
-                return mesosUserValue;
+                return mesosUserVal;
             }
 
             @Override protected String getRole() {
-                return mesosRoleValue;
+                return mesosRoleVal;
             }
         };
 
         Protos.FrameworkInfo info = igniteFramework.getFrameworkInfo();
 
-        String actualUserValue = info.getUser();
-        String actualRoleValue = info.getRole();
+        String actualUserVal = info.getUser();
+        String actualRoleVal = info.getRole();
 
-        assertEquals(actualUserValue, mesosUserValue);
-        assertEquals(actualRoleValue, mesosRoleValue);
+        assertEquals(actualUserVal, mesosUserVal);
+        assertEquals(actualRoleVal, mesosRoleVal);
     }
 
     /**
@@ -350,8 +350,8 @@ public class IgniteSchedulerSelfTest {
         List<String> failedRoleValues = Arrays.asList("", ".", "..", "-testRole",
             "test/Role", "test\\Role", "test Role", null);
 
-        for (String failedRoleValue : failedRoleValues)
-            assertFalse(IgniteFramework.isRoleValid(failedRoleValue));
+        for (String failedRoleVal : failedRoleValues)
+            assertFalse(IgniteFramework.isRoleValid(failedRoleVal));
     }
 
     /**
@@ -359,9 +359,9 @@ public class IgniteSchedulerSelfTest {
      * @return Value.
      */
     private Double resources(List<Protos.Resource> resources, String resourceType) {
-        for (Protos.Resource resource : resources) {
-            if (resource.getName().equals(resourceType))
-                return resource.getScalar().getValue();
+        for (Protos.Resource rsrc : resources) {
+            if (rsrc.getName().equals(resourceType))
+                return rsrc.getScalar().getValue();
         }
 
         return null;
