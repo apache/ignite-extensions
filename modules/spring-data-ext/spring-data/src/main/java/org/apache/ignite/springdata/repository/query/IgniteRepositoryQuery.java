@@ -379,7 +379,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
             if (DynamicQueryConfig.class.isAssignableFrom(param.getType())) {
                 if (found) {
                     throw new IllegalStateException("Invalid '" + method.getName() + "' repository method signature. "
-                        + "Only ONE DynamicQueryConfig param is allowed");
+                        + "Only ONE DynamicQueryConfig parameter is allowed");
                 }
 
                 found = true;
