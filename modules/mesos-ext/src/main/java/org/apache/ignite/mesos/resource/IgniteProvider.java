@@ -119,13 +119,13 @@ public class IgniteProvider {
      * @throws IOException If failed.
      */
     private String findMirror() throws IOException {
-        String response = getHttpContents(new URL(APACHE_MIRROR_URL));
+        String res = getHttpContents(new URL(APACHE_MIRROR_URL));
 
-        if (response == null)
+        if (res == null)
             throw new RuntimeException("Failed to retrieve mirrors");
 
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode mirrorUrl = mapper.readTree(response).get("preferred");
+        JsonNode mirrorUrl = mapper.readTree(res).get("preferred");
 
         if (mirrorUrl == null)
             throw new RuntimeException("Failed to find the preferred mirror");
@@ -140,12 +140,12 @@ public class IgniteProvider {
      * @throws IOException If failed.
      */
     private String findLatestVersion() throws IOException {
-        String response = getHttpContents(new URL(IGNITE_LATEST_VERSION_URL));
+        String res = getHttpContents(new URL(IGNITE_LATEST_VERSION_URL));
 
-        if (response == null)
+        if (res == null)
             throw new RuntimeException("Failed to identify the latest version. Specify it with " + IGNITE_VERSION);
 
-        Matcher m = VERSION_PATTERN.matcher(response);
+        Matcher m = VERSION_PATTERN.matcher(res);
         if (m.find())
             return m.group();
         else

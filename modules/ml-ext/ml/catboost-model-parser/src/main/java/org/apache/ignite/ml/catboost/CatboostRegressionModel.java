@@ -46,10 +46,10 @@ public class CatboostRegressionModel implements Model<NamedVector, Double> {
     /** {@inheritDoc} */
     @Override public Double predict(NamedVector input) {
         float[] floatInput = new float[input.size()];
-        int index = 0;
+        int idx = 0;
         for (String key: model.getFeatureNames()) {
-            floatInput[index] = (float)input.get(key);
-            index++;
+            floatInput[idx] = (float)input.get(key);
+            idx++;
         }
 
         try {

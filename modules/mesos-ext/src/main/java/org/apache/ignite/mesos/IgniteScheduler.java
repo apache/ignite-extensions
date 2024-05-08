@@ -240,24 +240,24 @@ public class IgniteScheduler implements Scheduler {
             return null;
 
         // Collect resource on slave.
-        for (Protos.Resource resource : offer.getResourcesList()) {
-            if (resource.getName().equals(CPU)) {
-                if (resource.getType().equals(Protos.Value.Type.SCALAR))
-                    cpus = resource.getScalar().getValue();
+        for (Protos.Resource rsrc : offer.getResourcesList()) {
+            if (rsrc.getName().equals(CPU)) {
+                if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
+                    cpus = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Cpus resource was not a scalar: {0}" + resource.getType());
+                    log.log(Level.FINE, "Cpus resource was not a scalar: {0}" + rsrc.getType());
             }
-            else if (resource.getName().equals(MEM)) {
-                if (resource.getType().equals(Protos.Value.Type.SCALAR))
-                    mem = resource.getScalar().getValue();
+            else if (rsrc.getName().equals(MEM)) {
+                if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
+                    mem = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Mem resource was not a scalar: {0}", resource.getType());
+                    log.log(Level.FINE, "Mem resource was not a scalar: {0}", rsrc.getType());
             }
-            else if (resource.getName().equals(DISK))
-                if (resource.getType().equals(Protos.Value.Type.SCALAR))
-                    disk = resource.getScalar().getValue();
+            else if (rsrc.getName().equals(DISK))
+                if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
+                    disk = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Disk resource was not a scalar: {0}", resource.getType());
+                    log.log(Level.FINE, "Disk resource was not a scalar: {0}", rsrc.getType());
         }
 
         // Check that slave satisfies min requirements.
@@ -315,7 +315,7 @@ public class IgniteScheduler implements Scheduler {
             if (failedTask != null) {
                 List<Protos.Request> requests = new ArrayList<>();
 
-                Protos.Request request = Protos.Request.newBuilder()
+                Protos.Request req = Protos.Request.newBuilder()
                     .addResources(Protos.Resource.newBuilder()
                         .setType(Protos.Value.Type.SCALAR)
                         .setName(MEM)
@@ -326,7 +326,7 @@ public class IgniteScheduler implements Scheduler {
                         .setScalar(Protos.Value.Scalar.newBuilder().setValue(failedTask.cpuCores())))
                     .build();
 
-                requests.add(request);
+                requests.add(req);
 
                 schedulerDriver.requestResources(requests);
             }

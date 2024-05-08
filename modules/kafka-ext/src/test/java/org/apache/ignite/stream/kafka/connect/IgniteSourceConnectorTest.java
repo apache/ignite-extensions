@@ -338,7 +338,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * @return Worker configurations.
      * @throws IOException If failed.
      */
-    private Map<String, String> makeWorkerProps(){
+    private Map<String, String> makeWorkerProps() {
         Map<String, String> props = new HashMap<>();
 
         props.put("internal.key.converter.schemas.enable", "false");

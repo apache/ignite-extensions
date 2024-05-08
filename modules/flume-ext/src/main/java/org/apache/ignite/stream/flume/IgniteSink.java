@@ -140,21 +140,21 @@ public class IgniteSink extends AbstractSink implements Configurable {
 
         Transaction transaction = channel.getTransaction();
 
-        int eventCount = 0;
+        int evtCnt = 0;
 
         try {
             transaction.begin();
 
             List<Event> batch = new ArrayList<>(batchSize);
 
-            for (; eventCount < batchSize; ++eventCount) {
-                Event event = channel.take();
+            for (; evtCnt < batchSize; ++evtCnt) {
+                Event evt = channel.take();
 
-                if (event == null) {
+                if (evt == null) {
                     break;
                 }
 
-                batch.add(event);
+                batch.add(evt);
             }
 
             if (!batch.isEmpty()) {
@@ -191,6 +191,6 @@ public class IgniteSink extends AbstractSink implements Configurable {
             transaction.close();
         }
 
-        return eventCount == 0 ? Status.BACKOFF : Status.READY;
+        return evtCnt == 0 ? Status.BACKOFF : Status.READY;
     }
 }

@@ -57,14 +57,14 @@ public class IgniteSinkTest extends GridCommonAbstractTest {
 
         final Ignite grid = startGrid("igniteServerNode", cfg);
 
-        Context channelContext = new Context();
+        Context channelCtx = new Context();
 
-        channelContext.put("capacity", String.valueOf(EVENT_CNT));
-        channelContext.put("transactionCapacity", String.valueOf(EVENT_CNT));
+        channelCtx.put("capacity", String.valueOf(EVENT_CNT));
+        channelCtx.put("transactionCapacity", String.valueOf(EVENT_CNT));
 
         Channel memoryChannel = new MemoryChannel();
 
-        Configurables.configure(memoryChannel, channelContext);
+        Configurables.configure(memoryChannel, channelCtx);
 
         final CountDownLatch latch = new CountDownLatch(EVENT_CNT);
 

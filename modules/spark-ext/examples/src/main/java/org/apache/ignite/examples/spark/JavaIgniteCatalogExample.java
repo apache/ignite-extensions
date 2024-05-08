@@ -51,7 +51,7 @@ public class JavaIgniteCatalogExample {
         setupServerAndData();
 
         //Creating Ignite-specific implementation of Spark session.
-        IgniteSparkSession igniteSession = IgniteSparkSession.builder()
+        IgniteSparkSession igniteSes = IgniteSparkSession.builder()
                 .appName("Spark Ignite catalog example")
                 .master("local")
                 .config("spark.executor.instances", "2")
@@ -65,22 +65,22 @@ public class JavaIgniteCatalogExample {
         System.out.println("List of available tables:");
 
         //Showing existing tables.
-        igniteSession.catalog().listTables().show();
+        igniteSes.catalog().listTables().show();
 
         System.out.println("PERSON table description:");
 
         //Showing `person` schema.
-        igniteSession.catalog().listColumns("person").show();
+        igniteSes.catalog().listColumns("person").show();
 
         System.out.println("CITY table description:");
 
         //Showing `city` schema.
-        igniteSession.catalog().listColumns("city").show();
+        igniteSes.catalog().listColumns("city").show();
 
         println("Querying all persons from city with ID=2.");
 
         //Selecting data through Spark SQL engine.
-        Dataset<Row> df = igniteSession.sql("SELECT * FROM person WHERE CITY_ID = 2");
+        Dataset<Row> df = igniteSes.sql("SELECT * FROM person WHERE CITY_ID = 2");
 
         System.out.println("Result schema:");
 
@@ -93,7 +93,7 @@ public class JavaIgniteCatalogExample {
         System.out.println("Querying all persons living in Denver.");
 
         //Selecting data through Spark SQL engine.
-        Dataset<Row> df2 = igniteSession.sql("SELECT * FROM person p JOIN city c ON c.ID = p.CITY_ID WHERE c.NAME = 'Denver'");
+        Dataset<Row> df2 = igniteSes.sql("SELECT * FROM person p JOIN city c ON c.ID = p.CITY_ID WHERE c.NAME = 'Denver'");
 
         System.out.println("Result schema:");
 

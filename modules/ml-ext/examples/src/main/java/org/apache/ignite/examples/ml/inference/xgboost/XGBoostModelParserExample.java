@@ -91,8 +91,8 @@ public class XGBoostModelParserExample {
 
                     HashMap<String, Double> testObj = new HashMap<>();
 
-                    for (String keyValueString : testDataStr.split(" ")) {
-                        String[] keyVal = keyValueString.split(":");
+                    for (String keyValStr : testDataStr.split(" ")) {
+                        String[] keyVal = keyValStr.split(":");
 
                         if (keyVal.length == 2)
                             testObj.put("f" + keyVal[0], Double.parseDouble(keyVal[1]));

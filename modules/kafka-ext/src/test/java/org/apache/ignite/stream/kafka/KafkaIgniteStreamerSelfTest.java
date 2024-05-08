@@ -130,7 +130,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         Collections.shuffle(subnet);
 
-        List<ProducerRecord<String, String>> messages = new ArrayList<>(CNT);
+        List<ProducerRecord<String, String>> msgs = new ArrayList<>(CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -141,12 +141,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             String msg = runtime + VALUE_URL + ip;
 
-            messages.add(new ProducerRecord<>(topic, ip, msg));
+            msgs.add(new ProducerRecord<>(topic, ip, msg));
 
             keyValMap.put(ip, msg);
         }
 
-        embeddedBroker.sendMessages(messages);
+        embeddedBroker.sendMessages(msgs);
 
         return keyValMap;
     }

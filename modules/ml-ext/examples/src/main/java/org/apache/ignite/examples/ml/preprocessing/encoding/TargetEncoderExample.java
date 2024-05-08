@@ -70,10 +70,10 @@ public class TargetEncoderExample {
 
                 Set<Integer> featuresIndexies = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
                 Set<Integer> targetEncodedfeaturesIndexies = new HashSet<>(Arrays.asList(1, 5, 6));
-                Integer targetIndex = 0;
+                Integer targetIdx = 0;
 
                 final Vectorizer<Integer, Object[], Integer, Object> vectorizer =
-                    new ObjectArrayVectorizer<Integer>(featuresIndexies.toArray(new Integer[0])).labeled(targetIndex);
+                    new ObjectArrayVectorizer<Integer>(featuresIndexies.toArray(new Integer[0])).labeled(targetIdx);
 
                 Preprocessor<Integer, Object[]> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
@@ -84,7 +84,7 @@ public class TargetEncoderExample {
                         vectorizer
                     );
 
-                Preprocessor<Integer, Object[]> targetEncoderProcessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Object[]> targetEncoderProc = new EncoderTrainer<Integer, Object[]>()
                     .withEncoderType(EncoderType.TARGET_ENCODER)
                     .labeled(0)
                     .withEncodedFeatures(targetEncodedfeaturesIndexies)
@@ -100,7 +100,7 @@ public class TargetEncoderExample {
                     .withEncoderType(EncoderType.LABEL_ENCODER)
                     .fit(ignite,
                         dataCache,
-                        targetEncoderProcessor
+                        targetEncoderProc
                     );
 
                 GDBTrainer trainer = new GDBBinaryClassifierOnTreesTrainer(0.5, 500, 4, 0.)

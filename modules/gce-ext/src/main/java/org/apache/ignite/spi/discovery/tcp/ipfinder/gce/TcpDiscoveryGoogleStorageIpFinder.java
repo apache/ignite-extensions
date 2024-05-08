@@ -126,8 +126,8 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
                 if (objects == null || objects.getItems() == null)
                     break;
 
-                for (StorageObject object : objects.getItems())
-                    addrs.add(addrFromString(object.getName()));
+                for (StorageObject obj : objects.getItems())
+                    addrs.add(addrFromString(obj.getName()));
 
                 listObjects.setPageToken(objects.getNextPageToken());
             }
@@ -149,19 +149,19 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
         for (InetSocketAddress addr : addrs) {
             String key = keyFromAddr(addr);
 
-            StorageObject object = new StorageObject();
+            StorageObject obj = new StorageObject();
 
-            object.setBucket(bucketName);
-            object.setName(key);
+            obj.setBucket(bucketName);
+            obj.setName(key);
 
             InputStreamContent content = new InputStreamContent("application/octet-stream", OBJECT_CONTENT);
 
             content.setLength(OBJECT_CONTENT.available());
 
             try {
-                Storage.Objects.Insert insertObject = storage.objects().insert(bucketName, object, content);
+                Storage.Objects.Insert insertObj = storage.objects().insert(bucketName, obj, content);
 
-                insertObject.execute();
+                insertObj.execute();
             }
             catch (Exception e) {
                 throw new IgniteSpiException("Failed to put entry [bucketName=" + bucketName +
@@ -180,9 +180,9 @@ public class TcpDiscoveryGoogleStorageIpFinder extends TcpDiscoveryIpFinderAdapt
             String key = keyFromAddr(addr);
 
             try {
-                Storage.Objects.Delete deleteObject = storage.objects().delete(bucketName, key);
+                Storage.Objects.Delete deleteObj = storage.objects().delete(bucketName, key);
 
-                deleteObject.execute();
+                deleteObj.execute();
             }
             catch (Exception e) {
                 throw new IgniteSpiException("Failed to delete entry [bucketName=" + bucketName +

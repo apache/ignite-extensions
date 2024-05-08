@@ -96,19 +96,19 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
         ctx = ZMQ.context(ioThreads);
 
         zeroMqExSrv.execute(() -> {
-            ZMQ.Socket socket = ctx.socket(socketType);
-            socket.connect(addr);
+            ZMQ.Socket sock = ctx.socket(socketType);
+            sock.connect(addr);
 
             if (ZeroMqTypeSocket.SUB.getType() == socketType)
-                socket.subscribe(topic);
+                sock.subscribe(topic);
 
             while (isStarted) {
                 try {
-                    byte[] msg = socket.recv(0);
+                    byte[] msg = sock.recv(0);
 
                     if (ZeroMqTypeSocket.SUB.getType() == socketType) {
-                        if (socket.hasReceiveMore()) {
-                            addMessage(socket.recv(0));
+                        if (sock.hasReceiveMore()) {
+                            addMessage(sock.recv(0));
                             continue;
                         }
                     }
@@ -122,7 +122,7 @@ public class IgniteZeroMqStreamer<K, V> extends StreamAdapter<byte[], K, V> impl
                 }
             }
 
-            socket.close();
+            sock.close();
         });
     }
 

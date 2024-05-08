@@ -51,10 +51,10 @@ public class TaskRemoteFilter implements IgnitePredicate<CacheEvent> {
 
     /** {@inheritDoc} */
     @Override public boolean apply(CacheEvent evt) {
-        Affinity<Object> affinity = ignite.affinity(cacheName);
+        Affinity<Object> aff = ignite.affinity(cacheName);
 
         // Process this event. Ignored on backups.
-        return affinity.isPrimary(ignite.cluster().localNode(), evt.key()) &&
+        return aff.isPrimary(ignite.cluster().localNode(), evt.key()) &&
                 (filter == null || filter.apply(evt));
     }
 }

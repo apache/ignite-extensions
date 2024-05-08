@@ -155,10 +155,10 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         // Last element.
         int testId = CACHE_ENTRY_COUNT - 1;
 
-        String cachedValue = cache.get(testId);
+        String cachedVal = cache.get(testId);
 
         // ZeroMQ message successfully put to cache.
-        assertTrue(cachedValue != null && cachedValue.endsWith(String.valueOf(testId)));
+        assertTrue(cachedVal != null && cachedVal.endsWith(String.valueOf(testId)));
 
         assertTrue(cache.size() == CACHE_ENTRY_COUNT);
 

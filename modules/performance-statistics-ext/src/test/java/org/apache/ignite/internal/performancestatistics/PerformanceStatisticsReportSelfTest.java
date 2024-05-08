@@ -126,11 +126,11 @@ public class PerformanceStatisticsReportSelfTest {
 
             File report = reportDir[0];
 
-            File index = new File(report.getAbsolutePath() + File.separatorChar + "index.html");
+            File idx = new File(report.getAbsolutePath() + File.separatorChar + "index.html");
             File dataDir = new File(report.getAbsolutePath() + File.separatorChar + "data");
             File dataJs = new File(dataDir.getAbsolutePath() + File.separatorChar + "data.json.js");
 
-            assertTrue(index.exists());
+            assertTrue(idx.exists());
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
         }
