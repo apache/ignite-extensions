@@ -245,19 +245,19 @@ public class IgniteScheduler implements Scheduler {
                 if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
                     cpus = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Cpus rsrc was not a scalar: {0}" + rsrc.getType());
+                    log.log(Level.FINE, "Cpus resource was not a scalar: {0}" + rsrc.getType());
             }
             else if (rsrc.getName().equals(MEM)) {
                 if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
                     mem = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Mem rsrc was not a scalar: {0}", rsrc.getType());
+                    log.log(Level.FINE, "Mem resource was not a scalar: {0}", rsrc.getType());
             }
             else if (rsrc.getName().equals(DISK))
                 if (rsrc.getType().equals(Protos.Value.Type.SCALAR))
                     disk = rsrc.getScalar().getValue();
                 else
-                    log.log(Level.FINE, "Disk rsrc was not a scalar: {0}", rsrc.getType());
+                    log.log(Level.FINE, "Disk resource was not a scalar: {0}", rsrc.getType());
         }
 
         // Check that slave satisfies min requirements.
