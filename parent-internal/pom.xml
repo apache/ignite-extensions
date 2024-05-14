@@ -246,7 +246,7 @@
                                 --add-opens=java.sql/java.sql=ALL-UNNAMED
                                 --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
                                 --add-opens=java.base/java.text=ALL-UNNAMED
-                                --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>
@@ -281,7 +281,7 @@
                                 <jvmArg>--add-opens=java.sql/java.sql=ALL-UNNAMED</jvmArg>
                                 <jvmArg>--add-opens=java.base/java.lang.reflect=ALL-UNNAMED</jvmArg>
                                 <jvmArg>--add-opens=java.base/java.text=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens java.desktop/java.awt.font=ALL-UNNAMED</jvmArg>
+                                <jvmArg>--add-opens=java.desktop/java.awt.font=ALL-UNNAMED</jvmArg>
                             </jvmArgs>
                         </configuration>
                     </plugin>
