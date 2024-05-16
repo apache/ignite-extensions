@@ -410,7 +410,7 @@ public class IgniteIndexedSessionRepository
             if (oldSes == null)
                 break;
 
-            updatedSes = new IgniteSession(oldSes.getDelegate(), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+            updatedSes = new IgniteSession(new MapSession(oldSes.getDelegate()), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
             copyChanges(updatedSes, ses);
 
             if (attempt > MAX_UPDATE_ATTEMPT) {
@@ -420,6 +420,6 @@ public class IgniteIndexedSessionRepository
                 ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), updatedSes);
                 break;
             }
-        } while (ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), oldSes, updatedSes));
+        } while (!ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), oldSes, updatedSes));
     }
 }
