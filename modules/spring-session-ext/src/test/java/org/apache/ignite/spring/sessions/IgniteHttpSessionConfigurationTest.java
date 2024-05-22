@@ -217,7 +217,7 @@ public class IgniteHttpSessionConfigurationTest {
     void multipleIgniteConfiguration() {
         assertThatExceptionOfType(BeanCreationException.class)
             .isThrownBy(() -> registerAndRefresh(MultipleIgniteConfiguration.class))
-            .withMessageContaining("expected single matching bean but found 2");
+            .withStackTraceContaining("expected single matching bean but found 2");
     }
 
     /** */
@@ -410,6 +410,7 @@ public class IgniteHttpSessionConfigurationTest {
 
         /** */
         @Bean
+        @Primary
         Ignite ignite() {
             return mockedIgnite(igniteSessions);
         }

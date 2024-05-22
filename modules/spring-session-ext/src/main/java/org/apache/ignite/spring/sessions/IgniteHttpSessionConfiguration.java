@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
@@ -79,6 +80,9 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     /** */
     private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sesRepoCustomizers;
 
+    /**  */
+    private Object connObj;
+
     /**
      * @return Session repository.
      */
@@ -134,7 +138,15 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         if (connObj == null)
             connObj = cli.getIfAvailable();
 
-        this.sessions = createSessionProxy(connObj);
+        this.connObj = connObj;
+    }
+
+    /**
+     * Init sessions.
+     */
+    @PostConstruct
+    public void initSessions() {
+        this.sessions = createSessionProxy(this.connObj);
     }
 
     /**

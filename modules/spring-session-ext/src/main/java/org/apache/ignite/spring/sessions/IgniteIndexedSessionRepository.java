@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryCreatedListener;
@@ -47,6 +47,8 @@ import org.springframework.session.MapSession;
 import org.springframework.session.PrincipalNameIndexResolver;
 import org.springframework.session.SaveMode;
 import org.springframework.session.Session;
+import org.springframework.session.SessionIdGenerator;
+import org.springframework.session.UuidSessionIdGenerator;
 import org.springframework.session.events.AbstractSessionEvent;
 import org.springframework.session.events.SessionCreatedEvent;
 import org.springframework.session.events.SessionDeletedEvent;
@@ -120,6 +122,9 @@ public class IgniteIndexedSessionRepository
 
     /** The index resolver. */
     private IndexResolver<Session> idxResolver = new DelegatingIndexResolver<>(new PrincipalNameIndexResolver<>());
+
+    /** Session id generator. */
+    private SessionIdGenerator sessionIdGenerator = UuidSessionIdGenerator.getInstance();
 
     /** Sessions cache proxy. */
     private final SessionProxy sessions;
@@ -216,6 +221,15 @@ public class IgniteIndexedSessionRepository
         this.saveMode = saveMode;
     }
 
+    /**
+     * Set session id generator.
+     * @param sesIdGenerator Session id generator.
+     */
+    public void setSessionIdGenerator(SessionIdGenerator sesIdGenerator) {
+        Assert.notNull(sesIdGenerator, "sessionIdGenerator cannot be null");
+        this.sessionIdGenerator = sesIdGenerator;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteSession createSession() {
         MapSession cached = new MapSession();
@@ -223,11 +237,15 @@ public class IgniteIndexedSessionRepository
         if (this.dfltMaxInactiveInterval != null)
             cached.setMaxInactiveInterval(Duration.ofSeconds(this.dfltMaxInactiveInterval));
 
+        cached.setSessionIdGenerator(this.sessionIdGenerator);
+
         return new IgniteSession(cached, idxResolver, true, saveMode, this::flushImmediateIfNecessary);
     }
 
     /** {@inheritDoc} */
     @Override public void save(IgniteSession ses) {
+        ses.getDelegate().setSessionIdGenerator(this.sessionIdGenerator);
+
         if (ses.isNew())
             ttlSessions(ses.getMaxInactiveInterval()).put(ses.getId(), ses);
         else {
@@ -263,7 +281,10 @@ public class IgniteIndexedSessionRepository
             return null;
         }
 
-        return new IgniteSession(saved.getDelegate(), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+        MapSession mapSession = saved.getDelegate();
+        mapSession.setSessionIdGenerator(this.sessionIdGenerator);
+
+        return new IgniteSession(mapSession, idxResolver, false, saveMode, this::flushImmediateIfNecessary);
     }
 
     /** {@inheritDoc} */
@@ -389,7 +410,7 @@ public class IgniteIndexedSessionRepository
             if (oldSes == null)
                 break;
 
-            updatedSes = new IgniteSession(oldSes.getDelegate(), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+            updatedSes = new IgniteSession(new MapSession(oldSes.getDelegate()), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
             copyChanges(updatedSes, ses);
 
             if (attempt > MAX_UPDATE_ATTEMPT) {
@@ -399,6 +420,6 @@ public class IgniteIndexedSessionRepository
                 ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), updatedSes);
                 break;
             }
-        } while (ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), oldSes, updatedSes));
+        } while (!ttlSessions(ses.getMaxInactiveInterval()).replace(ses.getId(), oldSes, updatedSes));
     }
 }
