@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import jakarta.annotation.PreDestroy;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryCreatedListener;
@@ -33,6 +32,7 @@ import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.expiry.TouchedExpiryPolicy;
+import jakarta.annotation.PreDestroy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -281,10 +281,10 @@ public class IgniteIndexedSessionRepository
             return null;
         }
 
-        MapSession mapSession = saved.getDelegate();
-        mapSession.setSessionIdGenerator(this.sessionIdGenerator);
+        MapSession mapSes = saved.getDelegate();
+        mapSes.setSessionIdGenerator(this.sessionIdGenerator);
 
-        return new IgniteSession(mapSession, idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+        return new IgniteSession(mapSes, idxResolver, false, saveMode, this::flushImmediateIfNecessary);
     }
 
     /** {@inheritDoc} */
@@ -410,7 +410,13 @@ public class IgniteIndexedSessionRepository
             if (oldSes == null)
                 break;
 
-            updatedSes = new IgniteSession(new MapSession(oldSes.getDelegate()), idxResolver, false, saveMode, this::flushImmediateIfNecessary);
+            updatedSes = new IgniteSession(
+                new MapSession(oldSes.getDelegate()),
+                idxResolver,
+                false,
+                saveMode,
+                this::flushImmediateIfNecessary
+            );
             copyChanges(updatedSes, ses);
 
             if (attempt > MAX_UPDATE_ATTEMPT) {
