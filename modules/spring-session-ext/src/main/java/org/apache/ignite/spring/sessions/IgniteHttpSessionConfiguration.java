@@ -42,6 +42,7 @@ import org.springframework.session.IndexResolver;
 import org.springframework.session.MapSession;
 import org.springframework.session.SaveMode;
 import org.springframework.session.Session;
+import org.springframework.session.SessionRepository;
 import org.springframework.session.config.SessionRepositoryCustomizer;
 import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
 import org.springframework.session.web.http.SessionRepositoryFilter;
@@ -152,7 +153,7 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
      * @return Session cache proxy.
      */
     @Bean
-    public SessionProxy createSessionProxy(
+    public SessionProxy sessionProxy(
         @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
         ObjectProvider<Ignite> igniteProvider,
         ObjectProvider<IgniteClient> igniteClientProvider
@@ -199,13 +200,13 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /**
-     * Create session repository.
+     * Session repository bean.
      *
      * @param sesProxy Session cache proxy.
      * @return Session repository.
      */
     @Bean
-    public IgniteIndexedSessionRepository createIgniteIndexedSessionRepository(SessionProxy sesProxy) {
+    public SessionRepository<?> sessionRepository(SessionProxy sesProxy) {
         IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(sesProxy);
         sesRepo.setApplicationEventPublisher(this.applicationEvtPublisher);
         if (this.idxResolver != null)
