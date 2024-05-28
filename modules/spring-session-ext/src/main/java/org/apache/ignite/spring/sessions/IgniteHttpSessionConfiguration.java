@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import jakarta.annotation.PostConstruct;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
@@ -69,9 +68,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
     /** */
-    private SessionProxy sessions;
-
-    /** */
     private ApplicationEventPublisher applicationEvtPublisher;
 
     /** */
@@ -84,11 +80,19 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private Object connObj;
 
     /**
+     * Init sessions.
+     */
+    @Bean
+    public SessionProxy initSessions() {
+        return createSessionProxy(this.connObj);
+    }
+
+    /**
      * @return Session repository.
      */
     @Bean
-    public SessionRepository<?> sessionRepository() {
-        return createIgniteIndexedSessionRepository();
+    public SessionRepository<?> sessionRepository(SessionProxy sesProxy) {
+        return createIgniteIndexedSessionRepository(sesProxy);
     }
 
     /**
@@ -139,14 +143,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
             connObj = cli.getIfAvailable();
 
         this.connObj = connObj;
-    }
-
-    /**
-     * Init sessions.
-     */
-    @PostConstruct
-    public void initSessions() {
-        this.sessions = createSessionProxy(this.connObj);
     }
 
     /**
@@ -225,8 +221,8 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     }
 
     /** */
-    private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository() {
-        IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(this.sessions);
+    private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository(SessionProxy sesProxy) {
+        IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(sesProxy);
         sesRepo.setApplicationEventPublisher(this.applicationEvtPublisher);
         if (this.idxResolver != null)
             sesRepo.setIndexResolver(this.idxResolver);
