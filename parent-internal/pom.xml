@@ -97,6 +97,27 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <configuration>
+                        <doclet>capital.scalable.restdocs.jsondoclet.ExtractDocumentationAsJsonDoclet</doclet>
+                        <docletArtifact>
+                            <groupId>capital.scalable</groupId>
+                            <artifactId>spring-auto-restdocs-json-doclet-jdk9</artifactId>
+                            <version>2.0.11</version>
+                        </docletArtifact>
+                        <destDir>generated-javadoc-json</destDir>
+                        <reportOutputDirectory>${basedir}${docDirectory}/report</reportOutputDirectory>
+                        <useStandardDocletOptions>false</useStandardDocletOptions>
+                        <show>package</show>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
