@@ -42,7 +42,6 @@ import org.springframework.session.IndexResolver;
 import org.springframework.session.MapSession;
 import org.springframework.session.SaveMode;
 import org.springframework.session.Session;
-import org.springframework.session.SessionRepository;
 import org.springframework.session.config.SessionRepositoryCustomizer;
 import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
 import org.springframework.session.web.http.SessionRepositoryFilter;
@@ -76,25 +75,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     /** */
     private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sesRepoCustomizers;
 
-    /**  */
-    private Object connObj;
-
-    /**
-     * Init sessions.
-     */
-    @Bean
-    public SessionProxy initSessions() {
-        return createSessionProxy(this.connObj);
-    }
-
-    /**
-     * @return Session repository.
-     */
-    @Bean
-    public SessionRepository<?> sessionRepository(SessionProxy sesProxy) {
-        return createIgniteIndexedSessionRepository(sesProxy);
-    }
-
     /**
      * @param maxInactiveIntervalInSeconds Maximum inactive interval in sec.
      */
@@ -121,28 +101,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
      */
     public void setSaveMode(SaveMode saveMode) {
         this.saveMode = saveMode;
-    }
-
-    /**
-     * @param springSesIgnite Ignite session.
-     * @param ignite Ignite instance provider.
-     * @param cli Ignite client instance provider.
-     */
-    @Autowired
-    public void setSessions(
-        @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
-        ObjectProvider<Ignite> ignite,
-        ObjectProvider<IgniteClient> cli
-    ) {
-        Object connObj = springSesIgnite.getIfAvailable();
-
-        if (connObj == null)
-            connObj = ignite.getIfAvailable();
-
-        if (connObj == null)
-            connObj = cli.getIfAvailable();
-
-        this.connObj = connObj;
     }
 
     /**
@@ -185,8 +143,28 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.saveMode = attrs.getEnum("saveMode");
     }
 
-    /** */
-    private SessionProxy createSessionProxy(Object connObj) {
+    /**
+     * Session cache proxy.
+     *
+     * @param springSesIgnite Ignite session.
+     * @param igniteProvider Ignite instance provider.
+     * @param igniteClientProvider Ignite client instance provider.
+     * @return Session cache proxy.
+     */
+    @Bean
+    public SessionProxy createSessionProxy(
+        @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
+        ObjectProvider<Ignite> igniteProvider,
+        ObjectProvider<IgniteClient> igniteClientProvider
+    ) {
+        Object connObj = springSesIgnite.getIfAvailable();
+
+        if (connObj == null)
+            connObj = igniteProvider.getIfAvailable();
+
+        if (connObj == null)
+            connObj = igniteClientProvider.getIfAvailable();
+
         List<SqlFieldsQuery> initQueries = Arrays.asList(
             new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS IgniteSession (" +
                 " id VARCHAR PRIMARY KEY," +
@@ -220,8 +198,14 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
             "Object " + connObj + " can not be used to connect to the Ignite cluster.");
     }
 
-    /** */
-    private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository(SessionProxy sesProxy) {
+    /**
+     * Create session repository.
+     *
+     * @param sesProxy Session cache proxy.
+     * @return Session repository.
+     */
+    @Bean
+    public IgniteIndexedSessionRepository createIgniteIndexedSessionRepository(SessionProxy sesProxy) {
         IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(sesProxy);
         sesRepo.setApplicationEventPublisher(this.applicationEvtPublisher);
         if (this.idxResolver != null)
