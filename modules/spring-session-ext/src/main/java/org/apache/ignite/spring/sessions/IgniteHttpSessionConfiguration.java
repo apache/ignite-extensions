@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import jakarta.annotation.PostConstruct;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
@@ -69,9 +68,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
     private SaveMode saveMode = SaveMode.ON_SET_ATTRIBUTE;
 
     /** */
-    private SessionProxy sessions;
-
-    /** */
     private ApplicationEventPublisher applicationEvtPublisher;
 
     /** */
@@ -79,17 +75,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
 
     /** */
     private List<SessionRepositoryCustomizer<IgniteIndexedSessionRepository>> sesRepoCustomizers;
-
-    /**  */
-    private Object connObj;
-
-    /**
-     * @return Session repository.
-     */
-    @Bean
-    public SessionRepository<?> sessionRepository() {
-        return createIgniteIndexedSessionRepository();
-    }
 
     /**
      * @param maxInactiveIntervalInSeconds Maximum inactive interval in sec.
@@ -117,36 +102,6 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
      */
     public void setSaveMode(SaveMode saveMode) {
         this.saveMode = saveMode;
-    }
-
-    /**
-     * @param springSesIgnite Ignite session.
-     * @param ignite Ignite instance provider.
-     * @param cli Ignite client instance provider.
-     */
-    @Autowired
-    public void setSessions(
-        @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
-        ObjectProvider<Ignite> ignite,
-        ObjectProvider<IgniteClient> cli
-    ) {
-        Object connObj = springSesIgnite.getIfAvailable();
-
-        if (connObj == null)
-            connObj = ignite.getIfAvailable();
-
-        if (connObj == null)
-            connObj = cli.getIfAvailable();
-
-        this.connObj = connObj;
-    }
-
-    /**
-     * Init sessions.
-     */
-    @PostConstruct
-    public void initSessions() {
-        this.sessions = createSessionProxy(this.connObj);
     }
 
     /**
@@ -189,8 +144,28 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
         this.saveMode = attrs.getEnum("saveMode");
     }
 
-    /** */
-    private SessionProxy createSessionProxy(Object connObj) {
+    /**
+     * Session cache proxy.
+     *
+     * @param springSesIgnite Ignite session.
+     * @param igniteProvider Ignite instance provider.
+     * @param igniteClientProvider Ignite client instance provider.
+     * @return Session cache proxy.
+     */
+    @Bean
+    public SessionProxy sessionProxy(
+        @SpringSessionIgnite ObjectProvider<Object> springSesIgnite,
+        ObjectProvider<Ignite> igniteProvider,
+        ObjectProvider<IgniteClient> igniteClientProvider
+    ) {
+        Object connObj = springSesIgnite.getIfAvailable();
+
+        if (connObj == null)
+            connObj = igniteProvider.getIfAvailable();
+
+        if (connObj == null)
+            connObj = igniteClientProvider.getIfAvailable();
+
         List<SqlFieldsQuery> initQueries = Arrays.asList(
             new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS IgniteSession (" +
                 " id VARCHAR PRIMARY KEY," +
@@ -224,9 +199,15 @@ public class IgniteHttpSessionConfiguration extends SpringHttpSessionConfigurati
             "Object " + connObj + " can not be used to connect to the Ignite cluster.");
     }
 
-    /** */
-    private IgniteIndexedSessionRepository createIgniteIndexedSessionRepository() {
-        IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(this.sessions);
+    /**
+     * Session repository bean.
+     *
+     * @param sesProxy Session cache proxy.
+     * @return Session repository.
+     */
+    @Bean
+    public SessionRepository<?> sessionRepository(SessionProxy sesProxy) {
+        IgniteIndexedSessionRepository sesRepo = new IgniteIndexedSessionRepository(sesProxy);
         sesRepo.setApplicationEventPublisher(this.applicationEvtPublisher);
         if (this.idxResolver != null)
             sesRepo.setIndexResolver(this.idxResolver);
