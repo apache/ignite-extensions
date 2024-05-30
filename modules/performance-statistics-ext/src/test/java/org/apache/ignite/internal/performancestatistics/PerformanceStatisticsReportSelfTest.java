@@ -21,6 +21,9 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -36,8 +39,11 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.performancestatistics.handlers.QueryHandler;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +53,9 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.junits.GridAbstractTest.LOCAL_IP_FINDER;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -58,10 +66,12 @@ public class PerformanceStatisticsReportSelfTest {
     @Test
     public void testCreateReport() throws Exception {
         try (
-            Ignite srv = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("srv"));
+            Ignite srv = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("srv")
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER)));
 
             IgniteEx client = (IgniteEx)Ignition.start(new IgniteConfiguration()
                 .setIgniteInstanceName("client")
+                .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER))
                 .setClientMode(true))
         ) {
             client.context().performanceStatistics().startCollectStatistics();
@@ -106,7 +116,8 @@ public class PerformanceStatisticsReportSelfTest {
 
             cache.query(new SqlFieldsQuery("select * from sys.tables").setEnforceJoinOrder(true)).getAll();
 
-            cache.query(new SqlFieldsQuery("select sum(_VAL) from \"cache\".Integer")).getAll();
+            for (int i = 0; i < 100; i++)
+                cache.query(new SqlFieldsQuery("select sum(_VAL) from \"cache\".Integer")).getAll();
 
             cache.query(new IndexQuery<>(Integer.class).setCriteria(gt("_KEY", 0))).getAll();
 
@@ -136,6 +147,86 @@ public class PerformanceStatisticsReportSelfTest {
         }
         finally {
             U.delete(new File(U.defaultWorkDirectory()));
+        }
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testQueryHandlerAggregation() throws Exception {
+        QueryHandler qryHnd = new QueryHandler();
+
+        for (int nodeIdx = 0; nodeIdx < 10; nodeIdx++) {
+            UUID nodeId = new UUID(0, nodeIdx);
+
+            for (long id = 0; id < 1000; id++) {
+                String text = "query" + (id / 100);
+                UUID origNodeId = new UUID(0, id % 10);
+                qryHnd.queryReads(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, 1, 1);
+                qryHnd.queryRows(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, "ROWS", 1);
+                qryHnd.queryRows(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, "ROWSx2", 2);
+                qryHnd.queryProperty(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, "prop1", "val1");
+                qryHnd.queryProperty(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, "prop1", "val2");
+                qryHnd.queryProperty(nodeId, GridCacheQueryType.SQL_FIELDS, origNodeId, id, "prop2", "val2");
+                if (nodeId.equals(origNodeId)) {
+                    qryHnd.query(nodeId, GridCacheQueryType.SQL_FIELDS, text, id, 0,
+                        TimeUnit.MILLISECONDS.toNanos(id), true);
+                }
+            }
+        }
+
+        Map<String, JsonNode> res = qryHnd.results();
+        JsonNode aggrSql = res.get("sql");
+        assertEquals(10, aggrSql.size());
+
+        for (int i = 0; i < 10; i++) {
+            JsonNode aggrQry = aggrSql.get("query" + i);
+            assertNotNull(aggrQry);
+            assertEquals(100, aggrQry.get("count").asInt());
+
+            assertEquals(1000, aggrQry.get("logicalReads").asInt());
+            assertEquals(1000, aggrQry.get("physicalReads").asInt());
+
+            JsonNode props = aggrQry.get("properties");
+            assertNotNull(props);
+            assertEquals(3, props.size());
+            for (int j = 0; j < 3; j++) {
+                JsonNode prop = props.get(j);
+                assertNotNull(prop);
+                assertTrue(prop.get("name").asText().startsWith("prop"));
+                assertTrue(prop.get("value").asText().startsWith("val"));
+                assertEquals(1000, prop.get("count").asInt());
+            }
+
+            JsonNode rows = aggrQry.get("rows");
+            assertNotNull(rows);
+            assertEquals(1000, rows.get("ROWS").asInt());
+            assertEquals(2000, rows.get("ROWSx2").asInt());
+        }
+
+        JsonNode slowSql = res.get("topSlowSql");
+        assertEquals(30, slowSql.size());
+
+        for (int i = 0; i < 30; i++) {
+            JsonNode slowQry = slowSql.get(i);
+            assertNotNull(slowQry);
+            assertEquals(10, slowQry.get("logicalReads").asInt());
+            assertEquals(10, slowQry.get("physicalReads").asInt());
+
+            JsonNode props = slowQry.get("properties");
+            assertNotNull(props);
+            assertEquals(3, props.size());
+            for (int j = 0; j < 3; j++) {
+                JsonNode prop = props.get(j);
+                assertNotNull(prop);
+                assertTrue(prop.get("name").asText().startsWith("prop"));
+                assertTrue(prop.get("value").asText().startsWith("val"));
+                assertEquals(10, prop.get("count").asInt());
+            }
+
+            JsonNode rows = slowQry.get("rows");
+            assertNotNull(rows);
+            assertEquals(10, rows.get("ROWS").asInt());
+            assertEquals(20, rows.get("ROWSx2").asInt());
         }
     }
 

@@ -159,7 +159,7 @@ function buildPropertiesSubTable($el, properties) {
 
     $.each(properties, function (k, prop) {
         data.push({
-            name: k,
+            name: prop["name"],
             value: prop["value"],
             count: prop["count"]
         });
