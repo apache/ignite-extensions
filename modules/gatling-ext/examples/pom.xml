@@ -30,6 +30,16 @@
 
     <artifactId>ignite-gatling-plugin-examples</artifactId>
 
+    <properties>
+        <!--
+            Workaround to skip gatling maven plugin execution on test phase if any of -DskipTests
+            or -Dmaven.test.skip=true JVM options are set.
+        -->
+        <maven.test.skip>false</maven.test.skip>
+        <skipTests>${maven.test.skip}</skipTests>
+        <skipGatlingMavenPlugin>${skipTests}</skipGatlingMavenPlugin>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -66,7 +76,7 @@
                 <groupId>io.gatling</groupId>
                 <artifactId>gatling-maven-plugin</artifactId>
                 <configuration>
-                    <skip>false</skip>
+                    <skip>${skipGatlingMavenPlugin}</skip>
                     <runMultipleSimulations>true</runMultipleSimulations>
                 </configuration>
                 <executions>
