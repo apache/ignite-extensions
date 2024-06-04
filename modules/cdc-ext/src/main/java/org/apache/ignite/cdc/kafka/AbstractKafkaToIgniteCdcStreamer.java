@@ -157,22 +157,24 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
         int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
         int threadCnt = streamerCfg.getThreadCount();
 
-        int partPerApplier = kafkaParts / threadCnt;
+        int counter = 0;
 
-        for (int i = 0; i < threadCnt; i++) {
-            int from = i * partPerApplier;
-            int to = (i + 1) * partPerApplier;
+        while (kafkaParts > 0) {
+            int partPerApplier = kafkaParts / threadCnt + (kafkaParts % threadCnt > 0 ? 1 : 0);
 
-            if (i == threadCnt - 1)
-                to = kafkaParts;
+            kafkaParts -= partPerApplier;
+            --threadCnt;
+
+            int from = kafkaPartsFrom;
+            int to = kafkaPartsFrom + partPerApplier;
 
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
                 streamerCfg.getTopic(),
-                kafkaPartsFrom + from,
-                kafkaPartsFrom + to,
+                from,
+                to,
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
@@ -181,7 +183,9 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 stopped
             );
 
-            addAndStart("applier-thread-" + i, applier);
+            addAndStart("applier-thread-" + counter++, applier);
+
+            kafkaPartsFrom += partPerApplier;
         }
 
         try {
