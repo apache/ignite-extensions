@@ -29,10 +29,10 @@ public class JacksonHelper {
     /** */
     public static void readAndValidateBasicJsonModelProperties(Path path, ObjectMapper mapper, String className) throws IOException {
         Map jsonAsMap = mapper.readValue(new File(path.toAbsolutePath().toString()), LinkedHashMap.class);
-        String formatVer = jsonAsMap.get("formatVer").toString();
+        String formatVer = jsonAsMap.get("formatVersion").toString();
         Long timestamp = (Long)jsonAsMap.get("timestamp");
         String uid = jsonAsMap.get("uid").toString();
-        String modelCls = jsonAsMap.get("modelCls").toString();
+        String modelCls = jsonAsMap.get("modelClass").toString();
 
         if (!modelCls.equals(className)) {
             throw new IllegalArgumentException("You are trying to load " + modelCls + " model to " + className);
