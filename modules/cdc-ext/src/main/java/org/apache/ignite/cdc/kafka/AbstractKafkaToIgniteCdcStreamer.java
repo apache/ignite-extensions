@@ -96,6 +96,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             streamerCfg.getKafkaPartsTo() > streamerCfg.getKafkaPartsFrom(),
             "The Kafka partitions upper bound must be greater than lower bound.");
         A.ensure(streamerCfg.getKafkaRequestTimeout() >= 0, "The Kafka request timeout cannot be negative.");
+        A.ensure(streamerCfg.getKafkaConsumerPollTimeout() >= 0, "The Kafka consumer poll timeout cannot be negative.");
         A.ensure(streamerCfg.getThreadCount() > 0, "Threads count value must me greater than zero.");
         A.ensure(
             streamerCfg.getKafkaPartsTo() - streamerCfg.getKafkaPartsFrom() >= streamerCfg.getThreadCount(),
@@ -175,6 +176,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
+                streamerCfg.getKafkaConsumerPollTimeout(),
                 metaUpdr,
                 stopped
             );

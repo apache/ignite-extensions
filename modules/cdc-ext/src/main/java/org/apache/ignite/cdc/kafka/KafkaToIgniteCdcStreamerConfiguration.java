@@ -33,6 +33,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default maximum time to complete Kafka related requests, in milliseconds. */
     public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
+    /** Default kafka consumer poll timeout. */
+    public static final long DFLT_KAFKA_CONSUMER_POLL_TIMEOUT = 1_000L;
+
     /** Default {@link #threadCnt} value. */
     public static final int DFLT_THREAD_CNT = 16;
 
@@ -56,6 +59,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
+
+    /** Timeout of kafka consumer poll */
+    private long kafkaConsumerPollTimeout = DFLT_KAFKA_CONSUMER_POLL_TIMEOUT;
 
     /** Metadata consumer group. */
     private String metadataCnsmrGrp;
@@ -169,6 +175,22 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setKafkaRequestTimeout(long kafkaReqTimeout) {
         this.kafkaReqTimeout = kafkaReqTimeout;
+    }
+
+    /**
+     * @return The kafka consumer poll timeout.
+     */
+    public long getKafkaConsumerPollTimeout() {
+        return kafkaConsumerPollTimeout;
+    }
+
+    /**
+     * Sets the kafka consumer poll timeout.
+     *
+     * @param timeout Timeout value.
+     */
+    public void setKafkaConsumerPollTimeout(long timeout) {
+        this.kafkaConsumerPollTimeout = timeout;
     }
 
     /**

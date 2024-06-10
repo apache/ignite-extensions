@@ -107,6 +107,9 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
+    /** Consumer poll timeout. */
+    private final long consumerPollTimeout;
+
     /** Metadata updater. */
     private final KafkaToIgniteMetadataUpdater metaUpdr;
 
@@ -132,6 +135,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
+     * @param consumerPollTimeout Consumer poll timeout.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
      */
@@ -145,6 +149,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         Set<Integer> caches,
         int maxBatchSize,
         long kafkaReqTimeout,
+        long consumerPollTimeout,
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped
     ) {
@@ -155,6 +160,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
         this.kafkaReqTimeout = kafkaReqTimeout;
+        this.consumerPollTimeout = consumerPollTimeout;
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
@@ -213,7 +219,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param cnsmr Data consumer.
      */
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
-        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+        ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
         if (log.isInfoEnabled()) {
             log.info(
