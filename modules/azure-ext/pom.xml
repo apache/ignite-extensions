@@ -29,6 +29,10 @@
         <relativePath>../../parent-internal/pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <netty.version>4.1.101.Final</netty.version>
+    </properties>
+
     <artifactId>ignite-azure-ext</artifactId>
     <version>1.1.0-SNAPSHOT</version>
     <url>https://ignite.apache.org</url>
