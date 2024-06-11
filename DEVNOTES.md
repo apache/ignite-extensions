@@ -9,18 +9,18 @@
 - JDK 8
 - Maven 3.6.3+
 
-### Build all Extensions
+### Compile and install all Extensions
 
 ```shell
 # Run from the Ignite Extension project root
 mvn clean install -DskipTests -Pcheckstyle
 ```
 
-### Build an Extension
+### Compile and install an Extension
 
 ```shell
 # Run from the Ignite Extension project root
-mvn clean install -f modules/spring-boot-ext -Pcheckstyle -DskipTests
+mvn clean install -f modules/cdc-ext -Pcheckstyle -DskipTests
 ```
 
 or
@@ -28,6 +28,17 @@ or
 ```shell
 # Run from the Ignite Extension project root
 mvn clean install -pl :ignite-aws-ext -am -Pcheckstyle -DskipTests
+```
+
+### Build an Extension assembly
+
+Release archives will be created in the `target` directory:
+- sources archive: `{extension}-src.zip`
+- binary archive (if an extension provides): `{extension}-bin.zip`
+
+```shell
+# Run from the Ignite Extension project root
+mvn clean package -pl :ignite-cdc-ext -am -DskipTests -Pextension-release
 ```
 
 ## Release Instructions
