@@ -40,6 +40,8 @@
         <spring.data32.version>3.2.5</spring.data32.version>
         <spring53.version>5.3.19</spring53.version>
         <spring61.version>6.1.6</spring61.version>
+        <activemq.version>5.12.0</activemq.version>
+        <aspectj.version>1.8.13</aspectj.version>
 
         <!--
             NOTE: The dependency versions below must be changed in the release branch up to
