@@ -34,7 +34,7 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;
 
     /** Default kafka consumer poll timeout. */
-    public static final long DFLT_KAFKA_CONSUMER_POLL_TIMEOUT = 1_000L;
+    public static final long DFLT_KAFKA_CONSUMER_POLL_TIMEOUT = 3_000L;
 
     /** Default {@link #threadCnt} value. */
     public static final int DFLT_THREAD_CNT = 16;
