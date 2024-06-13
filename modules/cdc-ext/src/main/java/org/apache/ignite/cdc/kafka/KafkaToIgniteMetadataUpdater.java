@@ -61,6 +61,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
+    /** Consumer poll timeout. */
+    private final long consumerPollTimeout;
+
     /** */
     private final KafkaConsumer<Void, byte[]> cnsmr;
 
@@ -90,6 +93,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     ) {
         this.ctx = ctx;
         this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
+        this.consumerPollTimeout = streamerCfg.getKafkaConsumerPollTimeout();
         this.log = log.getLogger(KafkaToIgniteMetadataUpdater.class);
 
         Properties kafkaProps = new Properties();
@@ -141,7 +145,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         }
 
         while (true) {
-            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(kafkaReqTimeout));
+            ConsumerRecords<Void, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
             if (recs.count() == 0) {
                 if (log.isDebugEnabled())

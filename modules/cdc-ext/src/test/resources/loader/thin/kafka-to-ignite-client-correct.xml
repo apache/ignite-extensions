@@ -31,11 +31,16 @@
         </property>
     </bean>
 
+    <util:constant static-field="org.apache.ignite.cdc.kafka.KafkaToIgniteLoaderTest.TEST_KAFKA_CONSUMER_POLL_TIMEOUT" id="consumerPollTimeout" />
+    <util:constant static-field="org.apache.ignite.cdc.kafka.KafkaToIgniteLoaderTest.TEST_KAFKA_REQUEST_TIMEOUT" id="requestTimeout" />
+
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
         <property name="topic" value="ignite" />
         <property name="metadataTopic" value="ignite-metadata" />
         <property name="kafkaPartsFrom" value="0" />
         <property name="kafkaPartsTo" value="16" />
+        <property name="kafkaRequestTimeout" ref="requestTimeout" />
+        <property name="kafkaConsumerPollTimeout" ref="consumerPollTimeout" />
     </bean>
 
     <util:properties id="kafkaProperties" location="loader/kafka.properties" />

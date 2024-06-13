@@ -18,6 +18,8 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -27,6 +29,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Tests load {@link KafkaToIgniteCdcStreamer} from Srping xml file. */
 public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
+    /** Constant to reference from xml config. */
+    public static final int TEST_KAFKA_CONSUMER_POLL_TIMEOUT = 2000;
+
+    /** Constant to reference from xml config. */
+    public static final int TEST_KAFKA_REQUEST_TIMEOUT = 6000;
+
     /** */
     @Test
     public void testLoadConfig() throws Exception {
@@ -83,6 +91,36 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
         KafkaToIgniteClientCdcStreamer streamer = loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-correct.xml");
 
         assertNotNull(streamer);
+    }
+
+    /** Tests setting timeout properties of kafka to ignite loaders. */
+    @Test
+    public void testLoadTimeoutProperties() throws Exception {
+        Stream.of(
+            new String[] {
+                "loader/thin/kafka-to-ignite-client-invalid-poll-timeout.xml",
+                "Ouch! Argument is invalid: The Kafka consumer poll timeout cannot be negative."},
+            new String[] {
+                "loader/thin/kafka-to-ignite-client-invalid-request-timeout.xml",
+                "Ouch! Argument is invalid: The Kafka request timeout cannot be negative."
+            },
+            new String[] {
+                "loader/kafka-to-ignite-invalid-poll-timeout.xml",
+                "Ouch! Argument is invalid: The Kafka consumer poll timeout cannot be negative."},
+            new String[] {
+                "loader/kafka-to-ignite-invalid-request-timeout.xml",
+                "Ouch! Argument is invalid: The Kafka request timeout cannot be negative."
+            }
+        ).forEach(args -> assertThrows(null, () -> loadKafkaToIgniteStreamer(args[0]), IllegalArgumentException.class, args[1]));
+
+        Stream.<AbstractKafkaToIgniteCdcStreamer>of(
+            loadKafkaToIgniteStreamer("loader/thin/kafka-to-ignite-client-correct.xml"),
+            loadKafkaToIgniteStreamer("loader/kafka-to-ignite-correct.xml")
+        ).forEach(streamer -> {
+            assertNotNull(streamer);
+            assertEquals(TEST_KAFKA_CONSUMER_POLL_TIMEOUT, streamer.streamerCfg.getKafkaConsumerPollTimeout());
+            assertEquals(TEST_KAFKA_REQUEST_TIMEOUT, streamer.streamerCfg.getKafkaRequestTimeout());
+        });
     }
 
     /** */

@@ -41,6 +41,7 @@ import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.SRC_DEST_TOPIC
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.initKafka;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.kafkaProperties;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.removeKafkaTopicsAndWait;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_CONSUMER_POLL_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -184,6 +185,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
         cfg.setKafkaPartsFrom(0);
         cfg.setKafkaPartsTo(DFLT_PARTS);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
+        cfg.setKafkaConsumerPollTimeout(DFLT_KAFKA_CONSUMER_POLL_TIMEOUT);
 
         return cfg;
     }
