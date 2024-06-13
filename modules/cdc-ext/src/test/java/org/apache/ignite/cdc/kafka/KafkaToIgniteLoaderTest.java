@@ -93,6 +93,7 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
         assertNotNull(streamer);
     }
 
+    /** Tests setting timeout properties of kafka to ignite loaders. */
     @Test
     public void testLoadTimeoutProperties() throws Exception {
         Stream.of(

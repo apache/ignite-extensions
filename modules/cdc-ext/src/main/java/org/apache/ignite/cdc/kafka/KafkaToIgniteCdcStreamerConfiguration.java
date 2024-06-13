@@ -178,14 +178,14 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /**
-     * @return The kafka consumer poll timeout.
+     * @return The kafka consumer poll timeout in milliseconds.
      */
     public long getKafkaConsumerPollTimeout() {
         return kafkaConsumerPollTimeout;
     }
 
     /**
-     * Sets the kafka consumer poll timeout.
+     * Sets the kafka consumer poll timeout in milliseconds.
      *
      * @param timeout Timeout value.
      */

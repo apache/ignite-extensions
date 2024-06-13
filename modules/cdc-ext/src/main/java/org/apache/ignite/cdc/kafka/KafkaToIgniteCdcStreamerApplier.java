@@ -107,7 +107,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
-    /** Consumer poll timeout. */
+    /** Consumer poll timeout in milliseconds. */
     private final long consumerPollTimeout;
 
     /** Metadata updater. */
@@ -135,7 +135,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param maxBatchSize Maximum batch size.
      * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
-     * @param consumerPollTimeout Consumer poll timeout.
+     * @param consumerPollTimeout Consumer poll timeout in milliseconds.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
      */
