@@ -39,7 +39,7 @@ jobs:
     steps:
       - name: Validate Extension Release Branch
         id: check
-        run: | 
+        run: |
           prefix='false'
           [[ ${{ github.ref_name }} =~ ^release/ ]] && prefix='true'
           echo "::set-output name=isReleaseBranch::${prefix}"
@@ -82,7 +82,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
-          java-version: 8
+          java-version: 17
           distribution: 'adopt'
 
       - name: Extract POM Version and Compare With Branch Version
@@ -136,7 +136,7 @@ jobs:
       - name: Build Java and Prepare Packages
         run: |
           cd ${{ env.GIT_HOME }}/${{ env.EXTENSION_DIR }}
-          mvn deploy -am -DskipTests -Pextension-release -DuniqueVersion=false ${toLocalRepo} 
+          mvn deploy -am -DskipTests -Pextension-release -DuniqueVersion=false ${toLocalRepo}
           cd -
         env:
           toLocalRepo: '-D altDeploymentRepository=local::default::file:${{ env.EXTENSION_DIST }}/maven'
