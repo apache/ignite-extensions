@@ -4,6 +4,11 @@ Apache Ignite Extensions Release Notes
 Apache Ignite Spring Data Module 2.0.0
 --------------------------------------
 
+* Add Spring 6 support.
+
+Apache Ignite Spring Data Module 2.0.0
+--------------------------------------
+
 * Fixed the deleteAllById method which had the same type erasure
 * The Ignite Spring Data (1.0, 2.0, 2.2) extensions merged into the single Extension project
 
