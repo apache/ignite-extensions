@@ -1,6 +1,12 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
+Apache Ignite Spring Session Module 2.0.0
+--------------------------------------
+
+* Add Spring 6 support.
+* Fixed StackOverflow error during IgniteSession serialization.
+
 Apache Ignite Spring Session Module 1.0.0
 -----------------------------------------
 
