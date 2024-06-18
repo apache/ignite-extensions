@@ -1,7 +1,7 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
-Apache Ignite Spring Data Module 2.0.0
+Apache Ignite Spring Data Module 3.0.0
 --------------------------------------
 
 * Add Spring 6 support.
