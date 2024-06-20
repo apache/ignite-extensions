@@ -50,14 +50,22 @@ function drawCacheCharts() {
 
         $("#operationsCharts").append('<canvas class="my-4" ' + 'id="' + chartId + '" height="120"/>');
 
+        let datasets = prepareCacheDatasets(opName)
+
         new Chart(document.getElementById(chartId), {
             type: 'line',
             data: {
-                datasets: prepareCacheDatasets(opName)
+                datasets: datasets,
+                labels: datasets[0].data.length > 0 ? undefined : [undefined]
             },
             options: {
+                responsive: true,
+                interaction: {
+                    mode: 'nearest',
+                },
                 scales: {
-                    xAxes: [{
+                    x: {
+                        display: true,
                         type: 'time',
                         time: {
                             displayFormats: {
@@ -67,30 +75,32 @@ function drawCacheCharts() {
                                 'hour': 'HH:mm'
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
+                            text: 'Date'
                         },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
-                    }]
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount of operations'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
                 },
-                legend: {
-                    display: true
-                },
-                title: {
-                    display: true,
-                    text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
-                    fontSize: 20
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Count of [" + CACHE_OPERATIONS_READABLE[k] + "]",
+                        fontSize: 20
+                    }
                 },
                 animation: false
             }
@@ -114,12 +124,12 @@ function prepareCacheDatasets(opName) {
     var datasetData = [];
 
     $.each(cacheOps[opName], function (k, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]});
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]});
 
         opsCountPerType[opName] += arr[1];
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
         data: datasetData,
@@ -160,20 +170,14 @@ function drawCacheBar() {
         },
         options: {
             scales: {
-                yAxes: [{
-                    display: true,
-                    scaleLabel: {
+                y: {
+                    title: {
                         display: true,
-                        labelString: 'Count'
+                        text: 'Count'
                     },
-                    ticks: {
-                        suggestedMin: 0,
-                        suggestedMax: 10
-                    }
-                }]
-            },
-            legend: {
-                display: false
+                    suggestedMin: 0,
+                    suggestedMax: 10
+                }
             },
             title: {
                 display: true,
@@ -183,7 +187,6 @@ function drawCacheBar() {
             animation: false
         }
     });
-
 }
 
 buildSelectCaches(searchCachesSelect, drawCacheCharts);
