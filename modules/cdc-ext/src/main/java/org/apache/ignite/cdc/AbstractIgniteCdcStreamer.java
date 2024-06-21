@@ -36,6 +36,14 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_EVTS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_EVTS_SNT_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_LAST_EVT_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_LAST_EVT_SNT_TIME_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_MAPPINGS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_MAPPINGS_SNT_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_TYPES_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_TYPES_SNT_CNT_DESC;
 
 /**
  * Change Data Consumer that streams all data changes to destination cluster by the provided {@link #applier}.
@@ -43,30 +51,6 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_
  * @see AbstractCdcEventsApplier
  */
 public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
-    /** */
-    public static final String EVTS_CNT = "EventsCount";
-
-    /** */
-    public static final String TYPES_CNT = "TypesCount";
-
-    /** */
-    public static final String MAPPINGS_CNT = "MappingsCount";
-
-    /** */
-    public static final String EVTS_CNT_DESC = "Count of messages applied to destination cluster";
-
-    /** */
-    public static final String TYPES_CNT_DESC = "Count of received binary types events";
-
-    /** */
-    public static final String MAPPINGS_CNT_DESC = "Count of received mappings events";
-
-    /** */
-    public static final String LAST_EVT_TIME = "LastEventTime";
-
-    /** */
-    public static final String LAST_EVT_TIME_DESC = "Timestamp of last applied event";
-
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
@@ -109,10 +93,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
-        this.lastEvtTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
+        this.evtsCnt = mreg.longMetric(I2I_EVTS_SNT_CNT, I2I_EVTS_SNT_CNT_DESC);
+        this.typesCnt = mreg.longMetric(I2I_TYPES_SNT_CNT, I2I_TYPES_SNT_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(I2I_MAPPINGS_SNT_CNT, I2I_MAPPINGS_SNT_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(I2I_LAST_EVT_SNT_TIME, I2I_LAST_EVT_SNT_TIME_DESC);
     }
 
     /** {@inheritDoc} */

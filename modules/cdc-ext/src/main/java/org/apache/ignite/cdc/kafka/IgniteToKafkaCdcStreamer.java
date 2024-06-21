@@ -37,6 +37,7 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
+import org.apache.ignite.cdc.metrics.MetricsHolder;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -55,16 +56,20 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.EVTS_CNT_DESC;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.LAST_EVT_TIME_DESC;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.MAPPINGS_CNT_DESC;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT;
-import static org.apache.ignite.cdc.IgniteToIgniteCdcStreamer.TYPES_CNT_DESC;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_BYTES_SNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_BYTES_SNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_EVTS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_EVTS_SNT_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_LAST_EVT_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_LAST_EVT_SNT_TIME_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_MAPPINGS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_MAPPINGS_SNT_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_MARKERS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_MARKERS_SNT_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_TYPES_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_TYPES_SNT_CNT_DESC;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
 
@@ -89,12 +94,6 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
-
-    /** Bytes sent metric name. */
-    public static final String BYTES_SENT = "BytesSent";
-
-    /** Bytes sent metric description. */
-    public static final String BYTES_SENT_DESCRIPTION = "Count of bytes sent.";
 
     /** Metadata updater marker. */
     public static final byte[] META_UPDATE_MARKER = U.longToBytes(0xC0FF1E);
@@ -133,20 +132,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
-    /** Timestamp of last sent message. */
-    private AtomicLongMetric lastMsgTs;
-
-    /** Count of bytes sent to the Kafka. */
-    private AtomicLongMetric bytesSnt;
-
-    /** Count of sent events. */
-    private AtomicLongMetric evtsCnt;
-
-    /** Count of sent binary types. */
-    protected AtomicLongMetric typesCnt;
-
-    /** Count of sent mappings. */
-    protected AtomicLongMetric mappingsCnt;
+    /** Metrics DTO for I2K CDC. */
+    private final MetricsHolder metricsHolder = new MetricsHolder();
 
     /** */
     private List<Future<RecordMetadata>> futs;
@@ -192,7 +179,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 evt.cacheId(),
                 IgniteUtils.toBytes(evt)
             ),
-            evtsCnt
+            metricsHolder.getMetric(I2K_EVTS_SNT_CNT, AtomicLongMetric.class)
         );
 
         return true;
@@ -203,7 +190,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             types,
             t -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-            typesCnt
+            metricsHolder.getMetric(I2K_TYPES_SNT_CNT, AtomicLongMetric.class)
         );
 
         sendMetaUpdatedMarkers();
@@ -214,7 +201,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             mappings,
             m -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(m)),
-            mappingsCnt
+            metricsHolder.getMetric(I2K_MAPPINGS_SNT_CNT, AtomicLongMetric.class)
         );
 
         sendMetaUpdatedMarkers();
@@ -239,7 +226,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             IntStream.range(0, kafkaParts).iterator(),
             p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER),
-            evtsCnt
+            metricsHolder.getMetric(I2K_MARKERS_SNT_CNT, AtomicLongMetric.class)
         );
 
         if (log.isDebugEnabled())
@@ -270,7 +257,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
             ProducerRecord<Integer, byte[]> rec = toRec.apply(item);
 
-            bytesSnt.add(rec.value().length);
+            metricsHolder.getMetric(I2K_BYTES_SNT, AtomicLongMetric.class).add(rec.value().length);
 
             futs.add(producer.send(rec));
         }
@@ -281,7 +268,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                     fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
 
                 cntr.add(futs.size());
-                lastMsgTs.value(System.currentTimeMillis());
+                metricsHolder.getMetric(I2K_LAST_EVT_SNT_TIME, AtomicLongMetric.class).value(System.currentTimeMillis());
 
                 futs.clear();
             }
@@ -328,11 +315,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = mreg.longMetric(EVTS_CNT, EVTS_CNT_DESC);
-        this.lastMsgTs = mreg.longMetric(LAST_EVT_TIME, LAST_EVT_TIME_DESC);
-        this.bytesSnt = mreg.longMetric(BYTES_SENT, BYTES_SENT_DESCRIPTION);
-        this.typesCnt = mreg.longMetric(TYPES_CNT, TYPES_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_CNT, MAPPINGS_CNT_DESC);
+        metricsHolder
+            .addMetric(I2K_EVTS_SNT_CNT, I2K_EVTS_SNT_CNT_DESC, mreg::longMetric)
+            .addMetric(I2K_LAST_EVT_SNT_TIME, I2K_LAST_EVT_SNT_TIME_DESC, mreg::longMetric)
+            .addMetric(I2K_BYTES_SNT, I2K_BYTES_SNT_DESC, mreg::longMetric)
+            .addMetric(I2K_TYPES_SNT_CNT, I2K_TYPES_SNT_CNT_DESC, mreg::longMetric)
+            .addMetric(I2K_MAPPINGS_SNT_CNT, I2K_MAPPINGS_SNT_CNT_DESC, mreg::longMetric)
+            .addMetric(I2K_MARKERS_SNT_CNT, I2K_MARKERS_SNT_CNT_DESC, mreg::longMetric);
 
         futs = new ArrayList<>(maxBatchSz);
     }
@@ -428,7 +417,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /**
      * Sets the maximum time to complete Kafka related requests, in milliseconds.
-     * 
+     *
      * @param kafkaReqTimeout Timeout value.
      * @return {@code this} for chaining.
      */
