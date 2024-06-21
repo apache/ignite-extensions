@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -299,6 +300,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             checkMetrics();
 
             assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
+
+            checkMetricsCount(1, 1);
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
@@ -633,6 +636,40 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);
 
+    /** Checks the count for CDC metrics */
+    protected abstract void checkMetricsCount(int putCnt, int rmvCnt);
+
+    /** Checks the events count for CDC metrics */
+    protected void checkMetricsEventsCount(int putCnt, int rmvCnt, Supplier<Long> supplier) {
+        try {
+            waitForCondition(() -> supplier.get() == (long)(putCnt + rmvCnt) * KEYS_CNT * (backups + 1) *
+                (mode == CacheMode.PARTITIONED ? 1 : srcCluster.length), getTestTimeout());
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Returns metric for events applied to destination target.
+     * @param metricName Metric name.
+     */
+    protected Supplier<Long> getConsumerEventsCount(String metricName) {
+        return () -> {
+            long cnt = 0;
+
+            for (CdcMain cdc : cdcs) {
+                IgniteConfiguration cfg = getFieldValue(cdc, "igniteCfg");
+
+                DynamicMBean jmxConsumerReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "cdc", "consumer");
+
+                cnt += ((Function<String, Long>)jmxVal(jmxConsumerReg)).apply(metricName);
+            }
+
+            return cnt;
+        };
+    }
+
     /** */
     protected void checkMetrics() throws IgniteInterruptedCheckedException {
         for (int i = 0; i < cdcs.size(); i++) {
@@ -647,23 +684,28 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                 m -> mreg.<ObjectMetric<String>>findMetric(m).value()
             );
 
-            Function<DynamicMBean, Function<String, ?>> jmxVal = mxBean -> m -> {
-                try {
-                    return mxBean.getAttribute(m);
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            };
-
             DynamicMBean jmxCdcReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), null, "cdc");
 
-            checkMetrics((Function<String, Long>)jmxVal.apply(jmxCdcReg), (Function<String, String>)jmxVal.apply(jmxCdcReg));
+            checkMetrics((Function<String, Long>)jmxVal(jmxCdcReg), (Function<String, String>)jmxVal(jmxCdcReg));
 
             DynamicMBean jmxConsumerReg = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "cdc", "consumer");
 
-            checkConsumerMetrics((Function<String, Long>)jmxVal.apply(jmxConsumerReg));
+            checkConsumerMetrics((Function<String, Long>)jmxVal(jmxConsumerReg));
         }
+    }
+
+    /**
+     * @param mxBean Mx bean.
+     */
+    protected static Function<String, ?> jmxVal(DynamicMBean mxBean) {
+        return m -> {
+            try {
+                return mxBean.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
     }
 
     /** */

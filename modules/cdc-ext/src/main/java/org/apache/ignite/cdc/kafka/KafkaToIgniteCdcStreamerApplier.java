@@ -38,9 +38,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.metrics.MetricsHolder;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -50,6 +52,11 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_MARKER;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MARKERS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
@@ -125,45 +132,45 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
 
+    /** Metrics DTO for appliers. */
+    private MetricsHolder metricsHolder;
+
     /**
      * @param applierSupplier Cdc events applier supplier.
      * @param log Logger.
      * @param kafkaProps Kafka properties.
-     * @param topic Topic name.
+     * @param streamerCfg Streamer config.
      * @param kafkaPartFrom Read from partition.
      * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
-     * @param maxBatchSize Maximum batch size.
-     * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
-     * @param consumerPollTimeout Consumer poll timeout in milliseconds.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
+     * @param metricsHolder Metrics holder.
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,
         IgniteLogger log,
         Properties kafkaProps,
-        String topic,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
         int kafkaPartFrom,
         int kafkaPartTo,
         Set<Integer> caches,
-        int maxBatchSize,
-        long kafkaReqTimeout,
-        long consumerPollTimeout,
         KafkaToIgniteMetadataUpdater metaUpdr,
-        AtomicBoolean stopped
+        AtomicBoolean stopped,
+        MetricsHolder metricsHolder
     ) {
         this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
-        this.topic = topic;
+        this.topic = streamerCfg.getTopic();
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
-        this.kafkaReqTimeout = kafkaReqTimeout;
-        this.consumerPollTimeout = consumerPollTimeout;
+        this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
+        this.consumerPollTimeout = streamerCfg.getKafkaConsumerPollTimeout();
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
+        this.metricsHolder = metricsHolder;
     }
 
     /** {@inheritDoc} */
@@ -225,6 +232,11 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
+        if (recs.count() > 0) {
+            metricsHolder.getMetric(K2I_EVTS_RSVD_CNT, AtomicLongMetric.class).add(recs.count());
+            metricsHolder.getMetric(K2I_LAST_EVT_RSVD_TIME, AtomicLongMetric.class).value(System.currentTimeMillis());
+        }
+
         if (log.isInfoEnabled()) {
             log.info(
                 "Polled from consumer [assignments=" + cnsmr.assignment() +
@@ -233,7 +245,12 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             );
         }
 
-        applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+        long msgsSntCur = applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+
+        if (msgsSntCur > 0) {
+            metricsHolder.getMetric(K2I_MSGS_SNT_CNT, AtomicLongMetric.class).add(msgsSntCur);
+            metricsHolder.getMetric(K2I_LAST_MSG_SNT_TIME, AtomicLongMetric.class).value(System.currentTimeMillis());
+        }
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
@@ -249,6 +266,9 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
         if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
             metaUpdr.updateMetadata();
+
+            metricsHolder.getMetric(K2I_MARKERS_RSVD_CNT, AtomicLongMetric.class).increment();
+            metricsHolder.getMetric(K2I_EVTS_RSVD_CNT, AtomicLongMetric.class).decrement();
 
             return false;
         }

@@ -24,26 +24,47 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.metrics.MetricsHolder;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MARKERS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MARKERS_RSVD_CNT_DESC;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT_DESC;
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
@@ -79,6 +100,15 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** */
     protected IgniteLogger log;
+
+    /** Standalone kernal context. */
+    private StandaloneGridKernalContext kctx;
+
+    /** CDC metrics registry. */
+    private MetricRegistryImpl mreg;
+
+    /** Metrics DTO for appliers. */
+    private final MetricsHolder metricsHolder;
 
     /**
      * @param kafkaProps Kafka properties.
@@ -118,6 +148,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
         kafkaProps.put(KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class.getName());
         kafkaProps.put(VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+
+        metricsHolder = new MetricsHolder();
     }
 
     /** {@inheritDoc} */
@@ -127,7 +159,17 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             ackAsciiLogo(log);
 
-            runx();
+            startStandaloneMetricsKernal();
+
+            try {
+                runx();
+            }
+            finally {
+                stopMetrics();
+
+                if (log.isInfoEnabled())
+                    log.info("Ignite Change Data Capture Application stopped.");
+            }
         }
         catch (Exception e) {
             throw new IgniteException(e);
@@ -161,15 +203,13 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
-                streamerCfg.getTopic(),
+                streamerCfg,
                 parts.get1(), // kafkaPartFrom
                 parts.get2(), // kafkaPartTo
                 caches,
-                streamerCfg.getMaxBatchSize(),
-                streamerCfg.getKafkaRequestTimeout(),
-                streamerCfg.getKafkaConsumerPollTimeout(),
                 metaUpdr,
-                stopped
+                stopped,
+                metricsHolder
             );
 
             addAndStart("applier-thread-" + cntr++, applier);
@@ -223,6 +263,72 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
         thread.start();
 
         runners.add(thread);
+    }
+
+    /** @throws IgniteCheckedException If failed. */
+    protected void startStandaloneMetricsKernal() throws IgniteCheckedException {
+        kctx = new StandaloneGridKernalContext(log, null, null) {
+            @Override protected IgniteConfiguration prepareIgniteConfiguration() {
+                IgniteConfiguration cfg = super.prepareIgniteConfiguration();
+
+                cfg.setIgniteInstanceName("kafka-ignite-streamer");
+
+                if (!F.isEmpty(streamerCfg.getMetricExporterSpi()))
+                    cfg.setMetricExporterSpi(streamerCfg.getMetricExporterSpi());
+                else {
+                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
+                        ? new NoopMetricExporterSpi()
+                        : new JmxMetricExporterSpi());
+                }
+
+                initializeDefaultMBeanServer(cfg);
+
+                return cfg;
+            }
+
+            /** {@inheritDoc} */
+            @Override public String igniteInstanceName() {
+                return config().getIgniteInstanceName();
+            }
+        };
+
+        startMetrics();
+
+        initMetrics();
+    }
+
+    /**
+     * Starts metric manager and metrics SPI.
+     */
+    private void startMetrics() throws IgniteCheckedException {
+        kctx.metric().start();
+
+        for (IgniteSpi metricSpi : kctx.config().getMetricExporterSpi()) {
+            metricSpi.onContextInitialized(new StandaloneSpiContext());
+            metricSpi.spiStart(null);
+        }
+    }
+
+    /** Initialize metrics. */
+    private void initMetrics() {
+        mreg = kctx.metric().registry(metricName("cdc", "kafka-to-ignite"));
+
+        metricsHolder
+            .addMetric(K2I_EVTS_RSVD_CNT, K2I_EVTS_RSVD_CNT_DESC, mreg::longMetric)
+            .addMetric(K2I_LAST_EVT_RSVD_TIME, K2I_LAST_EVT_RSVD_TIME_DESC, mreg::longMetric)
+            .addMetric(K2I_MSGS_SNT_CNT, K2I_MSGS_SNT_CNT_DESC, mreg::longMetric)
+            .addMetric(K2I_LAST_MSG_SNT_TIME, K2I_LAST_MSG_SNT_TIME_DESC, mreg::longMetric)
+            .addMetric(K2I_MARKERS_RSVD_CNT, K2I_MARKERS_RSVD_CNT_DESC, mreg::longMetric);
+    }
+
+    /**
+     * Stops metric manager and metrics SPI.
+     */
+    private void stopMetrics() throws IgniteCheckedException {
+        kctx.metric().stop(true);
+
+        for (IgniteSpi metricSpi : kctx.config().getMetricExporterSpi())
+            metricSpi.spiStop();
     }
 
     /** Init logger. */

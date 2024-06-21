@@ -22,20 +22,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
-import org.apache.ignite.cdc.IgniteToIgniteCdcStreamer;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_BYTES_SNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_EVTS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_LAST_EVT_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -60,6 +70,9 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
     /** */
     private static EmbeddedKafkaCluster KAFKA = null;
+
+    /** */
+    protected final List<AbstractKafkaToIgniteCdcStreamer> k2is = Collections.synchronizedList(new ArrayList<>());
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -140,10 +153,58 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void checkMetrics() throws IgniteInterruptedCheckedException {
+        super.checkMetrics();
+
+        for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
+            MetricRegistryImpl mreg = getFieldValue(k2i, "mreg");
+            checkK2IMetrics(m -> mreg.<AtomicLongMetric>findMetric(m).value());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
-        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.LAST_EVT_TIME));
-        assertNotNull(longMetric.apply(IgniteToIgniteCdcStreamer.EVTS_CNT));
-        assertNotNull(longMetric.apply(IgniteToKafkaCdcStreamer.BYTES_SENT));
+        assertNotNull(longMetric.apply(I2K_LAST_EVT_SNT_TIME));
+        assertNotNull(longMetric.apply(I2K_EVTS_SNT_CNT));
+        assertNotNull(longMetric.apply(I2K_BYTES_SNT));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkMetricsCount(int putCnt, int rmvCnt) {
+        checkMetricsEventsCount(putCnt, rmvCnt, getConsumerEventsCount(I2K_EVTS_SNT_CNT));
+        checkMetricsEventsCount(putCnt, rmvCnt, getKafkaConsumerEventsCount(K2I_EVTS_RSVD_CNT));
+        checkMetricsEventsCount(putCnt, rmvCnt, getKafkaConsumerEventsCount(K2I_MSGS_SNT_CNT));
+    }
+
+    /**
+     * Returns metric for events from kafka CDC consumer.
+     * @param metricName Metric name.
+     */
+    protected Supplier<Long> getKafkaConsumerEventsCount(String metricName) {
+        return () -> {
+            long cnt = 0;
+
+            for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
+                MetricRegistryImpl mreg = getFieldValue(k2i, "mreg");
+                Function<String, Long> longMetric = m -> mreg.<AtomicLongMetric>findMetric(m).value();
+
+                cnt += longMetric.apply(metricName);
+            }
+
+            return cnt;
+        };
+    }
+
+    /**
+     * Checks metrics for Kafka To Ignite consumer
+     * @param longMetric Long metric.
+     */
+    private void checkK2IMetrics(Function<String, Long> longMetric) {
+        assertNotNull(longMetric.apply(K2I_LAST_EVT_RSVD_TIME));
+        assertNotNull(longMetric.apply(K2I_EVTS_RSVD_CNT));
+
+        assertNotNull(longMetric.apply(K2I_LAST_MSG_SNT_TIME));
+        assertNotNull(longMetric.apply(K2I_MSGS_SNT_CNT));
     }
 
     /**
@@ -209,15 +270,21 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
+        AbstractKafkaToIgniteCdcStreamer k2i;
+
         if (clientType == ClientType.THIN_CLIENT) {
             ClientConfiguration clientCfg = new ClientConfiguration();
 
             clientCfg.setAddresses(hostAddresses(dest));
 
-            return runAsync(new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg));
+            k2i = new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg);
         }
         else
-            return runAsync(new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg));
+            k2i = new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg);
+
+        k2is.add(k2i);
+
+        return runAsync(k2i);
     }
 
     /** */
