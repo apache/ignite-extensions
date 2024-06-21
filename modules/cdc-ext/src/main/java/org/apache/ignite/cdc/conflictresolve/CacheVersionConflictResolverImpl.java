@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,17 +68,48 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
+    /** Conflict Resolver metric registry. */
+    private final MetricRegistryImpl mreg;
+
+    /** Counter of new entry selected. */
+    private final AtomicLongMetric newCnt;
+
+    /** Counter of old entry selected. */
+    private final AtomicLongMetric oldCnt;
+
+    /** Count of the new version used name. */
+    private final String NEW_EVENTS_CNT = "newSelectedCount";
+
+    /** Count of the new version used description. */
+    private final String NEW_EVENTS_CNT_DESC = "Count of new version used";
+
+    /** Count of the old version used name. */
+    private final String OLD_EVENTS_CNT = "oldSelectedCount";
+
+    /** Count of the old version used description. */
+    private final String OLD_EVENTS_CNT_DESC = "Count of old version used";
+
     /**
      * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
      */
-    public CacheVersionConflictResolverImpl(byte clusterId, String conflictResolveField, IgniteLogger log) {
+    public CacheVersionConflictResolverImpl(
+        byte clusterId,
+        String conflictResolveField,
+        IgniteLogger log,
+        MetricRegistryImpl mreg
+    ) {
         this.clusterId = clusterId;
         this.conflictResolveField = conflictResolveField;
         this.log = log;
 
         conflictResolveFieldEnabled = conflictResolveField != null;
+
+        this.mreg = mreg;
+
+        newCnt = mreg.longMetric(NEW_EVENTS_CNT, NEW_EVENTS_CNT_DESC);
+        oldCnt = mreg.longMetric(OLD_EVENTS_CNT, OLD_EVENTS_CNT_DESC);
     }
 
     /** {@inheritDoc} */
@@ -90,10 +123,14 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         boolean useNew = isUseNew(ctx, oldEntry, newEntry);
 
-        if (useNew)
+        if (useNew) {
+            newCnt.increment();
             res.useNew();
-        else
+        }
+        else {
+            oldCnt.increment();
             res.useOld();
+        }
 
         return res;
     }

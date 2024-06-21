@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -54,6 +55,9 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     /** Grid cache context. */
     private GridCacheContext<K, V> cctx;
 
+    /** Conflict Resolver metric registry. */
+    private MetricRegistryImpl mreg;
+
     /**
      * @param conflictResolveField Field to resolve conflicts.
      * @param clusterId Cluster id.
@@ -78,14 +82,16 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
             rslvr = new DebugCacheVersionConflictResolverImpl(
                 clusterId,
                 conflictResolveField,
-                conflictResolverLog
+                conflictResolverLog,
+                mreg
             );
         }
         else {
             rslvr = new CacheVersionConflictResolverImpl(
                 clusterId,
                 conflictResolveField,
-                conflictResolverLog
+                conflictResolverLog,
+                mreg
             );
         }
 
@@ -99,6 +105,8 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
         this.cctx = cctx;
         this.log = cctx.logger(CacheConflictResolutionManagerImpl.class);
         this.conflictResolverLog = cctx.logger(CacheVersionConflictResolverImpl.class);
+
+        mreg = cctx.grid().context().metric().registry("conflictResolver");
     }
 
     /** {@inheritDoc} */
