@@ -81,7 +81,7 @@ public class KafkaToIgniteMetrics {
     private AtomicLongMetric evtsSntCnt;
 
     /** Count of received markers. */
-    protected AtomicLongMetric markersCnt;
+    private AtomicLongMetric markersCnt;
 
     /** Standalone kernal context. */
     private StandaloneGridKernalContext kctx;
@@ -90,15 +90,23 @@ public class KafkaToIgniteMetrics {
     private MetricRegistryImpl mreg;
 
     /** */
-    protected IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Streamer configuration. */
-    protected final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
+    private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
+
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** */
-    private KafkaToIgniteMetrics(IgniteLogger log, KafkaToIgniteCdcStreamerConfiguration streamerCfg) throws IgniteCheckedException {
+    private KafkaToIgniteMetrics(
+        IgniteLogger log,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
+        String igniteInstanceName
+    ) throws IgniteCheckedException {
         this.log = log;
         this.streamerCfg = streamerCfg;
+        this.igniteInstanceName = igniteInstanceName;
 
         initStandaloneMetricsKernal();
         initMetrics();
@@ -108,11 +116,16 @@ public class KafkaToIgniteMetrics {
      * Creates an instance of {@link KafkaToIgniteMetrics}.
      * @param log Logger.
      * @param streamerCfg Streamer config.
+     * @param igniteInstanceName Ignite instance name.
      * @return {@link KafkaToIgniteMetrics} instance.
      */
-    public static KafkaToIgniteMetrics startMetrics(IgniteLogger log, KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+    public static KafkaToIgniteMetrics startMetrics(
+        IgniteLogger log,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
+        String igniteInstanceName
+    ) {
         try {
-            return new KafkaToIgniteMetrics(log, streamerCfg);
+            return new KafkaToIgniteMetrics(log, streamerCfg, igniteInstanceName);
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
@@ -120,12 +133,12 @@ public class KafkaToIgniteMetrics {
     }
 
     /** @throws IgniteCheckedException If failed. */
-    protected void initStandaloneMetricsKernal() throws IgniteCheckedException {
+    private void initStandaloneMetricsKernal() throws IgniteCheckedException {
         kctx = new StandaloneGridKernalContext(log, null, null) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setIgniteInstanceName("kafka-ignite-streamer");
+                cfg.setIgniteInstanceName("kafka-ignite-streamer-" + igniteInstanceName);
 
                 if (!F.isEmpty(streamerCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(streamerCfg.getMetricExporterSpi());
@@ -167,7 +180,8 @@ public class KafkaToIgniteMetrics {
      * Stops metric manager and metrics SPI.
      */
     public void stopMetrics() throws IgniteCheckedException {
-        closeAllComponents(kctx);
+        if (kctx != null)
+            closeAllComponents(kctx);
     }
 
     /**

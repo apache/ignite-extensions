@@ -130,13 +130,12 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             ackAsciiLogo(log);
 
-            metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg);
-
             try {
                 runx();
             }
             finally {
-                metrics.stopMetrics();
+                if (metrics != null)
+                    metrics.stopMetrics();
 
                 if (log.isInfoEnabled())
                     log.info("Ignite Change Data Capture Application stopped.");
@@ -149,6 +148,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** */
     protected void runAppliers() {
+        metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg, getIgniteInstanceName());
+
         AtomicBoolean stopped = new AtomicBoolean();
 
         Set<Integer> caches = null;
@@ -234,6 +235,9 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** Checks that configured caches exist in a destination cluster. */
     protected abstract void checkCaches(Collection<String> caches);
+
+    /** @return Ignite instance name. */
+    protected abstract String getIgniteInstanceName();
 
     /** */
     private void ackAsciiLogo(IgniteLogger log) {

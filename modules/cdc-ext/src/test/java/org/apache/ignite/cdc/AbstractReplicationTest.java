@@ -286,8 +286,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             runAsync(generateData(IGNORED_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
             runAsync(generateData(ACTIVE_PASSIVE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
 
-            checkMetricsCount(0, 0);
-
             IgniteCache<Integer, ConflictResolvableTestData> srcCache =
                 createCache(srcCluster[srcCluster.length - 1], ACTIVE_PASSIVE_CACHE);
 
