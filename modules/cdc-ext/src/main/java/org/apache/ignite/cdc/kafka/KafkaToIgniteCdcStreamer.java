@@ -127,4 +127,9 @@ public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
     @Override protected void checkCaches(Collection<String> caches) {
         caches.forEach(name -> Objects.requireNonNull(ign.cache(name), name + " not exists!"));
     }
+
+    /** {@inheritDoc} */
+    @Override protected String getIgniteInstanceName() {
+        return ign.name();
+    }
 }
