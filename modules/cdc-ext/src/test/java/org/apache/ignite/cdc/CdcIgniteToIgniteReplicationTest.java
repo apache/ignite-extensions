@@ -34,9 +34,9 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.I2I_EVTS_SNT_CNT;
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.I2I_LAST_EVT_SNT_TIME;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_EVTS_SNT_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_LAST_EVT_SNT_TIME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 

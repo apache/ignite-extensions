@@ -38,11 +38,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.metrics.MetricsHolder;
+import org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -52,11 +51,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.META_UPDATE_MARKER;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MARKERS_RSVD_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT;
 
 /**
  * Thread that polls message from the Kafka topic partitions and applies those messages to the Ignite caches.
@@ -132,8 +126,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
 
-    /** Metrics DTO for appliers. */
-    private MetricsHolder metricsHolder;
+    /** CDC kafka to ignite metrics */
+    private final KafkaToIgniteMetrics metrics;
 
     /**
      * @param applierSupplier Cdc events applier supplier.
@@ -145,7 +139,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
-     * @param metricsHolder Metrics holder.
+     * @param metrics CDC K2I metrics.
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,
@@ -157,7 +151,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         Set<Integer> caches,
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped,
-        MetricsHolder metricsHolder
+        KafkaToIgniteMetrics metrics
     ) {
         this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
@@ -170,7 +164,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
-        this.metricsHolder = metricsHolder;
+        this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
@@ -232,10 +226,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
-        if (recs.count() > 0) {
-            metricsHolder.getMetric(K2I_EVTS_RSVD_CNT, AtomicLongMetric.class).add(recs.count());
-            metricsHolder.getMetric(K2I_LAST_EVT_RSVD_TIME, AtomicLongMetric.class).value(System.currentTimeMillis());
-        }
+        if (recs.count() > 0)
+            metrics.addReceivedEvents(recs.count());
 
         if (log.isInfoEnabled()) {
             log.info(
@@ -245,12 +237,10 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             );
         }
 
-        long msgsSntCur = applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+        int msgsSntCur = applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
 
-        if (msgsSntCur > 0) {
-            metricsHolder.getMetric(K2I_MSGS_SNT_CNT, AtomicLongMetric.class).add(msgsSntCur);
-            metricsHolder.getMetric(K2I_LAST_MSG_SNT_TIME, AtomicLongMetric.class).value(System.currentTimeMillis());
-        }
+        if (msgsSntCur > 0)
+            metrics.addSentEvents(msgsSntCur);
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
@@ -267,8 +257,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
             metaUpdr.updateMetadata();
 
-            metricsHolder.getMetric(K2I_MARKERS_RSVD_CNT, AtomicLongMetric.class).increment();
-            metricsHolder.getMetric(K2I_EVTS_RSVD_CNT, AtomicLongMetric.class).decrement();
+            metrics.incrementMarkers();
+            metrics.decrementReceivedEvents();
 
             return false;
         }

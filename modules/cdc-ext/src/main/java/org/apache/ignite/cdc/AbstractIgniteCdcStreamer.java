@@ -36,14 +36,6 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
 import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_PRIMARY;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_EVTS_SNT_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_EVTS_SNT_CNT_DESC;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_LAST_EVT_SNT_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_LAST_EVT_SNT_TIME_DESC;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_MAPPINGS_SNT_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_MAPPINGS_SNT_CNT_DESC;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_TYPES_SNT_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_TYPES_SNT_CNT_DESC;
 
 /**
  * Change Data Consumer that streams all data changes to destination cluster by the provided {@link #applier}.
@@ -51,6 +43,30 @@ import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2I_TYPES_SNT_CNT_DE
  * @see AbstractCdcEventsApplier
  */
 public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
+    /** */
+    public static final String I2I_EVTS_SNT_CNT = "EventsCount";
+
+    /** */
+    public static final String I2I_EVTS_SNT_CNT_DESC = "Count of messages applied to destination cluster";
+
+    /** */
+    public static final String I2I_TYPES_SNT_CNT = "TypesCount";
+
+    /** */
+    public static final String I2I_TYPES_SNT_CNT_DESC = "Count of binary types events applied to destination cluster";
+
+    /** */
+    public static final String I2I_MAPPINGS_SNT_CNT = "MappingsCount";
+
+    /** */
+    public static final String I2I_MAPPINGS_SNT_CNT_DESC = "Count of mappings events applied to destination cluster";
+
+    /** */
+    public static final String I2I_LAST_EVT_SNT_TIME = "LastEventTime";
+
+    /** */
+    public static final String I2I_LAST_EVT_SNT_TIME_DESC = "Timestamp of last applied event to destination cluster";
+
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
