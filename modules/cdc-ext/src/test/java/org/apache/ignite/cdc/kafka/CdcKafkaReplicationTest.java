@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,14 +38,14 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.I2K_BYTES_SNT;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.I2K_EVTS_SNT_CNT;
+import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.I2K_LAST_EVT_SNT_TIME;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_BYTES_SNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_EVTS_SNT_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.I2K_LAST_EVT_SNT_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_EVTS_RSVD_CNT;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_EVT_RSVD_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_LAST_MSG_SNT_TIME;
-import static org.apache.ignite.cdc.metrics.MetricsGlossary.K2I_MSGS_SNT_CNT;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics.K2I_EVTS_RSVD_CNT;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics.K2I_LAST_EVT_RSVD_TIME;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics.K2I_LAST_MSG_SNT_TIME;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics.K2I_MSGS_SNT_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -157,7 +158,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         super.checkMetrics();
 
         for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
-            MetricRegistryImpl mreg = getFieldValue(k2i, "mreg");
+            KafkaToIgniteMetrics metrics = getFieldValue(k2i, "metrics");
+            MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
             checkK2IMetrics(m -> mreg.<AtomicLongMetric>findMetric(m).value());
         }
     }
@@ -185,7 +187,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             long cnt = 0;
 
             for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
-                MetricRegistryImpl mreg = getFieldValue(k2i, "mreg");
+                KafkaToIgniteMetrics metrics = getFieldValue(k2i, "metrics");
+                MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
                 Function<String, Long> longMetric = m -> mreg.<AtomicLongMetric>findMetric(m).value();
 
                 cnt += longMetric.apply(metricName);
