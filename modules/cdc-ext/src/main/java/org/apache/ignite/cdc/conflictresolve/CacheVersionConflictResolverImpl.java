@@ -78,16 +78,16 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     private final AtomicLongMetric oldCnt;
 
     /** Count of the new version used name. */
-    private final String NEW_EVENTS_CNT = "newSelectedCount";
+    public static final String NEW_EVENTS_CNT = "newSelectedCount";
 
     /** Count of the new version used description. */
-    private final String NEW_EVENTS_CNT_DESC = "Count of new version used";
+    public static final String NEW_EVENTS_CNT_DESC = "Count of new version used";
 
     /** Count of the old version used name. */
-    private final String OLD_EVENTS_CNT = "oldSelectedCount";
+    public static final String OLD_EVENTS_CNT = "oldSelectedCount";
 
     /** Count of the old version used description. */
-    private final String OLD_EVENTS_CNT_DESC = "Count of old version used";
+    public static final String OLD_EVENTS_CNT_DESC = "Count of old version used";
 
     /**
      * @param clusterId Data center id.

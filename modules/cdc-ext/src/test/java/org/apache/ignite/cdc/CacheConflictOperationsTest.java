@@ -24,8 +24,11 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
@@ -49,6 +52,8 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.NEW_EVENTS_CNT;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.OLD_EVENTS_CNT;
 
 /**
  * Cache conflict operations test.
@@ -76,13 +81,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static IgniteCache<String, ConflictResolvableTestData> cache;
+    private IgniteCache<String, ConflictResolvableTestData> cache;
 
     /** */
-    private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
+    private IgniteInternalCache<BinaryObject, BinaryObject> cachex;
 
     /** */
-    private static IgniteEx client;
+    private IgniteEx client;
+
+    /** */
+    private IgniteEx ign;
 
     /** */
     private static final byte FIRST_CLUSTER_ID = 1;
@@ -105,22 +113,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(1);
-
-        client = startClientGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        cache = null;
-        cachex = null;
-        client = null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        ign = startGrid(1);
+
+        client = startClientGrid(2);
 
         if (cachex == null || cachex.configuration().getAtomicityMode() != cacheMode) {
             if (cachex != null)
@@ -131,6 +129,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
             cachex = client.cachex(DEFAULT_CACHE_NAME);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
@@ -197,6 +200,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Remove with the higher topVer should succeed.
         putConflict(key, new GridCacheVersion(3, order, 1, otherClusterId), true);
 
+        checkMetrics(4, 8);
+
         key = key("UpdateClusterUpdateReorder3", otherClusterId);
 
         int topVer = 1;
@@ -207,12 +212,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         putConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
+        checkMetrics(5, 10);
+
         // Remove with the equal or lower nodeOrder should ignored.
         removeConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         removeConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+
+        checkMetrics(6, 12);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -333,5 +342,27 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
+    }
+
+    /** Checks metrics for conflict resolver. */
+    protected void checkMetrics(int newCnt, int oldCnt) {
+        Function<DynamicMBean, Function<String, ?>> jmxVal = mxBean -> m -> {
+            try {
+                return mxBean.getAttribute(m);
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        };
+
+        DynamicMBean jmxCdcReg = metricRegistry(ign.name(), null, "conflictResolver");
+
+        checkResolverMetrics((Function<String, Long>)jmxVal.apply(jmxCdcReg), newCnt, oldCnt);
+    }
+
+    /** */
+    private void checkResolverMetrics(Function<String, Long> longMetric, int newCnt, int oldCnt) {
+        assertEquals(newCnt, (long)longMetric.apply(NEW_EVENTS_CNT));
+        assertEquals(oldCnt, (long)longMetric.apply(OLD_EVENTS_CNT));
     }
 }
