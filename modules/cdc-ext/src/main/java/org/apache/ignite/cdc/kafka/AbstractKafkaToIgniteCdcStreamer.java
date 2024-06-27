@@ -159,10 +159,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
         int counter = 0;
 
-        StringBuilder kafkaLog = new StringBuilder("Kafka topic partitions distribution [totalKafkaParts=")
-            .append(kafkaParts).append(", from=").append(kafkaPartsFrom).append(", to=").append(streamerCfg.getKafkaPartsTo())
-            .append(", threadCnt=").append(threadCnt).append(", distribution=[");
-
         while (kafkaParts > 0) {
             int partPerApplier = kafkaParts / threadCnt + (kafkaParts % threadCnt > 0 ? 1 : 0);
 
@@ -191,21 +187,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             kafkaPartsFrom += partPerApplier;
 
-            kafkaLog.append("applier-thread-").append(counter).append(" [from=").append(from).append(", to=").append(to)
-                .append(']');
-
-            if(streamerCfg.getKafkaPartsTo() != to)
-                kafkaLog.append(", ");
-
             counter++;
         }
-
-        kafkaLog
-            .append(']')
-            .append(']');
-
-        if(log.isInfoEnabled())
-            log.info(kafkaLog.toString());
 
         try {
             for (Thread run: runners)

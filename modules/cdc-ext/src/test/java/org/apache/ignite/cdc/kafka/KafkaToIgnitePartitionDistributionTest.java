@@ -36,10 +36,10 @@ public class KafkaToIgnitePartitionDistributionTest extends GridCommonAbstractTe
     public static final String SRC_DEST_META_TOPIC = "source-dest-meta";
 
     /** Partitions number. */
-    public static final int DFLT_PARTS = 48;
+    public static final int DFLT_PARTS = 24;
 
     /** Thread counts. */
-    public static final int[] DFLT_THREAD_CNT = new int[] {7, 8, 9};
+    public static final int[] DFLT_THREAD_CNT = new int[] {3, 4, 5};
 
     /** Kafka. */
     private static EmbeddedKafkaCluster KAFKA = null;
@@ -47,34 +47,85 @@ public class KafkaToIgnitePartitionDistributionTest extends GridCommonAbstractTe
     /** Listening logger. */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-    /** Kafka topic partitions distribution listener. */
-    private static final LogListener KAFKA_TOPIC_LOG_1 = LogListener.matches("Kafka topic partitions distribution " +
-            "[totalKafkaParts=16, from=0, to=16, threadCnt=7, distribution=[applier-thread-0 [from=0, to=3], " +
-            "applier-thread-1 [from=3, to=6], applier-thread-2 [from=6, to=8], applier-thread-3 [from=8, to=10], " +
-            "applier-thread-4 [from=10, to=12], applier-thread-5 [from=12, to=14], applier-thread-6 [from=14, to=16]]]")
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_3_1 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=0, partTo=3].")
         .times(1)
         .build();
 
-    /** Kafka topic partitions distribution listener. */
-    private static final LogListener KAFKA_TOPIC_LOG_2 = LogListener.matches("Kafka topic partitions distribution " +
-            "[totalKafkaParts=16, from=16, to=32, threadCnt=8, distribution=[applier-thread-0 [from=16, to=18], " +
-            "applier-thread-1 [from=18, to=20], applier-thread-2 [from=20, to=22], applier-thread-3 [from=22, to=24], " +
-            "applier-thread-4 [from=24, to=26], applier-thread-5 [from=26, to=28], applier-thread-6 [from=28, to=30], " +
-            "applier-thread-7 [from=30, to=32]]]")
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_3_2 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=3, partTo=6].")
         .times(1)
         .build();
 
-    /** Kafka topic partitions distribution listener. */
-    private static final LogListener KAFKA_TOPIC_LOG_3 = LogListener.matches("Kafka topic partitions distribution " +
-            "[totalKafkaParts=16, from=32, to=48, threadCnt=9, distribution=[applier-thread-0 [from=32, to=34], " +
-            "applier-thread-1 [from=34, to=36], applier-thread-2 [from=36, to=38], applier-thread-3 [from=38, to=40], " +
-            "applier-thread-4 [from=40, to=42], applier-thread-5 [from=42, to=44], applier-thread-6 [from=44, to=46], " +
-            "applier-thread-7 [from=46, to=47], applier-thread-8 [from=47, to=48]]]")
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_3_3 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=6, partTo=8].")
         .times(1)
         .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_4_1 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=8, partTo=10].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_4_2 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=10, partTo=12].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_4_3 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=12, partTo=14].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_4_4 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=14, partTo=16].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_5_1 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=16, partTo=18].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_5_2 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=18, partTo=20].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_5_3 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=20, partTo=22].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_5_4 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=22, partTo=23].")
+        .times(1)
+        .build();
+
+    /** */
+    private static final LogListener KAFKA_TOPIC_LOG_5_5 = LogListener.matches(
+            "Kafka to Ignite applier started [topic=" + DEST_SRC_TOPIC + ", partFrom=23, partTo=24].")
+        .times(1)
+        .build();
+
 
     /** Kafka logs. */
-    private static final List<LogListener> KAFKA_LOGS = Arrays.asList(KAFKA_TOPIC_LOG_1, KAFKA_TOPIC_LOG_2, KAFKA_TOPIC_LOG_3);
+    private static final List<LogListener> KAFKA_LOGS = Arrays.asList(
+        KAFKA_TOPIC_LOG_3_1, KAFKA_TOPIC_LOG_3_2, KAFKA_TOPIC_LOG_3_3,
+        KAFKA_TOPIC_LOG_4_1, KAFKA_TOPIC_LOG_4_2, KAFKA_TOPIC_LOG_4_3, KAFKA_TOPIC_LOG_4_4,
+        KAFKA_TOPIC_LOG_5_1, KAFKA_TOPIC_LOG_5_2, KAFKA_TOPIC_LOG_5_3, KAFKA_TOPIC_LOG_5_4, KAFKA_TOPIC_LOG_5_5
+    );
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
