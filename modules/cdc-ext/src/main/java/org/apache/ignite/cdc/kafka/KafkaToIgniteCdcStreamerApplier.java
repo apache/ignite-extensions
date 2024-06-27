@@ -168,6 +168,10 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void run() {
+        if (log.isInfoEnabled())
+            log.info("Kafka to Ignite applier started [topic=" + topic + ", partFrom=" + kafkaPartFrom +
+                ", partTo=" + kafkaPartTo + "].");
+
         applier = applierSupplier.get();
 
         try {
