@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -226,9 +225,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
-        if (recs.count() > 0)
-            metrics.addReceivedEvents(recs.count());
-
         if (log.isInfoEnabled()) {
             log.info(
                 "Polled from consumer [assignments=" + cnsmr.assignment() +
@@ -258,7 +254,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             metaUpdr.updateMetadata();
 
             metrics.incrementMarkers();
-            metrics.decrementReceivedEvents();
 
             return false;
         }
@@ -271,6 +266,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return CDC event.
      */
     private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
+        metrics.incrementReceivedEvents();
+
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
             return (CdcEvent)is.readObject();
         }
