@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.metrics.KafkaToIgniteMetrics;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -130,6 +129,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             ackAsciiLogo(log);
 
+            metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg);
+
             try {
                 runx();
             }
@@ -148,8 +149,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** */
     protected void runAppliers() {
-        metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg, getIgniteInstanceName());
-
         AtomicBoolean stopped = new AtomicBoolean();
 
         Set<Integer> caches = null;
@@ -235,9 +234,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** Checks that configured caches exist in a destination cluster. */
     protected abstract void checkCaches(Collection<String> caches);
-
-    /** @return Ignite instance name. */
-    protected abstract String getIgniteInstanceName();
 
     /** */
     private void ackAsciiLogo(IgniteLogger log) {

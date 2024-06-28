@@ -80,40 +80,40 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
 @IgniteExperimental
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** */
-    public static final String I2K_EVTS_SNT_CNT = "EventsCount";
+    public static final String EVTS_SNT_CNT = "EventsCount";
 
     /** */
-    public static final String I2K_EVTS_SNT_CNT_DESC = "Count of messages applied to Kafka";
+    public static final String EVTS_SNT_CNT_DESC = "Count of messages sent to Kafka";
 
     /** */
-    public static final String I2K_TYPES_SNT_CNT = "TypesCount";
+    public static final String TYPES_SNT_CNT = "TypesCount";
 
     /** */
-    public static final String I2K_TYPES_SNT_CNT_DESC = "Count of binary types events applied to Kafka";
+    public static final String TYPES_SNT_CNT_DESC = "Count of binary types events sent to Kafka";
 
     /** */
-    public static final String I2K_MAPPINGS_SNT_CNT = "MappingsCount";
+    public static final String MAPPINGS_SNT_CNT = "MappingsCount";
 
     /** */
-    public static final String I2K_MAPPINGS_SNT_CNT_DESC = "Count of mappings events applied to Kafka";
+    public static final String MAPPINGS_SNT_CNT_DESC = "Count of mappings events sent to Kafka";
 
     /** */
-    public static final String I2K_LAST_EVT_SNT_TIME = "LastEventTime";
+    public static final String LAST_EVT_SNT_TIME = "LastEventTime";
 
     /** */
-    public static final String I2K_LAST_EVT_SNT_TIME_DESC = "Timestamp of last applied event to Kafka";
+    public static final String LAST_EVT_SNT_TIME_DESC = "Timestamp of last sent event to Kafka";
 
     /** Bytes sent metric name. */
-    public static final String I2K_BYTES_SNT = "BytesSent";
+    public static final String BYTES_SNT = "BytesSent";
 
     /** Bytes sent metric description. */
-    public static final String I2K_BYTES_SNT_DESC = "Count of bytes sent to Kafka";
+    public static final String BYTES_SNT_DESC = "Count of bytes sent to Kafka";
 
     /** Count of metadata markers sent name. */
-    public static final String I2K_MARKERS_SNT_CNT = "MarkersCount";
+    public static final String MARKERS_SNT_CNT = "MarkersCount";
 
     /** Count of metadata markers sent description. */
-    public static final String I2K_MARKERS_SNT_CNT_DESC = "Count of metadata markers sent to Kafka";
+    public static final String MARKERS_SNT_CNT_DESC = "Count of metadata markers sent to Kafka";
 
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
@@ -353,12 +353,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = mreg.longMetric(I2K_EVTS_SNT_CNT, I2K_EVTS_SNT_CNT_DESC);
-        this.lastMsgTs = mreg.longMetric(I2K_LAST_EVT_SNT_TIME, I2K_LAST_EVT_SNT_TIME_DESC);
-        this.bytesSnt = mreg.longMetric(I2K_BYTES_SNT, I2K_BYTES_SNT_DESC);
-        this.typesCnt = mreg.longMetric(I2K_TYPES_SNT_CNT, I2K_TYPES_SNT_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(I2K_MAPPINGS_SNT_CNT, I2K_MAPPINGS_SNT_CNT_DESC);
-        this.markersCnt = mreg.longMetric(I2K_MARKERS_SNT_CNT, I2K_MARKERS_SNT_CNT_DESC);
+        this.evtsCnt = mreg.longMetric(EVTS_SNT_CNT, EVTS_SNT_CNT_DESC);
+        this.lastMsgTs = mreg.longMetric(LAST_EVT_SNT_TIME, LAST_EVT_SNT_TIME_DESC);
+        this.bytesSnt = mreg.longMetric(BYTES_SNT, BYTES_SNT_DESC);
+        this.typesCnt = mreg.longMetric(TYPES_SNT_CNT, TYPES_SNT_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_SNT_CNT, MAPPINGS_SNT_CNT_DESC);
+        this.markersCnt = mreg.longMetric(MARKERS_SNT_CNT, MARKERS_SNT_CNT_DESC);
 
         futs = new ArrayList<>(maxBatchSz);
     }

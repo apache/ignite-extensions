@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.metrics;
+package org.apache.ignite.cdc.kafka;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
@@ -27,46 +31,48 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.startAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** CDC kafka to ignite metrics. */
 public class KafkaToIgniteMetrics {
     /** Count of events received name. */
-    public static final String K2I_EVTS_RSVD_CNT = "EventsReceivedCount";
+    public static final String EVTS_RSVD_CNT = "EventsReceivedCount";
 
     /** Count of events received description. */
-    public static final String K2I_EVTS_RSVD_CNT_DESC = "Count of events received from kafka";
+    public static final String EVTS_RSVD_CNT_DESC = "Count of events received from Kafka";
 
     /** Timestamp of last received event name. */
-    public static final String K2I_LAST_EVT_RSVD_TIME = "LastEventReceivedTime";
+    public static final String LAST_EVT_RSVD_TIME = "LastEventReceivedTime";
 
     /** Timestamp of last received event description. */
-    public static final String K2I_LAST_EVT_RSVD_TIME_DESC = "Timestamp of last received event from kafka";
+    public static final String LAST_EVT_RSVD_TIME_DESC = "Timestamp of last received event from Kafka";
 
     /** Count of metadata markers received name. */
-    public static final String K2I_MARKERS_RSVD_CNT = "MarkersCount";
+    public static final String MARKERS_RSVD_CNT = "MarkersCount";
 
     /** Count of metadata markers received description. */
-    public static final String K2I_MARKERS_RSVD_CNT_DESC = "Count of metadata markers received from Kafka";
+    public static final String MARKERS_RSVD_CNT_DESC = "Count of metadata markers received from Kafka";
 
     /** Count of events sent name. */
-    public static final String K2I_MSGS_SNT_CNT = "EventsSentCount";
+    public static final String MSGS_SNT_CNT = "EventsSentCount";
 
     /** Count of events sent description. */
-    public static final String K2I_MSGS_SNT_CNT_DESC = "Count of events sent to destination cluster";
+    public static final String MSGS_SNT_CNT_DESC = "Count of events sent to destination cluster";
 
     /** Timestamp of last sent batch name. */
-    public static final String K2I_LAST_MSG_SNT_TIME = "LastBatchSentTime";
+    public static final String LAST_MSG_SNT_TIME = "LastBatchSentTime";
 
     /** Timestamp of last sent batch description. */
-    public static final String K2I_LAST_MSG_SNT_TIME_DESC = "Timestamp of last sent batch to the destination cluster";
+    public static final String LAST_MSG_SNT_TIME_DESC = "Timestamp of last sent batch to the destination cluster";
 
     /** Timestamp of last received message. */
     private AtomicLongMetric lastRcvdEvtTs;
@@ -95,18 +101,13 @@ public class KafkaToIgniteMetrics {
     /** Streamer configuration. */
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
-    /** Ignite instance name. */
-    private final String igniteInstanceName;
-
     /** */
     private KafkaToIgniteMetrics(
         IgniteLogger log,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
-        String igniteInstanceName
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) throws IgniteCheckedException {
         this.log = log;
         this.streamerCfg = streamerCfg;
-        this.igniteInstanceName = igniteInstanceName;
 
         initStandaloneMetricsKernal();
         initMetrics();
@@ -116,16 +117,14 @@ public class KafkaToIgniteMetrics {
      * Creates an instance of {@link KafkaToIgniteMetrics}.
      * @param log Logger.
      * @param streamerCfg Streamer config.
-     * @param igniteInstanceName Ignite instance name.
      * @return {@link KafkaToIgniteMetrics} instance.
      */
     public static KafkaToIgniteMetrics startMetrics(
         IgniteLogger log,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
-        String igniteInstanceName
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg
     ) {
         try {
-            return new KafkaToIgniteMetrics(log, streamerCfg, igniteInstanceName);
+            return new KafkaToIgniteMetrics(log, streamerCfg);
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
@@ -138,7 +137,7 @@ public class KafkaToIgniteMetrics {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setIgniteInstanceName("kafka-ignite-streamer-" + igniteInstanceName);
+                cfg.setIgniteInstanceName(cdcInstanceName(streamerCfg.getMetricDirectoryName()));
 
                 if (!F.isEmpty(streamerCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(streamerCfg.getMetricExporterSpi());
@@ -159,21 +158,25 @@ public class KafkaToIgniteMetrics {
             }
         };
 
-        startAllComponents(kctx);
+        mreg = new MetricRegistryImpl(metricName("cdc", "applier"), null, null, log);
 
-        for (IgniteSpi metricSpi : kctx.config().getMetricExporterSpi())
-            metricSpi.onContextInitialized(new StandaloneSpiContext());
+        ReadOnlyMetricManager mregMgr = new SingleMetricRegistryManager(mreg);
+
+        for (MetricExporterSpi exporterSpi : kctx.config().getMetricExporterSpi()) {
+            kctx.resource().injectGeneric(exporterSpi);
+            exporterSpi.setMetricRegistry(mregMgr);
+            exporterSpi.onContextInitialized(new StandaloneSpiContext());
+            exporterSpi.spiStart(null);
+        }
     }
 
     /** Initialize metrics. */
     private void initMetrics() {
-        mreg = kctx.metric().registry(metricName("kafka-to-ignite-metrics"));
-
-        this.evtsRcvdCnt = mreg.longMetric(K2I_EVTS_RSVD_CNT, K2I_EVTS_RSVD_CNT_DESC);
-        this.lastRcvdEvtTs = mreg.longMetric(K2I_LAST_EVT_RSVD_TIME, K2I_LAST_EVT_RSVD_TIME_DESC);
-        this.evtsSntCnt = mreg.longMetric(K2I_MSGS_SNT_CNT, K2I_MSGS_SNT_CNT_DESC);
-        this.lastSntMsgTs = mreg.longMetric(K2I_LAST_MSG_SNT_TIME, K2I_LAST_MSG_SNT_TIME_DESC);
-        this.markersCnt = mreg.longMetric(K2I_MARKERS_RSVD_CNT, K2I_MARKERS_RSVD_CNT_DESC);
+        this.evtsRcvdCnt = mreg.longMetric(EVTS_RSVD_CNT, EVTS_RSVD_CNT_DESC);
+        this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RSVD_TIME, LAST_EVT_RSVD_TIME_DESC);
+        this.evtsSntCnt = mreg.longMetric(MSGS_SNT_CNT, MSGS_SNT_CNT_DESC);
+        this.lastSntMsgTs = mreg.longMetric(LAST_MSG_SNT_TIME, LAST_MSG_SNT_TIME_DESC);
+        this.markersCnt = mreg.longMetric(MARKERS_RSVD_CNT, MARKERS_RSVD_CNT_DESC);
     }
 
     /**
@@ -185,11 +188,10 @@ public class KafkaToIgniteMetrics {
     }
 
     /**
-     * Adds count to total number of received messages from kafka.
-     * @param cnt Count.
+     * Increments the number of received messages from kafka.
      */
-    public void addReceivedEvents(int cnt) {
-        this.evtsRcvdCnt.add(cnt);
+    public void incrementReceivedEvents() {
+        this.evtsRcvdCnt.increment();
         this.lastRcvdEvtTs.value(System.currentTimeMillis());
     }
 
@@ -210,5 +212,39 @@ public class KafkaToIgniteMetrics {
     /** Decrements the number of events received from kafka. */
     public void decrementReceivedEvents() {
         this.evtsRcvdCnt.decrement();
+    }
+
+    /** */
+    private static class SingleMetricRegistryManager implements ReadOnlyMetricManager {
+        /** */
+        private final ReadOnlyMetricRegistry mreg;
+
+        /** */
+        List<Consumer<ReadOnlyMetricRegistry>> removeLsnrs = new ArrayList<>();
+
+        /** */
+        private SingleMetricRegistryManager(ReadOnlyMetricRegistry mreg) {
+            this.mreg = mreg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addMetricRegistryRemoveListener(Consumer<ReadOnlyMetricRegistry> lsnr) {
+            removeLsnrs.add(lsnr);
+        }
+
+        /** */
+        public void stop() {
+            removeLsnrs.forEach(lsnr -> lsnr.accept(mreg));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<ReadOnlyMetricRegistry> iterator() {
+            return Collections.singleton(mreg).iterator();
+        }
     }
 }

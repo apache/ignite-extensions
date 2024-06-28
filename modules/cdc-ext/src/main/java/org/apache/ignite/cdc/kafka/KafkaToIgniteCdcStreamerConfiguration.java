@@ -48,6 +48,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
 
+    /** Default name for metrics registry directory for Kafka to Ignite CDC. */
+    public static final String DFLT_METRICS_DIR_NAME = "K2I";
+
     /** Events topic name. */
     private String evtTopic;
 
@@ -84,6 +87,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
+
+    /** Directory name for K2I CDC metrics. */
+    private String metricDirName;
 
     /**
      * @return Thread count.
@@ -250,5 +256,24 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
+    }
+
+    /**
+     * Sets directory name for metrics registers.
+     *
+     * @param name Directory name.
+     */
+    public void setMetricDirectoryName(String name) {
+        this.metricDirName = name;
+    }
+
+    /**
+     * @return Directory name for metrics registers.
+     */
+    public String getMetricDirectoryName() {
+        if (metricDirName == null)
+            return "metrics";
+
+        return metricDirName;
     }
 }

@@ -44,28 +44,28 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_
  */
 public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     /** */
-    public static final String I2I_EVTS_SNT_CNT = "EventsCount";
+    public static final String EVTS_SNT_CNT = "EventsCount";
 
     /** */
-    public static final String I2I_EVTS_SNT_CNT_DESC = "Count of messages applied to destination cluster";
+    public static final String EVTS_SNT_CNT_DESC = "Count of messages applied to destination cluster";
 
     /** */
-    public static final String I2I_TYPES_SNT_CNT = "TypesCount";
+    public static final String TYPES_SNT_CNT = "TypesCount";
 
     /** */
-    public static final String I2I_TYPES_SNT_CNT_DESC = "Count of binary types events applied to destination cluster";
+    public static final String TYPES_SNT_CNT_DESC = "Count of binary types events applied to destination cluster";
 
     /** */
-    public static final String I2I_MAPPINGS_SNT_CNT = "MappingsCount";
+    public static final String MAPPINGS_SNT_CNT = "MappingsCount";
 
     /** */
-    public static final String I2I_MAPPINGS_SNT_CNT_DESC = "Count of mappings events applied to destination cluster";
+    public static final String MAPPINGS_SNT_CNT_DESC = "Count of mappings events applied to destination cluster";
 
     /** */
-    public static final String I2I_LAST_EVT_SNT_TIME = "LastEventTime";
+    public static final String LAST_EVT_SNT_TIME = "LastEventTime";
 
     /** */
-    public static final String I2I_LAST_EVT_SNT_TIME_DESC = "Timestamp of last applied event to destination cluster";
+    public static final String LAST_EVT_SNT_TIME_DESC = "Timestamp of last applied event to destination cluster";
 
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
@@ -109,10 +109,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
-        this.evtsCnt = mreg.longMetric(I2I_EVTS_SNT_CNT, I2I_EVTS_SNT_CNT_DESC);
-        this.typesCnt = mreg.longMetric(I2I_TYPES_SNT_CNT, I2I_TYPES_SNT_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(I2I_MAPPINGS_SNT_CNT, I2I_MAPPINGS_SNT_CNT_DESC);
-        this.lastEvtTs = mreg.longMetric(I2I_LAST_EVT_SNT_TIME, I2I_LAST_EVT_SNT_TIME_DESC);
+        this.evtsCnt = mreg.longMetric(EVTS_SNT_CNT, EVTS_SNT_CNT_DESC);
+        this.typesCnt = mreg.longMetric(TYPES_SNT_CNT, TYPES_SNT_CNT_DESC);
+        this.mappingsCnt = mreg.longMetric(MAPPINGS_SNT_CNT, MAPPINGS_SNT_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(LAST_EVT_SNT_TIME, LAST_EVT_SNT_TIME_DESC);
     }
 
     /** {@inheritDoc} */
