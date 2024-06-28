@@ -254,6 +254,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             return false;
         }
 
+        metrics.incrementReceivedEvents();
+
         return F.isEmpty(caches) || caches.contains(rec.key());
     }
 
@@ -262,8 +264,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return CDC event.
      */
     private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
-        metrics.incrementReceivedEvents();
-
         try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
             return (CdcEvent)is.readObject();
         }
