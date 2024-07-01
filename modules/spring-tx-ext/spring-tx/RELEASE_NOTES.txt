@@ -1,6 +1,11 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
+Apache Ignite Spring Transactions Module 2.0.0
+--------------------------------------
+
+* Add Spring 6 support.
+
 Apache Ignite Spring Transactions Module 1.0.0
 ----------------------------------------------
 
