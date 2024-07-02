@@ -79,6 +79,9 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     /** */
     protected IgniteLogger log;
 
+    /** CDC kafka to ignite metrics */
+    private KafkaToIgniteMetrics metrics;
+
     /**
      * @param kafkaProps Kafka properties.
      * @param streamerCfg Streamer configuration.
@@ -126,7 +129,18 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             ackAsciiLogo(log);
 
-            runx();
+            metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg);
+
+            try {
+                runx();
+            }
+            finally {
+                if (metrics != null)
+                    metrics.stopMetrics();
+
+                if (log.isInfoEnabled())
+                    log.info("Ignite Change Data Capture Application stopped.");
+            }
         }
         catch (Exception e) {
             throw new IgniteException(e);
@@ -170,15 +184,13 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
-                streamerCfg.getTopic(),
+                streamerCfg,
                 kafkaPartsFrom + from,
                 kafkaPartsFrom + to,
                 caches,
-                streamerCfg.getMaxBatchSize(),
-                streamerCfg.getKafkaRequestTimeout(),
-                streamerCfg.getKafkaConsumerPollTimeout(),
                 metaUpdr,
-                stopped
+                stopped,
+                metrics
             );
 
             addAndStart("applier-thread-" + i, applier);

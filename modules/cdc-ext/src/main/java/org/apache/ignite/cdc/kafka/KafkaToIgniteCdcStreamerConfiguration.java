@@ -19,8 +19,11 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Configuration of {@link KafkaToIgniteCdcStreamer} application.
@@ -44,6 +47,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
+
+    /** Default name for metrics registry directory for Kafka to Ignite CDC. */
+    public static final String DFLT_METRICS_DIR_NAME = "K2I";
 
     /** Events topic name. */
     private String evtTopic;
@@ -78,6 +84,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      * Cache names to process.
      */
     private Collection<String> caches;
+
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
+
+    /** Directory name for K2I CDC metrics. */
+    private String metricDirName;
 
     /**
      * @return Thread count.
@@ -223,5 +235,45 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setMetadataConsumerGroup(String metaCnsmrGrp) {
         this.metadataCnsmrGrp = metaCnsmrGrp;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @see CdcConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
+     */
+    public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+    }
+
+    /**
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
+     *
+     * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
+    }
+
+    /**
+     * Sets directory name for metrics registers.
+     *
+     * @param name Directory name.
+     */
+    public void setMetricDirectoryName(String name) {
+        this.metricDirName = name;
+    }
+
+    /**
+     * @return Directory name for metrics registers.
+     */
+    public String getMetricDirectoryName() {
+        if (metricDirName == null)
+            return "metrics";
+
+        return metricDirName;
     }
 }

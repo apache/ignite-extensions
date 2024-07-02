@@ -178,6 +178,11 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         // Skip metrics check.
     }
 
+    /** {@inheritDoc} */
+    @Override protected void checkMetricsCount(int putCnt, int rmvCnt) {
+        // Skip metrics check.
+    }
+
     /** */
     private String prepareConfig(String path, Map<String, String> params) {
         try {
