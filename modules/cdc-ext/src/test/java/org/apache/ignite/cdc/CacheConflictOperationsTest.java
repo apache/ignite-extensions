@@ -52,8 +52,9 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.NEW_EVENTS_CNT;
-import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.OLD_EVENTS_CNT;
+import static org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl.CONFLICT_RESOLVER_METRICS_REGISTRY_NAME;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.ACCEPTED_EVENTS_CNT;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.REJECTED_EVENTS_CNT;
 
 /**
  * Cache conflict operations test.
@@ -346,7 +347,25 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Checks metrics for conflict resolver. */
     protected void checkMetrics(int newCnt, int oldCnt) {
-        Function<DynamicMBean, Function<String, ?>> jmxVal = mxBean -> m -> {
+        DynamicMBean jmxCdcReg = metricRegistry(ign.name(), null, CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
+
+        checkResolverMetrics((Function<String, Long>)metricExtractor(jmxCdcReg), newCnt, oldCnt);
+    }
+
+    /** */
+    private void checkResolverMetrics(Function<String, Long> longMetric, int newCnt, int oldCnt) {
+        assertEquals(newCnt, (long)longMetric.apply(ACCEPTED_EVENTS_CNT));
+        assertEquals(oldCnt, (long)longMetric.apply(REJECTED_EVENTS_CNT));
+    }
+
+    /**
+     * Creates lambda function, that converts metric name to its value. In other words it extracts jmx attribute for
+     * proposed MBean.
+     * @param mxBean {@link DynamicMBean} for which lambda should be created.
+     * @return {@link Function<String, ?>} which converts metric specified name to its value.
+     */
+    private static Function<String, ?> metricExtractor(DynamicMBean mxBean) {
+        return m -> {
             try {
                 return mxBean.getAttribute(m);
             }
@@ -354,15 +373,5 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
         };
-
-        DynamicMBean jmxCdcReg = metricRegistry(ign.name(), null, "conflictResolver");
-
-        checkResolverMetrics((Function<String, Long>)jmxVal.apply(jmxCdcReg), newCnt, oldCnt);
-    }
-
-    /** */
-    private void checkResolverMetrics(Function<String, Long> longMetric, int newCnt, int oldCnt) {
-        assertEquals(newCnt, (long)longMetric.apply(NEW_EVENTS_CNT));
-        assertEquals(oldCnt, (long)longMetric.apply(OLD_EVENTS_CNT));
     }
 }

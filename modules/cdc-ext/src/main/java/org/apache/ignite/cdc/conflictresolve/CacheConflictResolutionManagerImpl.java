@@ -31,6 +31,9 @@ import org.apache.ignite.lang.IgniteFuture;
  * @see CacheVersionConflictResolver
  */
 public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictResolutionManager<K, V> {
+    /** */
+    public static final String CONFLICT_RESOLVER_METRICS_REGISTRY_NAME = "conflict-resolver";
+
     /** Logger. */
     private IgniteLogger log;
 
@@ -55,9 +58,6 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     /** Grid cache context. */
     private GridCacheContext<K, V> cctx;
 
-    /** Conflict Resolver metric registry. */
-    private MetricRegistryImpl mreg;
-
     /**
      * @param conflictResolveField Field to resolve conflicts.
      * @param clusterId Cluster id.
@@ -75,6 +75,8 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     /** {@inheritDoc} */
     @Override public CacheVersionConflictResolver conflictResolver() {
         CacheVersionConflictResolver rslvr;
+
+        MetricRegistryImpl mreg = cctx.grid().context().metric().registry(CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
 
         if (resolver != null)
             rslvr = resolver;
@@ -105,8 +107,6 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
         this.cctx = cctx;
         this.log = cctx.logger(CacheConflictResolutionManagerImpl.class);
         this.conflictResolverLog = cctx.logger(CacheVersionConflictResolverImpl.class);
-
-        mreg = cctx.grid().context().metric().registry("conflictResolver");
     }
 
     /** {@inheritDoc} */

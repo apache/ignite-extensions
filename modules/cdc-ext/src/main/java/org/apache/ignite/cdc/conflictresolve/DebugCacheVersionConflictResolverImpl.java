@@ -29,6 +29,7 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
      * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
+     * @param mreg Metric registry.
      */
     public DebugCacheVersionConflictResolverImpl(
         byte clusterId,

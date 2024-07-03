@@ -174,13 +174,13 @@ Conflict resolution field should contain user provided monotonically increasing 
 . Conflict resolution failed. Update will be ignored.
 
 === Metrics
-Metrics are registered for each node configured with `CacheVersionConflictResolverPluginProvider`.
+Metrics are registered for each node configured with `CacheVersionConflictResolverPluginProvider`. With that provider the corresponding metrics MBean is registered under `org.apache.ignite-instance-name.conflict-resolver`.
 
 [cols="35%,65%",opts="header"]
 |===
 |Name |Description
-| `newSelectedCount` | Count of new version used.
-| `oldSelectedCount` | Count of old version used.
+| `AcceptedCount` | Counter of accepted entries.
+| `RejectedCount` | Counter of rejected entries.
 |===
 
 === Configuration example

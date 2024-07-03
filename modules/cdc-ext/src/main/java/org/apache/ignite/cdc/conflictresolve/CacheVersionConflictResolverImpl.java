@@ -68,9 +68,6 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
-    /** Conflict Resolver metric registry. */
-    private final MetricRegistryImpl mreg;
-
     /** Counter of new entry selected. */
     private final AtomicLongMetric newCnt;
 
@@ -78,21 +75,22 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     private final AtomicLongMetric oldCnt;
 
     /** Count of the new version used name. */
-    public static final String NEW_EVENTS_CNT = "newSelectedCount";
+    public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
 
     /** Count of the new version used description. */
-    public static final String NEW_EVENTS_CNT_DESC = "Count of new version used";
+    public static final String ACCEPTED_EVENTS_CNT_DESC = "Counter of accepted entries";
 
     /** Count of the old version used name. */
-    public static final String OLD_EVENTS_CNT = "oldSelectedCount";
+    public static final String REJECTED_EVENTS_CNT = "RejectedCount";
 
     /** Count of the old version used description. */
-    public static final String OLD_EVENTS_CNT_DESC = "Count of old version used";
+    public static final String REJECTED_EVENTS_CNT_DESC = "Counter of rejected entries";
 
     /**
      * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
+     * @param mreg Metric registry.
      */
     public CacheVersionConflictResolverImpl(
         byte clusterId,
@@ -106,10 +104,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         conflictResolveFieldEnabled = conflictResolveField != null;
 
-        this.mreg = mreg;
-
-        newCnt = mreg.longMetric(NEW_EVENTS_CNT, NEW_EVENTS_CNT_DESC);
-        oldCnt = mreg.longMetric(OLD_EVENTS_CNT, OLD_EVENTS_CNT_DESC);
+        newCnt = mreg.longMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
+        oldCnt = mreg.longMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
     }
 
     /** {@inheritDoc} */
