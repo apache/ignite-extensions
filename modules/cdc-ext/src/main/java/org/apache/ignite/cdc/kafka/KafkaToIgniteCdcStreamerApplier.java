@@ -138,7 +138,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
-     * @param metrics CDC K2I metrics.
+     * @param metrics CDC Kafka to Ignite metrics.
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,

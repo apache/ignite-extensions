@@ -74,14 +74,14 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     private static EmbeddedKafkaCluster KAFKA = null;
 
     /** */
-    protected List<AbstractKafkaToIgniteCdcStreamer> k2is;
+    protected List<AbstractKafkaToIgniteCdcStreamer> kafkaStreamers;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         KAFKA = initKafka(KAFKA);
-        k2is = new ArrayList<>();
+        kafkaStreamers = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
@@ -159,8 +159,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected void checkMetrics() throws IgniteInterruptedCheckedException {
         super.checkMetrics();
 
-        for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
-            KafkaToIgniteMetrics metrics = getFieldValue(k2i, "metrics");
+        for (AbstractKafkaToIgniteCdcStreamer streamer : kafkaStreamers) {
+            KafkaToIgniteMetrics metrics = getFieldValue(streamer, "metrics");
             MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
             checkK2IMetrics(m -> mreg.<AtomicLongMetric>findMetric(m).value());
         }
@@ -192,8 +192,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         return () -> {
             long cnt = 0;
 
-            for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
-                KafkaToIgniteMetrics metrics = getFieldValue(k2i, "metrics");
+            for (AbstractKafkaToIgniteCdcStreamer streamer : kafkaStreamers) {
+                KafkaToIgniteMetrics metrics = getFieldValue(streamer, "metrics");
                 MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
                 Function<String, Long> longMetric = m -> mreg.<AtomicLongMetric>findMetric(m).value();
 
@@ -212,8 +212,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         return () -> {
             long cnt = 0;
 
-            for (AbstractKafkaToIgniteCdcStreamer k2i : k2is) {
-                KafkaToIgniteCdcStreamerConfiguration streamerCfg = getFieldValue(k2i, "streamerCfg");
+            for (AbstractKafkaToIgniteCdcStreamer streamer : kafkaStreamers) {
+                KafkaToIgniteCdcStreamerConfiguration streamerCfg = getFieldValue(streamer, "streamerCfg");
 
                 DynamicMBean jmxApplierReg = metricRegistry(streamerCfg.getMetricRegistryName(), "cdc", "applier");
 
@@ -301,21 +301,21 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         cfg.setMetricRegistryName(DFLT_METRICS_REG_NAME + "-" + fromPart);
 
-        AbstractKafkaToIgniteCdcStreamer k2i;
+        AbstractKafkaToIgniteCdcStreamer streamer;
 
         if (clientType == ClientType.THIN_CLIENT) {
             ClientConfiguration clientCfg = new ClientConfiguration();
 
             clientCfg.setAddresses(hostAddresses(dest));
 
-            k2i = new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg);
+            streamer = new KafkaToIgniteClientCdcStreamer(clientCfg, kafkaProperties(), cfg);
         }
         else
-            k2i = new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg);
+            streamer = new KafkaToIgniteCdcStreamer(igniteCfg, kafkaProperties(), cfg);
 
-        k2is.add(k2i);
+        kafkaStreamers.add(streamer);
 
-        return runAsync(k2i);
+        return runAsync(streamer);
     }
 
     /** */
