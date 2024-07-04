@@ -299,7 +299,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
-        cfg.setMetricRegistryName(DFLT_METRICS_REG_NAME + "-" + fromPart);
+        cfg.setMetricRegistryName(DFLT_METRICS_REG_NAME + "-" + igniteCfg.getIgniteInstanceName());
 
         AbstractKafkaToIgniteCdcStreamer streamer;
 

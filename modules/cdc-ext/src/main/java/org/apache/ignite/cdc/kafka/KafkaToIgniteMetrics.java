@@ -212,11 +212,6 @@ public class KafkaToIgniteMetrics {
         this.markersCnt.increment();
     }
 
-    /** Decrements the number of events received from kafka. */
-    public void decrementReceivedEvents() {
-        this.evtsRcvdCnt.decrement();
-    }
-
     /** */
     private static class SingleMetricRegistryManager implements ReadOnlyMetricManager {
         /** */
