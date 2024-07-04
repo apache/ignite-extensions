@@ -167,7 +167,7 @@ public class KafkaToIgniteMetrics {
             kctx.resource().injectGeneric(exporterSpi);
             exporterSpi.setMetricRegistry(mregMgr);
             exporterSpi.onContextInitialized(new StandaloneSpiContext());
-            exporterSpi.spiStart(null);
+            exporterSpi.spiStart(streamerCfg.getMetricRegistryName());
         }
     }
 
