@@ -41,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,6 +51,9 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl.CONFLICT_RESOLVER_METRICS_REGISTRY_NAME;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.ACCEPTED_EVENTS_CNT;
+import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.REJECTED_EVENTS_CNT;
 
 /**
  * Cache conflict operations test.
@@ -76,15 +81,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static IgniteCache<String, ConflictResolvableTestData> cache;
-
-    /** */
-    private static IgniteInternalCache<BinaryObject, BinaryObject> cachex;
-
-    /** */
-    private static IgniteEx client;
-
-    /** */
     private static final byte FIRST_CLUSTER_ID = 1;
 
     /** */
@@ -92,6 +88,18 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     private static final byte THIRD_CLUSTER_ID = 3;
+
+    /** */
+    private IgniteCache<String, ConflictResolvableTestData> cache;
+
+    /** */
+    private IgniteInternalCache<BinaryObject, BinaryObject> cachex;
+
+    /** */
+    private IgniteEx client;
+
+    /** */
+    private IgniteEx ign;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -105,22 +113,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(1);
-
-        client = startClientGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        cache = null;
-        cachex = null;
-        client = null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        ign = startGrid(1);
+
+        client = startClientGrid(2);
 
         if (cachex == null || cachex.configuration().getAtomicityMode() != cacheMode) {
             if (cachex != null)
@@ -131,6 +129,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
             cachex = client.cachex(DEFAULT_CACHE_NAME);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
     }
 
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
@@ -197,6 +200,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Remove with the higher topVer should succeed.
         putConflict(key, new GridCacheVersion(3, order, 1, otherClusterId), true);
 
+        checkMetrics(4, 8);
+
         key = key("UpdateClusterUpdateReorder3", otherClusterId);
 
         int topVer = 1;
@@ -207,12 +212,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         putConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
+        checkMetrics(5, 10);
+
         // Remove with the equal or lower nodeOrder should ignored.
         removeConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         removeConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+
+        checkMetrics(6, 12);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -333,5 +342,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
+    }
+
+    /** Checks metrics for conflict resolver. */
+    protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
+        MetricRegistryImpl mreg = ign.context().metric().registry(CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
+
+        assertNotNull(mreg.findMetric(ACCEPTED_EVENTS_CNT));
+        assertNotNull(mreg.findMetric(REJECTED_EVENTS_CNT));
+
+        assertEquals(acceptedCnt, ((LongAdderMetric)mreg.findMetric(ACCEPTED_EVENTS_CNT)).value());
+        assertEquals(rejectedCnt, ((LongAdderMetric)mreg.findMetric(REJECTED_EVENTS_CNT)).value());
     }
 }

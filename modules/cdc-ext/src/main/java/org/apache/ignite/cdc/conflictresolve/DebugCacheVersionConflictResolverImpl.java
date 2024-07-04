@@ -20,6 +20,7 @@ package org.apache.ignite.cdc.conflictresolve;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Debug aware resolver. */
@@ -28,9 +29,15 @@ public class DebugCacheVersionConflictResolverImpl extends CacheVersionConflictR
      * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
+     * @param mreg Metric registry.
      */
-    public DebugCacheVersionConflictResolverImpl(byte clusterId, String conflictResolveField, IgniteLogger log) {
-        super(clusterId, conflictResolveField, log);
+    public DebugCacheVersionConflictResolverImpl(
+        byte clusterId,
+        String conflictResolveField,
+        IgniteLogger log,
+        MetricRegistryImpl mreg
+    ) {
+        super(clusterId, conflictResolveField, log, mreg);
     }
 
     /** {@inheritDoc} */
