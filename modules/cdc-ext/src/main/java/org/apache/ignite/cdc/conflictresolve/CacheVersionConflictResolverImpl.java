@@ -44,16 +44,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </ul>
  */
 public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
-    /** Count of the new version used name. */
+    /** Accepted entries count name. */
     public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
 
-    /** Count of the new version used description. */
+    /** Accepted entries count description. */
     public static final String ACCEPTED_EVENTS_CNT_DESC = "Count of accepted entries";
 
-    /** Count of the old version used name. */
+    /** Rejected entries count name. */
     public static final String REJECTED_EVENTS_CNT = "RejectedCount";
 
-    /** Count of the old version used description. */
+    /** Rejected entries count description. */
     public static final String REJECTED_EVENTS_CNT_DESC = "Count of rejected entries";
 
     /**
@@ -80,10 +80,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
-    /** Count of the new version used. */
+    /** Accepted entries count. */
     private final LongAdderMetric acceptedCnt;
 
-    /** Count of the old version used. */
+    /** Rejected entries count. */
     private final LongAdderMetric rejectedCnt;
 
     /**
