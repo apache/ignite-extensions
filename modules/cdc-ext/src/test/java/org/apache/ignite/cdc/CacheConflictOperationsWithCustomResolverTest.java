@@ -70,7 +70,7 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkMetrics(int newCnt, int oldCnt) {
+    @Override protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
         // No op.
     }
 }

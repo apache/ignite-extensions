@@ -173,8 +173,9 @@ Conflict resolution field should contain user provided monotonically increasing 
 . If `conflictResolveField` if provided then field values comparison used to determine order.
 . Conflict resolution failed. Update will be ignored.
 
-=== Metrics
-Metrics are registered for each node configured with `CacheVersionConflictResolverPluginProvider`. With that provider the corresponding metrics MBean is registered under `org.apache.ignite-instance-name.conflict-resolver`.
+=== Conflict Resolver Metrics
+
+The Ignite's built-in `CacheVersionConflictResolverPluginProvider` provides with usefull metrics.
 
 [cols="35%,65%",opts="header"]
 |===
@@ -182,6 +183,8 @@ Metrics are registered for each node configured with `CacheVersionConflictResolv
 | `AcceptedCount` | Counter of accepted entries.
 | `RejectedCount` | Counter of rejected entries.
 |===
+
+These metrics are registered under `conflict-resolver` registry for each node configured with this plugin.
 
 === Configuration example
 Configuration is done via Ignite node plugin:

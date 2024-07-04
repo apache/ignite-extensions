@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,10 +69,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     protected final boolean conflictResolveFieldEnabled;
 
     /** Counter of new entry selected. */
-    private final AtomicLongMetric newCnt;
+    private final LongAdderMetric newCnt;
 
     /** Counter of old entry selected. */
-    private final AtomicLongMetric oldCnt;
+    private final LongAdderMetric oldCnt;
 
     /** Count of the new version used name. */
     public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
@@ -104,8 +104,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         conflictResolveFieldEnabled = conflictResolveField != null;
 
-        newCnt = mreg.longMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
-        oldCnt = mreg.longMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
+        newCnt = mreg.longAdderMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
+        oldCnt = mreg.longAdderMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
     }
 
     /** {@inheritDoc} */
@@ -120,12 +120,12 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         boolean useNew = isUseNew(ctx, oldEntry, newEntry);
 
         if (useNew) {
-            newCnt.increment();
             res.useNew();
+            newCnt.increment();
         }
         else {
-            oldCnt.increment();
             res.useOld();
+            oldCnt.increment();
         }
 
         return res;

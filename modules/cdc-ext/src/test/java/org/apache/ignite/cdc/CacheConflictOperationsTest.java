@@ -24,11 +24,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
@@ -44,6 +41,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -346,32 +345,13 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** Checks metrics for conflict resolver. */
-    protected void checkMetrics(int newCnt, int oldCnt) {
-        DynamicMBean jmxCdcReg = metricRegistry(ign.name(), null, CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
+    protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
+        MetricRegistryImpl mreg = ign.context().metric().registry(CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
 
-        checkResolverMetrics((Function<String, Long>)metricExtractor(jmxCdcReg), newCnt, oldCnt);
-    }
+        assertNotNull(mreg.findMetric(ACCEPTED_EVENTS_CNT));
+        assertNotNull(mreg.findMetric(REJECTED_EVENTS_CNT));
 
-    /** */
-    private void checkResolverMetrics(Function<String, Long> longMetric, int newCnt, int oldCnt) {
-        assertEquals(newCnt, (long)longMetric.apply(ACCEPTED_EVENTS_CNT));
-        assertEquals(oldCnt, (long)longMetric.apply(REJECTED_EVENTS_CNT));
-    }
-
-    /**
-     * Creates lambda function, that converts metric name to its value. In other words it extracts jmx attribute for
-     * proposed MBean.
-     * @param mxBean {@link DynamicMBean} for which lambda should be created.
-     * @return {@link Function<String, ?>} which converts metric specified name to its value.
-     */
-    private static Function<String, ?> metricExtractor(DynamicMBean mxBean) {
-        return m -> {
-            try {
-                return mxBean.getAttribute(m);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        };
+        assertEquals(acceptedCnt, ((LongAdderMetric)mreg.findMetric(ACCEPTED_EVENTS_CNT)).value());
+        assertEquals(rejectedCnt, ((LongAdderMetric)mreg.findMetric(REJECTED_EVENTS_CNT)).value());
     }
 }
