@@ -38,41 +38,39 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
-import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext.closeAllComponents;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** CDC kafka to ignite metrics. */
 public class KafkaToIgniteMetrics {
     /** Count of events received name. */
-    public static final String EVTS_RSVD_CNT = "EventsReceivedCount";
+    public static final String EVTS_RCVD_CNT = "EventsReceivedCount";
 
     /** Count of events received description. */
-    public static final String EVTS_RSVD_CNT_DESC = "Count of events received from Kafka";
+    public static final String EVTS_RCVD_CNT_DESC = "Count of events received from Kafka";
 
     /** Timestamp of last received event name. */
-    public static final String LAST_EVT_RSVD_TIME = "LastEventReceivedTime";
+    public static final String LAST_EVT_RCVD_TIME = "LastEventReceivedTime";
 
     /** Timestamp of last received event description. */
-    public static final String LAST_EVT_RSVD_TIME_DESC = "Timestamp of last received event from Kafka";
+    public static final String LAST_EVT_RCVD_TIME_DESC = "Timestamp of last received event from Kafka";
 
     /** Count of metadata markers received name. */
-    public static final String MARKERS_RSVD_CNT = "MarkersCount";
+    public static final String MARKERS_RCVD_CNT = "MarkersCount";
 
     /** Count of metadata markers received description. */
-    public static final String MARKERS_RSVD_CNT_DESC = "Count of metadata markers received from Kafka";
+    public static final String MARKERS_RCVD_CNT_DESC = "Count of metadata markers received from Kafka";
 
     /** Count of events sent name. */
-    public static final String MSGS_SNT_CNT = "EventsSentCount";
+    public static final String MSGS_SENT_CNT = "EventsSentCount";
 
     /** Count of events sent description. */
-    public static final String MSGS_SNT_CNT_DESC = "Count of events sent to destination cluster";
+    public static final String MSGS_SENT_CNT_DESC = "Count of events sent to destination cluster";
 
     /** Timestamp of last sent batch name. */
-    public static final String LAST_MSG_SNT_TIME = "LastBatchSentTime";
+    public static final String LAST_MSG_SENT_TIME = "LastBatchSentTime";
 
     /** Timestamp of last sent batch description. */
-    public static final String LAST_MSG_SNT_TIME_DESC = "Timestamp of last sent batch to the destination cluster";
+    public static final String LAST_MSG_SENT_TIME_DESC = "Timestamp of last sent batch to the destination cluster";
 
     /** Timestamp of last received message. */
     private AtomicLongMetric lastRcvdEvtTs;
@@ -100,6 +98,9 @@ public class KafkaToIgniteMetrics {
 
     /** Streamer configuration. */
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
+
+    /** Metric registry manager. */
+    private SingleMetricRegistryManager mregMgr;
 
     /** */
     private KafkaToIgniteMetrics(
@@ -137,7 +138,7 @@ public class KafkaToIgniteMetrics {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
-                cfg.setIgniteInstanceName(cdcInstanceName(streamerCfg.getMetricDirectoryName()));
+                cfg.setIgniteInstanceName(streamerCfg.getMetricRegistryName());
 
                 if (!F.isEmpty(streamerCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(streamerCfg.getMetricExporterSpi());
@@ -160,7 +161,7 @@ public class KafkaToIgniteMetrics {
 
         mreg = new MetricRegistryImpl(metricName("cdc", "applier"), null, null, log);
 
-        ReadOnlyMetricManager mregMgr = new SingleMetricRegistryManager(mreg);
+        mregMgr = new SingleMetricRegistryManager(mreg);
 
         for (MetricExporterSpi exporterSpi : kctx.config().getMetricExporterSpi()) {
             kctx.resource().injectGeneric(exporterSpi);
@@ -172,19 +173,21 @@ public class KafkaToIgniteMetrics {
 
     /** Initialize metrics. */
     private void initMetrics() {
-        this.evtsRcvdCnt = mreg.longMetric(EVTS_RSVD_CNT, EVTS_RSVD_CNT_DESC);
-        this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RSVD_TIME, LAST_EVT_RSVD_TIME_DESC);
-        this.evtsSntCnt = mreg.longMetric(MSGS_SNT_CNT, MSGS_SNT_CNT_DESC);
-        this.lastSntMsgTs = mreg.longMetric(LAST_MSG_SNT_TIME, LAST_MSG_SNT_TIME_DESC);
-        this.markersCnt = mreg.longMetric(MARKERS_RSVD_CNT, MARKERS_RSVD_CNT_DESC);
+        this.evtsRcvdCnt = mreg.longMetric(EVTS_RCVD_CNT, EVTS_RCVD_CNT_DESC);
+        this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RCVD_TIME, LAST_EVT_RCVD_TIME_DESC);
+        this.evtsSntCnt = mreg.longMetric(MSGS_SENT_CNT, MSGS_SENT_CNT_DESC);
+        this.lastSntMsgTs = mreg.longMetric(LAST_MSG_SENT_TIME, LAST_MSG_SENT_TIME_DESC);
+        this.markersCnt = mreg.longMetric(MARKERS_RCVD_CNT, MARKERS_RCVD_CNT_DESC);
     }
 
     /**
      * Stops metric manager and metrics SPI.
      */
-    public void stopMetrics() throws IgniteCheckedException {
-        if (kctx != null)
-            closeAllComponents(kctx);
+    public void stopMetrics() {
+        mregMgr.stop();
+
+        for (MetricExporterSpi exporterSpi : kctx.config().getMetricExporterSpi())
+            exporterSpi.spiStop();
     }
 
     /**

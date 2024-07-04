@@ -291,7 +291,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
 
-            checkMetricsCount(1, 0);
+            checkMetricsCount(KEYS_CNT);
             checkMetrics();
 
             IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
@@ -302,7 +302,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
 
-            checkMetricsCount(1, 1);
+            checkMetricsCount(2 * KEYS_CNT);
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
@@ -638,13 +638,13 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);
 
     /** Checks the count for CDC metrics */
-    protected abstract void checkMetricsCount(int putCnt, int rmvCnt);
+    protected abstract void checkMetricsCount(int evtsCnt);
 
     /** Checks the events count for CDC metrics */
-    protected void checkMetricsEventsCount(int putCnt, int rmvCnt, Supplier<Long> supplier) {
+    protected void checkMetricsEventsCount(int evtsCnt, Supplier<Long> supplier) {
         try {
-            waitForCondition(() -> supplier.get() == (long)(putCnt + rmvCnt) * KEYS_CNT * (backups + 1) *
-                (mode == CacheMode.PARTITIONED ? 1 : srcCluster.length), getTestTimeout());
+            waitForCondition(() -> supplier.get() == (long)evtsCnt *
+                (mode == CacheMode.PARTITIONED ? (backups + 1) : srcCluster.length), getTestTimeout());
         }
         catch (IgniteInterruptedCheckedException e) {
             throw new RuntimeException(e);

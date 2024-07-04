@@ -45,11 +45,11 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default {@link #maxBatchSize} value. */
     public static final int DFLT_MAX_BATCH_SIZE = 1024;
 
+    /** Default metrics registry name for Kafka to Ignite CDC. */
+    public static final String DFLT_METRICS_REG_NAME = "cdc-kafka-to-ignite";
+
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
-
-    /** Default name for metrics registry directory for Kafka to Ignite CDC. */
-    public static final String DFLT_METRICS_DIR_NAME = "K2I";
 
     /** Events topic name. */
     private String evtTopic;
@@ -88,8 +88,8 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
 
-    /** Directory name for K2I CDC metrics. */
-    private String metricDirName;
+    /** Metrics registry name for Kafka to Ignite CDC. */
+    private String metricRegName;
 
     /**
      * @return Thread count.
@@ -259,21 +259,18 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /**
-     * Sets directory name for metrics registers.
+     * Sets metrics registry name for Kafka to Ignite CDC
      *
-     * @param name Directory name.
+     * @param name Registry name.
      */
-    public void setMetricDirectoryName(String name) {
-        this.metricDirName = name;
+    public void setMetricRegistryName(String name) {
+        this.metricRegName = name;
     }
 
     /**
-     * @return Directory name for metrics registers.
+     * @return Metrics registry name.
      */
-    public String getMetricDirectoryName() {
-        if (metricDirName == null)
-            return "metrics";
-
-        return metricDirName;
+    public String getMetricRegistryName() {
+        return metricRegName == null ? DFLT_METRICS_REG_NAME : metricRegName;
     }
 }

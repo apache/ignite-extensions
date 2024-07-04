@@ -179,7 +179,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkMetricsCount(int putCnt, int rmvCnt) {
+    @Override protected void checkMetricsCount(int evtsCnt) {
         // Skip metrics check.
     }
 
