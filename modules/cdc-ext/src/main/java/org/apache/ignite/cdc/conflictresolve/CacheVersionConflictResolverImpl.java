@@ -44,6 +44,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </ul>
  */
 public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
+    /** Count of the new version used name. */
+    public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
+
+    /** Count of the new version used description. */
+    public static final String ACCEPTED_EVENTS_CNT_DESC = "Count of accepted entries";
+
+    /** Count of the old version used name. */
+    public static final String REJECTED_EVENTS_CNT = "RejectedCount";
+
+    /** Count of the old version used description. */
+    public static final String REJECTED_EVENTS_CNT_DESC = "Count of rejected entries";
+
     /**
      * Cluster id.
      */
@@ -68,23 +80,11 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
-    /** Counter of new entry selected. */
-    private final LongAdderMetric newCnt;
+    /** Count of the new version used. */
+    private final LongAdderMetric acceptedCnt;
 
-    /** Counter of old entry selected. */
-    private final LongAdderMetric oldCnt;
-
-    /** Count of the new version used name. */
-    public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
-
-    /** Count of the new version used description. */
-    public static final String ACCEPTED_EVENTS_CNT_DESC = "Counter of accepted entries";
-
-    /** Count of the old version used name. */
-    public static final String REJECTED_EVENTS_CNT = "RejectedCount";
-
-    /** Count of the old version used description. */
-    public static final String REJECTED_EVENTS_CNT_DESC = "Counter of rejected entries";
+    /** Count of the old version used. */
+    private final LongAdderMetric rejectedCnt;
 
     /**
      * @param clusterId Data center id.
@@ -104,8 +104,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         conflictResolveFieldEnabled = conflictResolveField != null;
 
-        newCnt = mreg.longAdderMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
-        oldCnt = mreg.longAdderMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
+        acceptedCnt = mreg.longAdderMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
+        rejectedCnt = mreg.longAdderMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
     }
 
     /** {@inheritDoc} */
@@ -121,11 +121,11 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         if (useNew) {
             res.useNew();
-            newCnt.increment();
+            acceptedCnt.increment();
         }
         else {
             res.useOld();
-            oldCnt.increment();
+            rejectedCnt.increment();
         }
 
         return res;

@@ -31,7 +31,7 @@ import org.apache.ignite.lang.IgniteFuture;
  * @see CacheVersionConflictResolver
  */
 public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictResolutionManager<K, V> {
-    /** */
+    /** Conflict resolver metrics registry name. */
     public static final String CONFLICT_RESOLVER_METRICS_REGISTRY_NAME = "conflict-resolver";
 
     /** Logger. */

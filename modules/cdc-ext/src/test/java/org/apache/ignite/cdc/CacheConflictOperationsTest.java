@@ -81,6 +81,15 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private static final byte FIRST_CLUSTER_ID = 1;
+
+    /** */
+    private static final byte SECOND_CLUSTER_ID = 2;
+
+    /** */
+    private static final byte THIRD_CLUSTER_ID = 3;
+
+    /** */
     private IgniteCache<String, ConflictResolvableTestData> cache;
 
     /** */
@@ -91,15 +100,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteEx ign;
-
-    /** */
-    private static final byte FIRST_CLUSTER_ID = 1;
-
-    /** */
-    private static final byte SECOND_CLUSTER_ID = 2;
-
-    /** */
-    private static final byte THIRD_CLUSTER_ID = 3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
