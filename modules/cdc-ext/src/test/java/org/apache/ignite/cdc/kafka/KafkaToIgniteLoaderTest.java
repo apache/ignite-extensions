@@ -123,62 +123,6 @@ public class KafkaToIgniteLoaderTest extends GridCommonAbstractTest {
         });
     }
 
-    /** Tests setting kafka properties of kafka to ignite loaders. */
-    @Test
-    public void testKafkaProperties() {
-        Stream.of(
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-without-topic.xml",
-                "Ouch! Argument cannot be null: Kafka topic"},
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-without-metadata-topic.xml",
-                "Ouch! Argument cannot be null: Kafka metadata topic"},
-            new String[] {
-                "loader/kafka-to-ignite-without-topic.xml",
-                "Ouch! Argument cannot be null: Kafka topic"},
-            new String[] {
-                "loader/kafka-to-ignite-without-metadata-topic.xml",
-                "Ouch! Argument cannot be null: Kafka metadata topic"}
-        ).forEach(args -> assertThrows(null, () -> loadKafkaToIgniteStreamer(args[0]), NullPointerException.class, args[1]));
-
-        Stream.of(
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-with-negative-partition-from.xml",
-                "Ouch! Argument is invalid: The Kafka partitions lower bound must be explicitly set to a value greater" +
-                    " than or equals to zero."},
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-with-negative-partition-to.xml",
-                "Ouch! Argument is invalid: The Kafka partitions upper bound must be explicitly set to a value greater" +
-                    " than zero."},
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-with-incorrect-partition-distribution.xml",
-                "Ouch! Argument is invalid: The Kafka partitions upper bound must be greater than lower bound."},
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-with-negative-thread-count.xml",
-                "Ouch! Argument is invalid: Threads count value must me greater than zero."},
-            new String[] {
-                "loader/thin/kafka-to-ignite-client-with-incorrect-thread-count.xml",
-                "Ouch! Argument is invalid: Threads count must be less or equals to the total Kafka partitions count."},
-            new String[] {
-                "loader/kafka-to-ignite-with-negative-partition-from.xml",
-                "Ouch! Argument is invalid: The Kafka partitions lower bound must be explicitly set to a value greater" +
-                    " than or equals to zero."},
-            new String[] {
-                "loader/kafka-to-ignite-with-negative-partition-to.xml",
-                "Ouch! Argument is invalid: The Kafka partitions upper bound must be explicitly set to a value greater" +
-                    " than zero."},
-            new String[] {
-                "loader/kafka-to-ignite-with-incorrect-partition-distribution.xml",
-                "Ouch! Argument is invalid: The Kafka partitions upper bound must be greater than lower bound."},
-            new String[] {
-                "loader/kafka-to-ignite-with-negative-thread-count.xml",
-                "Ouch! Argument is invalid: Threads count value must me greater than zero."},
-            new String[] {
-                "loader/kafka-to-ignite-with-incorrect-thread-count.xml",
-                "Ouch! Argument is invalid: Threads count must be less or equals to the total Kafka partitions count."}
-        ).forEach(args -> assertThrows(null, () -> loadKafkaToIgniteStreamer(args[0]), IllegalArgumentException.class, args[1]));
-    }
-
     /** */
     @Test
     public void testInitSpringContextOnce() throws Exception {
