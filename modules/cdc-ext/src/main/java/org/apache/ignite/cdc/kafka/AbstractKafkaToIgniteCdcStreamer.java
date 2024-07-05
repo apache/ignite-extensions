@@ -156,14 +156,14 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
         int counter = 0;
 
-        for (IgniteBiTuple<Integer, Integer> part : getKafkaPartitionsDistribution(streamerCfg)) {
+        for (IgniteBiTuple<Integer, Integer> parts : kafkaPartitions(streamerCfg)) {
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
                 streamerCfg.getTopic(),
-                part.get1(),
-                part.get2(),
+                parts.get1(), // kafkaPartFrom
+                parts.get2(), // kafkaPartTo
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
@@ -189,14 +189,12 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     }
 
     /**
-     * Creates Kafka partitions distribution for provided streamer configuration. Each element of the returning
-     * {@code List} is an {@link IgniteBiTuple}, which represents a kafka topic partition interval to be
-     * scanned by single thread.
+     * Calculates Kafka partition ranges per applier thread.
      * @param streamerCfg {@link KafkaToIgniteCdcStreamerConfiguration}.
-     * @return {@code List} of {@code IgniteBiTuple<Integer, Integer>}.
+     * @return List of pairs defining partition ranges for each applier thread.
      */
-    public static List<IgniteBiTuple<Integer, Integer>> getKafkaPartitionsDistribution(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
-        List<IgniteBiTuple<Integer, Integer>> distr = new ArrayList<>();
+    public static List<IgniteBiTuple<Integer, Integer>> kafkaPartitions(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+        List<IgniteBiTuple<Integer, Integer>> parts = new ArrayList<>();
 
         int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
         int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
@@ -208,12 +206,12 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             kafkaParts -= partPerApplier;
             --threadCnt;
 
-            distr.add(new IgniteBiTuple<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
+            parts.add(new IgniteBiTuple<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
 
             kafkaPartsFrom += partPerApplier;
         }
 
-        return distr;
+        return parts;
     }
 
     /** Adds applier to {@link #appliers} and starts thread with it. */

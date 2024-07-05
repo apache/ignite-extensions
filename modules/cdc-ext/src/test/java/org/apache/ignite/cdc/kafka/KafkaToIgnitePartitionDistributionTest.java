@@ -10,7 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cdc.kafka.AbstractKafkaToIgniteCdcStreamer.getKafkaPartitionsDistribution;
+import static org.apache.ignite.cdc.kafka.AbstractKafkaToIgniteCdcStreamer.kafkaPartitions;
 
 /** Tests the kafka topic partitions distribution over specified number of threads. */
 @RunWith(Parameterized.class)
@@ -65,6 +65,6 @@ public class KafkaToIgnitePartitionDistributionTest extends GridCommonAbstractTe
     /** Checks the topic partitions distribution over specified number of threads. */
     @Test
     public void testActivePassiveReplication() {
-        assertEquals(result, getKafkaPartitionsDistribution(streamerCfg));
+        assertEquals(result, kafkaPartitions(streamerCfg));
     }
 }
