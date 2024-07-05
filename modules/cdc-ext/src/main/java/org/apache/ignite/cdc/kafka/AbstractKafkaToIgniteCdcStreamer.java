@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
@@ -153,28 +154,16 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             streamerCfg
         );
 
-        int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
-        int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
-        int threadCnt = streamerCfg.getThreadCount();
-
         int counter = 0;
 
-        while (kafkaParts > 0) {
-            int partPerApplier = kafkaParts / threadCnt + (kafkaParts % threadCnt > 0 ? 1 : 0);
-
-            kafkaParts -= partPerApplier;
-            --threadCnt;
-
-            int from = kafkaPartsFrom;
-            int to = kafkaPartsFrom + partPerApplier;
-
+        for (IgniteBiTuple<Integer, Integer> part : getKafkaPartitionsDistribution(streamerCfg)) {
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
                 streamerCfg.getTopic(),
-                from,
-                to,
+                part.get1(),
+                part.get2(),
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
@@ -183,11 +172,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 stopped
             );
 
-            addAndStart("applier-thread-" + counter, applier);
-
-            kafkaPartsFrom += partPerApplier;
-
-            counter++;
+            addAndStart("applier-thread-" + counter++, applier);
         }
 
         try {
@@ -201,6 +186,34 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             log.warning("Kafka to Ignite streamer interrupted", e);
         }
+    }
+
+    /**
+     * Creates Kafka partitions distribution for provided streamer configuration. Each element of the returning
+     * {@code List} is an {@link IgniteBiTuple}, which represents a kafka topic partition interval to be
+     * scanned by single thread.
+     * @param streamerCfg {@link KafkaToIgniteCdcStreamerConfiguration}.
+     * @return {@code List} of {@code IgniteBiTuple<Integer, Integer>}.
+     */
+    public static List<IgniteBiTuple<Integer, Integer>> getKafkaPartitionsDistribution(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+        List<IgniteBiTuple<Integer, Integer>> distr = new ArrayList<>();
+
+        int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
+        int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
+        int threadCnt = streamerCfg.getThreadCount();
+
+        while (kafkaParts > 0) {
+            int partPerApplier = kafkaParts / threadCnt + (kafkaParts % threadCnt > 0 ? 1 : 0);
+
+            kafkaParts -= partPerApplier;
+            --threadCnt;
+
+            distr.add(new IgniteBiTuple<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
+
+            kafkaPartsFrom += partPerApplier;
+        }
+
+        return distr;
     }
 
     /** Adds applier to {@link #appliers} and starts thread with it. */
