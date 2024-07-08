@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
+import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_METRICS_REG_NAME;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -82,6 +83,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
 
     /** */
     public static final String HOST_ADDRESSES = "HOST_ADDRESSES";
+
+    /** */
+    public static final String METRIC_REG_NAME = "METRIC_REG_NAME";
 
     /** */
     private String kafkaPropsPath = null;
@@ -167,6 +171,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
+        params.put(METRIC_REG_NAME, DFLT_METRICS_REG_NAME + "-" + igniteCfg.getIgniteInstanceName());
 
         return runAsync(
             () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig(cfg, params)})

@@ -43,6 +43,7 @@
         <property name="kafkaPartsTo" value="{PARTS_TO}"/>
         <property name="threadCount" value="{THREAD_CNT}"/>
         <property name="kafkaRequestTimeout" value="{KAFKA_REQ_TIMEOUT}"/>
+        <property name="metricRegistryName" value="{METRIC_REG_NAME}"/>
     </bean>
 
     <util:properties id="kafkaProperties" location="{PROPS_PATH}" />
