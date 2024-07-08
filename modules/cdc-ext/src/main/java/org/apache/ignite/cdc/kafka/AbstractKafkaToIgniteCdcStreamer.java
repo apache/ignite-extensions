@@ -154,7 +154,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             streamerCfg
         );
 
-        int counter = 0;
+        int cntr = 0;
 
         for (IgniteBiTuple<Integer, Integer> parts : kafkaPartitions(streamerCfg)) {
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
@@ -172,7 +172,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 stopped
             );
 
-            addAndStart("applier-thread-" + counter++, applier);
+            addAndStart("applier-thread-" + cntr++, applier);
         }
 
         try {
