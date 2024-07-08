@@ -17,12 +17,12 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.cdc.kafka.AbstractKafkaToIgniteCdcStreamer.kafkaPartitions;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
@@ -34,15 +34,15 @@ public class KafkaToIgnitePartitionDistributionTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testKafkaPartitions() {
-        doTest(3, 0, 8, Arrays.asList(t(0, 3), t(3, 6), t(6, 8)));
-        doTest(4, 0, 8, Arrays.asList(t(0, 2), t(2, 4), t(4, 6), t(6, 8)));
-        doTest(5, 0, 8, Arrays.asList(t(0, 2), t(2, 4), t(4, 6), t(6, 7), t(7, 8)));
+        doTest(3, 0, 8, asList(t(0, 3), t(3, 6), t(6, 8)));
+        doTest(4, 0, 8, asList(t(0, 2), t(2, 4), t(4, 6), t(6, 8)));
+        doTest(5, 0, 8, asList(t(0, 2), t(2, 4), t(4, 6), t(6, 7), t(7, 8)));
 
-        doTest(3, 3, 11, Arrays.asList(t(3, 6), t(6, 9), t(9, 11)));
-        doTest(4, 3, 11, Arrays.asList(t(3, 5), t(5, 7), t(7, 9), t(9, 11)));
-        doTest(5, 3, 11, Arrays.asList(t(3, 5), t(5, 7), t(7, 9), t(9, 10), t(10, 11)));
+        doTest(3, 3, 11, asList(t(3, 6), t(6, 9), t(9, 11)));
+        doTest(4, 3, 11, asList(t(3, 5), t(5, 7), t(7, 9), t(9, 11)));
+        doTest(5, 3, 11, asList(t(3, 5), t(5, 7), t(7, 9), t(9, 10), t(10, 11)));
 
-        doTest(3, 1, 4, Arrays.asList(t(1, 2), t(2, 3), t(3, 4)));
+        doTest(3, 1, 4, asList(t(1, 2), t(2, 3), t(3, 4)));
     }
 
     /**

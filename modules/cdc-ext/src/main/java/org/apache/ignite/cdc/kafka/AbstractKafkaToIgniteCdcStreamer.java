@@ -32,10 +32,10 @@ import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
@@ -156,7 +156,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
         int cntr = 0;
 
-        for (IgniteBiTuple<Integer, Integer> parts : kafkaPartitions(streamerCfg)) {
+        for (T2<Integer, Integer> parts : kafkaPartitions(streamerCfg)) {
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                 () -> eventsApplier(),
                 log,
@@ -193,8 +193,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
      * @param streamerCfg {@link KafkaToIgniteCdcStreamerConfiguration}.
      * @return List of pairs defining partition ranges for each applier thread.
      */
-    public static List<IgniteBiTuple<Integer, Integer>> kafkaPartitions(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
-        List<IgniteBiTuple<Integer, Integer>> parts = new ArrayList<>();
+    public static List<T2<Integer, Integer>> kafkaPartitions(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+        List<T2<Integer, Integer>> parts = new ArrayList<>();
 
         int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
         int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
@@ -206,7 +206,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             kafkaParts -= partPerApplier;
             --threadCnt;
 
-            parts.add(new IgniteBiTuple<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
+            parts.add(new T2<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
 
             kafkaPartsFrom += partPerApplier;
         }
