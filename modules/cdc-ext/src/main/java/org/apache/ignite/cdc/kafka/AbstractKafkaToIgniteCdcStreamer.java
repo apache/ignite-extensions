@@ -32,6 +32,7 @@ import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -153,26 +154,16 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
             streamerCfg
         );
 
-        int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
-        int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
-        int threadCnt = streamerCfg.getThreadCount();
+        int cntr = 0;
 
-        int partPerApplier = kafkaParts / threadCnt;
-
-        for (int i = 0; i < threadCnt; i++) {
-            int from = i * partPerApplier;
-            int to = (i + 1) * partPerApplier;
-
-            if (i == threadCnt - 1)
-                to = kafkaParts;
-
+        for (T2<Integer, Integer> parts : kafkaPartitions(streamerCfg)) {
             KafkaToIgniteCdcStreamerApplier applier = new KafkaToIgniteCdcStreamerApplier(
                 () -> eventsApplier(),
                 log,
                 kafkaProps,
                 streamerCfg.getTopic(),
-                kafkaPartsFrom + from,
-                kafkaPartsFrom + to,
+                parts.get1(), // kafkaPartFrom
+                parts.get2(), // kafkaPartTo
                 caches,
                 streamerCfg.getMaxBatchSize(),
                 streamerCfg.getKafkaRequestTimeout(),
@@ -181,7 +172,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 stopped
             );
 
-            addAndStart("applier-thread-" + i, applier);
+            addAndStart("applier-thread-" + cntr++, applier);
         }
 
         try {
@@ -195,6 +186,32 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             log.warning("Kafka to Ignite streamer interrupted", e);
         }
+    }
+
+    /**
+     * Calculates Kafka partition ranges per applier thread.
+     * @param streamerCfg {@link KafkaToIgniteCdcStreamerConfiguration}.
+     * @return List of pairs defining partition ranges for each applier thread.
+     */
+    public static List<T2<Integer, Integer>> kafkaPartitions(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
+        List<T2<Integer, Integer>> parts = new ArrayList<>();
+
+        int kafkaPartsFrom = streamerCfg.getKafkaPartsFrom();
+        int kafkaParts = streamerCfg.getKafkaPartsTo() - kafkaPartsFrom;
+        int threadCnt = streamerCfg.getThreadCount();
+
+        while (kafkaParts > 0) {
+            int partPerApplier = kafkaParts / threadCnt + (kafkaParts % threadCnt > 0 ? 1 : 0);
+
+            kafkaParts -= partPerApplier;
+            --threadCnt;
+
+            parts.add(new T2<>(kafkaPartsFrom, kafkaPartsFrom + partPerApplier));
+
+            kafkaPartsFrom += partPerApplier;
+        }
+
+        return parts;
     }
 
     /** Adds applier to {@link #appliers} and starts thread with it. */
