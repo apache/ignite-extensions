@@ -74,7 +74,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
-          java-version: 17
+          java-version: 8
           distribution: 'adopt'
 
       - name: Extract Branch POM Version and Compare
