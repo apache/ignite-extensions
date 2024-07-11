@@ -34,7 +34,8 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <spring.session.version>3.2.2</spring.session.version>
         <spring.security.version>6.2.4</spring.security.version>
