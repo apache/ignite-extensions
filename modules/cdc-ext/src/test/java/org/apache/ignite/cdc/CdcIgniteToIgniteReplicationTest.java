@@ -34,6 +34,8 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.EVTS_SENT_CNT;
+import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.LAST_EVT_SENT_TIME;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -65,8 +67,13 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
     /** {@inheritDoc} */
     @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
-        assertNotNull(longMetric.apply(AbstractIgniteCdcStreamer.LAST_EVT_TIME));
-        assertNotNull(longMetric.apply(AbstractIgniteCdcStreamer.EVTS_CNT));
+        assertNotNull(longMetric.apply(LAST_EVT_SENT_TIME));
+        assertNotNull(longMetric.apply(EVTS_SENT_CNT));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void checkMetricsCount(int evtsCnt) {
+        checkMetricsEventsCount(evtsCnt, getConsumerEventsCount(EVTS_SENT_CNT));
     }
 
     /**

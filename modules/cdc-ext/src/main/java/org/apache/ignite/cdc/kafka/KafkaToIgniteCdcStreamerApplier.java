@@ -125,45 +125,45 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Cdc events applier. */
     private AbstractCdcEventsApplier applier;
 
+    /** CDC kafka to ignite metrics */
+    private final KafkaToIgniteMetrics metrics;
+
     /**
      * @param applierSupplier Cdc events applier supplier.
      * @param log Logger.
      * @param kafkaProps Kafka properties.
-     * @param topic Topic name.
+     * @param streamerCfg Streamer config.
      * @param kafkaPartFrom Read from partition.
      * @param kafkaPartTo Read to partition.
      * @param caches Cache ids.
-     * @param maxBatchSize Maximum batch size.
-     * @param kafkaReqTimeout The maximum time to complete Kafka related requests, in milliseconds.
-     * @param consumerPollTimeout Consumer poll timeout in milliseconds.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
+     * @param metrics CDC Kafka to Ignite metrics.
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,
         IgniteLogger log,
         Properties kafkaProps,
-        String topic,
+        KafkaToIgniteCdcStreamerConfiguration streamerCfg,
         int kafkaPartFrom,
         int kafkaPartTo,
         Set<Integer> caches,
-        int maxBatchSize,
-        long kafkaReqTimeout,
-        long consumerPollTimeout,
         KafkaToIgniteMetadataUpdater metaUpdr,
-        AtomicBoolean stopped
+        AtomicBoolean stopped,
+        KafkaToIgniteMetrics metrics
     ) {
         this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
-        this.topic = topic;
+        this.topic = streamerCfg.getTopic();
         this.kafkaPartFrom = kafkaPartFrom;
         this.kafkaPartTo = kafkaPartTo;
         this.caches = caches;
-        this.kafkaReqTimeout = kafkaReqTimeout;
-        this.consumerPollTimeout = consumerPollTimeout;
+        this.kafkaReqTimeout = streamerCfg.getKafkaRequestTimeout();
+        this.consumerPollTimeout = streamerCfg.getKafkaConsumerPollTimeout();
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
+        this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
@@ -233,7 +233,10 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             );
         }
 
-        applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+        int msgsSntCur = applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+
+        if (msgsSntCur > 0)
+            metrics.addSentEvents(msgsSntCur);
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
@@ -250,8 +253,12 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
             metaUpdr.updateMetadata();
 
+            metrics.incrementMarkers();
+
             return false;
         }
+
+        metrics.incrementReceivedEvents();
 
         return F.isEmpty(caches) || caches.contains(rec.key());
     }

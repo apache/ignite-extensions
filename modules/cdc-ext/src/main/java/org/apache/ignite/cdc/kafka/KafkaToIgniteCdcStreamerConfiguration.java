@@ -19,8 +19,11 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Configuration of {@link KafkaToIgniteCdcStreamer} application.
@@ -41,6 +44,9 @@ public class KafkaToIgniteCdcStreamerConfiguration {
 
     /** Default {@link #maxBatchSize} value. */
     public static final int DFLT_MAX_BATCH_SIZE = 1024;
+
+    /** Default metrics registry name for Kafka to Ignite CDC. */
+    public static final String DFLT_METRICS_REG_NAME = "cdc-kafka-to-ignite";
 
     /** {@link KafkaToIgniteCdcStreamerApplier} thread count. */
     private int threadCnt = DFLT_THREAD_CNT;
@@ -78,6 +84,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      * Cache names to process.
      */
     private Collection<String> caches;
+
+    /** Metric exporter SPI. */
+    private MetricExporterSpi[] metricExporterSpi;
+
+    /** Metrics registry name for Kafka to Ignite CDC. */
+    private String metricRegName;
 
     /**
      * @return Thread count.
@@ -223,5 +235,42 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setMetadataConsumerGroup(String metaCnsmrGrp) {
         this.metadataCnsmrGrp = metaCnsmrGrp;
+    }
+
+    /**
+     * Sets fully configured instances of {@link MetricExporterSpi}. {@link JmxMetricExporterSpi} is used by default.
+     *
+     * @param metricExporterSpi Fully configured instances of {@link MetricExporterSpi}.
+     * @see CdcConfiguration#getMetricExporterSpi()
+     * @see JmxMetricExporterSpi
+     */
+    public void setMetricExporterSpi(MetricExporterSpi... metricExporterSpi) {
+        this.metricExporterSpi = metricExporterSpi;
+    }
+
+    /**
+     * Gets fully configured metric SPI implementations. {@link JmxMetricExporterSpi} is used by default.
+     *
+     * @return Metric exporter SPI implementations.
+     * @see JmxMetricExporterSpi
+     */
+    public MetricExporterSpi[] getMetricExporterSpi() {
+        return metricExporterSpi;
+    }
+
+    /**
+     * Sets metrics registry name for Kafka to Ignite CDC
+     *
+     * @param name Registry name.
+     */
+    public void setMetricRegistryName(String name) {
+        this.metricRegName = name;
+    }
+
+    /**
+     * @return Metrics registry name.
+     */
+    public String getMetricRegistryName() {
+        return metricRegName == null ? DFLT_METRICS_REG_NAME : metricRegName;
     }
 }
