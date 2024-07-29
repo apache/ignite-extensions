@@ -200,8 +200,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Remove with the higher topVer should succeed.
         putConflict(key, new GridCacheVersion(3, order, 1, otherClusterId), true);
 
-        checkMetrics(4, 8);
-
         key = key("UpdateClusterUpdateReorder3", otherClusterId);
 
         int topVer = 1;
@@ -212,16 +210,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         putConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
-        checkMetrics(5, 10);
-
         // Remove with the equal or lower nodeOrder should ignored.
         removeConflict(key, new GridCacheVersion(topVer, order, 2, otherClusterId), false);
         removeConflict(key, new GridCacheVersion(topVer, order, 1, otherClusterId), false);
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
-
-        checkMetrics(6, 12);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -258,6 +252,22 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
+    }
+
+    /** */
+    @Test
+    public void testMetrics() throws Exception {
+        String key = key("UpdateClusterUpdateReorder", otherClusterId);
+
+        checkMetrics(0, 0);
+
+        putConflict(key, 1, true);
+
+        checkMetrics(1, 0);
+
+        putConflict(key, 1, false);
+
+        checkMetrics(1, 1);
     }
 
     /** */
