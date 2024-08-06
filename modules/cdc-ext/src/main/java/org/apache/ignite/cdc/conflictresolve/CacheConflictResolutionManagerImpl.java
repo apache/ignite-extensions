@@ -38,7 +38,7 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     private IgniteLogger log;
 
     /** Logger for {@link CacheVersionConflictResolverImpl}. */
-    private IgniteLogger conflictResolverLog;
+    protected static IgniteLogger conflictResolverLog;
 
     /**
      * Field for conflict resolve.
@@ -80,14 +80,6 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
 
         if (resolver != null)
             rslvr = resolver;
-        else if (conflictResolverLog.isDebugEnabled()) {
-            rslvr = new DebugCacheVersionConflictResolverImpl(
-                clusterId,
-                conflictResolveField,
-                conflictResolverLog,
-                mreg
-            );
-        }
         else {
             rslvr = new CacheVersionConflictResolverImpl(
                 clusterId,
