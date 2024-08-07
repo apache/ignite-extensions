@@ -41,7 +41,7 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     /** Tests simple updates. */
     @Test
     public void testSimpleUpdates() {
-        String key = "UpdatesWithoutConflict";
+        String key = nextKey();
 
         putLocal(key);
         putLocal(key);
@@ -52,7 +52,7 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     /** Tests simple conflicts can be resolved with LWW. */
     @Test
     public void testSimpleConflicts() throws IgniteCheckedException {
-        String key = "UpdatesWithConflict";
+        String key = nextKey();
 
         putLocal(key);
 
@@ -71,7 +71,9 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
      *
      */
     private static final class LwwConflictResolver implements CacheVersionConflictResolver {
-        /** */
+        /**
+         *
+         */
         @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
             CacheObjectValueContext ctx,
             GridCacheVersionedEntryEx<K, V> oldEntry,
@@ -84,10 +86,5 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
             return res;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
-        // No op.
     }
 }
