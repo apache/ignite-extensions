@@ -32,7 +32,7 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
     /** Tests that regular cache operations works with the conflict resolver when there is no update conflicts. */
     @Test
     public void testSimpleUpdates() {
-        String key = "UpdatesWithoutConflict";
+        String key = nextKey();
 
         for (int i = 0; i < 3; i++) {
             putLocal(key);
