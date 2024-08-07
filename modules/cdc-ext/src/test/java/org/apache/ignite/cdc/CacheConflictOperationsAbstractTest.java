@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -159,6 +160,22 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
         ign.context().metric().registry(CONFLICT_RESOLVER_METRICS_REGISTRY_NAME).reset();
 
         assert !removeAfterRemove;
+    }
+
+    /** */
+    @Test
+    public void testMetrics() throws Exception {
+        String key = nextKey();
+
+        checkMetrics(0, 0);
+
+        putFromOther(key, 1, true);
+
+        checkMetrics(1, 0);
+
+        putFromOther(key, 1, false);
+
+        checkMetrics(1, 1);
     }
 
     /** */

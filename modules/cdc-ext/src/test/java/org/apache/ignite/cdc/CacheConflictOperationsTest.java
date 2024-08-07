@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.junit.Test;
@@ -148,22 +146,6 @@ public class CacheConflictOperationsTest extends CacheConflictOperationsAbstract
                 }
             }
         }
-    }
-
-    /** */
-    @Test
-    public void testMetrics() throws Exception {
-        String key = nextKey();
-
-        checkMetrics(0, 0);
-
-        putFromOther(key, 1, true);
-
-        checkMetrics(1, 0);
-
-        putFromOther(key, 1, false);
-
-        checkMetrics(1, 1);
     }
 
     /** */
