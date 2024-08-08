@@ -38,7 +38,7 @@ public class CacheConflictResolutionManagerImpl<K, V> implements CacheConflictRe
     private IgniteLogger log;
 
     /** Logger for {@link CacheVersionConflictResolverImpl}. */
-    protected static IgniteLogger conflictResolverLog;
+    private IgniteLogger conflictResolverLog;
 
     /**
      * Field for conflict resolve.
