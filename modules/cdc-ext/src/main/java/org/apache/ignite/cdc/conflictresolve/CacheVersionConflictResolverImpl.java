@@ -134,48 +134,6 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         return res;
     }
 
-    protected <K, V> boolean debugResolve(
-        CacheObjectValueContext ctx,
-        boolean useNew,
-        GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
-    ) {
-        boolean res = isUseNew(ctx, oldEntry, newEntry);
-
-        Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
-        Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
-
-        if (oldVal != null)
-            oldVal = debugValue(oldVal);
-
-        if (newVal != null)
-            newVal = debugValue(newVal);
-
-        log.debug("isUseNew[" +
-            "start=" + oldEntry.isStartVersion() +
-            ", oldVer=" + oldEntry.version() +
-            ", newVer=" + newEntry.version() +
-            ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
-            ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
-            ", old=" + oldVal +
-            ", new=" + newVal +
-            ", res=" + res + ']');
-
-        return res;
-    }
-
-    /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
-    private Object debugValue(Object val) {
-        try {
-            return value(val);
-        }
-        catch (Exception e) {
-            log.debug("Can't resolve field value [field=" + conflictResolveField + ", val=" + val + ']');
-
-            return val;
-        }
-    }
-
     /**
      * @param ctx Context.
      * @param oldEntry Old entry.
@@ -238,6 +196,45 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         return (val instanceof BinaryObject)
             ? ((BinaryObject)val).field(conflictResolveField)
             : U.field(val, conflictResolveField);
+    }
+
+    /** */
+    private <K, V> void debugResolve(
+        CacheObjectValueContext ctx,
+        boolean useNew,
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry
+    ) {
+        Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
+        Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
+
+        if (oldVal != null)
+            oldVal = debugValue(oldVal);
+
+        if (newVal != null)
+            newVal = debugValue(newVal);
+
+        log.debug("isUseNew[" +
+            "start=" + oldEntry.isStartVersion() +
+            ", oldVer=" + oldEntry.version() +
+            ", newVer=" + newEntry.version() +
+            ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
+            ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
+            ", old=" + oldVal +
+            ", new=" + newVal +
+            ", res=" + useNew + ']');
+    }
+
+    /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
+    private Object debugValue(Object val) {
+        try {
+            return value(val);
+        }
+        catch (Exception e) {
+            log.debug("Can't resolve field value [field=" + conflictResolveField + ", val=" + val + ']');
+
+            return val;
+        }
     }
 
     /** {@inheritDoc} */

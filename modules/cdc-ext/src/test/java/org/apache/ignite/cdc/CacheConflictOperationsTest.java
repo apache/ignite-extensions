@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,7 +44,11 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -101,6 +106,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     private IgniteEx ign;
 
+    /** Listening test logger. */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheVersionConflictResolverPluginProvider<?> pluginCfg = new CacheVersionConflictResolverPluginProvider<>();
@@ -109,7 +117,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         pluginCfg.setCaches(new HashSet<>(Collections.singleton(DEFAULT_CACHE_NAME)));
         pluginCfg.setConflictResolveField(conflictResolveField());
 
-        return super.getConfiguration(igniteInstanceName).setPluginProviders(pluginCfg);
+        return super.getConfiguration(igniteInstanceName)
+            .setPluginProviders(pluginCfg)
+            .setGridLogger(listeningLog);
     }
 
     /** {@inheritDoc} */
@@ -133,6 +143,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
+        listeningLog.clearListeners();
+
         stopAllGrids();
     }
 
@@ -268,6 +280,35 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, 1, false);
 
         checkMetrics(1, 1);
+    }
+
+    /** Test switching debug log level for ConflictResolver during runtime */
+    @Test
+    public void testResolveDebug() throws Exception {
+        String key = key("UpdateClusterUpdateReorder", otherClusterId);
+
+        LogListener lsnr = LogListener.matches("isUseNew").build();
+
+        listeningLog.registerListener(lsnr);
+
+        Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
+
+        try {
+            putConflict(key, 1, true);
+
+            putConflict(key, 1, false);
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
+        }
+
+        lsnr.reset();
+
+        putConflict(key, 1, false);
+
+        assertFalse(lsnr.check());
     }
 
     /** */
