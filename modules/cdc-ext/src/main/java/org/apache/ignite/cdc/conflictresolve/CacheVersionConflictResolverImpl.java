@@ -23,8 +23,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,18 +42,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * </ul>
  */
 public class CacheVersionConflictResolverImpl implements CacheVersionConflictResolver {
-    /** Accepted entries count name. */
-    public static final String ACCEPTED_EVENTS_CNT = "AcceptedCount";
-
-    /** Accepted entries count description. */
-    public static final String ACCEPTED_EVENTS_CNT_DESC = "Count of accepted entries";
-
-    /** Rejected entries count name. */
-    public static final String REJECTED_EVENTS_CNT = "RejectedCount";
-
-    /** Rejected entries count description. */
-    public static final String REJECTED_EVENTS_CNT_DESC = "Count of rejected entries";
-
     /**
      * Cluster id.
      */
@@ -80,32 +66,21 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     @GridToStringInclude
     protected final boolean conflictResolveFieldEnabled;
 
-    /** Accepted entries count. */
-    private final LongAdderMetric acceptedCnt;
-
-    /** Rejected entries count. */
-    private final LongAdderMetric rejectedCnt;
-
     /**
      * @param clusterId Data center id.
      * @param conflictResolveField Field to resolve conflicts.
      * @param log Logger.
-     * @param mreg Metric registry.
      */
     public CacheVersionConflictResolverImpl(
         byte clusterId,
         String conflictResolveField,
-        IgniteLogger log,
-        MetricRegistryImpl mreg
+        IgniteLogger log
     ) {
         this.clusterId = clusterId;
         this.conflictResolveField = conflictResolveField;
         this.log = log;
 
         conflictResolveFieldEnabled = conflictResolveField != null;
-
-        acceptedCnt = mreg.longAdderMetric(ACCEPTED_EVENTS_CNT, ACCEPTED_EVENTS_CNT_DESC);
-        rejectedCnt = mreg.longAdderMetric(REJECTED_EVENTS_CNT, REJECTED_EVENTS_CNT_DESC);
     }
 
     /** {@inheritDoc} */
@@ -122,14 +97,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (log.isDebugEnabled())
             debugResolve(ctx, useNew, oldEntry, newEntry);
 
-        if (useNew) {
+        if (useNew)
             res.useNew();
-            acceptedCnt.increment();
-        }
-        else {
+        else
             res.useOld();
-            rejectedCnt.increment();
-        }
 
         return res;
     }

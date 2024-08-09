@@ -53,13 +53,6 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
     /** {@inheritDoc} */
     @Test
-    @Override public void testMetrics() throws Exception {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testMetrics, AssertionError.class, "");
-    }
-
-    /** {@inheritDoc} */
-    @Test
     @Override public void testResolveDebug() throws Exception {
         // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testResolveDebug, AssertionError.class, "");
@@ -81,10 +74,5 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
             return res;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
-        // No op.
     }
 }
