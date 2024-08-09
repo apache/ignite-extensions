@@ -64,6 +64,7 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
         // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
         GridTestUtils.assertThrows(log, super::testResolveDebug, AssertionError.class, "");
     }
+
     /**
      *
      */
