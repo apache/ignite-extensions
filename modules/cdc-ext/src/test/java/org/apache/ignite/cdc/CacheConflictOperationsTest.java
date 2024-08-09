@@ -143,8 +143,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        listeningLog.clearListeners();
-
         stopAllGrids();
     }
 
