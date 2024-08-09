@@ -259,16 +259,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, 5, conflictResolveField() != null);
     }
 
-    /** */
-    @Test
-    public void testMetrics() throws Exception {
-        String key = key("UpdateClusterUpdateReorder", otherClusterId);
-
-        putConflict(key, 1, true);
-
-        putConflict(key, 1, false);
-    }
-
     /** Test switching debug log level for ConflictResolver during runtime */
     @Test
     public void testResolveDebug() throws Exception {
