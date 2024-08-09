@@ -82,9 +82,4 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
             return res;
         }
     }
-
-    /** {@inheritDoc} */
-    @Override protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
-        // No op.
-    }
 }
