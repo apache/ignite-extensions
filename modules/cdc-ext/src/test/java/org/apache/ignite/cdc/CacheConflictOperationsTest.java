@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,9 +54,6 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cdc.conflictresolve.CacheConflictResolutionManagerImpl.CONFLICT_RESOLVER_METRICS_REGISTRY_NAME;
-import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.ACCEPTED_EVENTS_CNT;
-import static org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl.REJECTED_EVENTS_CNT;
 
 /**
  * Cache conflict operations test.
@@ -264,22 +259,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, 5, conflictResolveField() != null);
     }
 
-    /** */
-    @Test
-    public void testMetrics() throws Exception {
-        String key = key("UpdateClusterUpdateReorder", otherClusterId);
-
-        checkMetrics(0, 0);
-
-        putConflict(key, 1, true);
-
-        checkMetrics(1, 0);
-
-        putConflict(key, 1, false);
-
-        checkMetrics(1, 1);
-    }
-
     /** Test switching debug log level for ConflictResolver during runtime */
     @Test
     public void testResolveDebug() throws Exception {
@@ -391,16 +370,5 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
-    }
-
-    /** Checks metrics for conflict resolver. */
-    protected void checkMetrics(int acceptedCnt, int rejectedCnt) {
-        MetricRegistryImpl mreg = ign.context().metric().registry(CONFLICT_RESOLVER_METRICS_REGISTRY_NAME);
-
-        assertNotNull(mreg.findMetric(ACCEPTED_EVENTS_CNT));
-        assertNotNull(mreg.findMetric(REJECTED_EVENTS_CNT));
-
-        assertEquals(acceptedCnt, ((LongAdderMetric)mreg.findMetric(ACCEPTED_EVENTS_CNT)).value());
-        assertEquals(rejectedCnt, ((LongAdderMetric)mreg.findMetric(REJECTED_EVENTS_CNT)).value());
     }
 }

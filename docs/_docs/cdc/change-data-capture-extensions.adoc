@@ -193,19 +193,6 @@ Conflict resolution field should contain user provided monotonically increasing 
 . If `conflictResolveField` if provided then field values comparison used to determine order.
 . Conflict resolution failed. Update will be ignored.
 
-=== Conflict Resolver Metrics
-
-The Ignite's built-in `CacheVersionConflictResolverPluginProvider` provides the following metrics:
-
-[cols="35%,65%",opts="header"]
-|===
-|Name |Description
-| `AcceptedCount` | Count of accepted entries.
-| `RejectedCount` | Count of rejected entries.
-|===
-
-These metrics are registered under `conflict-resolver` registry for each node configured with this plugin.
-
 === Configuration example
 Configuration is done via Ignite node plugin:
 
