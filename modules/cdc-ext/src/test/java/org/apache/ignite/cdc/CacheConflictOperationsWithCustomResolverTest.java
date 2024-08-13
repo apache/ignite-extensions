@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /** Cache conflict operations test with a custom resolver. */
@@ -61,10 +61,10 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
     }
 
     /** {@inheritDoc} */
+    @Ignore
     @Test
-    @Override public void testResolveDebug() throws Exception {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testResolveDebug, AssertionError.class, "");
+    @Override public void testResolveDebug() {
+        // Test LWW resolver has no logging.
     }
 
     /**

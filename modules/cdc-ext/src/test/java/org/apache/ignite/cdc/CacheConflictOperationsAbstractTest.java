@@ -95,7 +95,7 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
     private static IgniteEx client;
 
     /** Listening test logger. */
-    private static final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+    private static ListeningTestLogger listeningLog;
 
     /** */
     private static final AtomicInteger incKey = new AtomicInteger();
@@ -133,6 +133,8 @@ public abstract class CacheConflictOperationsAbstractTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
         startGrid(1);
         client = startClientGrid(2);
     }
