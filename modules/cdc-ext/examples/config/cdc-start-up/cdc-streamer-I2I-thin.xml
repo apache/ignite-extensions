@@ -22,6 +22,5 @@
         </property>
 
 		<property name="onlyPrimary" value="false"/>
-        <property name="maxBatchSize" value="256"/>
     </bean>
 </beans>
