@@ -20,7 +20,6 @@
 				<value>terminator</value>
 			</list>
 		</property>
-		<property name="maxBatchSize" value="256"/>
 		<property name="onlyPrimary" value="false"/>
 		<property name="kafkaProperties" ref="kafkaProperties"/>
     </bean>
