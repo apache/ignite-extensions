@@ -7,6 +7,10 @@ This module provides the clients with a simple CDC implementations strategies fo
 
 For that move 'ignite-cdc' folder to 'libs' folder before running 'ignite-cdc.{sh|bat}' or 'kafka-to-ignite.{sh|bat}' scripts. The content of the module folder will be added to classpath in this case.
 
-You can build the binary for the module from the source code by using:
+You can build the binary for the module from the source code by using the following command from the repository root:
 
-mvn clean install -f modules/cdc-ext -Pcheckstyle -DskipTests
+mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
+
+The resulting binary will be located under 'target' directory. Unpack it to ignite binary root to enable CDC.
+
+Use Apache Ignite documentation to explore CDC capabilities.
