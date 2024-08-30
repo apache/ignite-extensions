@@ -181,7 +181,8 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 caches,
                 metaUpdr,
                 stopped,
-                metrics
+                metrics,
+                this
             );
 
             addAndStart("applier-thread-" + cntr++, applier);
@@ -251,6 +252,13 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** Checks that configured caches exist in a destination cluster. */
     protected abstract void checkCaches(Collection<String> caches);
+
+    /**
+     * Get cache names from client.
+     *
+     * @return Cache names.
+     * */
+    protected abstract Collection<String> getCaches();
 
     /** */
     private void ackAsciiLogo(IgniteLogger log) {
