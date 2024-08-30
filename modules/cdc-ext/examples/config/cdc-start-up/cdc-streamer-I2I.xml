@@ -25,6 +25,7 @@
         </property>
 
         <property name="onlyPrimary" value="false"/>
+        <property name="maxBatchSize" value="1024"/>
     </bean>
 
 	<!--Destination TcpDiscoverySpi-->
