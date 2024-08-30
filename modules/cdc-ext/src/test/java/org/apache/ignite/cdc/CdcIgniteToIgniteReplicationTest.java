@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
@@ -44,23 +45,39 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
+        return startActivePassiveCdcWithFilters(cache, Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdcWithFilters(String cache,
+                                                                                       Set<String> includeTemplates,
+                                                                                       Set<String> excludeTemplates) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache,
+                    includeTemplates, excludeTemplates));
 
         return futs;
     }
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
+        return startActiveActiveCdcWithFilters(Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(Set<String> includeTemplates,
+                                                                                      Set<String> excludeTemplates) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster,
+                    ACTIVE_ACTIVE_CACHE, includeTemplates, excludeTemplates));
 
         for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster, ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster,
+                    ACTIVE_ACTIVE_CACHE, includeTemplates, excludeTemplates));
 
         return futs;
     }
@@ -81,13 +98,17 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      * @param destCfg Ignite destination cluster configuration.
      * @param dest Ignite destination cluster.
      * @param cache Cache name to stream to kafka.
+     * @param includeTemplates Include regex templates for cache names.
+     * @param excludeTemplates Exclude regex templates for cache names.
      * @return Future for Change Data Capture application.
      */
     protected IgniteInternalFuture<?> igniteToIgnite(
         IgniteConfiguration srcCfg,
         IgniteConfiguration destCfg,
         IgniteEx[] dest,
-        String cache
+        String cache,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates
     ) {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
@@ -108,6 +129,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
+            streamer.setIncludeTemplates(includeTemplates);
+            streamer.setExcludeTemplates(excludeTemplates);
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());

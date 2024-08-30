@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -112,7 +113,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteConfiguration igniteCfg,
         String topic,
         String metadataTopic,
-        String cache
+        String cache,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates
     ) {
         Map<String, String> params = new HashMap<>();
 
@@ -139,7 +142,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteConfiguration igniteCfg,
         IgniteEx[] dest,
         int partFrom,
-        int partTo
+        int partTo,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates
     ) {
         Map<String, String> params = new HashMap<>();
 
