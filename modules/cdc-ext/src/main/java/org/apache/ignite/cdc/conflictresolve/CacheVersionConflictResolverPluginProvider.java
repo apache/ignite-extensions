@@ -18,8 +18,11 @@
 package org.apache.ignite.cdc.conflictresolve;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -65,6 +68,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Custom conflict resolver. */
     private CacheVersionConflictResolver resolver;
 
+    /** Include regex templates for cache names. */
+    private Set<String> includeTemplates = new HashSet<>();
+
+    /** Exclude regex templates for cache names. */
+    private Set<String> excludeTemplates = new HashSet<>();
+
     /** Log. */
     private IgniteLogger log;
 
@@ -98,7 +107,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
-        if (caches.contains(cacheName)) {
+        if (caches.contains(cacheName) || matchesFilters(cacheName)) {
             log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
@@ -144,6 +153,16 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
         this.resolver = resolver;
     }
 
+    /** @param includeTemplates Include regex templates */
+    public void setIncludeTemplates(Set<String> includeTemplates) {
+        this.includeTemplates = includeTemplates;
+    }
+
+    /** @param excludeTemplates Exclude regex templates */
+    public void setExcludeTemplates(Set<String> excludeTemplates) {
+        this.excludeTemplates = excludeTemplates;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
         ((IgniteEx)ctx.grid()).context().cache().context().versions().dataCenterId(clusterId);
@@ -177,5 +196,22 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
+    }
+
+    /**
+     * Match cache name with regex patterns.
+     *
+     * @param cacheName Cache name.
+     */
+    private boolean matchesFilters(String cacheName) {
+        boolean matchesInclude = includeTemplates.stream()
+            .map(Pattern::compile)
+            .anyMatch(pattern -> pattern.matcher(cacheName).matches());
+
+        boolean notMatchesExclude = excludeTemplates.stream()
+            .map(Pattern::compile)
+            .noneMatch(pattern -> pattern.matcher(cacheName).matches());
+
+        return matchesInclude && notMatchesExclude;
     }
 }
