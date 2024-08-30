@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.management.DynamicMBean;
@@ -96,6 +97,13 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
+        return startActivePassiveCdcWithFilters(cache, Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdcWithFilters(String cache,
+                                                                                       Set<String> includeTemplates,
+                                                                                       Set<String> excludeTemplates) {
         try {
             KAFKA.createTopic(cache, DFLT_PARTS, 1);
 
@@ -110,7 +118,7 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
 
-            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache, "ignite-src-to-kafka-" + idx));
+            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache, includeTemplates, excludeTemplates, "ignite-src-to-kafka-" + idx));
         }
 
         for (int i = 0; i < destCluster.length; i++) {
@@ -122,7 +130,9 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
                 destCluster,
                 i * (DFLT_PARTS / 2),
                 (i + 1) * (DFLT_PARTS / 2),
-                 "kafka-to-ignite-dest-" + i
+                includeTemplates,
+                excludeTemplates, 
+                "kafka-to-ignite-dest-" + i
             ));
         }
 
@@ -131,20 +141,26 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
+        return startActiveActiveCdcWithFilters(Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(Set<String> includeTemplates,
+                                                                                      Set<String> excludeTemplates) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
-
-            futs.add(igniteToKafka(
-                    ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE, "ignite-src-to-kafka-" + idx));
+            
+            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE, includeTemplates,
+                    excludeTemplates, "ignite-src-to-kafka-" + idx));
         }
 
         for (IgniteEx ex : destCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
-
-            futs.add(igniteToKafka(
-                    ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE, "ignite-dest-to-kafka-" + idx));
+            
+            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE, includeTemplates,
+                    excludeTemplates, "ignite-dest-to-kafka-" + idx));
         }
 
         futs.add(kafkaToIgnite(
@@ -155,6 +171,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
             destCluster,
             0,
             DFLT_PARTS,
+            includeTemplates,
+            excludeTemplates,
             "kafka-to-ignite-src"
         ));
 
@@ -166,6 +184,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
             srcCluster,
             0,
             DFLT_PARTS,
+            includeTemplates,
+            excludeTemplates,
             "kafka-to-ignite-dest"
         ));
 
@@ -258,25 +278,31 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
      * @param topic Kafka topic name.
      * @param metadataTopic Metadata topic name.
      * @param cache Cache name to stream to kafka.
+     * @param includeTemplates Include regex templates for cache names.
+     * @param excludeTemplates Exclude regex templates for cache names.
      * @return Future for Change Data Capture application.
      */
     protected IgniteInternalFuture<?> igniteToKafka(
-        IgniteConfiguration igniteCfg,
-        String topic,
-        String metadataTopic,
-        String cache,
-        String threadName
+            IgniteConfiguration igniteCfg,
+            String topic,
+            String metadataTopic,
+            String cache,
+            Set<String> includeTemplates,
+            Set<String> excludeTemplates,
+            String threadName
     ) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
-                .setTopic(topic)
-                .setMetadataTopic(metadataTopic)
-                .setKafkaPartitions(DFLT_PARTS)
-                .setCaches(Collections.singleton(cache))
-                .setMaxBatchSize(KEYS_CNT)
-                .setOnlyPrimary(false)
-                .setKafkaProperties(kafkaProperties())
-                .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
+                    .setTopic(topic)
+                    .setMetadataTopic(metadataTopic)
+                    .setKafkaPartitions(DFLT_PARTS)
+                    .setCaches(Collections.singleton(cache))
+                    .setIncludeTemplates(includeTemplates)
+                    .setExcludeTemplates(excludeTemplates)
+                    .setMaxBatchSize(KEYS_CNT)
+                    .setOnlyPrimary(false)
+                    .setKafkaProperties(kafkaProperties())
+                    .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
@@ -295,6 +321,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
      * @param cacheName Cache name.
      * @param igniteCfg Ignite configuration.
      * @param dest Destination Ignite cluster.
+     * @param includeTemplates Include regex templates for cache names.
+     * @param excludeTemplates Exclude regex templates for cache names.
      * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
     protected IgniteInternalFuture<?> kafkaToIgnite(
@@ -305,6 +333,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
         IgniteEx[] dest,
         int fromPart,
         int toPart,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates,
         String threadName
     ) {
         KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
@@ -314,6 +344,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
         cfg.setThreadCount((toPart - fromPart) / 2);
 
         cfg.setCaches(Collections.singletonList(cacheName));
+        cfg.setIncludeTemplates(includeTemplates);
+        cfg.setExcludeTemplates(excludeTemplates);
         cfg.setTopic(topic);
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);

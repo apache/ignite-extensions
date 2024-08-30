@@ -18,7 +18,10 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -82,6 +85,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      * Cache names to process.
      */
     private Collection<String> caches;
+
+    /** Include regex templates for cache names. */
+    private Set<String> includeTemplates = new HashSet<>();
+
+    /** Exclude regex templates for cache names. */
+    private Set<String> excludeTemplates = new HashSet<>();
 
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
@@ -171,6 +180,34 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
+    }
+
+    /**
+     * @return Include regex templates
+     */
+    public Set<String> getIncludeTemplates() {
+        return includeTemplates;
+    }
+
+    /**
+     * @param includeTemplates Include regex templates
+     */
+    public void setIncludeTemplates(Set<String> includeTemplates) {
+        this.includeTemplates = includeTemplates;
+    }
+
+    /**
+     * @return Exclude regex templates
+     */
+    public Set<String> getExcludeTemplates() {
+        return excludeTemplates;
+    }
+
+    /**
+     * @param excludeTemplates Exclude regex templates
+     */
+    public void setExcludeTemplates(Set<String> excludeTemplates) {
+        this.excludeTemplates = excludeTemplates;
     }
 
     /** @return The maximum time to complete Kafka related requests, in milliseconds. */
