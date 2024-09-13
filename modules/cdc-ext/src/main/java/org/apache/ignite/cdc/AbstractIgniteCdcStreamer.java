@@ -24,11 +24,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.metrics.IgniteToIgniteCdcMetrics;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -43,30 +43,6 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_
  * @see AbstractCdcEventsApplier
  */
 public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
-    /** */
-    public static final String EVTS_SENT_CNT = "EventsCount";
-
-    /** */
-    public static final String EVTS_SENT_CNT_DESC = "Count of messages applied to destination cluster";
-
-    /** */
-    public static final String TYPES_SENT_CNT = "TypesCount";
-
-    /** */
-    public static final String TYPES_SENT_CNT_DESC = "Count of binary types events applied to destination cluster";
-
-    /** */
-    public static final String MAPPINGS_SENT_CNT = "MappingsCount";
-
-    /** */
-    public static final String MAPPINGS_SENT_CNT_DESC = "Count of mappings events applied to destination cluster";
-
-    /** */
-    public static final String LAST_EVT_SENT_TIME = "LastEventTime";
-
-    /** */
-    public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last applied event to destination cluster";
-
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
@@ -82,17 +58,8 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     /** Events applier. */
     protected AbstractCdcEventsApplier<?, ?> applier;
 
-    /** Timestamp of last sent message. */
-    protected AtomicLongMetric lastEvtTs;
-
-    /** Count of events applied to destination cluster. */
-    protected AtomicLongMetric evtsCnt;
-
-    /** Count of binary types applied to destination cluster. */
-    protected AtomicLongMetric typesCnt;
-
-    /** Count of mappings applied to destination cluster. */
-    protected AtomicLongMetric mappingsCnt;
+    /** CDC metrics. */
+    protected IgniteToIgniteCdcMetrics cdcMetrics;
 
     /** Logger. */
     @LoggerResource
@@ -107,32 +74,19 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
             .boxed()
             .collect(Collectors.toSet());
 
-        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
-
-        this.evtsCnt = mreg.longMetric(EVTS_SENT_CNT, EVTS_SENT_CNT_DESC);
-        this.typesCnt = mreg.longMetric(TYPES_SENT_CNT, TYPES_SENT_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_SENT_CNT, MAPPINGS_SENT_CNT_DESC);
-        this.lastEvtTs = mreg.longMetric(LAST_EVT_SENT_TIME, LAST_EVT_SENT_TIME_DESC);
+        cdcMetrics = new IgniteToIgniteCdcMetrics((MetricRegistryImpl)reg);
     }
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> events) {
         try {
-            long msgsSnt = applier.apply(() -> F.iterator(
+            applier.apply(() -> F.iterator(
                 events,
                 F.identity(),
                 true,
                 evt -> !onlyPrimary || evt.primary(),
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
-
-            if (msgsSnt > 0) {
-                evtsCnt.add(msgsSnt);
-                lastEvtTs.value(System.currentTimeMillis());
-
-                if (log.isInfoEnabled())
-                    log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
-            }
 
             return true;
         }
@@ -160,10 +114,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
         mappings.forEachRemaining(mapping -> {
             registerMapping(binaryContext(), log, mapping);
 
-            mappingsCnt.increment();
+            cdcMetrics.incrementMappingsSentCount();
         });
 
-        lastEvtTs.value(System.currentTimeMillis());
+        cdcMetrics.setLastEventSentTime();
     }
 
     /** {@inheritDoc} */
@@ -173,10 +127,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
             registerBinaryMeta(binaryContext(), log, meta);
 
-            typesCnt.increment();
+            cdcMetrics.incrementTypesSentCount();
         });
 
-        lastEvtTs.value(System.currentTimeMillis());
+        cdcMetrics.setLastEventSentTime();
     }
 
     /**

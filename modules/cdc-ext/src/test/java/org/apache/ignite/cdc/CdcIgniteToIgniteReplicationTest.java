@@ -34,9 +34,13 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.EVTS_SENT_CNT;
-import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.LAST_EVT_SENT_TIME;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_ALL_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_TIME_TOTAL;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_ALL_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_TIME_TOTAL;
+import static org.apache.ignite.cdc.metrics.IgniteToIgniteCdcMetrics.EVTS_SENT_CNT;
+import static org.apache.ignite.cdc.metrics.IgniteToIgniteCdcMetrics.LAST_EVT_SENT_TIME;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -69,6 +73,16 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     @Override protected void checkConsumerMetrics(Function<String, Long> longMetric) {
         assertNotNull(longMetric.apply(LAST_EVT_SENT_TIME));
         assertNotNull(longMetric.apply(EVTS_SENT_CNT));
+        assertNotNull(longMetric.apply(PUT_TIME_TOTAL));
+        assertNotNull(longMetric.apply(REMOVE_TIME_TOTAL));
+
+        for (String interval : HISTOGRAM_BUCKETS)
+            assertNotNull(longMetric.apply(PUT_ALL_TIME + "_" + interval));
+
+        if (rmvDataOpActed.get()) {
+            for (String interval : HISTOGRAM_BUCKETS)
+                assertNotNull(longMetric.apply(REMOVE_ALL_TIME + "_" + interval));
+        }
     }
 
     /** {@inheritDoc} */

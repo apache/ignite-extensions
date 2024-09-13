@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -26,6 +27,7 @@ import java.util.function.Supplier;
 import javax.management.DynamicMBean;
 import org.apache.ignite.cdc.AbstractReplicationTest;
 import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,19 +36,24 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
-import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.EVTS_SENT_CNT;
-import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.LAST_EVT_SENT_TIME;
-import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.BYTES_SENT_CNT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_METRICS_REG_NAME;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteMetrics.EVTS_RCVD_CNT;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteMetrics.LAST_EVT_RCVD_TIME;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteMetrics.LAST_MSG_SENT_TIME;
-import static org.apache.ignite.cdc.kafka.KafkaToIgniteMetrics.MSGS_SENT_CNT;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_ALL_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_TIME_TOTAL;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_ALL_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_TIME_TOTAL;
+import static org.apache.ignite.cdc.metrics.IgniteToKafkaCdcMetrics.BYTES_SENT_CNT;
+import static org.apache.ignite.cdc.metrics.IgniteToKafkaCdcMetrics.EVTS_SENT_CNT;
+import static org.apache.ignite.cdc.metrics.IgniteToKafkaCdcMetrics.LAST_EVT_SENT_TIME;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics.EVTS_RCVD_CNT;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics.LAST_EVT_RCVD_TIME;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics.LAST_MSG_SENT_TIME;
+import static org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics.MSGS_SENT_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -160,9 +167,10 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         super.checkMetrics();
 
         for (AbstractKafkaToIgniteCdcStreamer streamer : kafkaStreamers) {
-            KafkaToIgniteMetrics metrics = getFieldValue(streamer, "metrics");
+            KafkaToIgniteCdcMetrics metrics = getFieldValue(streamer, "cdcMetrics");
             MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
             checkK2IMetrics(m -> mreg.<AtomicLongMetric>findMetric(m).value());
+            checkK2IHistogramMetrics(m -> mreg.<HistogramMetricImpl>findMetric(m).value());
         }
     }
 
@@ -193,7 +201,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             long cnt = 0;
 
             for (AbstractKafkaToIgniteCdcStreamer streamer : kafkaStreamers) {
-                KafkaToIgniteMetrics metrics = getFieldValue(streamer, "metrics");
+                KafkaToIgniteCdcMetrics metrics = getFieldValue(streamer, "cdcMetrics");
                 MetricRegistryImpl mreg = getFieldValue(metrics, "mreg");
                 Function<String, Long> longMetric = m -> mreg.<AtomicLongMetric>findMetric(m).value();
 
@@ -234,6 +242,20 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         assertNotNull(longMetric.apply(LAST_MSG_SENT_TIME));
         assertNotNull(longMetric.apply(MSGS_SENT_CNT));
+
+        assertNotNull(longMetric.apply(PUT_TIME_TOTAL));
+        assertNotNull(longMetric.apply(REMOVE_TIME_TOTAL));
+    }
+
+    /**
+     * Checks histogram metrics for Kafka To Ignite consumer
+     * @param longMetric Long metric.
+     */
+    private void checkK2IHistogramMetrics(Function<String, long[]> longMetric) {
+        assertTrue(Arrays.stream(longMetric.apply(PUT_ALL_TIME)).sum() > 0);
+
+        if (rmvDataOpActed.get())
+            assertTrue(Arrays.stream(longMetric.apply(REMOVE_ALL_TIME)).sum() > 0);
     }
 
     /**

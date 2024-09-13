@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.kafka;
+package org.apache.ignite.cdc.metrics;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -40,8 +42,8 @@ import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
-/** CDC kafka to ignite metrics. */
-public class KafkaToIgniteMetrics {
+/** Kafka to Ignite CDC metrics. */
+public final class KafkaToIgniteCdcMetrics extends AbstractCdcMetrics {
     /** Count of events received name. */
     public static final String EVTS_RCVD_CNT = "EventsReceivedCount";
 
@@ -73,25 +75,34 @@ public class KafkaToIgniteMetrics {
     public static final String LAST_MSG_SENT_TIME_DESC = "Timestamp of last sent batch to the destination cluster";
 
     /** Timestamp of last received message. */
-    private AtomicLongMetric lastRcvdEvtTs;
+    private final AtomicLongMetric lastRcvdEvtTs;
 
     /** Count of received events. */
-    private AtomicLongMetric evtsRcvdCnt;
+    private final AtomicLongMetric evtsRcvdCnt;
 
     /** Timestamp of last sent message. */
-    private AtomicLongMetric lastSntMsgTs;
+    private final AtomicLongMetric lastSntMsgTs;
 
     /** Count of sent events. */
-    private AtomicLongMetric evtsSntCnt;
+    private final AtomicLongMetric evtsSntCnt;
 
     /** Count of received markers. */
-    private AtomicLongMetric markersCnt;
+    private final AtomicLongMetric markersCnt;
+
+    /** */
+    private final HistogramMetricImpl putAllTime;
+
+    /** */
+    private final HistogramMetricImpl rmvAllTime;
+
+    /** Total put time taken nanos. */
+    private final AtomicLongMetric putTimeTotal;
+
+    /** Total remove time taken nanos. */
+    private final AtomicLongMetric rmvTimeTotal;
 
     /** Standalone kernal context. */
     private StandaloneGridKernalContext kctx;
-
-    /** CDC metrics registry. */
-    private MetricRegistryImpl mreg;
 
     /** */
     private final IgniteLogger log;
@@ -100,32 +111,39 @@ public class KafkaToIgniteMetrics {
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
     /** Metric registry manager. */
-    private SingleMetricRegistryManager mregMgr;
+    private volatile SingleMetricRegistryManager mregMgr;
 
-    /** */
-    private KafkaToIgniteMetrics(
-        IgniteLogger log,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg
-    ) throws IgniteCheckedException {
+    /** MetricRegistry instance for metric initialization. */
+    private volatile MetricRegistryImpl mreg;
+
+    /**
+     * @param log Logger.
+     * @param streamerCfg Streamer config.
+     */
+    public KafkaToIgniteCdcMetrics(IgniteLogger log, KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
         this.log = log;
         this.streamerCfg = streamerCfg;
 
-        initStandaloneMetricsKernal();
-        initMetrics();
+        prepareMetricRegistry();
+
+        this.evtsRcvdCnt = mreg.longMetric(EVTS_RCVD_CNT, EVTS_RCVD_CNT_DESC);
+        this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RCVD_TIME, LAST_EVT_RCVD_TIME_DESC);
+        this.evtsSntCnt = mreg.longMetric(MSGS_SENT_CNT, MSGS_SENT_CNT_DESC);
+        this.lastSntMsgTs = mreg.longMetric(LAST_MSG_SENT_TIME, LAST_MSG_SENT_TIME_DESC);
+        this.markersCnt = mreg.longMetric(MARKERS_RCVD_CNT, MARKERS_RCVD_CNT_DESC);
+
+        this.putAllTime = mreg.histogram(PUT_ALL_TIME, HISTOGRAM_BUCKETS, PUT_ALL_TIME_DESC);
+        this.rmvAllTime = mreg.histogram(REMOVE_ALL_TIME, HISTOGRAM_BUCKETS, REMOVE_ALL_TIME_DESC);
+        this.putTimeTotal = mreg.longMetric(PUT_TIME_TOTAL, PUT_TIME_TOTAL_DESC);
+        this.rmvTimeTotal = mreg.longMetric(REMOVE_TIME_TOTAL, REMOVE_TIME_TOTAL_DESC);
     }
 
     /**
-     * Creates an instance of {@link KafkaToIgniteMetrics}.
-     * @param log Logger.
-     * @param streamerCfg Streamer config.
-     * @return {@link KafkaToIgniteMetrics} instance.
+     * Method contains {@link MetricRegistryImpl} initialization code.
      */
-    public static KafkaToIgniteMetrics startMetrics(
-        IgniteLogger log,
-        KafkaToIgniteCdcStreamerConfiguration streamerCfg
-    ) {
+    private void prepareMetricRegistry() {
         try {
-            return new KafkaToIgniteMetrics(log, streamerCfg);
+            initStandaloneMetricsKernal();
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
@@ -159,52 +177,58 @@ public class KafkaToIgniteMetrics {
             }
         };
 
-        mreg = new MetricRegistryImpl(metricName("cdc", "applier"), null, null, log);
-
-        mregMgr = new SingleMetricRegistryManager(mreg);
+        kctx.metric().start();
 
         for (MetricExporterSpi exporterSpi : kctx.config().getMetricExporterSpi()) {
             kctx.resource().injectGeneric(exporterSpi);
-            exporterSpi.setMetricRegistry(mregMgr);
             exporterSpi.onContextInitialized(new StandaloneSpiContext());
-            exporterSpi.spiStart(null);
         }
+
+        mreg = kctx.metric().registry(metricName("cdc", "applier"));
     }
 
-    /** Initialize metrics. */
-    private void initMetrics() {
-        this.evtsRcvdCnt = mreg.longMetric(EVTS_RCVD_CNT, EVTS_RCVD_CNT_DESC);
-        this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RCVD_TIME, LAST_EVT_RCVD_TIME_DESC);
-        this.evtsSntCnt = mreg.longMetric(MSGS_SENT_CNT, MSGS_SENT_CNT_DESC);
-        this.lastSntMsgTs = mreg.longMetric(LAST_MSG_SENT_TIME, LAST_MSG_SENT_TIME_DESC);
-        this.markersCnt = mreg.longMetric(MARKERS_RCVD_CNT, MARKERS_RCVD_CNT_DESC);
+    /** Stops metric manager and metrics SPI. */
+    public void stopMetrics() throws IgniteCheckedException {
+        kctx.metric().stop(true);
     }
 
-    /**
-     * Stops metric manager and metrics SPI.
-     */
-    public void stopMetrics() {
-        mregMgr.stop();
-
-        for (MetricExporterSpi exporterSpi : kctx.config().getMetricExporterSpi())
-            exporterSpi.spiStop();
+    /** {@inheritDoc} */
+    @Override public long getEventsSentCount() {
+        return evtsSntCnt.value();
     }
 
-    /**
-     * Increments the number of received messages from kafka.
-     */
-    public void incrementReceivedEvents() {
-        this.evtsRcvdCnt.increment();
-        this.lastRcvdEvtTs.value(System.currentTimeMillis());
+    /** {@inheritDoc} */
+    @Override public void addEventsSentCount(long cnt) {
+        evtsSntCnt.add(cnt);
     }
 
-    /**
-     * Adds count to total number of set messages to destination cluster.
-     * @param cnt Count.
-     */
-    public void addSentEvents(int cnt) {
-        this.evtsSntCnt.add(cnt);
-        this.lastSntMsgTs.value(System.currentTimeMillis());
+    /** {@inheritDoc} */
+    @Override public void setLastEventSentTime() {
+        lastSntMsgTs.value(System.currentTimeMillis());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addPutAllTimeNanos(long duration) {
+        putTimeTotal.add(duration);
+
+        putAllTime.value(duration);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addRemoveAllTimeNanos(long duration) {
+        rmvTimeTotal.add(duration);
+
+        rmvAllTime.value(duration);
+    }
+
+    /** Updates last event received time. */
+    public void setLastEventReceivedTime() {
+        lastRcvdEvtTs.value(System.currentTimeMillis());
+    }
+
+    /** Increments the number of received messages from kafka. */
+    public void incrementEventsReceivedCount() {
+        evtsRcvdCnt.increment();
     }
 
     /** Increments the number of markers received from kafka. */

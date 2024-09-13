@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cdc.metrics.AbstractCdcMetrics;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -55,9 +56,14 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
      * @param ignite Destination cluster.
      * @param maxBatchSize Maximum batch size.
      * @param log Logger.
+     * @param cdcMetrics {@link AbstractCdcMetrics} instance.
      */
-    public CdcEventsIgniteApplier(IgniteEx ignite, int maxBatchSize, IgniteLogger log) {
-        super(maxBatchSize, log);
+    public CdcEventsIgniteApplier(
+        IgniteEx ignite,
+        int maxBatchSize,
+        IgniteLogger log,
+        AbstractCdcMetrics cdcMetrics) {
+        super(maxBatchSize, log, cdcMetrics);
 
         this.ignite = ignite;
     }

@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
@@ -81,7 +82,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     protected IgniteLogger log;
 
     /** CDC kafka to ignite metrics */
-    private KafkaToIgniteMetrics metrics;
+    protected KafkaToIgniteCdcMetrics cdcMetrics;
 
     /**
      * @param kafkaProps Kafka properties.
@@ -130,14 +131,14 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             ackAsciiLogo(log);
 
-            metrics = KafkaToIgniteMetrics.startMetrics(log, streamerCfg);
+            cdcMetrics = new KafkaToIgniteCdcMetrics(log, streamerCfg);
 
             try {
                 runx();
             }
             finally {
-                if (metrics != null)
-                    metrics.stopMetrics();
+                if (cdcMetrics != null)
+                    cdcMetrics.stopMetrics();
 
                 if (log.isInfoEnabled())
                     log.info("Ignite Change Data Capture Application stopped.");
@@ -180,8 +181,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 parts.get2(), // kafkaPartTo
                 caches,
                 metaUpdr,
-                stopped,
-                metrics
+                stopped
             );
 
             addAndStart("applier-thread-" + cntr++, applier);

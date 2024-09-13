@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.metrics.KafkaToIgniteCdcMetrics;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -126,7 +127,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private AbstractCdcEventsApplier applier;
 
     /** CDC kafka to ignite metrics */
-    private final KafkaToIgniteMetrics metrics;
+    private KafkaToIgniteCdcMetrics cdcMetrics;
 
     /**
      * @param applierSupplier Cdc events applier supplier.
@@ -138,7 +139,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param caches Cache ids.
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
-     * @param metrics CDC Kafka to Ignite metrics.
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,
@@ -149,8 +149,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         int kafkaPartTo,
         Set<Integer> caches,
         KafkaToIgniteMetadataUpdater metaUpdr,
-        AtomicBoolean stopped,
-        KafkaToIgniteMetrics metrics
+        AtomicBoolean stopped
     ) {
         this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
@@ -163,7 +162,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.metaUpdr = metaUpdr;
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
-        this.metrics = metrics;
     }
 
     /** {@inheritDoc} */
@@ -173,6 +171,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
                 ", partTo=" + kafkaPartTo + "].");
 
         applier = applierSupplier.get();
+        cdcMetrics = (KafkaToIgniteCdcMetrics)applier.metrics();
 
         try {
             for (int kafkaPart = kafkaPartFrom; kafkaPart < kafkaPartTo; kafkaPart++) {
@@ -233,10 +232,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             );
         }
 
-        int msgsSntCur = applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
-
-        if (msgsSntCur > 0)
-            metrics.addSentEvents(msgsSntCur);
+        applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }
@@ -253,12 +249,13 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         if (rec.key() == null && Arrays.equals(val, META_UPDATE_MARKER)) {
             metaUpdr.updateMetadata();
 
-            metrics.incrementMarkers();
+            cdcMetrics.incrementMarkers();
 
             return false;
         }
 
-        metrics.incrementReceivedEvents();
+        cdcMetrics.incrementEventsReceivedCount();
+        cdcMetrics.setLastEventReceivedTime();
 
         return F.isEmpty(caches) || caches.contains(rec.key());
     }

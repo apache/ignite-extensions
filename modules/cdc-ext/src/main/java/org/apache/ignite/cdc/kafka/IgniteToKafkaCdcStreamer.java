@@ -37,6 +37,7 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
+import org.apache.ignite.cdc.metrics.IgniteToKafkaCdcMetrics;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -79,42 +80,6 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  */
 @IgniteExperimental
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
-    /** */
-    public static final String EVTS_SENT_CNT = "EventsCount";
-
-    /** */
-    public static final String EVTS_SENT_CNT_DESC = "Count of messages sent to Kafka";
-
-    /** */
-    public static final String TYPES_SENT_CNT = "TypesCount";
-
-    /** */
-    public static final String TYPES_SENT_CNT_DESC = "Count of binary types events sent to Kafka";
-
-    /** */
-    public static final String MAPPINGS_SENT_CNT = "MappingsCount";
-
-    /** */
-    public static final String MAPPINGS_SENT_CNT_DESC = "Count of mappings events sent to Kafka";
-
-    /** */
-    public static final String LAST_EVT_SENT_TIME = "LastEventTime";
-
-    /** */
-    public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last sent event to Kafka";
-
-    /** Bytes sent metric name. */
-    public static final String BYTES_SENT_CNT = "BytesSent";
-
-    /** Bytes sent metric description. */
-    public static final String BYTES_SENT_DESC = "Count of bytes sent to Kafka";
-
-    /** Count of metadata markers sent name. */
-    public static final String MARKERS_SENT_CNT = "MarkersCount";
-
-    /** Count of metadata markers sent description. */
-    public static final String MARKERS_SENT_CNT_DESC = "Count of metadata markers sent to Kafka";
-
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
@@ -155,27 +120,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private long kafkaReqTimeout = DFLT_KAFKA_REQ_TIMEOUT;
 
-    /** Timestamp of last sent message. */
-    private AtomicLongMetric lastMsgTs;
-
-    /** Count of bytes sent to the Kafka. */
-    private AtomicLongMetric bytesSnt;
-
-    /** Count of sent events. */
-    private AtomicLongMetric evtsCnt;
-
-    /** Count of sent binary types. */
-    protected AtomicLongMetric typesCnt;
-
-    /** Count of sent mappings. */
-    protected AtomicLongMetric mappingsCnt;
-
-    /** Count of sent markers. */
-    protected AtomicLongMetric markersCnt;
-
     /** */
     private List<Future<RecordMetadata>> futs;
 
+    /** CDC metrics. */
+    private IgniteToKafkaCdcMetrics cdcMetrics;
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
@@ -217,7 +166,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 evt.cacheId(),
                 IgniteUtils.toBytes(evt)
             ),
-            evtsCnt
+            cdcMetrics.getEventsSentCountMetric()
         );
 
         return true;
@@ -228,7 +177,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             types,
             t -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
-            typesCnt
+            cdcMetrics.getTypesSentCountMetric()
         );
 
         sendMetaUpdatedMarkers();
@@ -239,7 +188,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             mappings,
             m -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(m)),
-            mappingsCnt
+            cdcMetrics.getMappingsSentCountMetric()
         );
 
         sendMetaUpdatedMarkers();
@@ -264,7 +213,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         sendAll(
             IntStream.range(0, kafkaParts).iterator(),
             p -> new ProducerRecord<>(evtTopic, p, null, META_UPDATE_MARKER),
-            markersCnt
+            cdcMetrics.getMarkersSentCountMetric()
         );
 
         if (log.isDebugEnabled())
@@ -295,7 +244,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
             ProducerRecord<Integer, byte[]> rec = toRec.apply(item);
 
-            bytesSnt.add(rec.value().length);
+            cdcMetrics.addBytesSentCount(rec.value().length);
 
             futs.add(producer.send(rec));
         }
@@ -306,7 +255,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                     fut.get(kafkaReqTimeout, TimeUnit.MILLISECONDS);
 
                 cntr.add(futs.size());
-                lastMsgTs.value(System.currentTimeMillis());
+                cdcMetrics.setLastEventSentTime();
 
                 futs.clear();
             }
@@ -351,14 +300,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             throw new RuntimeException(e);
         }
 
-        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
-
-        this.evtsCnt = mreg.longMetric(EVTS_SENT_CNT, EVTS_SENT_CNT_DESC);
-        this.lastMsgTs = mreg.longMetric(LAST_EVT_SENT_TIME, LAST_EVT_SENT_TIME_DESC);
-        this.bytesSnt = mreg.longMetric(BYTES_SENT_CNT, BYTES_SENT_DESC);
-        this.typesCnt = mreg.longMetric(TYPES_SENT_CNT, TYPES_SENT_CNT_DESC);
-        this.mappingsCnt = mreg.longMetric(MAPPINGS_SENT_CNT, MAPPINGS_SENT_CNT_DESC);
-        this.markersCnt = mreg.longMetric(MARKERS_SENT_CNT, MARKERS_SENT_CNT_DESC);
+        cdcMetrics = new IgniteToKafkaCdcMetrics((MetricRegistryImpl)reg);
 
         futs = new ArrayList<>(maxBatchSz);
     }

@@ -113,7 +113,7 @@ public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStre
     @Override protected AbstractCdcEventsApplier eventsApplier() {
         GridBinaryMarshaller.popContext(binaryContext());
 
-        return new CdcEventsIgniteClientApplier(client, streamerCfg.getMaxBatchSize(), log);
+        return new CdcEventsIgniteClientApplier(client, streamerCfg.getMaxBatchSize(), log, cdcMetrics);
     }
 
     /** {@inheritDoc} */

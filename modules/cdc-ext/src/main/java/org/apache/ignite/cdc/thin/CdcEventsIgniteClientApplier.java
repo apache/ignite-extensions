@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.metrics.AbstractCdcMetrics;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -46,9 +47,14 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Objec
      * @param client Client connected to the destination cluster.
      * @param maxBatchSize Maximum batch size.
      * @param log Logger.
+     * @param cdcMetrics {@link AbstractCdcMetrics} instance.
      */
-    public CdcEventsIgniteClientApplier(IgniteClient client, int maxBatchSize, IgniteLogger log) {
-        super(maxBatchSize, log);
+    public CdcEventsIgniteClientApplier(
+        IgniteClient client,
+        int maxBatchSize,
+        IgniteLogger log,
+        AbstractCdcMetrics cdcMetrics) {
+        super(maxBatchSize, log, cdcMetrics);
 
         this.client = client;
     }
