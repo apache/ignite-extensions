@@ -572,21 +572,18 @@ updateValues() {
 	local json1=$(curl -s 'http://localhost:8080/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
 	local json2=$(curl -s 'http://localhost:8081/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
 
-	local result1=$(echo $json1 | grep -oP '(?<=response":)[^,]+(?=,)'\|'(?<=response":)[^\}]+' | grep -o '[0-9]*')
-	local result2=$(echo $json2 | grep -oP '(?<=response":)[^,]+(?=,)'\|'(?<=response":)[^\}]+' | grep -o '[0-9]*')
+  value1=$(echo $json1 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }')
+  version1=$(echo $json1 | awk -F'val2":' '{ print $2 }' | awk -F'}' '{ print $1 }')
 
-	if [[ $result1 == "" ]]; then
+  value2=$(echo $json2 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }')
+  version2=$(echo $json2 | awk -F'val2":' '{ print $2 }' | awk -F'}' '{ print $1 }')
+
+	if [[ -z $value1 || $value1 == "" ]]; then
 	  value1="-"; version1="-";
-	else
-		value1=$(echo $json1 | grep -oP '(?<=val1":)[^,]+(?=,)'\|'(?<=val1":)[^\}]+' | grep -o '[0-9]*')
-		version1=$(echo $json1 | grep -oP '(?<=val2":)[^,]+(?=,)'\|'(?<=val2":)[^\}]+' | grep -o '[0-9]*')
 	fi
 
-	if [[ $result2 == "" ]]; then
+	if [[ -z $value2 || $value2 == "" ]]; then
 	  value2="-"; version2="-";
-	else
-		value2=$(echo $json2 | grep -oP '(?<=val1":)[^,]+(?=,)'\|'(?<=val1":)[^\}]+' | grep -o '[0-9]*')
-		version2=$(echo $json2 | grep -oP '(?<=val2":)[^,]+(?=,)'\|'(?<=val2":)[^\}]+' | grep -o '[0-9]*')
 	fi
 }
 
@@ -606,12 +603,12 @@ printValuesPair() {
 pushEntry() {
 	msg "Pushing entry..."
 
-	local result=""
+	local result
 
 	if [[ "$cluster" == "1" ]]; then
-	  result=$(curl -s 'http://localhost:8080/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded' | grep -oP '(?<=response":)[^,]+(?=,)'\|'(?<=response":)[^\}]+')
+	  result=$(curl -s 'http://localhost:8080/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 	else
-	  result=$(curl -s 'http://localhost:8081/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded' | grep -oP '(?<=response":)[^,]+(?=,)'\|'(?<=response":)[^\}]+')
+	  result=$(curl -s 'http://localhost:8081/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 	fi
 
 	msg "Success"
