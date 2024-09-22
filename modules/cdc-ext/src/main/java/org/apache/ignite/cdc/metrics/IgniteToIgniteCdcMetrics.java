@@ -76,6 +76,8 @@ public final class IgniteToIgniteCdcMetrics extends AbstractCdcMetrics {
      * @param mreg {@link MetricRegistryImpl} instance.
      */
     public IgniteToIgniteCdcMetrics(MetricRegistryImpl mreg) {
+        addCommonMetrics(mreg);
+
         this.evtsCnt = mreg.longMetric(EVTS_SENT_CNT, EVTS_SENT_CNT_DESC);
         this.typesCnt = mreg.longMetric(TYPES_SENT_CNT, TYPES_SENT_CNT_DESC);
         this.mappingsCnt = mreg.longMetric(MAPPINGS_SENT_CNT, MAPPINGS_SENT_CNT_DESC);

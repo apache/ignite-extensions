@@ -126,6 +126,8 @@ public final class KafkaToIgniteCdcMetrics extends AbstractCdcMetrics {
 
         prepareMetricRegistry();
 
+        addCommonMetrics(mreg);
+
         this.evtsRcvdCnt = mreg.longMetric(EVTS_RCVD_CNT, EVTS_RCVD_CNT_DESC);
         this.lastRcvdEvtTs = mreg.longMetric(LAST_EVT_RCVD_TIME, LAST_EVT_RCVD_TIME_DESC);
         this.evtsSntCnt = mreg.longMetric(MSGS_SENT_CNT, MSGS_SENT_CNT_DESC);

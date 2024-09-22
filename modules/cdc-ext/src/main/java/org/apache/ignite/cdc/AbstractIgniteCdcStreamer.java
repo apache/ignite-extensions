@@ -79,6 +79,8 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> events) {
+        long start = System.nanoTime();
+
         try {
             applier.apply(() -> F.iterator(
                 events,
@@ -87,6 +89,8 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
                 evt -> !onlyPrimary || evt.primary(),
                 evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
+
+            cdcMetrics.addEventsConsumptionTimeNanos(System.nanoTime() - start);
 
             return true;
         }

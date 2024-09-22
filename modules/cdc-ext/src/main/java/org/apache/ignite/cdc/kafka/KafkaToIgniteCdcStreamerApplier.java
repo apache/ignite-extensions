@@ -224,6 +224,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     private void poll(KafkaConsumer<Integer, byte[]> cnsmr) throws IgniteCheckedException {
         ConsumerRecords<Integer, byte[]> recs = cnsmr.poll(Duration.ofMillis(consumerPollTimeout));
 
+        long start = System.nanoTime();
+
         if (log.isInfoEnabled()) {
             log.info(
                 "Polled from consumer [assignments=" + cnsmr.assignment() +
@@ -233,6 +235,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         }
 
         applier.apply(F.iterator(recs, this::deserialize, true, this::filterAndPossiblyUpdateMetadata));
+
+        cdcMetrics.addEventsConsumptionTimeNanos(System.nanoTime() - start);
 
         cnsmr.commitSync(Duration.ofMillis(kafkaReqTimeout));
     }

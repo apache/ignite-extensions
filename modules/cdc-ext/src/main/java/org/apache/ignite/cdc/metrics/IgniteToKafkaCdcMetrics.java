@@ -81,6 +81,8 @@ public final class IgniteToKafkaCdcMetrics extends AbstractCdcMetrics {
      * @param mreg Metric registry instance.
      */
     public IgniteToKafkaCdcMetrics(MetricRegistryImpl mreg) {
+        addCommonMetrics(mreg);
+
         this.evtsCnt = mreg.longMetric(EVTS_SENT_CNT, EVTS_SENT_CNT_DESC);
         this.typesCnt = mreg.longMetric(TYPES_SENT_CNT, TYPES_SENT_CNT_DESC);
         this.mappingsCnt = mreg.longMetric(MAPPINGS_SENT_CNT, MAPPINGS_SENT_CNT_DESC);

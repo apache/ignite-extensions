@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cdc.metrics;
 
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -50,6 +54,18 @@ public abstract class AbstractCdcMetrics {
     public static final String REMOVE_TIME_TOTAL_DESC =
         "The total time of cache removal for which this CDC client is the initiator, in nanoseconds.";
 
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME = "EventsConsumptionTime";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_DESC = "CDC events consumption time, in nanoseconds.";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_TOTAL = "EventsConsumptionTimeTotal";
+
+    /** */
+    public static final String EVENTS_CONSUMPTION_TIME_TOTAL_DESC = "The total time of CDC events consumption, in nanoseconds.";
+
     /** Histogram buckets for duration get, put, remove, commit, rollback operations in nanoseconds. */
     public static final long[] HISTOGRAM_BUCKETS = new long[] {
         NANOSECONDS.convert(1, MILLISECONDS),
@@ -58,6 +74,19 @@ public abstract class AbstractCdcMetrics {
         NANOSECONDS.convert(250, MILLISECONDS),
         NANOSECONDS.convert(1000, MILLISECONDS)
     };
+
+    /** Metric shows duration of last consumption, in nanoseconds. */
+    private HistogramMetricImpl eventsConsumptionTime;
+
+    /** Total time taken for CDC events consumption, in nanoseconds. */
+    private AtomicLongMetric eventsConsumptionTimeTotal;
+
+
+    /** @param mreg {@link MetricRegistryImpl} instance. */
+    protected void addCommonMetrics(MetricRegistryImpl mreg) {
+        this.eventsConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
+        this.eventsConsumptionTimeTotal = mreg.longMetric(EVENTS_CONSUMPTION_TIME_TOTAL, EVENTS_CONSUMPTION_TIME_TOTAL_DESC);
+    }
 
     /** @return events sent count. */
     public abstract long getEventsSentCount();
@@ -87,5 +116,16 @@ public abstract class AbstractCdcMetrics {
      */
     public void addRemoveAllTimeNanos(long duration) {
         // No-op.
+    }
+
+    /**
+     * Increments the eventsConsumptionTime time accumulator.
+     *
+     * @param duration the time taken in nanoseconds.
+     */
+    public void addEventsConsumptionTimeNanos(long duration) {
+        eventsConsumptionTimeTotal.add(duration);
+
+        eventsConsumptionTime.value(duration);
     }
 }

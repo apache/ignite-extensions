@@ -128,6 +128,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+        long start = System.nanoTime();
+
         Iterator<CdcEvent> filtered = F.iterator(evts, e -> e, true, evt -> {
             if (log.isDebugEnabled())
                 log.debug("Event received [evt=" + evt + ']');
@@ -168,6 +170,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             ),
             cdcMetrics.getEventsSentCountMetric()
         );
+
+        cdcMetrics.addEventsConsumptionTimeNanos(System.nanoTime() - start);
 
         return true;
     }

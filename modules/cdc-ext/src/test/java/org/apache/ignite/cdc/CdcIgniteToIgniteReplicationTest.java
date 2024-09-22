@@ -35,6 +35,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.EVENTS_CONSUMPTION_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.EVENTS_CONSUMPTION_TIME_TOTAL;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_ALL_TIME;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_TIME_TOTAL;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_ALL_TIME;
@@ -75,9 +77,12 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         assertNotNull(longMetric.apply(EVTS_SENT_CNT));
         assertNotNull(longMetric.apply(PUT_TIME_TOTAL));
         assertNotNull(longMetric.apply(REMOVE_TIME_TOTAL));
+        assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL));
 
-        for (String interval : HISTOGRAM_BUCKETS)
+        for (String interval : HISTOGRAM_BUCKETS) {
             assertNotNull(longMetric.apply(PUT_ALL_TIME + "_" + interval));
+            assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME + "_" + interval));
+        }
 
         if (rmvDataOpActed.get()) {
             for (String interval : HISTOGRAM_BUCKETS)

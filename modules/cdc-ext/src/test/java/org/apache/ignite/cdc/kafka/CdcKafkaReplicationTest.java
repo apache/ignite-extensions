@@ -43,6 +43,8 @@ import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_METRICS_REG_NAME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.EVENTS_CONSUMPTION_TIME;
+import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.EVENTS_CONSUMPTION_TIME_TOTAL;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_ALL_TIME;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.PUT_TIME_TOTAL;
 import static org.apache.ignite.cdc.metrics.AbstractCdcMetrics.REMOVE_ALL_TIME;
@@ -179,6 +181,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         assertNotNull(longMetric.apply(LAST_EVT_SENT_TIME));
         assertNotNull(longMetric.apply(EVTS_SENT_CNT));
         assertNotNull(longMetric.apply(BYTES_SENT_CNT));
+
+        assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL));
+
+        for (String interval : HISTOGRAM_BUCKETS)
+            assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME + "_" + interval));
     }
 
     /** {@inheritDoc} */
@@ -245,6 +252,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         assertNotNull(longMetric.apply(PUT_TIME_TOTAL));
         assertNotNull(longMetric.apply(REMOVE_TIME_TOTAL));
+
+        assertNotNull(longMetric.apply(EVENTS_CONSUMPTION_TIME_TOTAL));
     }
 
     /**
@@ -253,6 +262,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
      */
     private void checkK2IHistogramMetrics(Function<String, long[]> longMetric) {
         assertTrue(Arrays.stream(longMetric.apply(PUT_ALL_TIME)).sum() > 0);
+        assertTrue(Arrays.stream(longMetric.apply(EVENTS_CONSUMPTION_TIME)).sum() > 0);
 
         if (rmvDataOpActed.get())
             assertTrue(Arrays.stream(longMetric.apply(REMOVE_ALL_TIME)).sum() > 0);
