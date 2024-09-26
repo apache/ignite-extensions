@@ -115,7 +115,7 @@ public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
     @Override protected AbstractCdcEventsApplier eventsApplier() {
         U.setCurrentIgniteName(ign.name());
 
-        return new CdcEventsIgniteApplier(ign, streamerCfg.getMaxBatchSize(), log);
+        return new CdcEventsIgniteApplier(ign, streamerCfg.getMaxBatchSize(), log, cdcMetrics);
     }
 
     /** {@inheritDoc} */

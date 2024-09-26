@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.cdc.metrics.AbstractCdcMetrics;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -50,21 +51,25 @@ public abstract class AbstractCdcEventsApplier<K, V> {
     /** */
     private final IgniteLogger log;
 
+    /** */
+    private final AbstractCdcMetrics cdcMetrics;
+
     /**
      * @param maxBatchSize Maximum batch size.
      * @param log Logger.
+     * @param cdcMetrics CDC client metrics.
      */
-    public AbstractCdcEventsApplier(int maxBatchSize, IgniteLogger log) {
+    public AbstractCdcEventsApplier(int maxBatchSize, IgniteLogger log, AbstractCdcMetrics cdcMetrics) {
         this.maxBatchSize = maxBatchSize;
         this.log = log.getLogger(getClass());
+        this.cdcMetrics = cdcMetrics;
     }
 
     /**
      * @param evts Events to process.
-     * @return Number of applied events.
      * @throws IgniteCheckedException If failed.
      */
-    public int apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
+    public void apply(Iterable<CdcEvent> evts) throws IgniteCheckedException {
         int currCacheId = UNDEFINED_CACHE_ID;
         int evtsApplied = 0;
 
@@ -99,7 +104,13 @@ public abstract class AbstractCdcEventsApplier<K, V> {
         if (currCacheId != UNDEFINED_CACHE_ID)
             evtsApplied += applyIf(currCacheId, hasUpdates, hasRemoves);
 
-        return evtsApplied;
+        if (evtsApplied > 0) {
+            cdcMetrics.addEventsSentCount(evtsApplied);
+            cdcMetrics.setLastEventSentTime();
+
+            if (log.isInfoEnabled())
+                log.info("Events applied [evtsApplied=" + cdcMetrics.getEventsSentCount() + ']');
+        }
     }
 
     /**
@@ -122,7 +133,11 @@ public abstract class AbstractCdcEventsApplier<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Applying put batch [cacheId=" + cacheId + ']');
 
+            long start = System.nanoTime();
+
             putAllConflict(cacheId, updBatch);
+
+            cdcMetrics.addPutAllTimeNanos(System.nanoTime() - start);
 
             evtsApplied += updBatch.size();
 
@@ -133,7 +148,11 @@ public abstract class AbstractCdcEventsApplier<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Applying remove batch [cacheId=" + cacheId + ']');
 
+            long start = System.nanoTime();
+
             removeAllConflict(cacheId, rmvBatch);
+
+            cdcMetrics.addRemoveAllTimeNanos(System.nanoTime() - start);
 
             evtsApplied += rmvBatch.size();
 
@@ -159,4 +178,9 @@ public abstract class AbstractCdcEventsApplier<K, V> {
 
     /** Removes DR data. */
     protected abstract void removeAllConflict(int cacheId, Map<K, GridCacheVersion> drMap);
+
+    /** @return CDC client metrics. */
+    public AbstractCdcMetrics metrics() {
+        return cdcMetrics;
+    }
 }

@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -135,6 +136,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         return params;
     }
 
+    /** Histogram metric name suffix for duration get, put, remove, commit, rollback operations in nanoseconds. */
+    public static final String[] HISTOGRAM_BUCKETS = new String[] {
+        "0_1000000",
+        "1000000_10000000",
+        "10000000_100000000",
+        "100000000_250000000",
+        "250000000_1000000000"
+    };
+
     /** */
     public static final String ACTIVE_PASSIVE_CACHE = "active-passive-cache";
 
@@ -182,6 +192,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     protected final List<CdcMain> cdcs = Collections.synchronizedList(new ArrayList<>());
+
+    /** Remove cache operation performed flag. */
+    protected final AtomicBoolean rmvDataOpActed = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -241,6 +254,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         assertNotNull(srcTag);
         assertNotNull(destTag);
         assertFalse(srcTag.equals(destTag));
+
+        rmvDataOpActed.compareAndSet(true, false);
     }
 
     /** */
@@ -297,6 +312,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
+
+            rmvDataOpActed.compareAndSet(false, true);
 
             checkMetrics();
 

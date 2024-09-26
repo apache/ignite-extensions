@@ -85,7 +85,7 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer impleme
 
         dest = (IgniteEx)Ignition.start(destIgniteCfg);
 
-        applier = new CdcEventsIgniteApplier(dest, maxBatchSize, log);
+        applier = new CdcEventsIgniteApplier(dest, maxBatchSize, log, cdcMetrics);
     }
 
     /** {@inheritDoc} */
