@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.Collections;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.TypeMapping;
@@ -25,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.cdc.TypeMappingImpl;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -43,6 +44,8 @@ import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.kafkaPropertie
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.removeKafkaTopicsAndWait;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_CONSUMER_POLL_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
+import static org.apache.ignite.cdc.metrics.MetricsUtils.createStandaloneGridKernalContext;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.logging.log4j.Level.DEBUG;
@@ -144,7 +147,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteToKafkaCdcStreamer igniteToKafkaCdcStreamer() {
+    private IgniteToKafkaCdcStreamer igniteToKafkaCdcStreamer() throws IgniteCheckedException {
         IgniteToKafkaCdcStreamer streamer = new IgniteToKafkaCdcStreamer()
             .setTopic(SRC_DEST_TOPIC)
             .setMetadataTopic(SRC_DEST_META_TOPIC)
@@ -155,7 +158,9 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(streamer, "log", listeningLog.getLogger(IgniteToKafkaCdcStreamer.class));
 
-        streamer.start(new MetricRegistryImpl("test", null, null, log));
+        StandaloneGridKernalContext kctx = createStandaloneGridKernalContext(log, streamerConfiguration());
+
+        streamer.start(kctx.metric().registry(metricName("cdc", "consumer")));
 
         return streamer;
     }

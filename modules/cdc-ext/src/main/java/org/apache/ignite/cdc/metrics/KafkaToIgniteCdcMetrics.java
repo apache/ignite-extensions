@@ -25,21 +25,16 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneSpiContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
-import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 
-import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
+import static org.apache.ignite.cdc.metrics.MetricsUtils.createStandaloneGridKernalContext;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** Kafka to Ignite CDC metrics. */
@@ -110,9 +105,6 @@ public final class KafkaToIgniteCdcMetrics extends AbstractCdcMetrics {
     /** Streamer configuration. */
     private final KafkaToIgniteCdcStreamerConfiguration streamerCfg;
 
-    /** Metric registry manager. */
-    private volatile SingleMetricRegistryManager mregMgr;
-
     /** MetricRegistry instance for metric initialization. */
     private volatile MetricRegistryImpl mreg;
 
@@ -154,30 +146,7 @@ public final class KafkaToIgniteCdcMetrics extends AbstractCdcMetrics {
 
     /** @throws IgniteCheckedException If failed. */
     private void initStandaloneMetricsKernal() throws IgniteCheckedException {
-        kctx = new StandaloneGridKernalContext(log, null, null) {
-            @Override protected IgniteConfiguration prepareIgniteConfiguration() {
-                IgniteConfiguration cfg = super.prepareIgniteConfiguration();
-
-                cfg.setIgniteInstanceName(streamerCfg.getMetricRegistryName());
-
-                if (!F.isEmpty(streamerCfg.getMetricExporterSpi()))
-                    cfg.setMetricExporterSpi(streamerCfg.getMetricExporterSpi());
-                else {
-                    cfg.setMetricExporterSpi(U.IGNITE_MBEANS_DISABLED
-                        ? new NoopMetricExporterSpi()
-                        : new JmxMetricExporterSpi());
-                }
-
-                initializeDefaultMBeanServer(cfg);
-
-                return cfg;
-            }
-
-            /** {@inheritDoc} */
-            @Override public String igniteInstanceName() {
-                return config().getIgniteInstanceName();
-            }
-        };
+        kctx = createStandaloneGridKernalContext(log, streamerCfg);
 
         kctx.metric().start();
 
