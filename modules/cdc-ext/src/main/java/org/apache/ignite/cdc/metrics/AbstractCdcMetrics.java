@@ -81,7 +81,6 @@ public abstract class AbstractCdcMetrics {
     /** Total time taken for CDC events consumption, in nanoseconds. */
     private AtomicLongMetric eventsConsumptionTimeTotal;
 
-
     /** @param mreg {@link MetricRegistryImpl} instance. */
     protected void addCommonMetrics(MetricRegistryImpl mreg) {
         this.eventsConsumptionTime = mreg.histogram(EVENTS_CONSUMPTION_TIME, HISTOGRAM_BUCKETS, EVENTS_CONSUMPTION_TIME_DESC);
