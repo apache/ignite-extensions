@@ -17,17 +17,18 @@
 
 package org.apache.ignite.cdc;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /** Cache conflict operations test with a custom resolver. */
-public class CacheConflictOperationsWithCustomResolverTest extends CacheConflictOperationsTest {
+public class CacheConflictOperationsWithCustomResolverTest extends CacheConflictOperationsAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -37,25 +38,33 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** Tests simple updates. */
     @Test
-    @Override public void testUpdatesReorderFromOtherCluster() {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testUpdatesReorderFromOtherCluster, AssertionError.class, "");
+    public void testSimpleUpdates() {
+        String key = nextKey();
+
+        putLocal(key);
+        putLocal(key);
+
+        removeLocal(key);
+    }
+
+    /** Tests simple conflicts can be resolved with LWW. */
+    @Test
+    public void testSimpleConflicts() throws IgniteCheckedException {
+        String key = nextKey();
+
+        putLocal(key);
+
+        // LWW.
+        removeFromOther(key, true);
     }
 
     /** {@inheritDoc} */
+    @Ignore
     @Test
-    @Override public void testUpdatesConflict() {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testUpdatesConflict, AssertionError.class, "");
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testResolveDebug() throws Exception {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testResolveDebug, AssertionError.class, "");
+    @Override public void testResolveDebug() {
+        // Test LWW resolver has no logging.
     }
 
     /**
@@ -65,8 +74,11 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
         /**
          *
          */
-        @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(CacheObjectValueContext ctx,
-            GridCacheVersionedEntryEx<K, V> oldEntry, GridCacheVersionedEntryEx<K, V> newEntry,
+        @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+            CacheObjectValueContext ctx,
+            GridCacheVersionedEntryEx<K, V> oldEntry,
+            GridCacheVersionedEntryEx<K, V> newEntry,
+            Object prevStateMeta,
             boolean atomicVerComparator) {
             GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
