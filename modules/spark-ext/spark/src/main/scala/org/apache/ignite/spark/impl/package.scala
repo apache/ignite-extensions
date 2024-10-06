@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark
 
-import org.apache.commons.lang.StringUtils.equalsIgnoreCase
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
@@ -136,7 +135,7 @@ package object impl {
       * @return `True` if column is key.
       */
     def isKeyColumn(table: GridQueryTypeDescriptor, column: String): Boolean =
-        contains(allKeyFields(table), column) || equalsIgnoreCase(table.keyFieldName, column)
+        contains(allKeyFields(table), column) || column.equalsIgnoreCase(table.keyFieldName)
 
     /**
       * @param table Table.
