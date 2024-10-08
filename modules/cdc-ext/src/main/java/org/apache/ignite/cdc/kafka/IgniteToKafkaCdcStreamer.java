@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -77,7 +76,6 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
-@IgniteExperimental
 public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** */
     public static final String EVTS_SENT_CNT = "EventsCount";
