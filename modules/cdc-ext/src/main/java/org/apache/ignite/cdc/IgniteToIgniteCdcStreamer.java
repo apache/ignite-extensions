@@ -27,7 +27,6 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.metric.MetricRegistry;
@@ -49,7 +48,6 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_STOP;
  * @see CdcMain
  * @see CacheVersionConflictResolverImpl
  */
-@IgniteExperimental
 public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer implements LifecycleBean {
     /** Destination cluster client configuration. */
     private IgniteConfiguration destIgniteCfg;
