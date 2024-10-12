@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -280,9 +281,46 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
-        });
+        caches.forEachRemaining(this::deleteRegexpCacheIfPresent);
+    }
+
+    /**
+     * Removes cache added by regexp from cache list, if this cache is present in file, to prevent file size overflow.
+     *
+     * @param cacheId Cache id.
+     */
+    private void deleteRegexpCacheIfPresent(Integer cacheId) {
+        try {
+            List<String> caches = loadCaches();
+
+            Optional<String> cacheName = caches.stream()
+                .filter(name -> CU.cacheId(name) == cacheId)
+                .findAny();
+
+            if (cacheName.isPresent()) {
+                String name = cacheName.get();
+
+                caches.remove(name);
+
+                Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
+
+                StringBuilder cacheList = new StringBuilder();
+
+                for (String cache : caches) {
+                    cacheList.append(cache);
+
+                    cacheList.append('\n');
+                }
+
+                Files.write(savedCachesPath, cacheList.toString().getBytes());
+
+                if (log.isInfoEnabled())
+                    log.info("Cache has been removed from replication [cacheName=" + name + ']');
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
