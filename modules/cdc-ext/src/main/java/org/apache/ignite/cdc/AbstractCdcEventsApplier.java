@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.internal.cdc.CdcEventImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -158,8 +159,11 @@ public abstract class AbstractCdcEventsApplier<V> {
 
         if (key instanceof KeyCacheObject)
             return (KeyCacheObject)key;
-        else
-            return new KeyCacheObjectImpl(key, evt.keyBytes(), evt.partition());
+        else {
+            assert evt instanceof CdcEventImpl;
+
+            return new KeyCacheObjectImpl(key, ((CdcEventImpl)evt).keyBytes(), evt.partition());
+        }
     }
 
     /** Compares keys. */
