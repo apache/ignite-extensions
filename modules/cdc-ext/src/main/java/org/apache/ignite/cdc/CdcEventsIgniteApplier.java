@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -44,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETE
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObject, GridCacheDrInfo> {
+public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<GridCacheDrInfo> {
     /** Destination cluster. */
     private final IgniteEx ignite;
 
@@ -80,16 +79,6 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObj
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected KeyCacheObject toKey(CdcEvent evt) {
-        Object key = evt.key();
-
-        if (key instanceof KeyCacheObject)
-            return (KeyCacheObject)key;
-        else
-            return new KeyCacheObjectImpl(key, null, evt.partition());
     }
 
     /** {@inheritDoc} */

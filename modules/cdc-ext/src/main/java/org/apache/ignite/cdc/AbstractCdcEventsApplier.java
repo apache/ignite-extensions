@@ -17,12 +17,16 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -31,15 +35,15 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFIN
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the cluster.
  */
-public abstract class AbstractCdcEventsApplier<K, V> {
+public abstract class AbstractCdcEventsApplier<V> {
     /** Maximum batch size. */
     private final int maxBatchSize;
 
     /** Update batch. */
-    private final Map<K, V> updBatch = new HashMap<>();
+    private final Map<KeyCacheObject, V> updBatch = new TreeMap<>(this::compareKeyCacheObject);
 
     /** Remove batch. */
-    private final Map<K, GridCacheVersion> rmvBatch = new HashMap<>();
+    private final Map<KeyCacheObject, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKeyCacheObject);
 
     /** */
     private final BooleanSupplier hasUpdates = () -> !F.isEmpty(updBatch);
@@ -81,7 +85,7 @@ public abstract class AbstractCdcEventsApplier<K, V> {
             }
 
             CacheEntryVersion order = evt.version();
-            K key = toKey(evt);
+            KeyCacheObject key = toKey(evt);
             GridCacheVersion ver = new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId());
 
             if (evt.value() != null) {
@@ -144,19 +148,46 @@ public abstract class AbstractCdcEventsApplier<K, V> {
     }
 
     /** @return {@code True} if update batch should be applied. */
-    private boolean isApplyBatch(Map<K, ?> map, K key) {
+    private boolean isApplyBatch(Map<KeyCacheObject, ?> map, KeyCacheObject key) {
         return map.size() >= maxBatchSize || map.containsKey(key);
     }
 
-    /** @return Key. */
-    protected abstract K toKey(CdcEvent evt);
+    /** @return Key as KeyCacheObject. */
+    private KeyCacheObject toKey(CdcEvent evt) {
+        Object key = evt.key();
+
+        if (key instanceof KeyCacheObject)
+            return (KeyCacheObject)key;
+        else
+            return new KeyCacheObjectImpl(key, evt.keyBytes(), evt.partition());
+    }
+
+    /** Compares keys. */
+    private int compareKeyCacheObject(KeyCacheObject key1, KeyCacheObject key2) {
+        int cmp = Integer.compare(key1.hashCode(), key2.hashCode());
+
+        if (cmp != 0)
+            return cmp;
+
+        try {
+            // Bytes are cached in KeyCacheObject, because they are constructed from binary WAL segment files.
+            // Hence, no NPE is possible.
+            byte[] bytes1 = key1.valueBytes(null);
+            byte[] bytes2 = key2.valueBytes(null);
+
+            return CacheDataTree.compareBytes(bytes1, bytes2);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to compare keys in CdcEvent", e);
+        }
+    }
 
     /** @return Value. */
     protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);
 
     /** Stores DR data. */
-    protected abstract void putAllConflict(int cacheId, Map<K, V> drMap);
+    protected abstract void putAllConflict(int cacheId, Map<KeyCacheObject, V> drMap);
 
     /** Removes DR data. */
-    protected abstract void removeAllConflict(int cacheId, Map<K, GridCacheVersion> drMap);
+    protected abstract void removeAllConflict(int cacheId, Map<KeyCacheObject, GridCacheVersion> drMap);
 }

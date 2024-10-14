@@ -18,13 +18,8 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -90,9 +85,8 @@ import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -303,6 +297,62 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
 
             checkMetricsCount(2 * KEYS_CNT);
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
+    /** Test that CDC instances don't lock each other while streaming same keys from primary and backup. */
+    @Test
+    public void testConcurrentMixedKeys() throws Exception {
+        assumeTrue(backups > 0);
+        assumeTrue(atomicity == TRANSACTIONAL);
+
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
+
+        try {
+            for (IgniteEx ign: F.asList(srcCluster[0], destCluster[0])) {
+                ign.createCache(new CacheConfiguration<TestKey, Integer>()
+                        .setName(ACTIVE_PASSIVE_CACHE)
+                        .setAtomicityMode(atomicity)
+                        .setBackups(backups)
+                        .setCacheMode(mode));
+            }
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            int cnt = 0;
+
+            // Setup bound for keys to increase probability to stream same keys through each CDC instance.
+            // The value should not be small to force CDC generates batches for putAllConflict call.
+            int keysCnt = 20;
+
+            while (cnt++ < 10_000) {
+                srcCluster[rnd.nextInt(2)]
+                    .cache(ACTIVE_PASSIVE_CACHE)
+                    .put(new TestKey(rnd.nextInt(keysCnt), null), rnd.nextInt());
+
+                if (cnt % 1_000 == 0)
+                    System.out.println("Load count = " + cnt);
+            }
+
+            // Check that all data received.
+            assertTrue(waitForCondition(() -> {
+                IgniteCache<TestKey, Integer> srcCache = srcCluster[0].cache(ACTIVE_PASSIVE_CACHE);
+                IgniteCache<TestKey, Integer> destCache = destCluster[0].cache(ACTIVE_PASSIVE_CACHE);
+
+                for (int i = 0; i < keysCnt; i++) {
+                    Integer srcVal = srcCache.get(new TestKey(i, null));
+                    Integer destVal = destCache.get(new TestKey(i, null));
+
+                    if (srcVal == null || !srcVal.equals(destVal))
+                        return false;
+                }
+
+                return true;
+
+            }, getTestTimeout()));
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)

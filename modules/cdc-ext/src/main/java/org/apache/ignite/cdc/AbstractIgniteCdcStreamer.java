@@ -80,7 +80,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     protected int maxBatchSize;
 
     /** Events applier. */
-    protected AbstractCdcEventsApplier<?, ?> applier;
+    protected AbstractCdcEventsApplier<?> applier;
 
     /** Timestamp of last sent message. */
     protected AtomicLongMetric lastEvtTs;
