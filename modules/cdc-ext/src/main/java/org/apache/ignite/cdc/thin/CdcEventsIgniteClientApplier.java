@@ -18,7 +18,6 @@
 package org.apache.ignite.cdc.thin;
 
 import java.util.Map;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
