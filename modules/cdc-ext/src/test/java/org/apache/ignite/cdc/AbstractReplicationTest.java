@@ -312,10 +312,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test that CDC instances don't lock each other while streaming same keys from primary and backup. */
+    /** Test that CDC instances don't lock each other while streaming mixed keys. */
     @Test
     public void testConcurrentMixedKeys() throws Exception {
-        assumeTrue(backups > 0);
         assumeTrue(atomicity == TRANSACTIONAL);
 
         for (IgniteEx ign: F.asList(srcCluster[0], destCluster[0])) {
