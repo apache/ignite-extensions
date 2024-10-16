@@ -82,6 +82,11 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<GridCacheDr
     }
 
     /** {@inheritDoc} */
+    @Override protected byte[] marshal(Object o) throws IgniteCheckedException {
+        return U.marshal(ignite.context().cache().context(), o);
+    }
+
+    /** {@inheritDoc} */
     @Override protected GridCacheDrInfo toValue(int cacheId, CdcEvent evt, GridCacheVersion ver) {
         CacheObject cacheObj;
 

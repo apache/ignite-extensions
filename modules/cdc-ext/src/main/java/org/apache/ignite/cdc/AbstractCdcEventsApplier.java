@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.cdc.CdcEventImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -154,15 +153,15 @@ public abstract class AbstractCdcEventsApplier<V> {
     }
 
     /** @return Key as KeyCacheObject. */
-    private KeyCacheObject toKey(CdcEvent evt) {
+    private KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException {
         Object key = evt.key();
 
         if (key instanceof KeyCacheObject)
             return (KeyCacheObject)key;
         else {
-            assert evt instanceof CdcEventImpl;
+            byte[] keyBytes = marshal(key);
 
-            return new KeyCacheObjectImpl(key, ((CdcEventImpl)evt).keyBytes(), evt.partition());
+            return new KeyCacheObjectImpl(key, keyBytes, evt.partition());
         }
     }
 
@@ -174,8 +173,7 @@ public abstract class AbstractCdcEventsApplier<V> {
             return cmp;
 
         try {
-            // Bytes are cached in KeyCacheObject, because they are constructed from binary WAL segment files.
-            // Hence, no NPE is possible.
+            // Bytes are cached in KeyCacheObject. See #toKey method.
             byte[] bytes1 = key1.valueBytes(null);
             byte[] bytes2 = key2.valueBytes(null);
 
@@ -185,6 +183,9 @@ public abstract class AbstractCdcEventsApplier<V> {
             throw new IgniteException("Failed to compare keys in CdcEvent", e);
         }
     }
+
+    /** Marshals object to byte array. */
+    protected abstract byte[] marshal(Object o) throws IgniteCheckedException;
 
     /** @return Value. */
     protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);
