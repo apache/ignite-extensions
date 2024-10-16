@@ -21,12 +21,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -153,39 +151,21 @@ public abstract class AbstractCdcEventsApplier<V> {
     }
 
     /** @return Key as KeyCacheObject. */
-    private KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException {
+    private KeyCacheObject toKey(CdcEvent evt) {
         Object key = evt.key();
 
-        if (key instanceof KeyCacheObject)
+        if (key instanceof KeyCacheObject) {
             return (KeyCacheObject)key;
+        }
         else {
-            byte[] keyBytes = marshal(key);
-
-            return new KeyCacheObjectImpl(key, keyBytes, evt.partition());
+            return new KeyCacheObjectImpl(key, null, evt.partition());
         }
     }
 
     /** Compares keys. */
     private int compareKeyCacheObject(KeyCacheObject key1, KeyCacheObject key2) {
-        int cmp = Integer.compare(key1.hashCode(), key2.hashCode());
-
-        if (cmp != 0)
-            return cmp;
-
-        try {
-            // Bytes are cached in KeyCacheObject. See #toKey method.
-            byte[] bytes1 = key1.valueBytes(null);
-            byte[] bytes2 = key2.valueBytes(null);
-
-            return CacheDataTree.compareBytes(bytes1, bytes2);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to compare keys in CdcEvent", e);
-        }
+        return Integer.compare(key1.hashCode(), key2.hashCode());
     }
-
-    /** Marshals object to byte array. */
-    protected abstract byte[] marshal(Object o) throws IgniteCheckedException;
 
     /** @return Value. */
     protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);

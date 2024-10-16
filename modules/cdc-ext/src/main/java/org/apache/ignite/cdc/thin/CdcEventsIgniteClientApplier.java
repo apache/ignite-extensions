@@ -23,7 +23,6 @@ import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
@@ -53,11 +52,6 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<T3<Ob
         super(maxBatchSize, log);
 
         this.client = client;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected byte[] marshal(Object o) {
-        return ((TcpIgniteClient)client).marshal(o);
     }
 
     /** {@inheritDoc} */
