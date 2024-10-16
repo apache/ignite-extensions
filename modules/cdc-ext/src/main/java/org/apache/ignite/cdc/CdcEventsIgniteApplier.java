@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETE
  * @see IgniteInternalCache#putAllConflict(Map)
  * @see IgniteInternalCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<GridCacheDrInfo> {
+public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<KeyCacheObject, GridCacheDrInfo> {
     /** Destination cluster. */
     private final IgniteEx ignite;
 
@@ -79,13 +79,13 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<GridCacheDr
     }
 
     /** {@inheritDoc} */
-    @Override protected KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException {
+    @Override protected KeyCacheObject toKey(CdcEvent evt) {
         Object key = evt.key();
 
         if (key instanceof KeyCacheObject)
             return (KeyCacheObject)key;
         else {
-            return new KeyCacheObjectImpl(key, U.marshal(ignite.context(), key), evt.partition());
+            return new KeyCacheObjectImpl(key, null, evt.partition());
         }
     }
 

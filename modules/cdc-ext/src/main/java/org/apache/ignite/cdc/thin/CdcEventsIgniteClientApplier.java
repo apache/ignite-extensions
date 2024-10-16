@@ -24,8 +24,6 @@ import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -38,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  * @see TcpClientCache#putAllConflict(Map)
  * @see TcpClientCache#removeAllConflict(Map)
  */
-public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<T3<Object, GridCacheVersion, Long>> {
+public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<Object, T3<Object, GridCacheVersion, Long>> {
     /** Client connected to the destination cluster. */
     private final IgniteClient client;
 
@@ -57,19 +55,8 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<T3<Ob
     }
 
     /** {@inheritDoc} */
-    @Override protected KeyCacheObject toKey(CdcEvent evt) {
-        Object key = evt.key();
-
-        if (key instanceof KeyCacheObject)
-            return (KeyCacheObject)key;
-        else {
-            Object bo = client.binary().toBinary(key);
-
-            if (bo instanceof KeyCacheObject)
-                return (KeyCacheObject)bo;
-
-            return new KeyCacheObjectImpl(key, null, evt.partition());
-        }
+    @Override protected Object toKey(CdcEvent evt) {
+        return evt.key();
     }
 
     /** {@inheritDoc} */
@@ -78,12 +65,12 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<T3<Ob
     }
 
     /** {@inheritDoc} */
-    @Override protected void putAllConflict(int cacheId, Map<KeyCacheObject, T3<Object, GridCacheVersion, Long>> drMap) {
+    @Override protected void putAllConflict(int cacheId, Map<Object, T3<Object, GridCacheVersion, Long>> drMap) {
         cache(cacheId).putAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override protected void removeAllConflict(int cacheId, Map<KeyCacheObject, GridCacheVersion> drMap) {
+    @Override protected void removeAllConflict(int cacheId, Map<Object, GridCacheVersion> drMap) {
         cache(cacheId).removeAllConflict(drMap);
     }
 

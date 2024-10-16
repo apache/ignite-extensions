@@ -23,7 +23,6 @@ import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -32,15 +31,15 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFIN
 /**
  * Contains logic to process {@link CdcEvent} and apply them to the cluster.
  */
-public abstract class AbstractCdcEventsApplier<V> {
+public abstract class AbstractCdcEventsApplier<K, V> {
     /** Maximum batch size. */
     private final int maxBatchSize;
 
     /** Update batch. */
-    private final Map<KeyCacheObject, V> updBatch = new TreeMap<>(this::compareKeyCacheObject);
+    private final Map<K, V> updBatch = new TreeMap<>(this::compareKey);
 
     /** Remove batch. */
-    private final Map<KeyCacheObject, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKeyCacheObject);
+    private final Map<K, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKey);
 
     /** */
     private final BooleanSupplier hasUpdates = () -> !F.isEmpty(updBatch);
@@ -82,7 +81,7 @@ public abstract class AbstractCdcEventsApplier<V> {
             }
 
             CacheEntryVersion order = evt.version();
-            KeyCacheObject key = toKey(evt);
+            K key = toKey(evt);
             GridCacheVersion ver = new GridCacheVersion(order.topologyVersion(), order.order(), order.nodeOrder(), order.clusterId());
 
             if (evt.value() != null) {
@@ -144,18 +143,18 @@ public abstract class AbstractCdcEventsApplier<V> {
     }
 
     /** @return {@code True} if update batch should be applied. */
-    private boolean isApplyBatch(Map<KeyCacheObject, ?> map, KeyCacheObject key) {
+    private boolean isApplyBatch(Map<K, ?> map, K key) {
         return map.size() >= maxBatchSize || map.containsKey(key);
     }
 
-    /** @return Key as KeyCacheObject. */
-    protected abstract KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException;
+    /** @return Key. */
+    protected abstract K toKey(CdcEvent evt);
 
     /**
      * Compares keys hash codes only, because bytes might not be available.
-     * If hash codes are equal it put {@code key2} to next batch, see {@link #isApplyBatch(Map, KeyCacheObject)}.
+     * If hash codes are equal it put {@code key2} to next batch, see {@link #isApplyBatch)}.
      */
-    private int compareKeyCacheObject(KeyCacheObject key1, KeyCacheObject key2) {
+    private int compareKey(Object key1, Object key2) {
         return Integer.compare(key1.hashCode(), key2.hashCode());
     }
 
@@ -163,8 +162,8 @@ public abstract class AbstractCdcEventsApplier<V> {
     protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);
 
     /** Stores DR data. */
-    protected abstract void putAllConflict(int cacheId, Map<KeyCacheObject, V> drMap);
+    protected abstract void putAllConflict(int cacheId, Map<K, V> drMap);
 
     /** Removes DR data. */
-    protected abstract void removeAllConflict(int cacheId, Map<KeyCacheObject, GridCacheVersion> drMap);
+    protected abstract void removeAllConflict(int cacheId, Map<K, GridCacheVersion> drMap);
 }

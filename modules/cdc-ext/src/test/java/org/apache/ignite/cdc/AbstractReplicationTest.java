@@ -18,7 +18,13 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -85,7 +91,9 @@ import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.EVTS_CNT;
 import static org.apache.ignite.internal.cdc.WalRecordsConsumer.LAST_EVT_TIME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_PORT_RANGE;
-import static org.apache.ignite.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
 
 /** */
@@ -346,11 +354,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                     Integer srcVal = srcCache.get(new TestKey(i, null));
                     Integer destVal = destCache.get(new TestKey(i, null));
 
-                    if (srcVal == null || !srcVal.equals(destVal)) {
-                        System.out.println("KEY " + i + " is different: src=" + srcVal + ", dest=" + destVal);
-
+                    if (srcVal == null || !srcVal.equals(destVal))
                         return false;
-                    }
                 }
 
                 return true;
