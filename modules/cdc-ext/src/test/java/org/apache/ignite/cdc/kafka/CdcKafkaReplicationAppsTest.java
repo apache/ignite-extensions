@@ -112,7 +112,8 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteConfiguration igniteCfg,
         String topic,
         String metadataTopic,
-        String cache
+        String cache,
+        String threadName
     ) {
         Map<String, String> params = new HashMap<>();
 
@@ -127,7 +128,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
 
         return runAsync(
-            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)})
+            () -> CdcCommandLineStartup.main(new String[] {prepareConfig("/replication/ignite-to-kafka.xml", params)}), threadName
         );
     }
 
@@ -139,7 +140,8 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteConfiguration igniteCfg,
         IgniteEx[] dest,
         int partFrom,
-        int partTo
+        int partTo,
+        String threadName
     ) {
         Map<String, String> params = new HashMap<>();
 
@@ -174,7 +176,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         params.put(METRIC_REG_NAME, DFLT_METRICS_REG_NAME + "-" + igniteCfg.getIgniteInstanceName());
 
         return runAsync(
-            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig(cfg, params)})
+            () -> KafkaToIgniteCommandLineStartup.main(new String[] {prepareConfig(cfg, params)}), threadName
         );
     }
 

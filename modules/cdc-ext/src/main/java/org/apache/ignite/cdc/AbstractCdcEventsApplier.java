@@ -151,7 +151,10 @@ public abstract class AbstractCdcEventsApplier<V> {
     /** @return Key as KeyCacheObject. */
     protected abstract KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException;
 
-    /** Compares keys hash codes only. Avoid comparing bytes, as they might not be available in the applier. */
+    /**
+     * Compares keys hash codes only, because bytes might not be available.
+     * If hash codes are equal it put {@code key2} to next batch, see {@link #isApplyBatch(Map, KeyCacheObject)}.
+     */
     private int compareKeyCacheObject(KeyCacheObject key1, KeyCacheObject key2) {
         return Integer.compare(key1.hashCode(), key2.hashCode());
     }

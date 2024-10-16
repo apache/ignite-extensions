@@ -310,17 +310,17 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         assumeTrue(backups > 0);
         assumeTrue(atomicity == TRANSACTIONAL);
 
+        for (IgniteEx ign: F.asList(srcCluster[0], destCluster[0])) {
+            ign.createCache(new CacheConfiguration<TestKey, Integer>()
+                    .setName(ACTIVE_PASSIVE_CACHE)
+                    .setAtomicityMode(atomicity)
+                    .setBackups(backups)
+                    .setCacheMode(mode));
+        }
+
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdc(ACTIVE_PASSIVE_CACHE);
 
         try {
-            for (IgniteEx ign: F.asList(srcCluster[0], destCluster[0])) {
-                ign.createCache(new CacheConfiguration<TestKey, Integer>()
-                        .setName(ACTIVE_PASSIVE_CACHE)
-                        .setAtomicityMode(atomicity)
-                        .setBackups(backups)
-                        .setCacheMode(mode));
-            }
-
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
             int cnt = 0;
 
@@ -346,8 +346,11 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                     Integer srcVal = srcCache.get(new TestKey(i, null));
                     Integer destVal = destCache.get(new TestKey(i, null));
 
-                    if (srcVal == null || !srcVal.equals(destVal))
+                    if (srcVal == null || !srcVal.equals(destVal)) {
+                        System.out.println("KEY " + i + " is different: src=" + srcVal + ", dest=" + destVal);
+
                         return false;
+                    }
                 }
 
                 return true;
