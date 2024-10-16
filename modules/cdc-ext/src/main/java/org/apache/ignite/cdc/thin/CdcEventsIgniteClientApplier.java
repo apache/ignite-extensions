@@ -18,12 +18,14 @@
 package org.apache.ignite.cdc.thin;
 
 import java.util.Map;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -52,6 +54,22 @@ public class CdcEventsIgniteClientApplier extends AbstractCdcEventsApplier<T3<Ob
         super(maxBatchSize, log);
 
         this.client = client;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected KeyCacheObject toKey(CdcEvent evt) {
+        Object key = evt.key();
+
+        if (key instanceof KeyCacheObject)
+            return (KeyCacheObject)key;
+        else {
+            Object bo = client.binary().toBinary(key);
+
+            if (bo instanceof KeyCacheObject)
+                return (KeyCacheObject)bo;
+
+            return new KeyCacheObjectImpl(key, null, evt.partition());
+        }
     }
 
     /** {@inheritDoc} */

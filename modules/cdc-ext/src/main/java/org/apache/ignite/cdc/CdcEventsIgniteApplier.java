@@ -22,10 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -78,6 +75,17 @@ public class CdcEventsIgniteApplier extends AbstractCdcEventsApplier<GridCacheDr
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException {
+        Object key = evt.key();
+
+        if (key instanceof KeyCacheObject)
+            return (KeyCacheObject)key;
+        else {
+            return new KeyCacheObjectImpl(key, U.marshal(ignite.context(), key), evt.partition());
         }
     }
 

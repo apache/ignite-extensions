@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -111,13 +110,12 @@ public abstract class AbstractCdcEventsApplier<V> {
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
      * @return Number of applied events.
-     * @throws IgniteCheckedException In case of error.
      */
     private int applyIf(
         int cacheId,
         BooleanSupplier applyUpd,
         BooleanSupplier applyRmv
-    ) throws IgniteCheckedException {
+    ) {
         int evtsApplied = 0;
 
         if (applyUpd.getAsBoolean()) {
@@ -151,18 +149,9 @@ public abstract class AbstractCdcEventsApplier<V> {
     }
 
     /** @return Key as KeyCacheObject. */
-    private KeyCacheObject toKey(CdcEvent evt) {
-        Object key = evt.key();
+    protected abstract KeyCacheObject toKey(CdcEvent evt) throws IgniteCheckedException;
 
-        if (key instanceof KeyCacheObject) {
-            return (KeyCacheObject)key;
-        }
-        else {
-            return new KeyCacheObjectImpl(key, null, evt.partition());
-        }
-    }
-
-    /** Compares keys. */
+    /** Compares keys hash codes only. Avoid comparing bytes, as they might not be available in the applier. */
     private int compareKeyCacheObject(KeyCacheObject key1, KeyCacheObject key2) {
         return Integer.compare(key1.hashCode(), key2.hashCode());
     }
