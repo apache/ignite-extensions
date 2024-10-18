@@ -17,8 +17,9 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -36,10 +37,10 @@ public abstract class AbstractCdcEventsApplier<K, V> {
     private final int maxBatchSize;
 
     /** Update batch. */
-    private final Map<K, V> updBatch = new HashMap<>();
+    private final SortedMap<K, V> updBatch = new TreeMap<>(this::compareKey);
 
     /** Remove batch. */
-    private final Map<K, GridCacheVersion> rmvBatch = new HashMap<>();
+    private final SortedMap<K, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKey);
 
     /** */
     private final BooleanSupplier hasUpdates = () -> !F.isEmpty(updBatch);
@@ -109,13 +110,12 @@ public abstract class AbstractCdcEventsApplier<K, V> {
      * @param applyUpd Apply update batch flag supplier.
      * @param applyRmv Apply remove batch flag supplier.
      * @return Number of applied events.
-     * @throws IgniteCheckedException In case of error.
      */
     private int applyIf(
         int cacheId,
         BooleanSupplier applyUpd,
         BooleanSupplier applyRmv
-    ) throws IgniteCheckedException {
+    ) {
         int evtsApplied = 0;
 
         if (applyUpd.getAsBoolean()) {
@@ -150,6 +150,14 @@ public abstract class AbstractCdcEventsApplier<K, V> {
 
     /** @return Key. */
     protected abstract K toKey(CdcEvent evt);
+
+    /**
+     * Compares keys hash codes only, because bytes might not be available.
+     * If hash codes are equal it put {@code key2} to next batch, see {@link #isApplyBatch)}.
+     */
+    private int compareKey(Object key1, Object key2) {
+        return Integer.compare(key1.hashCode(), key2.hashCode());
+    }
 
     /** @return Value. */
     protected abstract V toValue(int cacheId, CdcEvent evt, GridCacheVersion ver);

@@ -104,8 +104,11 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache));
+        for (IgniteEx ex : srcCluster) {
+            int idx = getTestIgniteInstanceIndex(ex.name());
+
+            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache, "ignite-src-to-kafka-" + idx));
+        }
 
         for (int i = 0; i < destCluster.length; i++) {
             futs.add(kafkaToIgnite(
@@ -115,7 +118,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
                 destClusterCliCfg[i],
                 destCluster,
                 i * (DFLT_PARTS / 2),
-                (i + 1) * (DFLT_PARTS / 2)
+                (i + 1) * (DFLT_PARTS / 2),
+                 "kafka-to-ignite-dest-" + i
             ));
         }
 
@@ -126,11 +130,19 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (IgniteEx ex : srcCluster)
-            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE));
+        for (IgniteEx ex : srcCluster) {
+            int idx = getTestIgniteInstanceIndex(ex.name());
 
-        for (IgniteEx ex : destCluster)
-            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE));
+            futs.add(igniteToKafka(
+                    ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE, "ignite-src-to-kafka-" + idx));
+        }
+
+        for (IgniteEx ex : destCluster) {
+            int idx = getTestIgniteInstanceIndex(ex.name());
+
+            futs.add(igniteToKafka(
+                    ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE, "ignite-dest-to-kafka-" + idx));
+        }
 
         futs.add(kafkaToIgnite(
             ACTIVE_ACTIVE_CACHE,
@@ -139,7 +151,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             destClusterCliCfg[0],
             destCluster,
             0,
-            DFLT_PARTS
+            DFLT_PARTS,
+            "kafka-to-ignite-src"
         ));
 
         futs.add(kafkaToIgnite(
@@ -149,7 +162,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             srcClusterCliCfg[0],
             srcCluster,
             0,
-            DFLT_PARTS
+            DFLT_PARTS,
+            "kafka-to-ignite-dest"
         ));
 
         return futs;
@@ -247,7 +261,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         IgniteConfiguration igniteCfg,
         String topic,
         String metadataTopic,
-        String cache
+        String cache,
+        String threadName
     ) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
@@ -270,7 +285,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
             cdcs.add(cdc);
 
             cdc.run();
-        });
+        }, threadName);
     }
 
     /**
@@ -286,7 +301,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         IgniteConfiguration igniteCfg,
         IgniteEx[] dest,
         int fromPart,
-        int toPart
+        int toPart,
+        String threadName
     ) {
         KafkaToIgniteCdcStreamerConfiguration cfg = new KafkaToIgniteCdcStreamerConfiguration();
 
@@ -315,7 +331,7 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
 
         kafkaStreamers.add(streamer);
 
-        return runAsync(streamer);
+        return runAsync(streamer, threadName);
     }
 
     /** */

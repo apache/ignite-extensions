@@ -32,6 +32,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.EVTS_SENT_CNT;
@@ -47,7 +48,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache, "ignite-to-ignite-src-" + i));
 
         return futs;
     }
@@ -56,11 +57,15 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < srcCluster.length; i++) {
+            futs.add(igniteToIgnite(
+                srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, ACTIVE_ACTIVE_CACHE, "ignite-to-ignite-src-" + i));
+        }
 
-        for (int i = 0; i < destCluster.length; i++)
-            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster, ACTIVE_ACTIVE_CACHE));
+        for (int i = 0; i < destCluster.length; i++) {
+            futs.add(igniteToIgnite(
+                destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster, ACTIVE_ACTIVE_CACHE, "ignite-to-ignite-dest-" + i));
+        }
 
         return futs;
     }
@@ -81,13 +86,15 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      * @param destCfg Ignite destination cluster configuration.
      * @param dest Ignite destination cluster.
      * @param cache Cache name to stream to kafka.
+     * @param threadName Thread to run CDC instance.
      * @return Future for Change Data Capture application.
      */
     protected IgniteInternalFuture<?> igniteToIgnite(
         IgniteConfiguration srcCfg,
         IgniteConfiguration destCfg,
         IgniteEx[] dest,
-        String cache
+        String cache,
+        @Nullable String threadName
     ) {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
@@ -117,7 +124,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
             cdcs.add(cdc);
 
             cdc.run();
-        });
+        }, threadName);
     }
 
     /** */
