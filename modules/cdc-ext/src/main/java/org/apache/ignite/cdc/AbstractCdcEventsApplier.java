@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,10 +37,10 @@ public abstract class AbstractCdcEventsApplier<K, V> {
     private final int maxBatchSize;
 
     /** Update batch. */
-    private final Map<K, V> updBatch = new TreeMap<>(this::compareKey);
+    private final SortedMap<K, V> updBatch = new TreeMap<>(this::compareKey);
 
     /** Remove batch. */
-    private final Map<K, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKey);
+    private final SortedMap<K, GridCacheVersion> rmvBatch = new TreeMap<>(this::compareKey);
 
     /** */
     private final BooleanSupplier hasUpdates = () -> !F.isEmpty(updBatch);
