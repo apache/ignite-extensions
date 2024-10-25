@@ -22,13 +22,14 @@
 #
 
 set -Eeuo pipefail
-trap cleanup SIGINT SIGTERM ERR EXIT
+trap 'cleanup $LINENO' SIGINT SIGTERM ERR EXIT
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 IGNITE_LOG_DIR="${SCRIPT_DIR}/../work/log"
 IGNITE_CDC_EXAMPLE_DIR="${SCRIPT_DIR}/../examples/config/cdc-start-up"
 
 CURRENT_PID=$$
+PIDs=()
 
 #
 # Help message
@@ -120,8 +121,6 @@ setupColors() {
 #   PIDs - holds IDs of all subprocesses
 #
 setup() {
-	declare -a PIDs
-
 	setupColors
 
 	msg "${PURPLE}CDC start-up manager [PID=${CURRENT_PID-}]${NOFORMAT}"
@@ -133,12 +132,19 @@ setup() {
 cleanup() {
 	trap - SIGINT SIGTERM ERR EXIT
 
-	for i in ${PIDs[@]}; do
-		kill -TERM $i
-		unset 'PIDs[@]'
-	done
+  if [[ ${#PIDs[@]} != 0 ]]; then
+    for i in "${PIDs[@]}"; do
+    	kill -TERM $i
+    done
+  fi
+
+  unset 'PIDs[@]'
 
 	wait
+
+	if [[ -n $1 && $1 != 1 ]]; then
+    msg "${RED}Error on line:${NOFORMAT} $1"
+  fi
 
 	msg "${PURPLE}CDC start-up manager [PID=${CURRENT_PID-}] is closed ${NOFORMAT}"
 }
@@ -157,8 +163,8 @@ getProcessInfo() {
 	infoMsg "CDC script [PID=${CURRENT_PID-}] for ${script_param-} has started."
 	infoMsg "\nSubtasks:"
 
-	for i in ${PIDs[@]}; do
-	  ps -p $i
+	for i in "${PIDs[@]}"; do
+	  ps -p "$i"
 	done
 }
 
@@ -184,7 +190,7 @@ checkMissing() {
 
 	local arg_to_check=$3
 
-	[[ -z $arg_to_check ]] && die "Missing script argument ["${arg_name-}"] for "${parent_arg_name-}"!"
+	[[ -z $arg_to_check ]] && die "Missing script argument [""${arg_name-}""] for ""${parent_arg_name-}""!"
 
 	return 0
 }
@@ -572,11 +578,11 @@ updateValues() {
 	local json1=$(curl -s 'http://localhost:8080/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
 	local json2=$(curl -s 'http://localhost:8081/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
 
-  value1=$(echo $json1 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }')
-  version1=$(echo $json1 | awk -F'val2":' '{ print $2 }' | awk -F'}' '{ print $1 }')
+  value1=$(echo $json1 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
+  version1=$(echo $json1 | awk -F'val2":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
 
-  value2=$(echo $json2 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }')
-  version2=$(echo $json2 | awk -F'val2":' '{ print $2 }' | awk -F'}' '{ print $1 }')
+  value2=$(echo $json2 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
+  version2=$(echo $json2 | awk -F'val2":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
 
 	if [[ -z $value1 || $value1 == "" ]]; then
 	  value1="-"; version1="-";
