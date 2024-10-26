@@ -25,11 +25,9 @@ set -Eeuo pipefail
 trap 'cleanup $LINENO' SIGINT SIGTERM ERR EXIT
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
-IGNITE_LOG_DIR="${SCRIPT_DIR}/../work/log"
 IGNITE_CDC_EXAMPLE_DIR="${SCRIPT_DIR}/../examples/config/cdc-start-up"
 
 CURRENT_PID=$$
-PIDs=()
 
 #
 # Help message
@@ -56,20 +54,6 @@ Available options:
 		* --kafka-to-ignite			Creates a single server client (Thick client), `
 		                        `used to transfer data from Kafka to destination-cluster.
 		* --kafka-to-ignite-thin		Creates a single thin client, used to transfer data from Kafka to destination-cluster.
-
---active-passive [--with-kafka] [--thin] ignitePropertiesPath1 ignitePropertiesPath2
-		Starts clusters with an active-passive replication strategy. The default data transfer strategy is 'ignite-to-ignite'.
-			* --with-kafka		    Used for replication with Kafka.
-			* --thin		    Indicates thin clients usage for CDC process.
-			* ignitePropertiesPath1, ignitePropertiesPath1  Paths to configuration properties files. `
-			                                                `Example: ../examples/config/cdc-start-up/cluster-1
-
---active-active [--with-kafka] [--thin] ignitePropertiesPath1 ignitePropertiesPath2
-		Starts clusters with an active-active replication strategy. The default data transfer strategy is 'ignite-to-ignite'.
-			* --with-kafka		    Used for replication with Kafka.
-      * --thin		    Indicates thin clients usage for CDC process.
-      * ignitePropertiesPath1, ignitePropertiesPath1  Paths to configuration properties files. `
-                                                      `Example: ../examples/config/cdc-start-up/cluster-1
 
 --check-cdc --key intNum1 --value intNum2 --version intNum3 [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
@@ -116,9 +100,7 @@ setupColors() {
 }
 
 #
-# Script setup. Declares PIDs array for subprocesses, and sets colors for messaging.
-# Globals:
-#   PIDs - holds IDs of all subprocesses
+# Script setup. Sets colors for messaging.
 #
 setup() {
 	setupColors
@@ -132,40 +114,7 @@ setup() {
 cleanup() {
 	trap - SIGINT SIGTERM ERR EXIT
 
-  if [[ ${#PIDs[@]} != 0 ]]; then
-    for i in "${PIDs[@]}"; do
-    	kill -TERM $i
-    done
-  fi
-
-  unset 'PIDs[@]'
-
-	wait
-
-	if [[ -n $1 && $1 != 1 ]]; then
-    msg "${RED}Error on line:${NOFORMAT} $1"
-  fi
-
 	msg "${PURPLE}CDC start-up manager [PID=${CURRENT_PID-}] is closed ${NOFORMAT}"
-}
-
-#
-# Adds subprocess ID to PIDs
-#
-addProcess() {
-	PIDs+=($!)
-}
-
-#
-# Start-up success message
-#
-getProcessInfo() {
-	infoMsg "CDC script [PID=${CURRENT_PID-}] for ${script_param-} has started."
-	infoMsg "\nSubtasks:"
-
-	for i in "${PIDs[@]}"; do
-	  ps -p "$i"
-	done
 }
 
 #
@@ -235,41 +184,6 @@ checkClientParams() {
 }
 
 #
-# Checks --active-passive or --active-active arguments
-# Globals:
-#   with_kafka - CDC transfer type flag. Indicates whether Kafka will be used for CDC
-#   with_thin - CDC transfer type flag. Indicates whether thin clients will be used to connect to destination clusters
-#   user_ignite_properties_path1 - '.properties' holder path. The file is used to configure CDC client for cluster 1
-#   user_ignite_properties_path2 - '.properties' holder path. The file is used to configure CDC client for cluster 2
-# Arguments:
-#   "$@" - script command arguments
-#
-checkParams() {
-	checkMissing "${script_param-}" "ignitePropertiesPath1" "${2-}"
-
-	with_kafka=false
-	with_thin=false
-
-	if [[ "$2" == "--with-kafka" ]]; then
-	  with_kafka=true; infoMsg "Transfer: through Kafka"; shift;
-	fi
-
-	checkMissing "${script_param-}" "ignitePropertiesPath1" "${2-}"
-
-	if [[ "$2" == "--thin" ]]; then
-	  with_thin=true; infoMsg "Thin clients are used"; shift;
-	fi
-
-	user_ignite_properties_path1=${2-}
-	user_ignite_properties_path2=${3-}
-
-	checkMissing "${script_param-}" "ignitePropertiesPath1" "${user_ignite_properties_path1-}"
-	checkMissing "${script_param-}" "ignitePropertiesPath2" "${user_ignite_properties_path2-}"
-
-	return 0
-}
-
-#
 # Checks --check-cdc arguments
 # Globals:
 #   key - Entity key
@@ -299,25 +213,6 @@ checkEntriesParams() {
 	checkMissing "${script_param-}" "version" "${version-}"
 
 	return 0
-}
-
-#
-# Waits for specific line to appear in '.log' file
-# Arguments:
-#   1 - '.log' file path
-#   2 - line to look for in the '.log' file
-#
-waitForLine() {
-	local log_file=${1-}
-	local line=${2-}
-
-	while [[ ! -f $log_file ]] || [[ ! -e $log_file ]] || [[ ! -s $log_file ]]; do
-	  sleep 1s
-	done
-
-	until grep -q -s $line $log_file; do
-	  sleep 1s
-	done
 }
 
 #
@@ -368,188 +263,6 @@ startCDCClient() {
 		--kafka-to-ignite-thin) source "${SCRIPT_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-streamer-K2I-thin.xml ;;
 		*) source "${SCRIPT_DIR}"/ignite-cdc.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-base-configuration.xml ;;
 	esac
-}
-
-#
-# Starts source and destination ignite cluster nodes
-#
-startTwoIgnites() {
-	local log_file1="$IGNITE_LOG_DIR/log_file1.log"
-	local log_file2="$IGNITE_LOG_DIR/log_file2.log"
-
-	"${SCRIPT_DIR}"/cdc-start-up.sh -i $user_ignite_properties_path1 > $log_file1 & addProcess
-
-	waitForLine $log_file1 "Ignite node started OK"
-
-	infoMsg "Ignite instance has successfully started [logFile=${log_file1}]"
-
-	"${SCRIPT_DIR}"/cdc-start-up.sh -i $user_ignite_properties_path2 > $log_file2 & addProcess
-
-	waitForLine $log_file2 "Ignite node started OK"
-
-	infoMsg "Ignite instance has successfully started [logFile=${log_file2}]"
-
-	return 0;
-}
-
-#
-# Checks whether --activate-cluster argument is needed for ./cdc-start-up --cdc-client.
-# Clusters are activated only for cluster 1 clients ignition.
-# Globals:
-#   activate_cmd - Either empty or --activate-cluster.
-#                  Used to specify cluster activation during --active-passive or --active-active
-# Arguments:
-#   1 - Cluster number
-#
-checkClusterActivation() {
-	local cluster_num=${1-}
-
-	if [[ ! -z ${activate_cmd+x} ]]; then
-	  unset activate_cmd
-	fi
-
-	case ${cluster_num-} in
-		"1") activate_cmd="--activate-cluster" ;;
-		*) ;;
-	esac
-
-	return 0;
-}
-
-#
-# Starts Kafka source and destination CDC clients
-# Arguments:
-#   1 - '.properties' file path for source cluster
-#   2 - '.properties' file path for destination cluster
-#   3 - Source cluster number
-#   4 - Destination cluster number
-#
-startKafkaClients() {
-	local user_ignite_properties_path1=${1-}
-	local user_ignite_properties_path2=${2-}
-
-	local cluster_num_src=${3-}
-	local cluster_num_dest=${4-}
-
-	local cdc_client_source_log="$IGNITE_LOG_DIR/ignite-to-kafka-${cluster_num_src-}.log"
-	local cdc_client_destination_log=""
-
-	checkClusterActivation $cluster_num_src
-
-	"${SCRIPT_DIR}"/cdc-start-up.sh -c --ignite-to-kafka ${activate_cmd+"$activate_cmd"} \
-	                                              "${user_ignite_properties_path1-}" > $cdc_client_source_log & addProcess
-
-	waitForLine $cdc_client_source_log "Ignite documentation:"
-
-	infoMsg "CDC client instance has successfully started [clientMode=ignite-to-kafka, logFile=${cdc_client_source_log}]"
-
-	if [[ "$with_thin" == "true" ]]; then
-		cdc_client_destination_log="$IGNITE_LOG_DIR/kafka-to-ignite-thin-${cluster_num_dest-}.log"
-
-		"${SCRIPT_DIR}"/cdc-start-up.sh -c --kafka-to-ignite-thin \
-		                                      "${user_ignite_properties_path2-}" > $cdc_client_destination_log & addProcess
-	else
-		cdc_client_destination_log="$IGNITE_LOG_DIR/kafka-to-ignite-${cluster_num_dest-}.log"
-
-		"${SCRIPT_DIR}"/cdc-start-up.sh -c --kafka-to-ignite \
-		                                      "${user_ignite_properties_path2-}" > $cdc_client_destination_log & addProcess
-	fi
-
-	waitForLine $cdc_client_destination_log "Ignite documentation:"
-
-	infoMsg "CDC client instance has successfully started [clientMode=kafka-to-ignite, withThin=${with_thin}, `
-	                                                                              `logFile=${cdc_client_destination_log}]"
-
-	return 0;
-}
-
-#
-# Starts Ignite source and destination CDC clients
-# Arguments:
-#   1 - '.properties' file path for source cluster
-#   2 - Source cluster number
-#
-startIgniteClients() {
-	local cdc_client_log=""
-
-	local user_ignite_properties_path=${1-}
-	local cluster_num=${2-}
-
-	checkClusterActivation $cluster_num
-
-	if [[ "$with_thin" == "true" ]]; then
-		cdc_client_log="$IGNITE_LOG_DIR/ignite-to-ignite-thin-${cluster_num-}.log"
-		log_message="Ignite documentation:"
-
-		"${SCRIPT_DIR}"/cdc-start-up.sh -c --ignite-to-ignite-thin ${activate_cmd+"$activate_cmd"} \
-		                                                    "${user_ignite_properties_path-}" > $cdc_client_log & addProcess
-	else
-		cdc_client_log="$IGNITE_LOG_DIR/ignite-to-ignite-${cluster_num-}.log"
-		log_message="Ignite node started OK"
-
-		"${SCRIPT_DIR}"/cdc-start-up.sh -c --ignite-to-ignite ${activate_cmd+"$activate_cmd"} \
-		                                                    "${user_ignite_properties_path-}" > $cdc_client_log & addProcess
-	fi
-
-	waitForLine $cdc_client_log $log_message
-
-	infoMsg "CDC client instance has successfully started [clientMode=ignite-to-ignite, withThin=${with_thin}, `
-  	                                                                              `logFile=${cdc_client_log}]"
-
-	return 0;
-}
-
-#
-# Starts Active-Passive CDC
-#
-startActivePassive() {
-	infoMsg "Starting Active-Passive replication"
-
-	mkdir -p "$IGNITE_LOG_DIR"
-
-	local cluster_num_src="1"
-	local cluster_num_dest="2"
-
-	startTwoIgnites
-
-	if [[ "$with_kafka" == "true" ]]; then
-	  startKafkaClients "${user_ignite_properties_path1-}" "${user_ignite_properties_path2-}" \
-	                                                                          "${cluster_num_src-}" "${cluster_num_dest-}"
-	else
-	  startIgniteClients "${user_ignite_properties_path1-}" "${cluster_num_src-}"
-	fi
-
-	getProcessInfo
-
-	wait
-}
-
-#
-# Starts Active-Active CDC
-#
-startActiveActive() {
-	infoMsg "Starting Active-Active replication"
-
-	mkdir -p "$IGNITE_LOG_DIR"
-
-	local cluster_num_src="1"
-	local cluster_num_dest="2"
-
-	startTwoIgnites
-
-	if [[ "$with_kafka" == true ]]; then
-		startKafkaClients "${user_ignite_properties_path1-}" "${user_ignite_properties_path2-}" \
-		                                                                        "${cluster_num_src-}" "${cluster_num_dest-}"
-		startKafkaClients "${user_ignite_properties_path2-}" "${user_ignite_properties_path1-}" \
-		                                                                        "${cluster_num_dest-}" "${cluster_num_src-}"
-	else
-		startIgniteClients "${user_ignite_properties_path1-}" "${cluster_num_src-}"
-		startIgniteClients "${user_ignite_properties_path2-}" "${cluster_num_dest-}"
-	fi
-
-	getProcessInfo
-
-	wait
 }
 
 #
@@ -689,14 +402,6 @@ parseParams() {
 		-c | --cdc-client)
 			checkClientParams "$@"
 			startCDCClient
-			;;
-		--active-passive)
-			checkParams "$@"
-			startActivePassive
-			;;
-		--active-active)
-			checkParams "$@"
-			startActiveActive
 			;;
 		--check-cdc)
 			checkEntriesParams "$@"
