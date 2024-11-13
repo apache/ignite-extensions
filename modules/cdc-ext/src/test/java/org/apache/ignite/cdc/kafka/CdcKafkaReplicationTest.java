@@ -115,7 +115,8 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
 
-            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache, includeTemplates, excludeTemplates, "ignite-src-to-kafka-" + idx));
+            futs.add(igniteToKafka(ex.configuration(), cache, SRC_DEST_META_TOPIC, cache, includeTemplates,
+                    excludeTemplates, "ignite-src-to-kafka-" + idx));
         }
 
         for (int i = 0; i < destCluster.length; i++) {
@@ -149,15 +150,15 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
             
-            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE, includeTemplates,
-                    excludeTemplates, "ignite-src-to-kafka-" + idx));
+            futs.add(igniteToKafka(ex.configuration(), SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, ACTIVE_ACTIVE_CACHE,
+                    includeTemplates, excludeTemplates, "ignite-src-to-kafka-" + idx));
         }
 
         for (IgniteEx ex : destCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
             
-            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE, includeTemplates,
-                    excludeTemplates, "ignite-dest-to-kafka-" + idx));
+            futs.add(igniteToKafka(ex.configuration(), DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, ACTIVE_ACTIVE_CACHE,
+                    includeTemplates, excludeTemplates, "ignite-dest-to-kafka-" + idx));
         }
 
         futs.add(kafkaToIgnite(
