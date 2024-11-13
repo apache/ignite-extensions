@@ -20,10 +20,8 @@ package org.apache.ignite.cdc.kafka;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -65,6 +63,8 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -160,6 +160,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** File with saved names of caches added by cache masks. */
     private static final String SAVED_CACHES_FILE = "caches";
+
+    /** Temporary file with saved names of caches added by cache masks. */
+    private static final String SAVED_CACHES_TMP_FILE = "caches_tmp";
 
     /** CDC directory path. */
     private Path cdcDir;
@@ -302,17 +305,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
                 caches.remove(name);
 
-                Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
-
-                StringBuilder cacheList = new StringBuilder();
-
-                for (String cache : caches) {
-                    cacheList.append(cache);
-
-                    cacheList.append('\n');
-                }
-
-                Files.write(savedCachesPath, cacheList.toString().getBytes());
+                save(caches);
 
                 if (log.isInfoEnabled())
                     log.info("Cache has been removed from replication [cacheName=" + name + ']');
@@ -479,19 +472,19 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      * @return List of saved caches names.
      */
     private List<String> loadCaches() throws IOException {
-        if (cdcDir != null) {
-            Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
-
-            if (Files.notExists(savedCachesPath)) {
-                Files.createFile(savedCachesPath);
-
-                if (log.isInfoEnabled())
-                    log.info("Cache list created: " + savedCachesPath);
-            }
-
-            return Files.readAllLines(savedCachesPath);
+        if (cdcDir == null) {
+            throw new IgniteException("Can't load '" + SAVED_CACHES_FILE + "' file. Cdc directory is null");
         }
-        return Collections.emptyList();
+        Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
+
+        if (Files.notExists(savedCachesPath)) {
+            Files.createFile(savedCachesPath);
+
+            if (log.isInfoEnabled())
+                log.info("Cache list created: " + savedCachesPath);
+        }
+
+        return Files.readAllLines(savedCachesPath);
     }
 
     /**
@@ -512,7 +505,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /**
      * Finds match between cache name and user's regex templates.
-     * If match found, adds this cache's id to id's list and saves cache name to file.
+     * If match is found, adds this cache's id to id's list and saves cache name to file.
      *
      * @param cacheName Cache name.
      */
@@ -523,7 +516,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             cachesIds.add(cacheId);
 
             try {
-                saveCache(cacheName);
+                List<String> caches = loadCaches();
+
+                caches.add(cacheName);
+
+                save(caches);
             }
             catch (IOException e) {
                 throw new IgniteException(e);
@@ -535,18 +532,28 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
-     * Writes cache name to file.
+     * Writes caches list to file
      *
-     * @param cacheName Cache name.
+     * @param caches Caches list.
      */
-    private void saveCache(String cacheName) throws IOException {
-        if (cdcDir != null) {
-            Path savedCaches = cdcDir.resolve(SAVED_CACHES_FILE);
-
-            String cn = cacheName + '\n';
-
-            Files.write(savedCaches, cn.getBytes(), StandardOpenOption.APPEND);
+    private void save(List<String> caches) throws IOException {
+        if (cdcDir == null) {
+            throw new IgniteException("Can't write to '" + SAVED_CACHES_FILE + "' file. Cdc directory is null");
         }
+        Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
+        Path tmpSavedCachesPath = cdcDir.resolve(SAVED_CACHES_TMP_FILE);
+
+        StringBuilder cacheList = new StringBuilder();
+
+        for (String cache : caches) {
+            cacheList.append(cache);
+
+            cacheList.append('\n');
+        }
+
+        Files.write(tmpSavedCachesPath, cacheList.toString().getBytes());
+
+        Files.move(tmpSavedCachesPath, savedCachesPath, ATOMIC_MOVE, REPLACE_EXISTING);
     }
 
     /**
