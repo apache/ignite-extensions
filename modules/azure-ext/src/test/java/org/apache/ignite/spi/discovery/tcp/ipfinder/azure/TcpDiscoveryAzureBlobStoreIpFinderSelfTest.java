@@ -71,7 +71,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
     @Override protected TcpDiscoveryAzureBlobStoreIpFinder ipFinder() throws Exception {
         TcpDiscoveryAzureBlobStoreIpFinder finder = new TcpDiscoveryAzureBlobStoreIpFinder();
 
-        injectLogger(finder);
+        resources.inject(finder);
 
         assert finder.isShared() : "Ip finder must be shared by default.";
 
