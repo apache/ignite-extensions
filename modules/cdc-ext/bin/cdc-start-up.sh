@@ -25,6 +25,7 @@ set -Eeuo pipefail
 trap 'cleanup $LINENO' SIGINT SIGTERM ERR EXIT
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+
 IGNITE_CDC_EXAMPLE_DIR="${SCRIPT_DIR}/../examples/config/cdc-start-up"
 
 CURRENT_PID=$$
