@@ -39,7 +39,7 @@ import org.springframework.data.mapping.model.SimpleTypeHolder;
  * }
  * </pre>
  */
-public class IgniteCustomConversions extends org.springframework.data.convert.CustomConversions {
+public class IgniteCustomConversions extends CustomConversions {
 
     private static final List<Object> STORE_CONVERTERS;
 
@@ -62,8 +62,8 @@ public class IgniteCustomConversions extends org.springframework.data.convert.Cu
         super(STORE_CONVERSIONS, converters);
     }
 
-    static class LocalDateTimeWriteConverter implements Converter<Timestamp, LocalDateTime> {
-
+    @WritingConverter
+    static class TimestampToLocalDateTimeConverter implements Converter<Timestamp, LocalDateTime> {
         @Override public LocalDateTime convert(Timestamp source) {
             LocalDateTime localDateTime = source.toInstant()
                 .atZone(ZoneId.systemDefault())
@@ -72,8 +72,8 @@ public class IgniteCustomConversions extends org.springframework.data.convert.Cu
         }
     }
 
-    static class DateWriteConverter implements Converter<Timestamp, Date> {
-
+    @WritingConverter
+    static class TimestampToDateConverter implements Converter<Timestamp, Date> {
         @Override public Date convert(Timestamp source) {
             return new Date((source).getTime());
         }

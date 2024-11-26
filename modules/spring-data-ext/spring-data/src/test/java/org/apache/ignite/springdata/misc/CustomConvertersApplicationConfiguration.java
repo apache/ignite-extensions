@@ -29,14 +29,12 @@ import org.springframework.data.convert.CustomConversions;
  *  Test configuration that overrides default converter for LocalDateTime type.
  */
 public class CustomConvertersApplicationConfiguration extends ApplicationConfiguration {
-
     @Bean
     public CustomConversions customConversions() {
         return new IgniteCustomConversions(Arrays.asList(new LocalDateTimeWriteConverter()));
     }
 
     static class LocalDateTimeWriteConverter implements Converter<Timestamp, LocalDateTime> {
-
         @Override public LocalDateTime convert(Timestamp source) {
             return null;
         }

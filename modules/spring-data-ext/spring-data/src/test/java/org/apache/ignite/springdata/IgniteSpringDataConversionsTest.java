@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
-
     /** Repository. */
     protected PersonRepository repo;
 
