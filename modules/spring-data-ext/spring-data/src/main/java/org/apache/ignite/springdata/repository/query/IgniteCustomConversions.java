@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.convert.CustomConversions;
+import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 
 /**
@@ -41,17 +43,15 @@ import org.springframework.data.mapping.model.SimpleTypeHolder;
  */
 public class IgniteCustomConversions extends CustomConversions {
 
-    private static final List<Object> STORE_CONVERTERS;
-
     private static final StoreConversions STORE_CONVERSIONS;
 
     static {
         List<Object> converters = new ArrayList<>();
-        converters.add(new LocalDateTimeWriteConverter());
-        converters.add(new DateWriteConverter());
+        converters.add(new TimestampToLocalDateTimeConverter());
+        converters.add(new TimestampToDateConverter());
 
-        STORE_CONVERTERS = Collections.unmodifiableList(converters);
-        STORE_CONVERSIONS = StoreConversions.of(SimpleTypeHolder.DEFAULT, STORE_CONVERTERS);
+        List<Object> storeConverters = Collections.unmodifiableList(converters);
+        STORE_CONVERSIONS = StoreConversions.of(SimpleTypeHolder.DEFAULT, storeConverters);
     }
 
     public IgniteCustomConversions() {
@@ -65,10 +65,9 @@ public class IgniteCustomConversions extends CustomConversions {
     @WritingConverter
     static class TimestampToLocalDateTimeConverter implements Converter<Timestamp, LocalDateTime> {
         @Override public LocalDateTime convert(Timestamp source) {
-            LocalDateTime localDateTime = source.toInstant()
+            return source.toInstant()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
-            return localDateTime;
         }
     }
 
