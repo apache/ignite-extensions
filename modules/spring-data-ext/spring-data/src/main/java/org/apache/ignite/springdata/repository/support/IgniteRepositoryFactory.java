@@ -22,13 +22,19 @@ import org.apache.ignite.springdata.proxy.IgniteProxy;
 import org.apache.ignite.springdata.repository.config.DynamicQueryConfig;
 import org.apache.ignite.springdata.repository.config.Query;
 import org.apache.ignite.springdata.repository.config.RepositoryConfig;
+import org.apache.ignite.springdata.repository.query.IgniteCustomConversions;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
 import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata.repository.query.IgniteRepositoryQuery;
 import org.springframework.beans.factory.config.BeanExpressionContext;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.convert.support.GenericConversionService;
+import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
@@ -62,6 +68,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite proxy instance associated with the current repository. */
     private final IgniteProxy ignite;
 
+    private final ConversionService conversionService;
+
     /**
      * @param ctx Spring Application context.
      * @param repoInterface Repository interface.
@@ -69,9 +77,21 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     public IgniteRepositoryFactory(ApplicationContext ctx, Class<?> repoInterface) {
         ignite = ctx.getBean(IgniteProxy.class, repoInterface);
 
+        ConfigurableApplicationContext configurableCtx = (ConfigurableApplicationContext) ctx;
+        if (configurableCtx.getBeanNamesForType(CustomConversions.class).length == 0) {
+            configurableCtx.getBeanFactory().registerSingleton(CustomConversions.class.getCanonicalName(), new IgniteCustomConversions());
+        }
+
         beanExpressionContext = new BeanExpressionContext(
             new DefaultListableBeanFactory(ctx.getAutowireCapableBeanFactory()),
             null);
+
+        CustomConversions customConversions = configurableCtx.getBean(CustomConversions.class);
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        if (defaultConversionService instanceof GenericConversionService) {
+            customConversions.registerConvertersIn(defaultConversionService);
+        }
+        conversionService = defaultConversionService;
 
         RepositoryConfig cfg = getRepositoryConfiguration(repoInterface);
 
@@ -152,7 +172,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
                 if (key != QueryLookupStrategy.Key.CREATE) {
                     return new IgniteRepositoryQuery(metadata, qry, mtd, factory, cache,
                         annotatedIgniteQry ? DynamicQueryConfig.fromQueryAnnotation(annotation) : null,
-                        evaluationContextProvider);
+                        evaluationContextProvider, conversionService);
                 }
             }
 
@@ -163,7 +183,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             }
 
             return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd, factory,
-                cache, DynamicQueryConfig.fromQueryAnnotation(annotation), evaluationContextProvider);
+                cache, DynamicQueryConfig.fromQueryAnnotation(annotation), evaluationContextProvider,
+                conversionService);
         });
     }
 

@@ -120,6 +120,9 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     @Query("SELECT secondName FROM Person WHERE firstName REGEXP ?")
     public List<String> selectField(String val, Pageable pageable);
 
+    @Query("SELECT firstName, secondName, birthday, createdAt FROM Person WHERE firstName = ?")
+    public List<Person> selectByFirstNameWithCreatedAt(String name);
+
     /** */
     @Query("SELECT _key, secondName FROM Person WHERE firstName REGEXP ?")
     public List<List> selectSeveralField(String val, Pageable pageable);

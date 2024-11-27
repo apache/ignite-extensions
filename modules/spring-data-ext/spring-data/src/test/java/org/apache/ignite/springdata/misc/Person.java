@@ -17,6 +17,7 @@
 
 package org.apache.ignite.springdata.misc;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -39,6 +40,9 @@ public class Person {
     @QuerySqlField
     private Date birthday;
 
+    @QuerySqlField
+    private LocalDateTime createdAt;
+
     /**
      * @param firstName First name.
      * @param secondName Second name.
@@ -47,6 +51,13 @@ public class Person {
         this.firstName = firstName;
         this.secondName = secondName;
         birthday = new Date();
+    }
+
+    public Person(String firstName, String secondName, LocalDateTime createdAt) {
+        this.firstName = firstName;
+        this.secondName = secondName;
+        birthday = new Date();
+        this.createdAt = createdAt;
     }
 
     /**
@@ -68,6 +79,13 @@ public class Person {
      */
     public String getSecondName() {
         return secondName;
+    }
+
+    /**
+     * @return createdAt.
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
     /**
