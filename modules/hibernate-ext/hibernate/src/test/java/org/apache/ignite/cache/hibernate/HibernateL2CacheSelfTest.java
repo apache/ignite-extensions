@@ -426,8 +426,9 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(generalRegionConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
-            generalRegionConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME),
+        cfg.setCacheConfiguration(
+            transactionalRegionConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
+            transactionalRegionConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME),
             transactionalRegionConfiguration(ENTITY_NAME),
             transactionalRegionConfiguration(ENTITY2_NAME),
             transactionalRegionConfiguration(VERSIONED_ENTITY_NAME),
@@ -436,30 +437,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             transactionalRegionConfiguration(CHILD_COLLECTION_REGION),
             transactionalRegionConfiguration(NATURAL_ID_REGION),
             transactionalRegionConfiguration(NATURAL_ID_REGION2));
-
-        return cfg;
-    }
-
-    /**
-     * @param regionName Region name.
-     * @return Cache configuration for {@link IgniteGeneralDataRegion}.
-     */
-    private CacheConfiguration generalRegionConfiguration(String regionName) {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setName(regionName);
-
-        cfg.setCacheMode(PARTITIONED);
-
-        cfg.setAtomicityMode(ATOMIC);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setBackups(1);
-
-        cfg.setStatisticsEnabled(true);
-
-        //cfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         return cfg;
     }
