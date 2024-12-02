@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
@@ -31,7 +30,6 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  * @see KafkaToIgniteCdcStreamer
  * @see KafkaToIgniteLoader
  */
-@IgniteExperimental
 public class KafkaToIgniteCdcStreamerConfiguration {
     /** Default maximum time to complete Kafka related requests, in milliseconds. */
     public static final long DFLT_KAFKA_REQ_TIMEOUT = 3_000L;

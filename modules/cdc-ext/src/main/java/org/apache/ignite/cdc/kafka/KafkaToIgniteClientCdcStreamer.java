@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.client.thin.ClientBinary;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Main class of Kafka to Ignite application.
@@ -70,7 +69,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see KafkaToIgniteCdcStreamerApplier
  * @see CacheConflictResolutionManagerImpl
  */
-@IgniteExperimental
 public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
     /** Ignite thin client configuration. */
     private final ClientConfiguration clientCfg;
