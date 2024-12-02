@@ -17,10 +17,15 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -28,8 +33,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
@@ -55,6 +64,8 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_MAX_BATCH_SIZE;
 import static org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG;
@@ -148,6 +159,27 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Cache names. */
     private Collection<String> caches;
+
+    /** File with saved names of caches added by cache masks. */
+    private static final String SAVED_CACHES_FILE = "caches";
+
+    /** Temporary file with saved names of caches added by cache masks. */
+    private static final String SAVED_CACHES_TMP_FILE = "caches_tmp";
+
+    /** CDC directory path. */
+    private Path cdcDir;
+
+    /** Include regex templates for cache names. */
+    private Set<String> includeTemplates = new HashSet<>();
+
+    /** Compiled include regex patterns for cache names. */
+    private Set<Pattern> includeFilters;
+
+    /** Exclude regex templates for cache names. */
+    private Set<String> excludeTemplates = new HashSet<>();
+
+    /** Compiled exclude regex patterns for cache names. */
+    private Set<Pattern> excludeFilters;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -248,15 +280,42 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
         cacheEvents.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
+            matchWithRegexTemplates(e.configuration().getName());
         });
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
-        });
+        caches.forEachRemaining(this::deleteRegexpCacheIfPresent);
+    }
+
+    /**
+     * Removes cache added by regexp from cache list, if this cache is present in file, to prevent file size overflow.
+     *
+     * @param cacheId Cache id.
+     */
+    private void deleteRegexpCacheIfPresent(Integer cacheId) {
+        try {
+            List<String> caches = loadCaches();
+
+            Optional<String> cacheName = caches.stream()
+                .filter(name -> CU.cacheId(name) == cacheId)
+                .findAny();
+
+            if (cacheName.isPresent()) {
+                String name = cacheName.get();
+
+                caches.remove(name);
+
+                save(caches);
+
+                if (log.isInfoEnabled())
+                    log.info("Cache has been removed from replication [cacheName=" + name + ']');
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
@@ -320,7 +379,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg) {
+    @Override public void start(MetricRegistry reg, Path cdcDir) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -331,9 +390,23 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
+        this.cdcDir = cdcDir;
+
         cachesIds = caches.stream()
             .map(CU::cacheId)
             .collect(Collectors.toSet());
+
+        prepareRegexFilters();
+
+        try {
+            loadCaches().stream()
+                .filter(this::matchesFilters)
+                .map(CU::cacheId)
+                .forEach(cachesIds::add);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -381,6 +454,111 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
+     * Compiles regex patterns from user templates.
+     *
+     * @throws PatternSyntaxException If the template's syntax is invalid
+     */
+    private void prepareRegexFilters() {
+        includeFilters = includeTemplates.stream()
+            .map(Pattern::compile)
+            .collect(Collectors.toSet());
+
+        excludeFilters = excludeTemplates.stream()
+            .map(Pattern::compile)
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Loads saved caches from file.
+     *
+     * @return List of saved caches names.
+     */
+    private List<String> loadCaches() throws IOException {
+        if (cdcDir == null) {
+            throw new IgniteException("Can't load '" + SAVED_CACHES_FILE + "' file. Cdc directory is null");
+        }
+        Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
+
+        if (Files.notExists(savedCachesPath)) {
+            Files.createFile(savedCachesPath);
+
+            if (log.isInfoEnabled())
+                log.info("Cache list created: " + savedCachesPath);
+        }
+
+        return Files.readAllLines(savedCachesPath);
+    }
+
+    /**
+     * Matches cache name with compiled regex patterns.
+     *
+     * @param cacheName Cache name.
+     * @return True if cache name match include patterns and don't match exclude patterns.
+     */
+    private boolean matchesFilters(String cacheName) {
+        boolean matchesInclude = includeFilters.stream()
+            .anyMatch(pattern -> pattern.matcher(cacheName).matches());
+
+        boolean notMatchesExclude = excludeFilters.stream()
+            .noneMatch(pattern -> pattern.matcher(cacheName).matches());
+
+        return matchesInclude && notMatchesExclude;
+    }
+
+    /**
+     * Finds match between cache name and user's regex templates.
+     * If match is found, adds this cache's id to id's list and saves cache name to file.
+     *
+     * @param cacheName Cache name.
+     */
+    private void matchWithRegexTemplates(String cacheName) {
+        int cacheId = CU.cacheId(cacheName);
+
+        if (!cachesIds.contains(cacheId) && matchesFilters(cacheName)) {
+            cachesIds.add(cacheId);
+
+            try {
+                List<String> caches = loadCaches();
+
+                caches.add(cacheName);
+
+                save(caches);
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Cache has been added to replication [cacheName=" + cacheName + "]");
+        }
+    }
+
+    /**
+     * Writes caches list to file
+     *
+     * @param caches Caches list.
+     */
+    private void save(List<String> caches) throws IOException {
+        if (cdcDir == null) {
+            throw new IgniteException("Can't write to '" + SAVED_CACHES_FILE + "' file. Cdc directory is null");
+        }
+        Path savedCachesPath = cdcDir.resolve(SAVED_CACHES_FILE);
+        Path tmpSavedCachesPath = cdcDir.resolve(SAVED_CACHES_TMP_FILE);
+
+        StringBuilder cacheList = new StringBuilder();
+
+        for (String cache : caches) {
+            cacheList.append(cache);
+
+            cacheList.append('\n');
+        }
+
+        Files.write(tmpSavedCachesPath, cacheList.toString().getBytes());
+
+        Files.move(tmpSavedCachesPath, savedCachesPath, ATOMIC_MOVE, REPLACE_EXISTING);
+    }
+
+    /**
      * Sets topic that is used to send data to Kafka.
      *
      * @param evtTopic Kafka topic.
@@ -424,6 +602,30 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
         this.caches = caches;
+
+        return this;
+    }
+
+    /**
+     * Sets include regex patterns that participate in CDC.
+     *
+     * @param includeTemplates Include regex templates.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setIncludeTemplates(Set<String> includeTemplates) {
+        this.includeTemplates = includeTemplates;
+
+        return this;
+    }
+
+    /**
+     * Sets exclude regex patterns that participate in CDC.
+     *
+     * @param excludeTemplates Exclude regex templates
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setExcludeTemplates(Set<String> excludeTemplates) {
+        this.excludeTemplates = excludeTemplates;
 
         return this;
     }

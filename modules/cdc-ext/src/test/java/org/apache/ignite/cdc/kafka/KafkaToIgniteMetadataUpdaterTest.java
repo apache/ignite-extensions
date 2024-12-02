@@ -155,7 +155,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(streamer, "log", listeningLog.getLogger(IgniteToKafkaCdcStreamer.class));
 
-        streamer.start(new MetricRegistryImpl("test", null, null, log));
+        streamer.start(new MetricRegistryImpl("test", null, null, log), null);
 
         return streamer;
     }
