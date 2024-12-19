@@ -24,7 +24,6 @@
 		<property name="pluginProviders" ref="ignCacheVersionConflictResolverPluginProvider"/>
 		<property name="cacheConfiguration" ref="ignCacheConfiguration"/>
 		<property name="clientConnectorConfiguration" ref="ignClientConnectorConfiguration"/>
-		<property name="connectorConfiguration" ref="ignConnectorConfiguration"/>
     </bean>
 
 	<!--CdcConfiguration-->
@@ -81,10 +80,5 @@
 	<!--ClientConnectorConfiguration-->
 	<bean id="ignClientConnectorConfiguration" class="org.apache.ignite.configuration.ClientConnectorConfiguration">
 		<property name="port" value="${server_client_connector_port}"/>
-	</bean>
-
-	<!--ConnectorConfiguration-->
-	<bean id="ignConnectorConfiguration" class="org.apache.ignite.configuration.ConnectorConfiguration">
-		<property name="port" value="${server_connector_port}"/>
 	</bean>
 </beans>

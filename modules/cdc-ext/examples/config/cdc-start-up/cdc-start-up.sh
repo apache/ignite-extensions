@@ -26,7 +26,8 @@ trap 'cleanup $LINENO' SIGINT SIGTERM ERR EXIT
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 
-IGNITE_CDC_EXAMPLE_DIR="${SCRIPT_DIR}/../examples/config/cdc-start-up"
+IGNITE_BIN_DIR="${SCRIPT_DIR}/../../../bin"
+IGNITE_HOME="${SCRIPT_DIR}/../../../"
 
 CURRENT_PID=$$
 
@@ -151,7 +152,7 @@ checkMissing() {
 #   client_mode - Transfer type for CDC
 #   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
 #   with_activate_cluster - cluster activation flag. Specifies whether to activate clusters (source and destination)
-#   user_ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
+#   ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
 # Arguments:
 #   "$@" - script command arguments
 #
@@ -177,9 +178,9 @@ checkClientParams() {
 	  with_activate_cluster=true; shift;
 	fi
 
-	user_ignite_properties_path=${3-}
+	ignite_properties_path=${3-}
 
-	checkMissing "${client_mode-}" "ignitePropertiesPath" "${user_ignite_properties_path-}"
+	checkMissing "${client_mode-}" "ignitePropertiesPath" "${ignite_properties_path-}"
 
 	return 0
 }
@@ -218,31 +219,32 @@ checkEntriesParams() {
 
 #
 # Starts single Ignite instance
+# cdc-base-configuration needs dummy streamer to start, which is why cdc_streamer_xml_file_name is exported
 #
 startIgnite() {
-	infoMsg "Starting Ignite for ${user_ignite_properties_path-}"
+	infoMsg "Starting Ignite for ${ignite_properties_path-}"
 
 	export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml"
-	export ignite_properties_path="$SCRIPT_DIR/$user_ignite_properties_path"
+	export ignite_properties_path
 
-	"${SCRIPT_DIR}"/ignite.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-base-configuration.xml
+	"${IGNITE_BIN_DIR}"/ignite.sh cdc-base-configuration.xml
 }
 
 #
 # Activates source and destination clusters for CDC client (--cdc-client)
 # Sourced ignites properties from '.properties':
-#   server_connector_port - port for control.sh connection to source cluster
-#   destination_connector_port - port for control.sh connection to destination cluster
+#   server_client_connector_port - port for control.sh connection to source cluster
+#   destination_client_connector_port - port for control.sh connection to destination cluster
 #
 activateClusters() {
 	infoMsg "Clusters will be activated"
 
 	source "$ignite_properties_path/ignite-cdc.properties"
 
-	infoMsg "Activating source cluster with localhost:${server_connector_port-} for ${client_mode} CDC client"
-	"${SCRIPT_DIR}"/control.sh --set-state ACTIVE --host localhost:"${server_connector_port-}" --yes
-	infoMsg "Activating destination cluster with localhost:${destination_connector_port-} for ${client_mode} CDC client"
-	"${SCRIPT_DIR}"/control.sh --set-state ACTIVE --host localhost:"${destination_connector_port-}" --yes
+	infoMsg "Activating source cluster with localhost:${server_client_connector_port-} for ${client_mode} CDC client"
+	"${IGNITE_BIN_DIR}"/control.sh --set-state ACTIVE --port "${server_client_connector_port-}" --yes
+	infoMsg "Activating destination cluster with localhost:${destination_client_connector_port-} for ${client_mode} CDC client"
+	"${IGNITE_BIN_DIR}"/control.sh --set-state ACTIVE --port "${destination_client_connector_port-}" --yes
 
 	return 0
 }
@@ -251,18 +253,19 @@ activateClusters() {
 # Starts single CDC client instance
 #
 startCDCClient() {
-	infoMsg "Starting CDC client for ${user_ignite_properties_path-} with ${client_mode-}"
-
-	export ignite_properties_path="$SCRIPT_DIR/$user_ignite_properties_path"
+	infoMsg "Starting CDC client for ${ignite_properties_path-} with ${client_mode-}"
+	
+	export ignite_properties_path
+	export IGNITE_HOME
 
 	if [[ "$with_activate_cluster" == "true" ]]; then
 	  activateClusters
 	fi
 
 	case $client_mode in
-		--kafka-to-ignite) source "${SCRIPT_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-streamer-K2I.xml ;;
-		--kafka-to-ignite-thin) source "${SCRIPT_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-streamer-K2I-thin.xml ;;
-		*) source "${SCRIPT_DIR}"/ignite-cdc.sh "${IGNITE_CDC_EXAMPLE_DIR}"/cdc-base-configuration.xml ;;
+		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh cdc-streamer-K2I.xml ;;
+		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh cdc-streamer-K2I-thin.xml ;;
+		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh cdc-base-configuration.xml ;;
 	esac
 }
 
@@ -396,8 +399,8 @@ parseParams() {
 
 	case $script_param in
 		-i | --ignite)
-			user_ignite_properties_path=${2-}
-			checkMissing "${script_param-}" "ignitePropertiesPath" "${user_ignite_properties_path-}"
+			ignite_properties_path=${2-}
+			checkMissing "${script_param-}" "ignitePropertiesPath" "${ignite_properties_path-}"
 			startIgnite
 			;;
 		-c | --cdc-client)
