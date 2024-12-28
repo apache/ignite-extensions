@@ -22,7 +22,13 @@ Or you can build the binary for the module from the source code by using the fol
 ```console
 mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
 ```
+
 The resulting binary will be located under 'target' directory. Unpack it to ignite binary root to enable CDC.
+
+For Linux/Macos you can use in the ignite root with cdc binary:
+
+$ unzip ignite-cdc-ext-bin.zip
+$ cp -r ignite-cdc-ext/* .
 
 Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
 
