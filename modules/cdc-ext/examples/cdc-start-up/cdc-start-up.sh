@@ -26,8 +26,9 @@ trap 'cleanup $LINENO' SIGINT SIGTERM ERR EXIT
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 
-IGNITE_BIN_DIR="${SCRIPT_DIR}/../../../bin"
-IGNITE_HOME="${SCRIPT_DIR}/../../../"
+IGNITE_BIN_DIR="${SCRIPT_DIR}/../../bin"
+IGNITE_HOME="${SCRIPT_DIR}/../../"
+IGNITE_CDC_EXAMPLES_DIR="${SCRIPT_DIR}/../config/cdc-start-up"
 
 CURRENT_PID=$$
 
@@ -41,13 +42,16 @@ This is a simple start-up script designed to ease the user experience with start
 Available options:
 
 -h, --help						Prints help summary
--i, --ignite ignitePropertiesPath			Starts a single node with provided properties. `
+-i, --ignite igniteProperties			  Starts a single node with provided properties. `
                                       `An ignite instance will be started with basic persistence configuration with CDC.
+
+    * igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
+
 -c, --cdc-client clientMode [--activate-cluster] ignitePropertiesPath `
                                       `Starts CDC client with specified transfer mode. `
                                       `Use --activate-cluster to activate both clusters: source and destination.
 
-	Available options for cdc client mode include:
+	Available options for --cdc-client include:
 		* --ignite-to-ignite			Creates a single server client (Thick client), `
 		                          `used to transfer data from source-cluster to destination-cluster.
 		* --ignite-to-ignite-thin		Creates a single thin client, `
@@ -147,6 +151,19 @@ checkMissing() {
 }
 
 #
+# Checks --ignite arguments
+# Globals:
+#   ignite_properties_path - '.properties' holder path. The file is used to configure server node
+# Arguments:
+#   "$@" - script command arguments
+#
+checkServerParams() {
+  checkMissing "${script_param-}" "ignitePropertiesPath" "${2-}"
+
+  ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${2-}
+}
+
+#
 # Checks --cdc-client arguments
 # Globals:
 #   client_mode - Transfer type for CDC
@@ -178,9 +195,7 @@ checkClientParams() {
 	  with_activate_cluster=true; shift;
 	fi
 
-	ignite_properties_path=${3-}
-
-	checkMissing "${client_mode-}" "ignitePropertiesPath" "${ignite_properties_path-}"
+	ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${3-}
 
 	return 0
 }
@@ -227,7 +242,7 @@ startIgnite() {
 	export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml"
 	export ignite_properties_path
 
-	"${IGNITE_BIN_DIR}"/ignite.sh cdc-base-configuration.xml
+	"${IGNITE_BIN_DIR}"/ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml
 }
 
 #
@@ -263,9 +278,9 @@ startCDCClient() {
 	fi
 
 	case $client_mode in
-		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh cdc-streamer-K2I.xml ;;
-		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh cdc-streamer-K2I-thin.xml ;;
-		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh cdc-base-configuration.xml ;;
+		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I.xml ;;
+		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I-thin.xml ;;
+		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml ;;
 	esac
 }
 
@@ -399,8 +414,7 @@ parseParams() {
 
 	case $script_param in
 		-i | --ignite)
-			ignite_properties_path=${2-}
-			checkMissing "${script_param-}" "ignitePropertiesPath" "${ignite_properties_path-}"
+			checkServerParams "$@"
 			startIgnite
 			;;
 		-c | --cdc-client)
