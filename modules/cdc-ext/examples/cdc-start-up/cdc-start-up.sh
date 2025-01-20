@@ -47,9 +47,8 @@ Available options:
 
     * igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
 
--c, --cdc-client clientMode [--activate-cluster] ignitePropertiesPath `
-                                      `Starts CDC client with specified transfer mode. `
-                                      `Use --activate-cluster to activate both clusters: source and destination.
+-c, --cdc-client clientMode ignitePropertiesPath `
+                                      `Starts CDC client with specified transfer mode.
 
 	Available options for --cdc-client include:
 		* --ignite-to-ignite			Creates a single server client (Thick client), `
@@ -168,7 +167,6 @@ checkServerParams() {
 # Globals:
 #   client_mode - Transfer type for CDC
 #   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
-#   with_activate_cluster - cluster activation flag. Specifies whether to activate clusters (source and destination)
 #   ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
 # Arguments:
 #   "$@" - script command arguments
@@ -188,12 +186,6 @@ checkClientParams() {
 	esac
 
 	checkMissing "${client_mode-}" "ignitePropertiesPath" "${3-}"
-
-	with_activate_cluster=false
-
-	if [[ "$3" == "--activate-cluster" ]]; then
-	  with_activate_cluster=true; shift;
-	fi
 
 	ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${3-}
 
@@ -242,26 +234,7 @@ startIgnite() {
 	export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml"
 	export ignite_properties_path
 
-	"${IGNITE_BIN_DIR}"/ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml
-}
-
-#
-# Activates source and destination clusters for CDC client (--cdc-client)
-# Sourced ignites properties from '.properties':
-#   server_client_connector_port - port for control.sh connection to source cluster
-#   destination_client_connector_port - port for control.sh connection to destination cluster
-#
-activateClusters() {
-	infoMsg "Clusters will be activated"
-
-	source "$ignite_properties_path/ignite-cdc.properties"
-
-	infoMsg "Activating source cluster with localhost:${server_client_connector_port-} for ${client_mode} CDC client"
-	"${IGNITE_BIN_DIR}"/control.sh --set-state ACTIVE --port "${server_client_connector_port-}" --yes
-	infoMsg "Activating destination cluster with localhost:${destination_client_connector_port-} for ${client_mode} CDC client"
-	"${IGNITE_BIN_DIR}"/control.sh --set-state ACTIVE --port "${destination_client_connector_port-}" --yes
-
-	return 0
+	"${IGNITE_BIN_DIR}"/ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml
 }
 
 #
@@ -269,18 +242,14 @@ activateClusters() {
 #
 startCDCClient() {
 	infoMsg "Starting CDC client for ${ignite_properties_path-} with ${client_mode-}"
-	
+
 	export ignite_properties_path
 	export IGNITE_HOME
 
-	if [[ "$with_activate_cluster" == "true" ]]; then
-	  activateClusters
-	fi
-
 	case $client_mode in
-		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I.xml ;;
-		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I-thin.xml ;;
-		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml ;;
+		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I.xml ;;
+		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I-thin.xml ;;
+		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml ;;
 	esac
 }
 
