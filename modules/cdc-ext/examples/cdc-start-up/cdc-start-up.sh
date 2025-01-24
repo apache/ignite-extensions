@@ -352,22 +352,23 @@ iterateValuesCheck() {
 
   printLine
 
-  ((count++))
+  current_time_ms=$(date +%s%3N)
 }
 
 #
 # Trails clusters entries for specified key
 #
 printValuesUntilSuccess() {
-	declare -i count=0
+	local start_time_ms=$(date +%s%3N)
+	declare current_time_ms=$(date +%s%3N)
 
-	while iterateValuesCheck; ([[ $value1 != $value2 || $version1 != $version2 ]]) && ((count < 20)); do
-		  true
+	while iterateValuesCheck; ([[ $value1 != $value2 || $version1 != $version2 ]]) && ((current_time_ms - start_time_ms <= 60000)); do
+		true
 	done
 
-	if (( count >= 20 )); then
-	  msg ""; die "${RED}Failure! Check CDC cycle${NOFORMAT}";
-  fi
+	if ((current_time_ms - start_time_ms > 60000)); then
+	  msg ""; die "${RED}Replication timed out! Check CDC cycle${NOFORMAT}";
+	fi
 
 	msg ""
 	msg "Success"
@@ -406,10 +407,12 @@ parseParams() {
 	case $script_param in
 		-i | --ignite)
 			checkServerParams "$@"
+			checkLibraries
 			startIgnite
 			;;
 		-c | --cdc-client)
 			checkClientParams "$@"
+			checkLibraries
 			startCDCClient
 			;;
 		--check-cdc)
@@ -417,7 +420,7 @@ parseParams() {
 			checkLibraries
 			performCheck
 			;;
-	  -h | --help) usage ;;
+		-h | --help) usage ;;
 		-?*) die "Unknown option: ${script_param-}" ;;
 		*) die "Unknown input: ${script_param-}" ;;
 	esac
