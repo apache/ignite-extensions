@@ -226,24 +226,19 @@ checkEntriesParams() {
 }
 
 #
-# Checks if library is enabled
-# Arguments:
-#   1 - library name
-#
-checkLibrary() {
-	local lib_to_check=${1-}
-
-	if [ ! -d "$IGNITE_LIBS/$lib_to_check" ]; then
-	  die "${RED}Failure! Check that $lib_to_check optional library is enabled. Restart clusters if necessary";
-	fi
-}
-
-#
 # Checks if all required optional libraries enabled for CDC check
 #
 checkLibraries() {
-	checkLibrary "ignite-rest-http"
-	checkLibrary "ignite-json"
+  local lib1="ignite-rest-http";
+  local lib2="ignite-json";
+
+  if [ ! -d "$IGNITE_LIBS/$lib1" ] && [ ! -d "$IGNITE_LIBS/$lib2" ]; then
+    die "${RED}Failure! Check that $lib1 and $lib2 optional libraries are enabled. Restart clusters if necessary";
+  elif [ ! -d "$IGNITE_LIBS/$lib1" ]; then
+    die "${RED}Failure! Check that $lib1 optional library is enabled. Restart clusters if necessary";
+  elif [ ! -d "$IGNITE_LIBS/$lib2" ]; then
+    die "${RED}Failure! Check that $lib2 optional library is enabled. Restart clusters if necessary";
+  fi
 }
 
 #
@@ -352,21 +347,21 @@ iterateValuesCheck() {
 
   printLine
 
-  current_time_ms=$(date +%s%3N)
+  current_time_s=$(date +%s)
 }
 
 #
 # Trails clusters entries for specified key
 #
 printValuesUntilSuccess() {
-	local start_time_ms=$(date +%s%3N)
-	declare current_time_ms=$(date +%s%3N)
+	local start_time_s=$(date +%s)
+	declare current_time_s=$(date +%s)
 
-	while iterateValuesCheck; ([[ $value1 != $value2 || $version1 != $version2 ]]) && ((current_time_ms - start_time_ms <= 60000)); do
+	while iterateValuesCheck; ([[ $value1 != $value2 || $version1 != $version2 ]]) && ((current_time_s - start_time_s <= 60)); do
 		true
 	done
 
-	if ((current_time_ms - start_time_ms > 60000)); then
+	if ((current_time_s - start_time_s > 60)); then
 	  msg ""; die "${RED}Replication timed out! Check CDC cycle${NOFORMAT}";
 	fi
 
