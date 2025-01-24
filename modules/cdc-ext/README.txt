@@ -10,7 +10,7 @@ This module provides the clients with a simple CDC implementations strategies fo
 . Build `cdc-ext` module with maven:
 +
 ```console
-  $~/src/ignite-extensions/> mvn clean package -DskipTests
+  $~/src/ignite-extensions/> mvn clean install -DskipTests
   $~/src/ignite-extensions/> ls modules/cdc-ext/target | grep zip
 ignite-cdc-ext.zip
 ```
@@ -26,9 +26,11 @@ mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -D
 The resulting binary will be located under 'target' directory. Unpack it to ignite binary root to enable CDC.
 
 For Linux/Macos you can use in the ignite root with cdc binary:
-
++
+```console
 $ unzip ignite-cdc-ext-bin.zip
 $ cp -r ignite-cdc-ext/* .
+```
 
 Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
 

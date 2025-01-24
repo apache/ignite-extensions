@@ -28,6 +28,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
 
 IGNITE_BIN_DIR="${SCRIPT_DIR}/../../bin"
 IGNITE_HOME="${SCRIPT_DIR}/../../"
+IGNITE_LIBS="${SCRIPT_DIR}/../../libs"
 IGNITE_CDC_EXAMPLES_DIR="${SCRIPT_DIR}/../config/cdc-start-up"
 
 CURRENT_PID=$$
@@ -225,6 +226,27 @@ checkEntriesParams() {
 }
 
 #
+# Checks if library is enabled
+# Arguments:
+#   1 - library name
+#
+checkLibrary() {
+	local lib_to_check=${1-}
+
+	if [ ! -d "$IGNITE_LIBS/$lib_to_check" ]; then
+	  die "${RED}Failure! Check that $lib_to_check optional library is enabled. Restart clusters if necessary";
+	fi
+}
+
+#
+# Checks if all required optional libraries enabled for CDC check
+#
+checkLibraries() {
+	checkLibrary "ignite-rest-http"
+	checkLibrary "ignite-json"
+}
+
+#
 # Starts single Ignite instance
 # cdc-base-configuration needs dummy streamer to start, which is why cdc_streamer_xml_file_name is exported
 #
@@ -392,6 +414,7 @@ parseParams() {
 			;;
 		--check-cdc)
 			checkEntriesParams "$@"
+			checkLibraries
 			performCheck
 			;;
 	  -h | --help) usage ;;
