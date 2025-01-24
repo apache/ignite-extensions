@@ -10,20 +10,11 @@ This module provides the clients with a simple CDC implementations strategies fo
 . Build `cdc-ext` module with maven:
 +
 ```console
-  $~/src/ignite-extensions/> mvn clean install -DskipTests
+  $~/src/ignite-extensions/> mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
   $~/src/ignite-extensions/> ls modules/cdc-ext/target | grep zip
-ignite-cdc-ext.zip
 ```
 
-. Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder.
-
-Or you can build the binary for the module from the source code by using the following command from the repository root:
-+
-```console
-mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
-```
-
-The resulting binary will be located under 'target' directory. Unpack it to ignite binary root to enable CDC.
+. The resulting binary will be located under 'target' directory. Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder to enable CDC.
 
 For Linux/Macos you can use in the ignite root with cdc binary:
 +
