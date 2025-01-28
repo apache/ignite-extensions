@@ -106,7 +106,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Rand(child, _) ⇒
             checkChild(child)
 
-        case Round(child, scale) ⇒
+        case Round(child, scale, _) ⇒
             checkChild(child) && checkChild(scale)
 
         case Signum(child) ⇒
@@ -230,7 +230,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Rand(child, _) ⇒
             Some(s"RAND(${childToString(child)})")
 
-        case Round(child, scale) ⇒
+        case Round(child, scale, _) ⇒
             Some(s"ROUND(${childToString(child)}, ${childToString(scale)})")
 
         case Signum(child) ⇒
