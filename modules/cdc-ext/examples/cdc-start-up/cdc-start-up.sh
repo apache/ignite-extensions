@@ -233,11 +233,11 @@ checkLibraries() {
   local lib2="ignite-json";
 
   if [ ! -d "$IGNITE_LIBS/$lib1" ] && [ ! -d "$IGNITE_LIBS/$lib2" ]; then
-    die "${RED}Failure! Check that $lib1 and $lib2 optional libraries are enabled. Restart clusters if necessary";
+    die "${RED}Failure! Check that $lib1 and $lib2 optional libraries are enabled.";
   elif [ ! -d "$IGNITE_LIBS/$lib1" ]; then
-    die "${RED}Failure! Check that $lib1 optional library is enabled. Restart clusters if necessary";
+    die "${RED}Failure! Check that $lib1 optional library is enabled.";
   elif [ ! -d "$IGNITE_LIBS/$lib2" ]; then
-    die "${RED}Failure! Check that $lib2 optional library is enabled. Restart clusters if necessary";
+    die "${RED}Failure! Check that $lib2 optional library is enabled.";
   fi
 }
 
@@ -358,7 +358,7 @@ printValuesUntilSuccess() {
 	declare current_time_s=$(date +%s)
 
 	while iterateValuesCheck; ([[ $value1 != $value2 || $version1 != $version2 ]]) && ((current_time_s - start_time_s <= 60)); do
-		true
+		sleep 1
 	done
 
 	if ((current_time_s - start_time_s > 60)); then
