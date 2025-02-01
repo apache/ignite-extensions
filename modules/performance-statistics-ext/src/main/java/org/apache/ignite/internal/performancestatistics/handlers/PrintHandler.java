@@ -19,6 +19,7 @@ package org.apache.ignite.internal.performancestatistics.handlers;
 
 import java.io.PrintStream;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -38,6 +39,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -337,6 +339,19 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(startTime);
         ps.print(",\"duration\":");
         ps.print(duration);
+        ps.println("}");
+    }
+
+    @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
+        ps.print("{\"op\":\"" + SYSTEM_VIEW_ROW);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"view\":\"");
+        ps.print(viewName);
+        for (int i = 0; i < schema.size(); i++) {
+            ps.print(",\"" + schema.get(i) +"\":");
+            ps.print("\"" + data.get(i) +"\"");
+        }
         ps.println("}");
     }
 
