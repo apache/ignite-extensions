@@ -152,8 +152,6 @@ public class PerformanceStatisticsReportSelfTest {
 
             PerformanceStatisticsReportBuilder.main(prfDir.getAbsolutePath());
 
-            Thread.sleep(60 * 1_000);
-
             File[] reportDir = prfDir.listFiles((dir, name) -> name.startsWith("report"));
 
             assertEquals(1, reportDir.length);
