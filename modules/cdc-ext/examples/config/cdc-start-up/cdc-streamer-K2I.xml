@@ -1,18 +1,18 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:util="http://www.springframework.org/schema/util"
-	   xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="
-			http://www.springframework.org/schema/beans
-			http://www.springframework.org/schema/beans/spring-beans.xsd
-			http://www.springframework.org/schema/util
-			http://www.springframework.org/schema/util/spring-util.xsd
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util.xsd
             http://www.springframework.org/schema/context
             http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
-	<context:property-placeholder location="file:${ignite_properties_path}/ignite-cdc.properties"/>
+    <context:property-placeholder location="file:${ignite_properties_path}/ignite-cdc.properties"/>
 
-	<util:properties id="kafkaProperties" location="file:${ignite_properties_path}/kafka-to-ignite.properties"/>
+    <util:properties id="kafkaProperties" location="file:${ignite_properties_path}/kafka-to-ignite.properties"/>
 
     <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
         <property name="topic" value="${receive_data_kafka_topic_name}"/>
@@ -40,8 +40,8 @@
                 <property name="addresses" value="${server_host}:${server_port_range}"/>
             </bean>
         </property>
-		
-		<property name="localPort" value="${server_local_port}"/>
-		<property name="joinTimeout" value="10000"/>
+
+        <property name="localPort" value="${server_local_port}"/>
+        <property name="joinTimeout" value="10000"/>
     </bean>
 </beans>
