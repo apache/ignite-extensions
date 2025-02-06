@@ -48,18 +48,24 @@ Available options:
 
     * igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
 
--c, --cdc-client clientMode ignitePropertiesPath `
-                                      `Starts CDC client with specified transfer mode.
+-c, --cdc-consumer consumerMode ignitePropertiesPath `
+                                      `Starts CDC consumer with specified transfer mode to parse WAL archives `
+                                      `from source cluster.
 
-	Available options for --cdc-client include:
+	Available options for --cdc-consumer include:
 		* --ignite-to-ignite			Creates a single server client (Thick client), `
 		                          `used to transfer data from source-cluster to destination-cluster.
 		* --ignite-to-ignite-thin		Creates a single thin client, `
 		                            `used to transfer data from source-cluster to destination-cluster.
-		* --ignite-to-kafka			Creates a cdc client, used to transfer data from source-cluster to specified Kafka topics.
-		* --kafka-to-ignite			Creates a single server client (Thick client), `
+		* --ignite-to-kafka			Creates a cdc client, used to transfer data from source-cluster to specified Kafka topic.
+
+-k, --kafka-to-ignite clientMode ignitePropertiesPath `
+                                      `Starts Kafka topic consumer for data replication to destination cluster.
+
+  Available options for --kafka-to-ignite include:
+		* thick			Creates a single server client (Thick client), `
 		                        `used to transfer data from Kafka to destination-cluster.
-		* --kafka-to-ignite-thin		Creates a single thin client, used to transfer data from Kafka to destination-cluster.
+		* thin			Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
 --check-cdc --key intNum1 --value intNum2 --version intNum3 [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
@@ -166,23 +172,48 @@ checkServerParams() {
 #
 # Checks --cdc-client arguments
 # Globals:
+#   consumer_mode - Transfer type for CDC
+#   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
+#   ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
+# Arguments:
+#   "$@" - script command arguments
+#
+checkConsumerParams() {
+	consumer_mode=${2-}
+
+	checkMissing "${script_param-}" "consumerMode" "${consumer_mode-}"
+
+	case $consumer_mode in
+		--ignite-to-ignite) export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml" ;;
+		--ignite-to-ignite-thin) export cdc_streamer_xml_file_name="cdc-streamer-I2I-thin.xml" ;;
+		--ignite-to-kafka) export cdc_streamer_xml_file_name="cdc-streamer-I2K.xml" ;;
+		*) die "Unknown consumer mode for CDC: ${consumer_mode-}" ;;
+	esac
+
+	checkMissing "${consumer_mode-}" "ignitePropertiesPath" "${3-}"
+
+	ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${3-}
+
+	return 0
+}
+
+#
+# Checks --kafka-to-ignite arguments
+# Globals:
 #   client_mode - Transfer type for CDC
 #   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
 #   ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
 # Arguments:
 #   "$@" - script command arguments
 #
-checkClientParams() {
+checkKafkaConsumerParams() {
 	client_mode=${2-}
 
 	checkMissing "${script_param-}" "clientMode" "${client_mode-}"
 
 	case $client_mode in
-		--ignite-to-ignite) export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml" ;;
-		--ignite-to-ignite-thin) export cdc_streamer_xml_file_name="cdc-streamer-I2I-thin.xml" ;;
-		--ignite-to-kafka) export cdc_streamer_xml_file_name="cdc-streamer-I2K.xml" ;;
-		--kafka-to-ignite) ;;
-		--kafka-to-ignite-thin) ;;
+		thick) ;;
+		thin) ;;
 		*) die "Unknown client mode for CDC: ${client_mode-}" ;;
 	esac
 
@@ -257,16 +288,28 @@ startIgnite() {
 #
 # Starts single CDC client instance
 #
-startCDCClient() {
-	infoMsg "Starting CDC client for ${ignite_properties_path-} with ${client_mode-}"
+startCdcConsumer() {
+	infoMsg "Starting CDC client for ${ignite_properties_path-} with ${consumer_mode-}"
+
+	export ignite_properties_path
+	export IGNITE_HOME
+
+	source "${IGNITE_BIN_DIR}"/ignite-cdc.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml ;
+}
+
+#
+# Starts single Kafka consumer instance
+#
+startKafkaConsumer() {
+	infoMsg "Starting Kafka topic consumer for ${ignite_properties_path-} with ${client_mode-}"
 
 	export ignite_properties_path
 	export IGNITE_HOME
 
 	case $client_mode in
-		--kafka-to-ignite) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I.xml ;;
-		--kafka-to-ignite-thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I-thin.xml ;;
-		*) source "${IGNITE_BIN_DIR}"/ignite-cdc.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-base-configuration.xml ;;
+		thick) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I.xml ;;
+		thin) source "${IGNITE_BIN_DIR}"/kafka-to-ignite.sh -v "${IGNITE_CDC_EXAMPLES_DIR}"/cdc-streamer-K2I-thin.xml ;;
+		*) die "Unknown client mode for CDC: ${client_mode-}" ;;
 	esac
 }
 
@@ -405,10 +448,15 @@ parseParams() {
 			checkLibraries
 			startIgnite
 			;;
-		-c | --cdc-client)
-			checkClientParams "$@"
+		-c | --cdc-consumer)
+			checkConsumerParams "$@"
 			checkLibraries
-			startCDCClient
+			startCdcConsumer
+			;;
+		-k | --kafka-to-ignite)
+			checkKafkaConsumerParams "$@"
+			checkLibraries
+			startKafkaConsumer
 			;;
 		--check-cdc)
 			checkEntriesParams "$@"
