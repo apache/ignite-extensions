@@ -12,10 +12,10 @@ This module provides the clients with a simple CDC implementations strategies fo
 ```console
   $~/src/ignite-extensions/> mvn clean install -f modules/cdc-ext -Pcheckstyle,extension-release,skip-docs -DskipTests
   $~/src/ignite-extensions/> ls modules/cdc-ext/target | grep zip
-ignite-cdc-ext.zip
+ignite-cdc-ext-bin.zip
 ```
 
-. The resulting binary will be located under 'target' directory. Unpack `ignite-cdc-ext.zip` archive to `$IGNITE_HOME` folder to enable CDC.
+. The resulting binary will be located under 'target' directory. Unpack `ignite-cdc-ext-bin.zip` archive to `$IGNITE_HOME` folder to enable CDC.
 
 For Linux/Macos you can use in the ignite root with cdc binary:
 +
@@ -24,6 +24,8 @@ $ unzip ignite-cdc-ext-bin.zip
 $ cp -r ignite-cdc-ext/* .
 ```
 
-Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh` and `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module.
+Now, you have additional binary `$IGNITE_HOME/bin/kafka-to-ignite.sh`, `$IGNITE_HOME/libs/optional/ignite-cdc-ext` module and configuration examples under `$IGNITE_HOME/examples/config/cdc-start-up`
+
+To run the examples, use the binary `$IGNITE_HOME/examples/cdc-start-up/cdc-start-up.sh`
 
 Use Apache Ignite documentation to explore CDC capabilities.
