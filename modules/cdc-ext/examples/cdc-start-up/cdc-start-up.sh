@@ -44,7 +44,7 @@ Available options:
 
 -h, --help					Prints help summary
 -i, --ignite igniteProperties			Starts a single node with provided properties. `
-                                      `An ignite instance will be started with basic persistence configuration with CDC.
+                                      `An ignite instance will be started with basic CDC configuration.
 
 		* igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
 
