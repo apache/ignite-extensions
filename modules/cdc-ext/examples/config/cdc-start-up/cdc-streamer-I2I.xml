@@ -1,14 +1,14 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:util="http://www.springframework.org/schema/util"
+	   xsi:schemaLocation="
 			http://www.springframework.org/schema/beans
 			http://www.springframework.org/schema/beans/spring-beans.xsd
 			http://www.springframework.org/schema/util
 			http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<!--IgniteToIgniteCdcStreamer-->
-    <bean id="cdc.streamer" class="org.apache.ignite.cdc.IgniteToIgniteCdcStreamer">
+	<bean id="cdc.streamer" class="org.apache.ignite.cdc.IgniteToIgniteCdcStreamer">
 		<property name="destinationIgniteConfiguration">
 			<bean class="org.apache.ignite.configuration.IgniteConfiguration">
 				<property name="igniteInstanceName" value="${cdc_client_instance_name}"/>
@@ -19,14 +19,14 @@
 		</property>
 
 		<property name="caches">
-            <list>
-                <value>terminator</value>
-            </list>
-        </property>
+			<list>
+				<value>terminator</value>
+			</list>
+		</property>
 
-        <property name="onlyPrimary" value="false"/>
-        <property name="maxBatchSize" value="1024"/>
-    </bean>
+		<property name="onlyPrimary" value="false"/>
+		<property name="maxBatchSize" value="1024"/>
+	</bean>
 
 	<!--Destination TcpDiscoverySpi-->
 	<bean id="destination.TcpDiscoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
