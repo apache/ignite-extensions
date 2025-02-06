@@ -53,7 +53,7 @@ Available options:
 
   Properties files are preconfigured for data replication between cluster-1 and cluster-2.
 
--c, --cdc-consumer consumerMode ignitePropertiesPath `
+-c, --cdc-consumer consumerMode igniteProperties `
                                       `Starts CDC consumer with specified transfer mode to parse WAL archives `
                                       `from source cluster.
 
@@ -64,12 +64,11 @@ Available options:
 		                            `used to transfer data from source-cluster to destination-cluster.
 		* --ignite-to-kafka		Creates a cdc consumer, used to transfer data from source-cluster to specified Kafka topic.
 
--k, --kafka-to-ignite clientMode ignitePropertiesPath `
+-k, --kafka-to-ignite clientMode igniteProperties `
                                       `Starts Kafka topic consumer for data replication to destination cluster.
 
 	Available options for --kafka-to-ignite include:
-		* thick				Creates a single server client (Thick client), `
-		                        `used to transfer data from Kafka to destination-cluster.
+		* thick				Creates a single thick client, used to transfer data from Kafka to destination-cluster.
 		* thin				Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
 --check-cdc --key intNum1 --value intNum2 --version intNum3 [--cluster clusterNum] `
@@ -81,7 +80,8 @@ Available options:
 		* --key intNum1			Specifies key of the entry.
 		* --value intNum2		Specifies value of the entry.
 		* --version intNum3		Specifies version of the entry. The value is used to resolve conflicted entries.
-		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry.
+		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry. `
+		                                        `The default value is 1.
 EOF
 	exit
 }
@@ -170,7 +170,7 @@ checkMissing() {
 #   "$@" - script command arguments
 #
 checkServerParams() {
-  checkMissing "${script_param-}" "ignitePropertiesPath" "${2-}"
+  checkMissing "${script_param-}" "igniteProperties" "${2-}"
 
   ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${2-}
 }
@@ -180,7 +180,7 @@ checkServerParams() {
 # Globals:
 #   consumer_mode - Transfer type for CDC
 #   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
-#   ignite_properties_path - '.properties' holder path. The file is used to configure CDC client
+#   ignite_properties_path - '.properties' holder path. The file is used to configure CDC consumer
 # Arguments:
 #   "$@" - script command arguments
 #
@@ -196,7 +196,7 @@ checkConsumerParams() {
 		*) die "Unknown consumer mode for CDC: ${consumer_mode-}" ;;
 	esac
 
-	checkMissing "${consumer_mode-}" "ignitePropertiesPath" "${3-}"
+	checkMissing "${consumer_mode-}" "igniteProperties" "${3-}"
 
 	ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${3-}
 
@@ -223,7 +223,7 @@ checkKafkaConsumerParams() {
 		*) die "Unknown client mode for CDC: ${client_mode-}" ;;
 	esac
 
-	checkMissing "${client_mode-}" "ignitePropertiesPath" "${3-}"
+	checkMissing "${client_mode-}" "igniteProperties" "${3-}"
 
 	ignite_properties_path="${IGNITE_CDC_EXAMPLES_DIR}"/${3-}
 
@@ -292,10 +292,10 @@ startIgnite() {
 }
 
 #
-# Starts single CDC client instance
+# Starts single CDC consumer instance
 #
 startCdcConsumer() {
-	infoMsg "Starting CDC client for ${ignite_properties_path-} with ${consumer_mode-}"
+	infoMsg "Starting CDC consumer for ${ignite_properties_path-} with ${consumer_mode-}"
 
 	export ignite_properties_path
 	export IGNITE_HOME
