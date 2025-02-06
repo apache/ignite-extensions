@@ -42,40 +42,41 @@ This is a simple start-up script designed to ease the user experience with start
 
 Available options:
 
--h, --help						Prints help summary
--i, --ignite igniteProperties			  Starts a single node with provided properties. `
+-h, --help					Prints help summary
+-i, --ignite igniteProperties			Starts a single node with provided properties. `
                                       `An ignite instance will be started with basic persistence configuration with CDC.
 
-    * igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
+		* igniteProperties  ignite properties folder under \$IGNITE_HOME/examples/config/cdc-start-up
 
 -c, --cdc-consumer consumerMode ignitePropertiesPath `
                                       `Starts CDC consumer with specified transfer mode to parse WAL archives `
                                       `from source cluster.
 
 	Available options for --cdc-consumer include:
-		* --ignite-to-ignite			Creates a single server client (Thick client), `
+		* --ignite-to-ignite		Creates a single server client (Thick client), `
 		                          `used to transfer data from source-cluster to destination-cluster.
-		* --ignite-to-ignite-thin		Creates a single thin client, `
+		* --ignite-to-ignite-thin	Creates a single thin client, `
 		                            `used to transfer data from source-cluster to destination-cluster.
-		* --ignite-to-kafka			Creates a cdc client, used to transfer data from source-cluster to specified Kafka topic.
+		* --ignite-to-kafka		Creates a cdc client, used to transfer data from source-cluster to specified Kafka topic.
 
 -k, --kafka-to-ignite clientMode ignitePropertiesPath `
                                       `Starts Kafka topic consumer for data replication to destination cluster.
 
-  Available options for --kafka-to-ignite include:
-		* thick			Creates a single server client (Thick client), `
+	Available options for --kafka-to-ignite include:
+		* thick				Creates a single server client (Thick client), `
 		                        `used to transfer data from Kafka to destination-cluster.
-		* thin			Creates a single thin client, used to transfer data from Kafka to destination-cluster.
+		* thin				Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
 --check-cdc --key intNum1 --value intNum2 --version intNum3 [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
                                             `The command puts the entry in the chosen cluster, and shows the comparison `
                                             `of caches between clusters as the entry reaches the other cluster.
-		Options:
-			* --key intNum1		Specifies key of the entry.
-			* --value intNum2		Specifies value of the entry.
-			* --version intNum3		Specifies version of the entry. The value is used to resolve conflicted entries.
-			* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry.
+
+	Options:
+		* --key intNum1			Specifies key of the entry.
+		* --value intNum2		Specifies value of the entry.
+		* --version intNum3		Specifies version of the entry. The value is used to resolve conflicted entries.
+		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry.
 EOF
 	exit
 }
