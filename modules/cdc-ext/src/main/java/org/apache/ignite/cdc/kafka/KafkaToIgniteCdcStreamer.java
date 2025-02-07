@@ -33,7 +33,6 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Main class of Kafka to Ignite application.
@@ -68,7 +67,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see KafkaToIgniteCdcStreamerApplier
  * @see CacheConflictResolutionManagerImpl
  */
-@IgniteExperimental
 public class KafkaToIgniteCdcStreamer extends AbstractKafkaToIgniteCdcStreamer {
     /** Ignite configuration. */
     private final IgniteConfiguration igniteCfg;
