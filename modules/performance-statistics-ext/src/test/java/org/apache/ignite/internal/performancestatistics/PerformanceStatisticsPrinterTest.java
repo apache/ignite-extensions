@@ -96,7 +96,7 @@ public class PerformanceStatisticsPrinterTest {
             writer.queryRows(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, "action", 0);
             writer.task(new IgniteUuid(NODE_ID, 0), "task", 0, 0, 0);
             writer.job(new IgniteUuid(NODE_ID, 0), 0, 0, 0, true);
-            writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
             writer.pagesWriteThrottle(0, 0);
         });
 
@@ -148,7 +148,7 @@ public class PerformanceStatisticsPrinterTest {
                 writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, startTime, 0, true);
                 writer.task(new IgniteUuid(NODE_ID, 0), "", startTime, 0, 0);
                 writer.job(new IgniteUuid(NODE_ID, 0), 0, startTime, 0, true);
-                writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, startTime, 0, 0, 0);
+                writer.checkpoint(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, startTime, 0, 0, 0);
                 writer.pagesWriteThrottle(startTime, 0);
             }
         });
