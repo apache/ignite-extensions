@@ -42,6 +42,11 @@ public interface IgnitePerformanceStatisticsHandler extends PerformanceStatistic
         // No-op.
     }
 
+    /** */
+    @Override default void systemView(UUID id, String name, long time, Map<String, String> data) {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override default void cacheOperation(UUID nodeId, OperationType type, int cacheId, long startTime, long duration) {
         // No-op.

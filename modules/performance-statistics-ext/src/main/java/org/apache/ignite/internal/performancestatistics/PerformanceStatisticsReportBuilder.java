@@ -44,6 +44,7 @@ import org.apache.ignite.internal.performancestatistics.handlers.ClusterInfoHand
 import org.apache.ignite.internal.performancestatistics.handlers.ComputeHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.IgnitePerformanceStatisticsHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.QueryHandler;
+import org.apache.ignite.internal.performancestatistics.handlers.SystemViewHandler;
 import org.apache.ignite.internal.performancestatistics.handlers.TransactionsHandler;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -118,7 +119,8 @@ public class PerformanceStatisticsReportBuilder {
             new CacheOperationsHandler(),
             new TransactionsHandler(),
             new ComputeHandler(),
-            new ClusterInfoHandler()
+            new ClusterInfoHandler(),
+            new SystemViewHandler()
         };
 
         new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(filesDir)));
