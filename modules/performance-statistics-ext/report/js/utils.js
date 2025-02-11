@@ -84,3 +84,48 @@ function buildSelectNodes(el, onSelect) {
 
     el.on('changed.bs.select', onSelect);
 }
+
+/** Builds bootstrap-select for nodes in System View Tab. */
+function buildSelectNodesSystemView(el, onSelect) {
+    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+    const nodes = Object.keys(REPORT_DATA['systemView']);
+
+    nodes.forEach(function (nodeId) {
+        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>');
+    });
+
+    el.on('changed.bs.select', onSelect);
+}
+
+/** Builds bootstrap-select for system views. */
+function buildSelectSystemViews(el, onSelect) {
+    var selectElement = document.querySelector('#searchViews');
+    selectElement.innerHTML = '';
+
+    const views = new Set();
+    const nodeId = $('#svSearchNodes').val();
+
+    if (nodeId === 'total') {
+        Object.keys(REPORT_DATA['systemView']).forEach(nodeId => {
+            Object.keys(REPORT_DATA['systemView'][nodeId]).forEach(view => views.add(view));
+        });
+    } else {
+        Object.keys(REPORT_DATA['systemView'][nodeId]).forEach(view => views.add(view));
+    }
+
+    views.forEach(function (view) {
+        const option = document.createElement('option');
+        option.setAttribute('data-content', view);
+        option.setAttribute('value', view);
+        selectElement.appendChild(option);
+    });
+
+    var firstValue = $('#searchViews option:first').val();
+    selectElement = $('#searchViews');
+    selectElement.selectpicker('val', firstValue);
+
+    selectElement.selectpicker('refresh');
+    selectElement.selectpicker('refresh');
+
+    el.on('changed.bs.select', onSelect);
+}

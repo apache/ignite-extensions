@@ -78,6 +78,10 @@
                         <a class="nav-link" data-toggle="tab" href="#computeStatisticsTab" role="tab"
                            aria-selected="false">Tasks and jobs</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#systemViewTab" role="tab"
+                           aria-selected="false">System views</a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -150,6 +154,15 @@
                     <h2 class="mt-4">Top of slowest tasks</h2>
                     <table data-toggle="table" id="topSlowComputeTable"></table>
                 </div>
+                <div class="tab-pane fade" id="systemViewTab" role="tabpanel">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">System views</h1>
+                    </div>
+                    <select id="svSearchNodes" class="selectpicker" data-live-search="true"></select>
+                    <select id="searchViews" class="selectpicker" data-live-search="true"></select>
+
+                    <div id="systemViewTableDiv"></div>
+                </div>
             </div>
         </main>
     </div>
@@ -186,6 +199,7 @@
 <script type="text/javascript" src="js/indexQueryTab.js"></script>
 <script type="text/javascript" src="js/txTab.js"></script>
 <script type="text/javascript" src="js/computeTab.js"></script>
+<script type="text/javascript" src="js/systemViewTab.js"></script>
 
 </body>
 </html>
