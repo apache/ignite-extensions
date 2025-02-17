@@ -108,7 +108,6 @@ public class PerformanceStatisticsReportSelfTest {
             CacheObject valConfl = new CacheObjectImpl(1, null);
             GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
 
-            assert cachex != null;
             cachex.putAllConflict(singletonMap(keyConfl, new GridCacheDrInfo(valConfl, confl)));
             cachex.removeAllConflict(singletonMap(keyConfl, confl));
 
