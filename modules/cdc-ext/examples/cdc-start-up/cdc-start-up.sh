@@ -53,16 +53,16 @@ Available options:
 
   Properties files are preconfigured for data replication between cluster-1 and cluster-2.
 
--c, --cdc-consumer consumerMode igniteProperties `
+-c, --ignite-cdc consumerMode igniteProperties `
                                       `Starts CDC consumer with specified transfer mode to parse WAL archives `
                                       `from source cluster.
 
-	Available options for --cdc-consumer include:
-		* --ignite-to-ignite		Creates a single thick client, `
+	Available options for --ignite-cdc include:
+		* ignite-to-ignite-thick	Creates a single thick client, `
 		                          `used to transfer data from source-cluster to destination-cluster.
-		* --ignite-to-ignite-thin	Creates a single thin client, `
+		* ignite-to-ignite-thin		Creates a single thin client, `
 		                            `used to transfer data from source-cluster to destination-cluster.
-		* --ignite-to-kafka		Creates a cdc consumer, used to transfer data from source-cluster to specified Kafka topic.
+		* ignite-to-kafka		Creates a cdc consumer, used to transfer data from source-cluster to specified Kafka topic.
 
 -k, --kafka-to-ignite clientMode igniteProperties `
                                       `Starts Kafka topic consumer for data replication to destination cluster.
@@ -71,15 +71,14 @@ Available options:
 		* thick				Creates a single thick client, used to transfer data from Kafka to destination-cluster.
 		* thin				Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
---check-cdc --key intNum1 --value intNum2 --version intNum3 [--cluster clusterNum] `
+--check-cdc --key intNum1 --value intNum2 [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
                                             `The command puts the entry in the chosen cluster, and shows the comparison `
                                             `of caches between clusters as the entry reaches the other cluster.
 
 	Options:
 		* --key intNum1			Specifies key of the entry.
-		* --value intNum2		Specifies value of the entry.
-		* --version intNum3		Specifies version of the entry. The value is used to resolve conflicted entries.
+		* --value intNum2		Specifies value of the entry as JSON. Example: '{"intVal": 123, "version": 2321}'
 		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry. `
 		                                        `The default value is 1.
 EOF
@@ -176,7 +175,7 @@ checkServerParams() {
 }
 
 #
-# Checks --cdc-consumer arguments
+# Checks --ignite-cdc arguments
 # Globals:
 #   consumer_mode - Transfer type for CDC
 #   cdc_streamer_xml_file_name - '.xml' filename of the specified transfer type
@@ -190,9 +189,9 @@ checkConsumerParams() {
 	checkMissing "${script_param-}" "consumerMode" "${consumer_mode-}"
 
 	case $consumer_mode in
-		--ignite-to-ignite) export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml" ;;
-		--ignite-to-ignite-thin) export cdc_streamer_xml_file_name="cdc-streamer-I2I-thin.xml" ;;
-		--ignite-to-kafka) export cdc_streamer_xml_file_name="cdc-streamer-I2K.xml" ;;
+		ignite-to-ignite-thick) export cdc_streamer_xml_file_name="cdc-streamer-I2I.xml" ;;
+		ignite-to-ignite-thin) export cdc_streamer_xml_file_name="cdc-streamer-I2I-thin.xml" ;;
+		ignite-to-kafka) export cdc_streamer_xml_file_name="cdc-streamer-I2K.xml" ;;
 		*) die "Unknown consumer mode for CDC: ${consumer_mode-}" ;;
 	esac
 
@@ -234,21 +233,20 @@ checkKafkaConsumerParams() {
 # Checks --check-cdc arguments
 # Globals:
 #   key - Entity key
-#   value - Entity value
+#   value - Entity value in JSON
 #   cluster - Cluster to put entity in
-#   version - Entity version. Used to resolve conflict entries
 # Arguments:
 #   "$@" - script command arguments
 #
 checkEntriesParams() {
 	cluster=1
+	local jsonValue=""
 
 	while :; do
 		case "${2-}" in
 			--key) key="${3-}"; shift ;;
-			--value) value="${3-}"; shift ;;
+			--value) jsonValue="${3-}"; shift ;;
 			--cluster) cluster="${3-}"; shift ;;
-			--version) version="${3-}"; shift ;;
 			-?*) die "Unknown option: ${script_param-}" ;;
 			*) break ;;
 		esac
@@ -256,8 +254,13 @@ checkEntriesParams() {
 	done
 
 	checkMissing "${script_param-}" "key" "${key-}"
-	checkMissing "${script_param-}" "value" "${value-}"
-	checkMissing "${script_param-}" "version" "${version-}"
+	checkMissing "${script_param-}" "value" "${jsonValue-}"
+
+	value=$(echo $jsonValue | awk -F'"intVal": ' '{ print $2 }' | awk -F',' '{ print $1 }')
+	version=$(echo $jsonValue | awk -F'"version": ' '{ print $2 }' | awk -F'}' '{ print $1 }')
+
+	checkMissing "${jsonValue}" "intVal field" "${value-}"
+	checkMissing "${jsonValue}" "version field" "${version-}"
 
 	return 0
 }
@@ -454,7 +457,7 @@ parseParams() {
 			checkLibraries
 			startIgnite
 			;;
-		-c | --cdc-consumer)
+		-c | --ignite-cdc)
 			checkConsumerParams "$@"
 			checkLibraries
 			startCdcConsumer
