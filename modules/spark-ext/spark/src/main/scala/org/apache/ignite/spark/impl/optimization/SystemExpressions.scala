@@ -18,7 +18,7 @@
 package org.apache.ignite.spark.impl.optimization
 
 import org.apache.ignite.IgniteException
-import org.apache.spark.sql.catalyst.expressions.{Coalesce, EqualTo, Expression, Greatest, If, IfNull, IsNotNull, IsNull, Least, Literal, NullIf, Nvl2}
+import org.apache.spark.sql.catalyst.expressions.{Coalesce, EqualTo, Expression, Greatest, If, IsNotNull, IsNull, Least, Literal, NullIf, Nvl2}
 
 /**
   * Object to support some built-in expressions like `nvl2` or `coalesce`.
@@ -31,9 +31,6 @@ private[optimization] object SystemExpressions extends SupportedExpressions {
 
         case Greatest(children) ⇒
             children.forall(checkChild)
-
-        case IfNull(left, right, _) ⇒
-            checkChild(left) && checkChild(right)
 
         case Least(children) ⇒
             children.forall(checkChild)
@@ -77,9 +74,6 @@ private[optimization] object SystemExpressions extends SupportedExpressions {
 
         case Greatest(children) ⇒
             Some(s"GREATEST(${children.map(childToString(_)).mkString(", ")})")
-
-        case IfNull(left, right, _) ⇒
-            Some(s"IFNULL(${childToString(left)}, ${childToString(right)})")
 
         case Least(children) ⇒
             Some(s"LEAST(${children.map(childToString(_)).mkString(", ")})")
