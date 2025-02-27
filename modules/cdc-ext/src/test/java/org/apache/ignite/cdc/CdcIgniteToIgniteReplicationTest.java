@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
@@ -45,26 +46,40 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
+        return startActivePassiveCdcWithFilters(cache, Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdcWithFilters(String cache,
+                                                                                       Set<String> includeTemplates,
+                                                                                       Set<String> excludeTemplates) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++)
-            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache, "ignite-to-ignite-src-" + i));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, cache,
+                    includeTemplates, excludeTemplates, "ignite-to-ignite-src-" + i));
 
         return futs;
     }
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
+        return startActiveActiveCdcWithFilters(Collections.emptySet(), Collections.emptySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(Set<String> includeTemplates,
+                                                                                      Set<String> excludeTemplates) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (int i = 0; i < srcCluster.length; i++) {
-            futs.add(igniteToIgnite(
-                srcCluster[i].configuration(), destClusterCliCfg[i], destCluster, ACTIVE_ACTIVE_CACHE, "ignite-to-ignite-src-" + i));
+            futs.add(igniteToIgnite(srcCluster[i].configuration(), destClusterCliCfg[i], destCluster,
+                    ACTIVE_ACTIVE_CACHE, includeTemplates, excludeTemplates, "ignite-to-ignite-src-" + i));
         }
 
         for (int i = 0; i < destCluster.length; i++) {
-            futs.add(igniteToIgnite(
-                destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster, ACTIVE_ACTIVE_CACHE, "ignite-to-ignite-dest-" + i));
+            futs.add(igniteToIgnite(destCluster[i].configuration(), srcClusterCliCfg[i], srcCluster,
+                    ACTIVE_ACTIVE_CACHE, includeTemplates, excludeTemplates, "ignite-to-ignite-dest-" + i));
         }
 
         return futs;
@@ -86,6 +101,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      * @param destCfg Ignite destination cluster configuration.
      * @param dest Ignite destination cluster.
      * @param cache Cache name to stream to kafka.
+     * @param includeTemplates Include regex templates for cache names.
+     * @param excludeTemplates Exclude regex templates for cache names.
      * @param threadName Thread to run CDC instance.
      * @return Future for Change Data Capture application.
      */
@@ -94,6 +111,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
         IgniteConfiguration destCfg,
         IgniteEx[] dest,
         String cache,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates,
         @Nullable String threadName
     ) {
         return runAsync(() -> {
@@ -115,6 +134,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
+            streamer.setIncludeTemplates(includeTemplates);
+            streamer.setExcludeTemplates(excludeTemplates);
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
