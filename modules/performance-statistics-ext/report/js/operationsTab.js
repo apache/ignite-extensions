@@ -16,10 +16,11 @@
  */
 
 const CACHE_OPERATIONS = ["CACHE_GET", "CACHE_PUT", "CACHE_REMOVE", "CACHE_GET_AND_PUT", "CACHE_GET_AND_REMOVE",
-    "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_LOCK"];
+    "CACHE_GET_ALL", "CACHE_PUT_ALL", "CACHE_REMOVE_ALL", "CACHE_INVOKE", "CACHE_INVOKE_ALL", "CACHE_PUT_ALL_CONFLICT",
+    "CACHE_REMOVE_ALL_CONFLICT", "CACHE_LOCK"];
 
 const CACHE_OPERATIONS_READABLE = ["get", "put", "remove", "getAndPut", "getAndRemove",
-    "getAll", "putAll", "removeAll","invoke", "invokeAll", "lock"];
+    "getAll", "putAll", "removeAll", "invoke", "invokeAll", "putAllConflict", "removeAllConflict", "lock"];
 
 const CACHE_OPERATIONS_COLORS = {
     CACHE_GET: "#007bff",
@@ -32,6 +33,8 @@ const CACHE_OPERATIONS_COLORS = {
     CACHE_REMOVE_ALL: "#23BFAA",
     CACHE_INVOKE: "#F5A52A",
     CACHE_INVOKE_ALL: "#fd7e14",
+    CACHE_PUT_ALL_CONFLICT: "#5289A4",
+    CACHE_REMOVE_ALL_CONFLICT: "#17807E",
     CACHE_LOCK: "#FAA586"
 };
 

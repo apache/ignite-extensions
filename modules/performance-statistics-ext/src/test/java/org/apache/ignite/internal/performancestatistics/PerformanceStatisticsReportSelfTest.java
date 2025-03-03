@@ -40,7 +40,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.performancestatistics.handlers.QueryHandler;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -49,6 +56,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
@@ -62,6 +70,9 @@ import static org.junit.Assert.assertTrue;
  * Tests the performance statistics report.
  */
 public class PerformanceStatisticsReportSelfTest {
+    /** Cache name. */
+    private static final String CACHE_NAME = "cache";
+
     /** @throws Exception If failed. */
     @Test
     public void testCreateReport() throws Exception {
@@ -76,7 +87,7 @@ public class PerformanceStatisticsReportSelfTest {
         ) {
             client.context().performanceStatistics().startCollectStatistics();
 
-            IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>("cache")
+            IgniteCache<Object, Object> cache = client.createCache(new CacheConfiguration<>(CACHE_NAME)
                 .setQueryEntities(F.asList(new QueryEntity()
                     .setKeyType(Integer.class.getName())
                     .setValueType(Integer.class.getName()))));
@@ -90,6 +101,15 @@ public class PerformanceStatisticsReportSelfTest {
             cache.removeAll(Collections.singleton(2));
             cache.getAndPut(3, 3);
             cache.getAndRemove(3);
+
+            IgniteInternalCache<Object, Object> cachex = client.cachex(CACHE_NAME);
+
+            KeyCacheObject keyConfl = new KeyCacheObjectImpl(1, null, 1);
+            CacheObject valConfl = new CacheObjectImpl(1, null);
+            GridCacheVersion confl = new GridCacheVersion(1, 0, 1, (byte)2);
+
+            cachex.putAllConflict(singletonMap(keyConfl, new GridCacheDrInfo(valConfl, confl)));
+            cachex.removeAllConflict(singletonMap(keyConfl, confl));
 
             client.compute().run(() -> {
                 // No-op.
