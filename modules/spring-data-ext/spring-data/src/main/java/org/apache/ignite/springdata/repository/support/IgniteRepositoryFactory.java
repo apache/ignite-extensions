@@ -33,7 +33,6 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
@@ -68,6 +67,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     /** Ignite proxy instance associated with the current repository. */
     private final IgniteProxy ignite;
 
+    /** Conversion service. */
     private final ConversionService conversionService;
 
     /**
@@ -77,7 +77,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     public IgniteRepositoryFactory(ApplicationContext ctx, Class<?> repoInterface) {
         ignite = ctx.getBean(IgniteProxy.class, repoInterface);
 
-        ConfigurableApplicationContext configurableCtx = (ConfigurableApplicationContext) ctx;
+        ConfigurableApplicationContext configurableCtx = (ConfigurableApplicationContext)ctx;
         if (configurableCtx.getBeanNamesForType(CustomConversions.class).length == 0) {
             configurableCtx.getBeanFactory().registerSingleton(CustomConversions.class.getCanonicalName(), new IgniteCustomConversions());
         }
@@ -87,11 +87,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             null);
 
         CustomConversions customConversions = configurableCtx.getBean(CustomConversions.class);
-        DefaultConversionService defaultConversionService = new DefaultConversionService();
-        if (defaultConversionService instanceof GenericConversionService) {
-            customConversions.registerConvertersIn(defaultConversionService);
-        }
-        conversionService = defaultConversionService;
+        DefaultConversionService dfltConversionSrvc = new DefaultConversionService();
+        customConversions.registerConvertersIn(dfltConversionSrvc);
+
+        conversionService = dfltConversionSrvc;
 
         RepositoryConfig cfg = getRepositoryConfiguration(repoInterface);
 

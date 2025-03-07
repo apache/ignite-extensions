@@ -29,8 +29,10 @@ import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
 
+import static java.util.Collections.emptyList;
+
 /**
- * Custom conversions implementation.
+ * Custom conversion implementation.
  * An application can define its own converter by defining the following bean:
  * <pre>
  * {@code
@@ -42,8 +44,8 @@ import org.springframework.data.mapping.model.SimpleTypeHolder;
  * </pre>
  */
 public class IgniteCustomConversions extends CustomConversions {
-
-    private static final StoreConversions STORE_CONVERSIONS;
+    /** Default converters. */
+    private static final StoreConversions DEFAULT_CONVERTERS;
 
     static {
         List<Object> converters = new ArrayList<>();
@@ -51,19 +53,31 @@ public class IgniteCustomConversions extends CustomConversions {
         converters.add(new TimestampToDateConverter());
 
         List<Object> storeConverters = Collections.unmodifiableList(converters);
-        STORE_CONVERSIONS = StoreConversions.of(SimpleTypeHolder.DEFAULT, storeConverters);
+        DEFAULT_CONVERTERS = StoreConversions.of(SimpleTypeHolder.DEFAULT, storeConverters);
     }
 
+    /**
+     * Default constructor.
+     */
     public IgniteCustomConversions() {
-        this(Collections.emptyList());
+        this(emptyList());
     }
 
+    /**
+     * Constructor.
+     *
+     * @param converters Custom converters to register.
+     */
     public IgniteCustomConversions(List<?> converters) {
-        super(STORE_CONVERSIONS, converters);
+        super(DEFAULT_CONVERTERS, converters);
     }
 
+    /**
+     * {@link Timestamp} to {@link LocalDateTime} converter.
+     */
     @WritingConverter
     static class TimestampToLocalDateTimeConverter implements Converter<Timestamp, LocalDateTime> {
+        /** {@inheritDoc} */
         @Override public LocalDateTime convert(Timestamp source) {
             return source.toInstant()
                 .atZone(ZoneId.systemDefault())
@@ -71,8 +85,12 @@ public class IgniteCustomConversions extends CustomConversions {
         }
     }
 
+    /**
+     * {@link Timestamp} to {@link Date} converter.
+     */
     @WritingConverter
     static class TimestampToDateConverter implements Converter<Timestamp, Date> {
+        /** {@inheritDoc} */
         @Override public Date convert(Timestamp source) {
             return new Date((source).getTime());
         }

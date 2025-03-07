@@ -26,6 +26,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+/**
+ * Test for Ignite Spring Data conversions.
+ */
 public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
     /** Repository. */
     protected PersonRepository repo;
@@ -33,10 +36,12 @@ public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
     /** Context. */
     protected static AnnotationConfigApplicationContext ctx;
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() {
         ctx = new AnnotationConfigApplicationContext();
     }
 
+    /** */
     @Test
     public void testPutGetWithDefaultConverters() {
         init(ApplicationConfiguration.class);
@@ -46,6 +51,7 @@ public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
         assertEquals(person, savePerson(person));
     }
 
+    /** */
     @Test
     public void testPutGetWithCustomConverters() {
         init(CustomConvertersApplicationConfiguration.class);
@@ -55,13 +61,20 @@ public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
         assertNull(savePerson(person).getCreatedAt());
     }
 
-    private void init(Class<? extends ApplicationConfiguration> applicationConfiguration) {
-        ctx.register(applicationConfiguration);
+    /**
+     * @param componentClasses Component classes.
+     */
+    private void init(Class<? extends ApplicationConfiguration> componentClasses) {
+        ctx.register(componentClasses);
         ctx.refresh();
 
         repo = ctx.getBean(PersonRepository.class);
     }
 
+    /**
+     * @param person Person to save.
+     * @return Saved person.
+     */
     private Person savePerson(Person person) {
         int id = 1;
 
@@ -71,6 +84,7 @@ public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
         return repo.selectByFirstNameWithCreatedAt(person.getFirstName()).get(0);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() {
         ctx.close();
     }
