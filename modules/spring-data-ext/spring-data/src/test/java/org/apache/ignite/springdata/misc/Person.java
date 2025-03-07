@@ -40,6 +40,7 @@ public class Person {
     @QuerySqlField
     private Date birthday;
 
+    /** Created at. */
     @QuerySqlField
     private LocalDateTime createdAt;
 
@@ -53,6 +54,11 @@ public class Person {
         birthday = new Date();
     }
 
+    /**
+     * @param firstName First name.
+     * @param secondName Second name.
+     * @param createdAt Created at.
+     */
     public Person(String firstName, String secondName, LocalDateTime createdAt) {
         this.firstName = firstName;
         this.secondName = secondName;
