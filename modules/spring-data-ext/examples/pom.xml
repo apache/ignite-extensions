@@ -59,7 +59,7 @@
         <dependency>
             <groupId>org.springframework.data</groupId>
             <artifactId>spring-data-commons</artifactId>
-            <version>${spring.data32.version}</version>
+            <version>${spring.data.version}</version>
         </dependency>
 
         <dependency>
