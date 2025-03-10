@@ -32,8 +32,6 @@
         <module>modules/flink-ext</module>
         <module>modules/flume-ext</module>
         <module>modules/pub-sub-ext</module>
-        <module>modules/spring-boot-autoconfigure-ext</module>
-        <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
         <module>modules/zeromq-ext</module>
         <module>modules/twitter-ext</module>
         <module>modules/rocketmq-ext</module>
@@ -84,6 +82,8 @@
                 <jdk>[17,)</jdk>
             </activation>
             <modules>
+                <module>modules/spring-boot-autoconfigure-ext</module>
+                <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
                 <module>modules/spring-session-ext</module>
                 <module>modules/spring-cache-ext</module>
                 <module>modules/spring-data-ext</module>

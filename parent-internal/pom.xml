@@ -35,10 +35,9 @@
     <version>1</version>
 
     <properties>
-        <spring-boot.version>2.2.13.RELEASE</spring-boot.version>
-        <spring.data.version>2.2.13.RELEASE</spring.data.version>
-        <spring.data32.version>3.2.5</spring.data32.version>
-        <spring61.version>6.1.6</spring61.version>
+        <spring-boot.version>3.2.12</spring-boot.version>
+        <spring.data.version>3.2.12</spring.data.version>
+        <spring61.version>6.1.15</spring61.version>
         <activemq.version>5.12.0</activemq.version>
         <aspectj.version>1.8.13</aspectj.version>
 
@@ -84,6 +83,17 @@
                 <version>${log4j2.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-logging</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-classic</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
