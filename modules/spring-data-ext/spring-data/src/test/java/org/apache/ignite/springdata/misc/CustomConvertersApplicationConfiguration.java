@@ -19,22 +19,30 @@ package org.apache.ignite.springdata.misc;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import org.apache.ignite.springdata.repository.query.IgniteCustomConversions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.CustomConversions;
 
+import static java.util.Collections.singletonList;
+
 /**
  *  Test configuration that overrides default converter for LocalDateTime type.
  */
 public class CustomConvertersApplicationConfiguration extends ApplicationConfiguration {
+    /**
+     * @return Custom conversions bean.
+     */
     @Bean
     public CustomConversions customConversions() {
-        return new IgniteCustomConversions(Arrays.asList(new LocalDateTimeWriteConverter()));
+        return new IgniteCustomConversions(singletonList(new LocalDateTimeWriteConverter()));
     }
 
+    /**
+     * Converter for {@link Timestamp} to {@link LocalDateTime}.
+     */
     static class LocalDateTimeWriteConverter implements Converter<Timestamp, LocalDateTime> {
+        /** {@inheritDoc} */
         @Override public LocalDateTime convert(Timestamp source) {
             return null;
         }

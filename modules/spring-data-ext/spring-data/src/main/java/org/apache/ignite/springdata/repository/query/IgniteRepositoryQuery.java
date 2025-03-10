@@ -250,6 +250,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     /** Static query configuration. */
     private final DynamicQueryConfig staticQueryConfiguration;
 
+    /** Conversion service. */
     private final ConversionService conversionService;
 
     /**
@@ -895,12 +896,16 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         }
     }
 
+    /**
+     * @param source Source object.
+     * @param targetType Target type.
+     * @return Converted object.
+     */
     private <T> T convert(Object source, Class<?> targetType) {
-        if (conversionService.canConvert(source.getClass(), targetType)) {
-            return (T) conversionService.convert(source, targetType);
-        } else {
-            return (T) source;
-        }
+        if (conversionService.canConvert(source.getClass(), targetType))
+            return (T)conversionService.convert(source, targetType);
+
+        return (T)source;
     }
 
     /**
