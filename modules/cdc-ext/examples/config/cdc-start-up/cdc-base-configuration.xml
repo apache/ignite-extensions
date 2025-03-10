@@ -1,0 +1,83 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <import resource="${cdc_streamer_xml_file_name}"/>
+
+    <context:property-placeholder location="file:${ignite_properties_path}/ignite-cdc.properties"/>
+
+    <!--IgniteConfiguration for source cluster connection-->
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="igniteInstanceName" value="${server_instance_name}"/>
+        <property name="consistentId" value="${server_instance_name}"/>
+        <property name="localHost" value="${server_host}"/>
+        <property name="discoverySpi" ref="ignTcpDiscoverySpi"/>
+        <property name="dataStorageConfiguration" ref="ignDataStorageConfiguration"/>
+        <property name="pluginProviders" ref="ignCacheVersionConflictResolverPluginProvider"/>
+        <property name="cacheConfiguration" ref="ignCacheConfiguration"/>
+        <property name="clientConnectorConfiguration" ref="ignClientConnectorConfiguration"/>
+    </bean>
+
+    <!--CdcConfiguration-->
+    <bean id="cdc.cfg" class="org.apache.ignite.cdc.CdcConfiguration">
+        <property name="consumer" ref="cdc.streamer"/>
+    </bean>
+
+    <!--IgniteConfiguration property declaration-->
+
+    <!--TcpDiscoverySpi-->
+    <bean id="ignTcpDiscoverySpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+            <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                <property name="addresses" value="${server_host}:${server_port_range}"/>
+            </bean>
+        </property>
+
+        <property name="localPort" value="${server_local_port}"/>
+        <property name="joinTimeout" value="10000"/>
+    </bean>
+
+    <!--DataStorageConfiguration-->
+    <bean id="ignDataStorageConfiguration" class="org.apache.ignite.configuration.DataStorageConfiguration">
+        <property name="defaultDataRegionConfiguration">
+            <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                <property name="cdcEnabled" value="true"/>
+            </bean>
+        </property>
+
+        <property name="walForceArchiveTimeout" value="5000"/>
+    </bean>
+
+    <!--CacheVersionConflictResolverPluginProvider-->
+    <bean id="ignCacheVersionConflictResolverPluginProvider" class="org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider">
+        <property name="caches">
+            <set>
+                <value>terminator</value>
+            </set>
+        </property>
+
+        <property name="clusterId" value="${cluster_id}"/>
+        <property name="conflictResolveField" value="val2"/>
+    </bean>
+
+    <!--CacheConfiguration-->
+    <util:list id="ignCacheConfiguration" value-type="org.apache.ignite.configuration.CacheConfiguration">
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+            <property name="atomicityMode" value="ATOMIC"/>
+            <property name="name" value="terminator"/>
+        </bean>
+    </util:list>
+
+    <!--ClientConnectorConfiguration-->
+    <bean id="ignClientConnectorConfiguration" class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+        <property name="port" value="${server_client_connector_port}"/>
+    </bean>
+</beans>
