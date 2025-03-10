@@ -17,10 +17,16 @@
 
 package org.apache.ignite.cdc.conflictresolve;
 
+import java.util.Objects;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -88,11 +94,12 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry,
+        Object prevStateMeta,
         boolean atomicVerComparator
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry, prevStateMeta);
 
         if (log.isDebugEnabled())
             debugResolve(ctx, useNew, oldEntry, newEntry);
@@ -117,7 +124,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        Object prevStateMeta
     ) {
         if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
             return true;
@@ -139,8 +147,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         }
 
         if (conflictResolveFieldEnabled) {
-            Object oldVal = oldEntry.value(ctx);
             Object newVal = newEntry.value(ctx);
+            Object oldVal = oldEntry.value(ctx);
 
             if (oldVal != null && newVal != null) {
                 try {
@@ -153,6 +161,17 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     );
                 }
             }
+
+            Object field = oldVal != null ? value(oldVal) : null;
+
+            if (Objects.equals(field, prevStateMeta)) // Previous value synchronized.
+                return true;
+        }
+        else {
+            GridCacheVersion oldVer = oldEntry.value(ctx) != null ? oldEntry.version() : null; // TODO null value version (entry vs row)
+
+            if (Objects.equals(oldVer, prevStateMeta)) // Previous value synchronized.
+                return true;
         }
 
         log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
@@ -160,6 +179,30 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
         // Ignoring update.
         return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public Object previousStateMetadata(GridCacheEntryEx entry) {
+        if (conflictResolveFieldEnabled) {
+            CacheObjectValueContext ctx = entry.context().cacheObjectContext();
+            CacheObject val = entry.rawGet();
+
+            return val != null ?
+                value(CacheObjectUtils.unwrapBinaryIfNeeded(ctx, val, true, true, null)) :
+                null;
+        }
+        else {
+            try {
+                GridCacheVersion ver = entry.version();
+
+                return ver != null ? ver.conflictVersion() : null;
+            }
+            catch (GridCacheEntryRemovedException e) { // TODO
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /** @return Conflict resolve field value. */
