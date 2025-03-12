@@ -82,7 +82,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
-          java-version: 8
+          java-version: 17
           distribution: 'adopt'
 
       - name: Extract POM Version and Compare With Branch Version
@@ -192,7 +192,7 @@ jobs:
           cd -
 
       - name: Upload Job Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.EXTENSION_RC_TAG }}
           path: ${{ env.GIT_HOME }}/target/${{ env.EXTENSION_RC_TAG }}.zip

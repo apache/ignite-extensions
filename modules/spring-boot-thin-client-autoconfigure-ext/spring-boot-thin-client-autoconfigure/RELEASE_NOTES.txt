@@ -5,3 +5,8 @@ Apache Ignite Spring Boot Thin Module 1.0.0
 -------------------------------------------
 
 * Auto configure of Ignite thin client for spring-boot based applications implemented.
+
+Apache Ignite Spring Boot Thin Module 2.0.0
+--------------------------------------
+
+* Spring Boot 3.2 support added.
