@@ -1,6 +1,11 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
+Apache Ignite Spring Data Module 3.1.0
+--------------------------------------
+
+* Added custom converters support.
+
 Apache Ignite Spring Data Module 3.0.0
 --------------------------------------
 
