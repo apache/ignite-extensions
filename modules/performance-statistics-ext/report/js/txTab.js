@@ -37,14 +37,18 @@ function drawTxCharts() {
 
         txCharts.append('<canvas class="my-4" id="' + txChartId + '" height="120""></canvas>');
 
+        let datasets = prepareTxDatasets(nodeId, cacheId, opName)
+
         new Chart(document.getElementById(txChartId), {
             type: 'line',
             data: {
-                datasets: prepareTxDatasets(nodeId, cacheId, opName)
+                datasets: datasets,
+                labels: datasets[0].data.length > 0 ? undefined : [undefined]
             },
             options: {
                 scales: {
-                    xAxes: [{
+                    x: {
+                        display: true,
                         type: 'time',
                         time: {
                             displayFormats: {
@@ -54,32 +58,34 @@ function drawTxCharts() {
                                 'hour': 'HH:mm'
                             }
                         },
-                        scaleLabel: {
+                        title: {
                             display: true,
-                            labelString: 'Date'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Count'
+                            text: 'Date'
                         },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 10
+                        adapters: {
+                            data: {
+                                locale: 'date-fns/locale'
+                            }
                         }
-                    }]
+                    },
+                    y: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Сount'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
                 },
-                legend: {
-                    display: true
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Count of [" + opName + "]",
+                        fontSize: 20
+                    }
                 },
-                title: {
-                    display: true,
-                    text: "Count of [" + opName + "]",
-                    fontSize: 20
-                },
-                animation: false
+                animation: false,
             }
         })
     });
@@ -93,31 +99,30 @@ function drawTxCharts() {
             datasets: prepareTxHistogramDatasets(nodeId, cacheId)
         },
         options: {
+            plugins: {
+                title: {
+                    display: true,
+                    text: "Histogram of transaction durations",
+                    fontSize: 20
+                }
+            },
             scales: {
-                xAxes: [{
+                x: {
                     gridLines: {
                         offsetGridLines: true
                     },
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Duration of transaction'
+                        text: 'Duration of transaction'
                     }
-                }],
-                yAxes: [{
+                },
+                y: {
                     display: true,
-                    scaleLabel: {
+                    title: {
                         display: true,
-                        labelString: 'Count of transactions'
+                        text: 'Count of transactions'
                     }
-                }]
-            },
-            legend: {
-                display: false
-            },
-            title: {
-                display: true,
-                text: "Histogram of transaction durations",
-                fontSize: 20
+                }
             },
             animation: false
         }
@@ -154,10 +159,10 @@ function prepareTxDatasets(nodeId, cacheId, opName) {
     var datasetData = [];
 
     $.each(txData[opName], function (time, arr) {
-        datasetData.push({t: parseInt(arr[0]), y: arr[1]})
+        datasetData.push({x: parseInt(arr[0]), y: arr[1]})
     });
 
-    sortByKeyAsc(datasetData, "t");
+    sortByKeyAsc(datasetData, "x");
 
     var dataset = {
         data: datasetData,
