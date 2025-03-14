@@ -71,14 +71,15 @@ Available options:
 		* thick				Creates a single thick client, used to transfer data from Kafka to destination-cluster.
 		* thin				Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
---check-cdc --key intNum1 --value jsonVal [--cluster clusterNum] `
+--check-cdc --key keyVal --value jsonVal [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
                                             `The command puts the entry in the chosen cluster, and shows the comparison `
                                             `of caches between clusters as the entry reaches the other cluster.
 
 	Options:
-		* --key intNum1			Specifies key of the entry.
-		* --value jsonVal		Specifies value of the entry as JSON. Example: '{"intVal": 123, "version": 2321}'
+		* --key keyVal			Specifies key of the entry.
+		* --value jsonVal		Specifies value of the entry as JSON. Example: '{"val": 123, "ver": 2321}'  or `
+		                                                                                    `'{"val": "val", "ver": "XXX"}'
 		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry. `
 		                                        `The default value is 1.
 EOF
@@ -256,11 +257,11 @@ checkEntriesParams() {
 	checkMissing "${script_param-}" "key" "${key-}"
 	checkMissing "${script_param-}" "value" "${jsonValue-}"
 
-	value=$(echo $jsonValue | awk -F'"intVal": ' '{ print $2 }' | awk -F',' '{ print $1 }')
-	version=$(echo $jsonValue | awk -F'"version": ' '{ print $2 }' | awk -F'}' '{ print $1 }')
+	value=$(echo $jsonValue | awk -F'"val": ' '{ print $2 }' | awk -F',' '{ print $1 }')
+	version=$(echo $jsonValue | awk -F'"ver": ' '{ print $2 }' | awk -F'}' '{ print $1 }')
 
-	checkMissing "${jsonValue}" "intVal field" "${value-}"
-	checkMissing "${jsonValue}" "version field" "${version-}"
+	checkMissing "${jsonValue}" "val field" "${value-}"
+	checkMissing "${jsonValue}" "ver field" "${version-}"
 
 	return 0
 }
@@ -326,14 +327,14 @@ startKafkaConsumer() {
 # Prints delimiter
 #
 printLine() {
-	msg "+--------------------------+"
+	msg "+"
 }
 
 #
 # Prints 'cluster' line
 #
 printClusterMsg() {
-	msg "\tcluster1\tcluster2"
+	msg "\tcluster1\t\tcluster2"
 }
 
 #
@@ -345,8 +346,8 @@ printClusterMsg() {
 #   version2 - Entry version from cluster 2
 #
 updateValues() {
-	local json1=$(curl -s 'http://localhost:8080/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
-	local json2=$(curl -s 'http://localhost:8081/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
+	local json1=$(curl -s 'http://localhost:8080/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
+	local json2=$(curl -s 'http://localhost:8081/ignite?cmd=get&key='$key'&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X GET -H 'Content-Type: application/x-www-form-urlencoded')
 
   value1=$(echo $json1 | awk -F'val1":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
   version1=$(echo $json1 | awk -F'val2":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
@@ -369,8 +370,8 @@ updateValues() {
 printValuesPair() {
 	updateValues
 
-	msg "|\tval: ${value1-}\t|\tval: ${value2-}\t|"
-	msg "|\tver: ${version1-}\t|\tver: ${version2-}\t|"
+	msg "|\tval: ${value1-}\t\tval: ${value2-}\t"
+	msg "|\tver: ${version1-}\t\tver: ${version2-}\t"
 }
 
 #
@@ -382,9 +383,9 @@ pushEntry() {
 	local result
 
 	if [[ "$cluster" == "1" ]]; then
-	  result=$(curl -s 'http://localhost:8080/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
+	  result=$(curl -s 'http://localhost:8080/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 	else
-	  result=$(curl -s 'http://localhost:8081/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=int&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
+	  result=$(curl -s 'http://localhost:8081/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 	fi
 
 	msg "Success"
