@@ -55,7 +55,7 @@ Available options:
 
 -c, --ignite-cdc consumerMode igniteProperties `
                                       `Starts CDC consumer with specified transfer mode to parse WAL archives `
-                                      `from source cluster.
+                                      `from source cluster. igniteProperties is used to determine the source cluster.
 
 	Available options for --ignite-cdc include:
 		* ignite-to-ignite-thick	Creates a single thick client, `
@@ -71,14 +71,14 @@ Available options:
 		* thick				Creates a single thick client, used to transfer data from Kafka to destination-cluster.
 		* thin				Creates a single thin client, used to transfer data from Kafka to destination-cluster.
 
---check-cdc --key intNum1 --value intNum2 [--cluster clusterNum] `
+--check-cdc --key intNum1 --value jsonVal [--cluster clusterNum] `
                                             `Starts CDC check with proposed (key, value) entry. `
                                             `The command puts the entry in the chosen cluster, and shows the comparison `
                                             `of caches between clusters as the entry reaches the other cluster.
 
 	Options:
 		* --key intNum1			Specifies key of the entry.
-		* --value intNum2		Specifies value of the entry as JSON. Example: '{"intVal": 123, "version": 2321}'
+		* --value jsonVal		Specifies value of the entry as JSON. Example: '{"intVal": 123, "version": 2321}'
 		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry. `
 		                                        `The default value is 1.
 EOF
