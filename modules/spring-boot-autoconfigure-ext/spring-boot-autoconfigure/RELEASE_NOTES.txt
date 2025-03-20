@@ -1,6 +1,11 @@
 Apache Ignite Extensions Release Notes
 ======================================
 
+Apache Ignite Spring Boot Module 2.0.0
+--------------------------------------
+
+* Spring Boot 3.2 support added.
+
 Apache Ignite Spring Boot Module 1.0.0
 --------------------------------------
 

@@ -31,7 +31,7 @@
 
     <artifactId>ignite-spring-data-parent-ext</artifactId>
     <packaging>pom</packaging>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.2.0-SNAPSHOT</version>
 
     <url>https://ignite.apache.org</url>
 
@@ -39,16 +39,4 @@
         <module>spring-data</module>
         <module>examples</module>
     </modules>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
