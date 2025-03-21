@@ -257,11 +257,10 @@ checkEntriesParams() {
 	checkMissing "${script_param-}" "key" "${key-}"
 	checkMissing "${script_param-}" "value" "${jsonValue-}"
 
-	value=$(echo $jsonValue | awk -F'"val": ' '{ print $2 }' | awk -F',' '{ print $1 }')
+	value=$(echo $jsonValue | awk -F'"val": ' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
 	version=$(echo $jsonValue | awk -F'"ver": ' '{ print $2 }' | awk -F'}' '{ print $1 }')
 
 	checkMissing "${jsonValue}" "val field" "${value-}"
-	checkMissing "${jsonValue}" "ver field" "${version-}"
 
 	return 0
 }
@@ -375,6 +374,33 @@ printValuesPair() {
 }
 
 #
+# Use a function to construct the data payload based on whether version is set
+#
+constructPayload() {
+  local value=$1
+  local version=$2
+  local payload="%7B%22val1%22%3A$value" # always include val1
+
+  if [[ -n "$version" ]]; then  # Check if version is not empty
+    payload="${payload}%2C%22val2%22%3A$version"  # Add val2 if version is set
+  fi
+
+  payload="${payload}%7D" # close the json
+  echo "$payload"
+}
+
+#
+# Determine the correct port based on the cluster value
+#
+getPort() {
+  if [[ "$cluster" == "1" ]]; then
+    echo "8080"
+  else
+    echo "8081"
+  fi
+}
+
+#
 # Puts the entry in the specified cluster
 #
 pushEntry() {
@@ -382,11 +408,13 @@ pushEntry() {
 
 	local result
 
-	if [[ "$cluster" == "1" ]]; then
-	  result=$(curl -s 'http://localhost:8080/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
-	else
-	  result=$(curl -s 'http://localhost:8081/ignite?cmd=put&key='$key'&val=%7B%22val1%22%3A'$value'%2C%22val2%22%3A'$version'%7D&cacheName=terminator&keyType=String&valueType=IgniteBiTuple' -X POST -H 'Content-Type: application/x-www-form-urlencoded')
-	fi
+	# Main logic
+	payload=$(constructPayload "$value" "$version")
+	port=$(getPort)
+
+	url="http://localhost:${port}/ignite?cmd=put&key=${key}&val=$payload&cacheName=terminator&keyType=String&valueType=IgniteBiTuple"
+
+	result=$(curl -s "$url" -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 
 	msg "Success"
 	msg ""
