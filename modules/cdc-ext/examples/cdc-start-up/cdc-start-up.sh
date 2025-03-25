@@ -96,6 +96,19 @@ msg() {
 }
 
 #
+# General message output function
+# Arguments:
+#   1 - entity for column 1
+#   1 - entity for column 2
+#
+msgPrintf() {
+  local val1="$1"
+  local val2="$2"
+
+  printf >&2 "${ORANGE}[PID=%s]:${NOFORMAT} | %-16s | %-16s |\n" "${CURRENT_PID-$$}" "${val1}" "${val2}"
+}
+
+#
 # Exits with error
 #
 die() {
@@ -326,14 +339,14 @@ startKafkaConsumer() {
 # Prints delimiter
 #
 printLine() {
-	msg "+"
+	msg "+------------------+------------------+"
 }
 
 #
 # Prints 'cluster' line
 #
 printClusterMsg() {
-	msg "\tcluster1\t\tcluster2"
+	msgPrintf "cluster-1" "cluster-2"
 }
 
 #
@@ -369,8 +382,8 @@ updateValues() {
 printValuesPair() {
 	updateValues
 
-	msg "|\tval: ${value1-}\t\tval: ${value2-}\t"
-	msg "|\tver: ${version1-}\t\tver: ${version2-}\t"
+	msgPrintf "val: ${value1-}" "val: ${value2-}"
+	msgPrintf "ver: ${version1-}" "ver: ${version2-}"
 }
 
 #
@@ -416,6 +429,13 @@ pushEntry() {
 
 	result=$(curl -s "$url" -X POST -H 'Content-Type: application/x-www-form-urlencoded')
 
+	local successStatus=$(echo $result | awk -F'successStatus":' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'}' '{print $1}')
+	local errorMsg=$(echo $result | awk -F'"error":"' '{gsub(/\\n.*/,"",$2); gsub(/.*reason=/,"",$2); print $2}')
+
+	if ((successStatus > 0)); then
+	  msg ""; die "${RED}${errorMsg}${NOFORMAT}";
+	fi
+
 	msg "Success"
 	msg ""
 }
@@ -457,6 +477,7 @@ performCheck() {
 	infoMsg "CDC check started"
 	msg ""
 
+	printLine
 	printClusterMsg
 	printLine
 	printValuesPair
@@ -465,6 +486,7 @@ performCheck() {
 
 	pushEntry
 
+	printLine
 	printClusterMsg
 	printLine
 	printValuesUntilSuccess
