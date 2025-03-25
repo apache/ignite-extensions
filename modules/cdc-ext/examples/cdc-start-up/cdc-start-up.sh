@@ -78,8 +78,7 @@ Available options:
 
 	Options:
 		* --key keyVal			Specifies key of the entry.
-		* --value jsonVal		Specifies value of the entry as JSON. Example: '{"val": 123, "ver": 2321}'  or `
-		                                                                                    `'{"val": "val", "ver": "XXX"}'
+		* --value jsonVal		Specifies value of the entry as JSON. Example: '{"val": "val", "ver": "XXX"}'
 		* --cluster clusterNum		Optional parameter for the cluster number (1 or 2) that initially stores the entry. `
 		                                        `The default value is 1.
 EOF
