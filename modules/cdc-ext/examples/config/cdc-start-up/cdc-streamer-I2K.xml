@@ -1,0 +1,27 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!--Kafka properties-->
+    <util:properties id="kafkaProperties" location="file:${ignite_properties_path}/kafka.properties"/>
+
+    <!--IgniteToKafkaCdcStreamer-->
+    <bean id="cdc.streamer" class="org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer">
+        <property name="topic" value="${send_data_kafka_topic_name}"/>
+        <property name="metadataTopic" value="${send_metadata_kafka_topic_name}"/>
+        <property name="kafkaPartitions" value="${send_kafka_partitions}"/>
+        <property name="caches">
+            <list>
+                <value>terminator</value>
+            </list>
+        </property>
+        <property name="maxBatchSize" value="1024"/>
+        <property name="onlyPrimary" value="false"/>
+        <property name="kafkaProperties" ref="kafkaProperties"/>
+    </bean>
+</beans>

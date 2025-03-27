@@ -1,0 +1,33 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <context:property-placeholder location="file:${ignite_properties_path}/ignite-cdc.properties"/>
+
+    <util:properties id="kafkaProperties" location="file:${ignite_properties_path}/kafka-to-ignite.properties"/>
+
+    <bean id="streamer.cfg" class="org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration">
+        <property name="topic" value="${receive_data_kafka_topic_name}"/>
+        <property name="metadataTopic" value="${receive_metadata_kafka_topic_name}"/>
+        <property name="kafkaPartsFrom" value="${receive_kafka_partitions_from}"/>
+        <property name="kafkaPartsTo" value="${receive_kafka_partitions_to}"/>
+        <property name="threadCount" value="${receive_data_process_thread_number}"/>
+        <property name="caches">
+            <list>
+                <value>terminator</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="client.cfg" class="org.apache.ignite.configuration.ClientConfiguration">
+        <property name="addresses" value="${server_host}:${server_client_connector_port}"/>
+    </bean>
+</beans>

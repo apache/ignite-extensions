@@ -1,0 +1,27 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!--IgniteToIgniteClientCdcStreamer-->
+    <bean id="cdc.streamer" class="org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer">
+        <property name="destinationClientConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConfiguration">
+                <property name="addresses" value="${destination_host}:${destination_client_connector_port}"/>
+            </bean>
+        </property>
+
+        <property name="caches">
+            <list>
+                <value>terminator</value>
+            </list>
+        </property>
+
+        <property name="onlyPrimary" value="false"/>
+        <property name="maxBatchSize" value="1024"/>
+    </bean>
+</beans>
