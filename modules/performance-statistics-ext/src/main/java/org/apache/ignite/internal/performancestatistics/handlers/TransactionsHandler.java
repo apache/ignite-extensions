@@ -30,7 +30,6 @@ import org.apache.ignite.internal.performancestatistics.handlers.CacheOperations
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.performancestatistics.handlers.TransactionsHandler.TransactionState.COMMIT;
@@ -108,7 +107,13 @@ public class TransactionsHandler implements IgnitePerformanceStatisticsHandler {
 
         Arrays.stream(HISTOGRAM_BUCKETS).forEach(buckets::add);
 
-        return F.asMap("tx", jsonRes, "txHistogram", histogram, "txHistogramBuckets", buckets);
+        Map<String, JsonNode> retVal = new HashMap<>();
+
+        retVal.put("tx", jsonRes);
+        retVal.put("txHistogram", histogram);
+        retVal.put("txHistogramBuckets", buckets);
+
+        return retVal;
     }
 
     /** Builds JSON. */

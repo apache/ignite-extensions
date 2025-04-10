@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
@@ -139,6 +138,9 @@ public class ClusterInfoHandler implements IgnitePerformanceStatisticsHandler {
         res.set("nodes", nodes);
         res.set("caches", caches);
 
-        return F.asMap("clusterInfo", res);
+        Map<String, JsonNode> retVal = new HashMap<>();
+        retVal.put("clusterInfo", res);
+
+        return retVal;
     }
 }
