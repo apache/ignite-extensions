@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 import static org.apache.ignite.internal.performancestatistics.util.Utils.createArrayIfAbsent;
@@ -99,7 +98,10 @@ public class CacheOperationsHandler implements IgnitePerformanceStatisticsHandle
             });
         });
 
-        return U.map("cacheOps", jsonRes);
+        Map<String, JsonNode> retVal = new HashMap<>();
+        retVal.put("cacheOps", jsonRes);
+
+        return retVal;
     }
 
     /** */

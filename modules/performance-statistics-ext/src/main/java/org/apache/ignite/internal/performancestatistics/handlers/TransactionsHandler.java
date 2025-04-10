@@ -107,7 +107,13 @@ public class TransactionsHandler implements IgnitePerformanceStatisticsHandler {
 
         Arrays.stream(HISTOGRAM_BUCKETS).forEach(buckets::add);
 
-        return U.map("tx", jsonRes, "txHistogram", histogram, "txHistogramBuckets", buckets);
+        Map<String, JsonNode> retVal = new HashMap<>();
+
+        retVal.put("tx", jsonRes);
+        retVal.put("txHistogram", histogram);
+        retVal.put("txHistogramBuckets", buckets);
+
+        return retVal;
     }
 
     /** Builds JSON. */

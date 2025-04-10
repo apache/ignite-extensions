@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.performancestatistics.util.OrderedFixedSizeStructure;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
@@ -161,7 +160,12 @@ public class ComputeHandler implements IgnitePerformanceStatisticsHandler {
             topSlowJson.add(node);
         });
 
-        return U.map("compute", taskJson, "topSlowCompute", topSlowJson);
+        Map<String, JsonNode> retVal = new HashMap<>();
+
+        retVal.put("compute", taskJson);
+        retVal.put("topSlowCompute", topSlowJson);
+
+        return retVal;
     }
 
     /** */
