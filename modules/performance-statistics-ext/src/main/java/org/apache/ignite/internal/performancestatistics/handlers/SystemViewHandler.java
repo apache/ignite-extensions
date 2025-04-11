@@ -57,17 +57,8 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
             ObjectNode gridObjNode = MAPPER.createObjectNode();
 
             view.forEach((viewName, table) -> {
-                ArrayNode viewTableArrNode = MAPPER.createArrayNode();
 
-                for (Map<String, Object> row : table) {
-
-                    ObjectNode rowNode = MAPPER.createObjectNode();
-
-                    for (Map.Entry<String, Object> entry : row.entrySet())
-                        rowNode.put(entry.getKey(), String.valueOf(entry.getValue()));
-
-                    viewTableArrNode.add(rowNode);
-                }
+                ArrayNode viewTableArrNode = generateTableNode(table);
 
                 gridObjNode.set(viewName, viewTableArrNode);
             });
@@ -76,6 +67,21 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
         });
 
         return U.map("systemView", objNode);
+    }
+
+    private static ArrayNode generateTableNode(List<Map<String, Object>> table) {
+        ArrayNode viewTableArrNode = MAPPER.createArrayNode();
+
+        for (Map<String, Object> row : table) {
+
+            ObjectNode rowNode = MAPPER.createObjectNode();
+
+            for (Map.Entry<String, Object> entry : row.entrySet())
+                rowNode.put(entry.getKey(), String.valueOf(entry.getValue()));
+
+            viewTableArrNode.add(rowNode);
+        }
+        return viewTableArrNode;
     }
 
     /** {@inheritDoc} */
