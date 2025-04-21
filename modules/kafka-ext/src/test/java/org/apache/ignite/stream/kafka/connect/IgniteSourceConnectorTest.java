@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,7 +104,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         Map<String, String> props = makeWorkerProps();
         WorkerConfig workerCfg = new StandaloneConfig(props);
 
-        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
+        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore() {
+            @Override
+            public Set<Map<String, Object>> connectorPartitions(String s) {
+                return Set.of();
+            }
+        };
         offBackingStore.configure(workerCfg);
 
         AllConnectorClientConfigOverridePolicy allConnectorClientCfgOverridePlc
@@ -142,7 +148,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEventsInjectedIntoKafkaWithoutFilter() throws Exception {
-        Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
+        Map<String, String> srcProps = makeSourceProps(String.join(",", TOPICS));
 
         srcProps.remove(IgniteSourceConstants.CACHE_FILTER_CLASS);
 
@@ -156,7 +162,10 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEventsInjectedIntoKafka() throws Exception {
-        doTest(makeSourceProps(Utils.join(TOPICS, ",")), true);
+//        doTest(makeSourceProps(Utils.join(TOPICS, ",")), true);
+        doTest(makeSourceProps(String.join(",", TOPICS)), true);
+//        "constructor with %s for %s", Arrays.stream(argTypes).map(Object::toString).collect(Collectors.joining(", ")), className), e);
+
     }
 
     /**

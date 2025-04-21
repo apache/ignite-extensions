@@ -145,7 +145,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSinkPutsWithoutTransformation() throws Exception {
-        Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
+        Map<String, String> sinkProps = makeSinkProps(String.join(",", TOPICS));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
 
@@ -157,7 +157,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSinkPutsWithTransformation() throws Exception {
-        testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
+        testSinkPuts(makeSinkProps(String.join(",", TOPICS)), true);
     }
 
     /**
