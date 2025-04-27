@@ -78,6 +78,8 @@ public class PerformanceStatisticsPrinterTest {
     /** Test node ID. */
     private static final UUID NODE_ID = UUID.randomUUID();
 
+    private static final int TIMEOUT = 10_000;
+
     /** */
     @Before
     public void beforeTest() throws Exception {
@@ -110,7 +112,7 @@ public class PerformanceStatisticsPrinterTest {
 
             ign.context().performanceStatistics().startCollectStatistics();
 
-            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, 30_000));
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
 
             ign.context().performanceStatistics().stopCollectStatistics();
         }
