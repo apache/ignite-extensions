@@ -238,6 +238,9 @@ public class PerformanceStatisticsPrinterTest {
                 assertTrue("Unexpected startTime: " + startTime, opsByTime.containsKey(startTime));
                 assertTrue("Unexpected operation: " + op, opsByTime.get(startTime).remove(op));
             }
+
+            UUID nodeId = UUID.fromString(json.get("nodeId").asText());
+            assertEquals(NODE_ID, nodeId);
         });
 
         assertTrue("Expected operations: " + opsByTime, opsByTime.values().stream().allMatch(List::isEmpty));
@@ -300,6 +303,9 @@ public class PerformanceStatisticsPrinterTest {
 
             assertTrue("Unexpected cache id: " + id, opsById.containsKey(id));
             assertTrue("Unexpected operation: " + op, opsById.get(id).remove(op));
+
+            UUID nodeId = UUID.fromString(json.get("nodeId").asText());
+            assertEquals(NODE_ID, nodeId);
         });
 
         assertTrue("Expected operations: " + opsById, opsById.values().stream().allMatch(List::isEmpty));
@@ -353,8 +359,6 @@ public class PerformanceStatisticsPrinterTest {
                 JsonNode json = mapper.readTree(line);
 
                 assertTrue(json.isObject());
-
-                UUID nodeId = UUID.fromString(json.get("nodeId").asText());
 
                 c.accept(json);
             }
