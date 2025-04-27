@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 import static org.apache.ignite.internal.performancestatistics.util.Utils.printEscaped;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
@@ -343,17 +345,15 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     }
 
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        ps.print("{\"op\":\"" + SYSTEM_VIEW_ROW);
-        ps.print("\",\"nodeId\":\"");
-        ps.print(nodeId);
-        ps.print("\",\"view\":\"");
-        ps.print(viewName);
-        ps.print("\"");
-        for (int i = 0; i < schema.size(); i++) {
-            ps.print(",\"" + schema.get(i) +"\":");
-            ps.print("\"" + data.get(i) +"\"");
-        }
-        ps.println("}");
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("op", SYSTEM_VIEW_ROW.name());
+        node.put("nodeId", nodeId.toString());
+        node.put("view", viewName);
+
+        for (int i = 0; i < schema.size(); i++)
+            node.put(schema.get(i), String.valueOf(data.get(i)));
+
+        ps.println(node);
     }
 
     /** @return {@code True} if the operation should be skipped. */
