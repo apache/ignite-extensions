@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.performancestatistics.handlers.QueryHandler;
+import org.apache.ignite.internal.performancestatistics.handlers.SystemViewHandler;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -247,6 +248,40 @@ public class PerformanceStatisticsReportSelfTest {
             assertNotNull(rows);
             assertEquals(10, rows.get("ROWS").asInt());
             assertEquals(20, rows.get("ROWSx2").asInt());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSystemViewHandler() {
+        SystemViewHandler sysViewHandler = new SystemViewHandler();
+
+        int nodesNumber = 10;
+        int viewsNumber = 10;
+
+        List<String> schema = List.of("col1", "col2");
+
+        for (int id = 0; id < nodesNumber; id++) {
+            UUID nodeId = new UUID(0, id);
+
+            for (int i = 0; i < viewsNumber; i++)
+                sysViewHandler.systemView(nodeId, "view" + i, schema, List.of(i, i));
+        }
+
+        JsonNode res = sysViewHandler.results().get("systemView");
+
+        for (int id = 0; id < nodesNumber; id++) {
+            UUID nodeId = new UUID(0, id);
+
+            JsonNode nodeRes = res.get(nodeId.toString());
+
+            for (int i = 0; i < viewsNumber; i++) {
+                JsonNode view = nodeRes.get("view" + i);
+                JsonNode row = view.get(0);
+
+                assertEquals(Integer.toString(i), row.get("col1").asText());
+                assertEquals(Integer.toString(i), row.get("col2").asText());
+            }
         }
     }
 
