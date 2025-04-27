@@ -19,9 +19,9 @@ package org.apache.ignite.internal.performancestatistics.handlers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -49,52 +49,47 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
     private final Map<UUID, Map<String, List<Map<String, Object>>>> results = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Map<String, JsonNode> results() {
-        ObjectNode objNode = MAPPER.createObjectNode();
-
-        results.forEach((id, view) -> {
-            ObjectNode gridObjNode = MAPPER.createObjectNode();
-
-            view.forEach((viewName, table) -> {
-
-                ArrayNode viewTableArrNode = generateTableNode(table);
-
-                gridObjNode.set(viewName, viewTableArrNode);
-            });
-
-            objNode.set(id.toString(), gridObjNode);
-        });
-
-        return Map.of("systemView", objNode);
-    }
-
-    private static ArrayNode generateTableNode(List<Map<String, Object>> table) {
-        ArrayNode viewTableArrNode = MAPPER.createArrayNode();
-
-        for (Map<String, Object> row : table) {
-
-            ObjectNode rowNode = MAPPER.createObjectNode();
-
-            for (Map.Entry<String, Object> entry : row.entrySet())
-                rowNode.put(entry.getKey(), String.valueOf(entry.getValue()));
-
-            viewTableArrNode.add(rowNode);
-        }
-        return viewTableArrNode;
-    }
-
-    /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
         Map<String, List<Map<String, Object>>> nodeData = results.computeIfAbsent(nodeId, uuid -> new HashMap<>());
 
         List<Map<String, Object>> viewData = nodeData.computeIfAbsent(viewName, string -> new ArrayList<>());
 
-        Map <String, Object> row = new TreeMap<>();
+        Map <String, Object> row = new LinkedHashMap<>(schema.size());
 
-        for (int i = 0; i < data.size(); i++) {
+        for (int i = 0; i < data.size(); i++)
             row.put(schema.get(i), data.get(i));
-        }
 
         viewData.add(row);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, JsonNode> results() {
+        ObjectNode resNode = MAPPER.createObjectNode();
+
+        results.forEach((id, views) -> {
+            ObjectNode gridObjNode = MAPPER.createObjectNode();
+
+            views.forEach((view, rows) -> {
+                ArrayNode rowsArrNode = generateRowsNode(rows);
+                gridObjNode.set(view, rowsArrNode);
+            });
+
+            resNode.set(id.toString(), gridObjNode);
+        });
+
+        return Map.of("systemView", resNode);
+    }
+
+    /** */
+    private ArrayNode generateRowsNode(List<Map<String, Object>> rows) {
+        ArrayNode rowsArrNode = MAPPER.createArrayNode();
+
+        for (Map<String, Object> row : rows) {
+            ObjectNode rowNode = MAPPER.createObjectNode();
+            row.forEach((key, value) -> rowNode.put(key, String.valueOf(value)));
+            rowsArrNode.add(rowNode);
+        }
+
+        return rowsArrNode;
     }
 }
