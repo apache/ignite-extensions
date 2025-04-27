@@ -344,6 +344,7 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.println("}");
     }
 
+    /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
         ObjectNode node = MAPPER.createObjectNode();
         node.put("op", SYSTEM_VIEW_ROW.name());
