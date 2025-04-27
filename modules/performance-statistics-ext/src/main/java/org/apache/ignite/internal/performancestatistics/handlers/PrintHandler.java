@@ -348,6 +348,7 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(nodeId);
         ps.print("\",\"view\":\"");
         ps.print(viewName);
+        ps.print("\"");
         for (int i = 0; i < schema.size(); i++) {
             ps.print(",\"" + schema.get(i) +"\":");
             ps.print("\"" + data.get(i) +"\"");
