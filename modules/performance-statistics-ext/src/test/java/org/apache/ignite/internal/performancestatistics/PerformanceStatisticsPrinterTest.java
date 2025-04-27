@@ -378,9 +378,5 @@ public class PerformanceStatisticsPrinterTest {
         @Override public UUID localNodeId() {
             return nodeId;
         }
-
-        @Override public GridSystemViewManager systemView() {
-            return super.systemView();
-        }
     }
 }
