@@ -26,7 +26,6 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 
@@ -66,7 +65,7 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
             objNode.set(id.toString(), gridObjNode);
         });
 
-        return U.map("systemView", objNode);
+        return Map.of("systemView", objNode);
     }
 
     private static ArrayNode generateTableNode(List<Map<String, Object>> table) {
