@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,16 +51,16 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        ObjectNode gridNode;
-        if (!resNode.has(nodeId.toString())) {
+        ObjectNode gridNode = (ObjectNode)resNode.get(nodeId.toString());
+
+        if (gridNode == null) {
             gridNode = MAPPER.createObjectNode();
             resNode.set(nodeId.toString(), gridNode);
         }
-        else
-            gridNode = (ObjectNode)resNode.get(nodeId.toString());
 
-        ArrayNode dataNode;
-        if (!gridNode.has(viewName)) {
+        ArrayNode dataNode = (ArrayNode)gridNode.get(viewName).get("data");
+
+        if (dataNode == null) {
             ObjectNode viewNode = MAPPER.createObjectNode();
             gridNode.set(viewName, viewNode);
 
@@ -70,8 +71,6 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
             dataNode = MAPPER.createArrayNode();
             viewNode.set("data", dataNode);
         }
-        else
-            dataNode = (ArrayNode)gridNode.get(viewName).get("data");
 
         ArrayNode rowNode = MAPPER.createArrayNode();
         data.forEach(attr -> rowNode.add(String.valueOf(attr)));
@@ -80,8 +79,6 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        Map<String, JsonNode> res = new HashMap<>();
-        res.put("systemView", resNode);
-        return res;
+        return Collections.singletonMap("systemView", resNode);
     }
 }
