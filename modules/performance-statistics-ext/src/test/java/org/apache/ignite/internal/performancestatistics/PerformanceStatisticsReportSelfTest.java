@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -276,11 +278,17 @@ public class PerformanceStatisticsReportSelfTest {
             JsonNode nodeRes = res.get(nodeId.toString());
 
             for (int i = 0; i < viewsNumber; i++) {
-                JsonNode view = nodeRes.get("view" + i);
-                JsonNode row = view.get(0);
+                ObjectNode view = (ObjectNode)nodeRes.get("view" + i);
 
-                assertEquals(Integer.toString(i), row.get("col1").asText());
-                assertEquals(Integer.toString(i), row.get("col2").asText());
+                ArrayNode schemaNode = (ArrayNode)view.get("schema");
+
+                assertEquals(schemaNode.get(0).asText(), schema.get(0));
+                assertEquals(schemaNode.get(1).asText(), schema.get(1));
+
+                ArrayNode rowNode = (ArrayNode)view.get("data").get(0);
+
+                assertEquals(Integer.toString(i), rowNode.get(0).asText());
+                assertEquals(Integer.toString(i), rowNode.get(1).asText());
             }
         }
     }

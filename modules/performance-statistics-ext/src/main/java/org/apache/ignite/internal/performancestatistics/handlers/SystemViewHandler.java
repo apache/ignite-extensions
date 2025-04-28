@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -31,65 +29,59 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
 
 /**
  * Builds JSON with system view tables.
- *
+ * <p>
  * Example:
  * <pre>
  * {
  *    $nodeId: {
- *      $systemViewTable: [
- *        { $column1: $value1, $column2: $value2 },
- *        { $column1: $value3, $column2: $value4 }
+ *      $systemViewTable:
+ *        schema: [ $column1, $column2 ],
+ *        data:[
+ *          [ $value1, $value2 ],
+ *          [ $value3, $value4 ]
  *        ]
  *    }
  * }
  * </pre>
  */
 public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
-    /** System view tables. */
-    private final Map<UUID, Map<String, List<Map<String, Object>>>> results = new HashMap<>();
+    /**  */
+    private final ObjectNode resNode = MAPPER.createObjectNode();
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        Map<String, List<Map<String, Object>>> nodeData = results.computeIfAbsent(nodeId, uuid -> new HashMap<>());
+        ObjectNode gridNode;
+        if (!resNode.has(nodeId.toString())) {
+            gridNode = MAPPER.createObjectNode();
+            resNode.set(nodeId.toString(), gridNode);
+        }
+        else
+            gridNode = (ObjectNode)resNode.get(nodeId.toString());
 
-        List<Map<String, Object>> viewData = nodeData.computeIfAbsent(viewName, string -> new ArrayList<>());
+        ArrayNode dataNode;
+        if (!gridNode.has(viewName)) {
+            ObjectNode viewNode = MAPPER.createObjectNode();
+            gridNode.set(viewName, viewNode);
 
-        Map <String, Object> row = new LinkedHashMap<>(schema.size());
+            ArrayNode schemaNode = MAPPER.createArrayNode();
+            schema.forEach(schemaNode::add);
+            viewNode.set("schema", schemaNode);
 
-        for (int i = 0; i < data.size(); i++)
-            row.put(schema.get(i), data.get(i));
+            dataNode = MAPPER.createArrayNode();
+            viewNode.set("data", dataNode);
+        }
+        else
+            dataNode = (ArrayNode)gridNode.get(viewName).get("data");
 
-        viewData.add(row);
+        ArrayNode rowNode = MAPPER.createArrayNode();
+        data.forEach(attr -> rowNode.add(String.valueOf(attr)));
+        dataNode.add(rowNode);
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        ObjectNode resNode = MAPPER.createObjectNode();
-
-        results.forEach((id, views) -> {
-            ObjectNode gridObjNode = MAPPER.createObjectNode();
-
-            views.forEach((view, rows) -> {
-                ArrayNode rowsArrNode = generateRowsNode(rows);
-                gridObjNode.set(view, rowsArrNode);
-            });
-
-            resNode.set(id.toString(), gridObjNode);
-        });
-
-        return Map.of("systemView", resNode);
-    }
-
-    /** */
-    private ArrayNode generateRowsNode(List<Map<String, Object>> rows) {
-        ArrayNode rowsArrNode = MAPPER.createArrayNode();
-
-        for (Map<String, Object> row : rows) {
-            ObjectNode rowNode = MAPPER.createObjectNode();
-            row.forEach((key, value) -> rowNode.put(key, String.valueOf(value)));
-            rowsArrNode.add(rowNode);
-        }
-
-        return rowsArrNode;
+        Map<String, JsonNode> res = new HashMap<>();
+        res.put("systemView", resNode);
+        return res;
     }
 }
