@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER
  * </pre>
  */
 public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
-    /**  */
+    /** */
     private final ObjectNode resNode = MAPPER.createObjectNode();
 
     /** {@inheritDoc} */

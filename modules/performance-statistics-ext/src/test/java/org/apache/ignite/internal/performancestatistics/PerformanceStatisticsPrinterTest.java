@@ -78,6 +78,7 @@ public class PerformanceStatisticsPrinterTest {
     /** Test node ID. */
     private static final UUID NODE_ID = UUID.randomUUID();
 
+    /** Timeout. */
     private static final int TIMEOUT = 10_000;
 
     /** */
