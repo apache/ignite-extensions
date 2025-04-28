@@ -20,6 +20,7 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -121,7 +122,11 @@ public class PerformanceStatisticsPrinterTest {
         AtomicBoolean hasSysCache = new AtomicBoolean(false);
         AtomicBoolean hasMyCache = new AtomicBoolean(false);
 
-        readStatistics(List.of("--ops", SYSTEM_VIEW_ROW.name()), json -> {
+        List<String> args = new ArrayList<>();
+        args.add("--ops");
+        args.add(SYSTEM_VIEW_ROW.name());
+
+        readStatistics(args, json -> {
             if ("cacheGroups".equals(json.get("view").asText())) {
                 hasSysCache.compareAndSet(false, "ignite-sys-cache".equals(json.get("cacheGroupName").asText()));
                 hasMyCache.compareAndSet(false, "myCache".equals(json.get("cacheGroupName").asText()));

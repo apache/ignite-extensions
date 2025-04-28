@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -261,13 +262,20 @@ public class PerformanceStatisticsReportSelfTest {
         int nodesNumber = 10;
         int viewsNumber = 10;
 
-        List<String> schema = List.of("col1", "col2");
+        List<String> schema = new ArrayList<>();
+        schema.add("col1");
+        schema.add("col2");
 
         for (int id = 0; id < nodesNumber; id++) {
             UUID nodeId = new UUID(0, id);
 
-            for (int i = 0; i < viewsNumber; i++)
-                sysViewHandler.systemView(nodeId, "view" + i, schema, List.of(i, i));
+            for (int i = 0; i < viewsNumber; i++) {
+                List<Object> data = new ArrayList<>();
+                data.add(i);
+                data.add(i);
+
+                sysViewHandler.systemView(nodeId, "view" + i, schema, data);
+            }
         }
 
         JsonNode res = sysViewHandler.results().get("systemView");
