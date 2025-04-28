@@ -99,6 +99,7 @@ public class PerformanceStatisticsPrinterTest {
     public void testSystemViewOperation() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setNodeId(NODE_ID);
+
         ListeningTestLogger logger = new ListeningTestLogger(new JavaLogger());
         cfg.setGridLogger(logger);
 
