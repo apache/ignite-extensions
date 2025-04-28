@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.BitSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -29,6 +32,7 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 import static org.apache.ignite.internal.performancestatistics.util.Utils.printEscaped;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
@@ -38,6 +42,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -61,6 +66,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     /** Cache identifiers to filter the output. */
     @Nullable private final Set<Integer> cacheIds;
 
+    /** Generator for system view printing to escape special characters. */
+    private final JsonGenerator sysViewGenerator;
+
     /**
      * @param ps Print stream.
      * @param ops Set of operations to print.
@@ -68,12 +76,13 @@ public class PrintHandler implements PerformanceStatisticsHandler {
      * @param to The maximum operation start time to filter the output.
      * @param cacheIds Cache identifiers to filter the output.
      */
-    public PrintHandler(PrintStream ps, @Nullable BitSet ops, long from, long to, @Nullable Set<Integer> cacheIds) {
+    public PrintHandler(PrintStream ps, @Nullable BitSet ops, long from, long to, @Nullable Set<Integer> cacheIds) throws IOException {
         this.ps = ps;
         this.ops = ops;
         this.from = from;
         this.to = to;
         this.cacheIds = cacheIds;
+        this.sysViewGenerator = MAPPER.getFactory().createGenerator(this.ps);
     }
 
     /** {@inheritDoc} */
@@ -338,6 +347,28 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         ps.print(",\"duration\":");
         ps.print(duration);
         ps.println("}");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
+        try {
+            sysViewGenerator.writeStartObject();
+
+            sysViewGenerator.writeStringField("op", SYSTEM_VIEW_ROW.name());
+            sysViewGenerator.writeStringField("nodeId", nodeId.toString());
+            sysViewGenerator.writeStringField("view", viewName);
+
+            for (int i = 0; i < schema.size(); i++)
+                sysViewGenerator.writeStringField(schema.get(i), String.valueOf(data.get(i)));
+
+            sysViewGenerator.writeEndObject();
+
+            sysViewGenerator.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write view " + viewName + ".", e);
+        }
+
+        ps.println();
     }
 
     /** @return {@code True} if the operation should be skipped. */

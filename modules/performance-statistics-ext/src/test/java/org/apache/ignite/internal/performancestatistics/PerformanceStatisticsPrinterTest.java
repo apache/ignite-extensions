@@ -20,15 +20,21 @@ package org.apache.ignite.internal.performancestatistics;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
@@ -38,6 +44,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.After;
 import org.junit.Before;
@@ -55,6 +63,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_PROPERTY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_ROWS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.SYSTEM_VIEW_ROW;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -70,6 +79,9 @@ public class PerformanceStatisticsPrinterTest {
     /** Test node ID. */
     private static final UUID NODE_ID = UUID.randomUUID();
 
+    /** Timeout. */
+    private static final int TIMEOUT = 10_000;
+
     /** */
     @Before
     public void beforeTest() throws Exception {
@@ -80,6 +92,47 @@ public class PerformanceStatisticsPrinterTest {
     @After
     public void afterTest() throws Exception {
         U.delete(new File(U.defaultWorkDirectory()));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSystemViewOperation() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setNodeId(NODE_ID);
+
+        ListeningTestLogger logger = new ListeningTestLogger(new JavaLogger());
+        cfg.setGridLogger(logger);
+
+        LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
+        logger.registerListener(lsnr);
+
+        try (IgniteEx ign = (IgniteEx)Ignition.start(cfg)) {
+            IgniteCache<String, String> cache = ign.createCache("myCache");
+            cache.put("key", "value");
+
+            ign.context().performanceStatistics().startCollectStatistics();
+
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
+
+            ign.context().performanceStatistics().stopCollectStatistics();
+        }
+
+        AtomicBoolean hasSysCache = new AtomicBoolean(false);
+        AtomicBoolean hasMyCache = new AtomicBoolean(false);
+
+        List<String> args = new ArrayList<>();
+        args.add("--ops");
+        args.add(SYSTEM_VIEW_ROW.name());
+
+        readStatistics(args, json -> {
+            if ("cacheGroups".equals(json.get("view").asText())) {
+                hasSysCache.compareAndSet(false, "ignite-sys-cache".equals(json.get("cacheGroupName").asText()));
+                hasMyCache.compareAndSet(false, "myCache".equals(json.get("cacheGroupName").asText()));
+            }
+        });
+
+        assertTrue("Could not find system cache", hasSysCache.get());
+        assertTrue("Could not find myCache", hasMyCache.get());
     }
 
     /** @throws Exception If failed. */
