@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsHandler;
@@ -65,6 +66,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
     /** Cache identifiers to filter the output. */
     @Nullable private final Set<Integer> cacheIds;
 
+    /** Generator for system view printing to escape special characters. */
+    private final JsonGenerator sysViewGenerator;
+
     /**
      * @param ps Print stream.
      * @param ops Set of operations to print.
@@ -72,12 +76,13 @@ public class PrintHandler implements PerformanceStatisticsHandler {
      * @param to The maximum operation start time to filter the output.
      * @param cacheIds Cache identifiers to filter the output.
      */
-    public PrintHandler(PrintStream ps, @Nullable BitSet ops, long from, long to, @Nullable Set<Integer> cacheIds) {
+    public PrintHandler(PrintStream ps, @Nullable BitSet ops, long from, long to, @Nullable Set<Integer> cacheIds) throws IOException {
         this.ps = ps;
         this.ops = ops;
         this.from = from;
         this.to = to;
         this.cacheIds = cacheIds;
+        this.sysViewGenerator = MAPPER.getFactory().createGenerator(this.ps);
     }
 
     /** {@inheritDoc} */
@@ -346,15 +351,24 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        ObjectNode node = MAPPER.createObjectNode();
-        node.put("op", SYSTEM_VIEW_ROW.name());
-        node.put("nodeId", nodeId.toString());
-        node.put("view", viewName);
+        try {
+            sysViewGenerator.writeStartObject();
 
-        for (int i = 0; i < schema.size(); i++)
-            node.put(schema.get(i), String.valueOf(data.get(i)));
+            sysViewGenerator.writeStringField("op", SYSTEM_VIEW_ROW.name());
+            sysViewGenerator.writeStringField("nodeId", nodeId.toString());
+            sysViewGenerator.writeStringField("view", viewName);
 
-        ps.println(node);
+            for (int i = 0; i < schema.size(); i++)
+                sysViewGenerator.writeStringField(schema.get(i), String.valueOf(data.get(i)));
+
+            sysViewGenerator.writeEndObject();
+
+            sysViewGenerator.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write view " + viewName + ".", e);
+        }
+
+        ps.println();
     }
 
     /** @return {@code True} if the operation should be skipped. */
