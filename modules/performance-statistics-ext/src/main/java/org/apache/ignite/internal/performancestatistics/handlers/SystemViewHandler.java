@@ -50,26 +50,28 @@ public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        ObjectNode gridNode = (ObjectNode)resNode.get(nodeId.toString());
+        JsonNode gridNode = resNode.get(nodeId.toString());
 
         if (gridNode == null) {
             gridNode = MAPPER.createObjectNode();
             resNode.set(nodeId.toString(), gridNode);
         }
 
-        ArrayNode dataNode = (ArrayNode)gridNode.get(viewName).get("data");
+        JsonNode viewNode = gridNode.get(viewName);
 
-        if (dataNode == null) {
-            ObjectNode viewNode = MAPPER.createObjectNode();
-            gridNode.set(viewName, viewNode);
+        if (viewNode == null) {
+            viewNode = MAPPER.createObjectNode();
+            ((ObjectNode)gridNode).set(viewName, viewNode);
 
             ArrayNode schemaNode = MAPPER.createArrayNode();
             schema.forEach(schemaNode::add);
-            viewNode.set("schema", schemaNode);
+            ((ObjectNode)viewNode).set("schema", schemaNode);
 
-            dataNode = MAPPER.createArrayNode();
-            viewNode.set("data", dataNode);
+            ArrayNode dataNode = MAPPER.createArrayNode();
+            ((ObjectNode)viewNode).set("data", dataNode);
         }
+
+        ArrayNode dataNode = (ArrayNode)viewNode.get("data");
 
         ArrayNode rowNode = MAPPER.createArrayNode();
         data.forEach(attr -> rowNode.add(String.valueOf(attr)));
