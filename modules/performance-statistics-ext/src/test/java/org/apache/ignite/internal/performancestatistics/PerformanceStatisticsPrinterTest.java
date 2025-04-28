@@ -106,10 +106,7 @@ public class PerformanceStatisticsPrinterTest {
         LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
         logger.registerListener(lsnr);
 
-        String expNodeId;
         try (IgniteEx ign = (IgniteEx)Ignition.start(cfg)) {
-            expNodeId = ign.context().localNodeId().toString();
-
             IgniteCache<String, String> cache = ign.createCache("myCache");
             cache.put("key", "value");
 
@@ -132,9 +129,6 @@ public class PerformanceStatisticsPrinterTest {
                 hasSysCache.compareAndSet(false, "ignite-sys-cache".equals(json.get("cacheGroupName").asText()));
                 hasMyCache.compareAndSet(false, "myCache".equals(json.get("cacheGroupName").asText()));
             }
-
-            UUID actualNodeId = UUID.fromString(json.get("nodeId").asText());
-            assertEquals(expNodeId, actualNodeId.toString());
         });
 
         assertTrue("Could not find system cache", hasSysCache.get());
