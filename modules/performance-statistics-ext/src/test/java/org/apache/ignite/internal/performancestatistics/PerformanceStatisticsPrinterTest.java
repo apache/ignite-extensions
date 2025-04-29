@@ -133,6 +133,8 @@ public class PerformanceStatisticsPrinterTest {
 
         assertTrue("Could not find system cache", hasSysCache.get());
         assertTrue("Could not find myCache", hasMyCache.get());
+
+        checkOperationFilter(Collections.singletonList(CACHE_START), F.asList(CACHE_START, CACHE_START));
     }
 
     /** @throws Exception If failed. */

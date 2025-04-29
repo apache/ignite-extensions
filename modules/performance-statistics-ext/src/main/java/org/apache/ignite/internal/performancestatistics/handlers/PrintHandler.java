@@ -351,6 +351,9 @@ public class PrintHandler implements PerformanceStatisticsHandler {
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
+        if (skip(SYSTEM_VIEW_ROW))
+            return;
+
         try {
             sysViewGenerator.writeStartObject();
 
