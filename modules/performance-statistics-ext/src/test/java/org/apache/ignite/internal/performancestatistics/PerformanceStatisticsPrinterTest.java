@@ -33,6 +33,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -133,6 +135,42 @@ public class PerformanceStatisticsPrinterTest {
 
         assertTrue("Could not find system cache", hasSysCache.get());
         assertTrue("Could not find myCache", hasMyCache.get());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSystemViewOperationFilter() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setNodeId(NODE_ID);
+
+        ListeningTestLogger logger = new ListeningTestLogger(new JavaLogger());
+        cfg.setGridLogger(logger);
+
+        LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
+        logger.registerListener(lsnr);
+
+        try (IgniteEx ign = (IgniteEx)Ignition.start(cfg)) {
+            IgniteCache<String, Integer> myCache = ign.createCache("myCache");
+
+            ign.context().performanceStatistics().startCollectStatistics();
+
+            myCache.put("key", 1);
+
+            myCache.query(new ScanQuery<>((key, val) -> true)).getAll();
+
+            myCache.query(new SqlFieldsQuery("select * from sys.tables").setEnforceJoinOrder(true)).getAll();
+
+            assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
+
+            ign.context().performanceStatistics().stopCollectStatistics();
+        }
+
+        List<OperationType> expOps = F.asList(CACHE_START, CACHE_START, QUERY_PROPERTY, QUERY_PROPERTY, QUERY);
+
+        checkOperationFilter(F.asList(CACHE_START, QUERY_PROPERTY, QUERY), expOps);
+        checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START, CACHE_START));
+        checkOperationFilter(F.asList(QUERY_PROPERTY), F.asList(QUERY_PROPERTY, QUERY_PROPERTY));
+        checkOperationFilter(F.asList(QUERY), F.asList(QUERY));
     }
 
     /** @throws Exception If failed. */
