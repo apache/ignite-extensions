@@ -61,7 +61,7 @@ function drawSystemViewsTable() {
     const nodeId = sysViewSearchNodesSelect.val();
     const viewName = searchViewsSelect.val();
 
-    let rows = generateRows(viewName, nodeId);
+    const rows = generateRows(viewName, nodeId);
     const columns = generateColumns(viewName, nodeId);
 
     if (!rows || !columns) {
