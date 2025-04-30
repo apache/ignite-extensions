@@ -102,16 +102,11 @@ function buildSelectSystemViews(el, onSelect) {
     var selectElement = document.querySelector('#searchViews');
     selectElement.innerHTML = '';
 
+    const nodeId = $('#sysViewSearchNodes').val();
     const views = new Set();
-    const nodeId = $('#svSearchNodes').val();
 
-    if (nodeId === 'total') {
-        Object.keys(REPORT_DATA['systemView']).forEach(nodeId => {
-            Object.keys(REPORT_DATA['systemView'][nodeId]).forEach(view => views.add(view));
-        });
-    } else {
-        Object.keys(REPORT_DATA['systemView'][nodeId]).forEach(view => views.add(view));
-    }
+    const keys = nodeId === 'total' ? Object.keys(REPORT_DATA['systemView']) : [nodeId];
+    keys.flatMap(nodeId => Object.keys(REPORT_DATA['systemView'][nodeId])).forEach(view => views.add(view));
 
     views.forEach(function (view) {
         const option = document.createElement('option');
