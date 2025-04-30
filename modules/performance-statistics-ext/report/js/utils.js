@@ -88,18 +88,16 @@ function buildSelectNodes(el, onSelect) {
 /** Builds bootstrap-select for nodes in system view tab. */
 function buildSelectNodesSystemView(el, onSelect) {
     el.append('<option data-content="<b>All nodes</b>" value="total"/>');
-    const nodes = Object.keys(REPORT_DATA['systemView']);
 
-    nodes.forEach(function (nodeId) {
-        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>');
-    });
+    Object.keys(REPORT_DATA['systemView']).forEach(nodeId =>
+        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>'));
 
     el.on('changed.bs.select', onSelect);
 }
 
 /** Builds bootstrap-select for system views. */
 function buildSelectSystemViews(el, onSelect) {
-    var selectElement = document.querySelector('#searchViews');
+    let selectElement = document.querySelector('#searchViews');
     selectElement.innerHTML = '';
 
     const nodeId = $('#sysViewSearchNodes').val();
@@ -115,7 +113,7 @@ function buildSelectSystemViews(el, onSelect) {
         selectElement.appendChild(option);
     });
 
-    var firstValue = $('#searchViews option:first').val();
+    const firstValue = $('#searchViews option:first').val();
     selectElement = $('#searchViews');
     selectElement.selectpicker('val', firstValue);
 
