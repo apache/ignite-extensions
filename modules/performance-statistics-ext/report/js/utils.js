@@ -85,7 +85,7 @@ function buildSelectNodes(el, onSelect) {
     el.on('changed.bs.select', onSelect);
 }
 
-/** Builds bootstrap-select for nodes in System View Tab. */
+/** Builds bootstrap-select for nodes in system view tab. */
 function buildSelectNodesSystemView(el, onSelect) {
     el.append('<option data-content="<b>All nodes</b>" value="total"/>');
     const nodes = Object.keys(REPORT_DATA['systemView']);
