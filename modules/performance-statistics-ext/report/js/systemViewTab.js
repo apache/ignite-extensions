@@ -15,64 +15,56 @@
  * limitations under the License.
  */
 
-const svSearchNodesSelect = $('#svSearchNodes');
+const sysViewSearchNodesSelect = $('#sysViewSearchNodes');
 const searchViewsSelect = $('#searchViews');
 
-function getUniqueKeys(dataTable) {
-    const keys = new Set();
-    dataTable.forEach(function (row) {
-        Object.keys(row).forEach(function (key) {
-            keys.add(key);
-        });
+function generateColumns(viewName, nodeId) {
+    const keys = [];
+
+    if (nodeId === "total")
+        keys.push("nodeId");
+
+    const hasSchema = Object.values(REPORT_DATA['systemView']).some(nodeData => {
+        if (nodeData[viewName]) {
+            keys.push(...nodeData[viewName]['schema']);
+            return true;
+        }
+        return false;
     });
-    return Array.from(keys);
+
+    if (!hasSchema)
+        return null;
+
+    return keys.map((key, index) => ({
+        field: index,
+        title: key,
+        sortable: true
+    }));
 }
 
-function generateColumns(keys) {
-    const columns = [];
+function generateRows(viewName, nodeId) {
+    if (nodeId !== "total")
+        return REPORT_DATA['systemView'][nodeId][viewName]['data'];
 
-    keys.forEach(function (key) {
-        columns.push({
-            field: key,
-            title: key.charAt(0).toUpperCase() + key.slice(1),
-            sortable: true
-        });
+    return Object.entries(REPORT_DATA['systemView']).flatMap(([nodeId, nodeData]) => {
+        if (!nodeData[viewName])
+            return [];
+
+        return nodeData[viewName]['data'].map(row => [nodeId, ...row]);
     });
-
-    return columns;
-}
-
-function mergeData(viewName) {
-    const mergedData = [];
-    $.each(REPORT_DATA['systemView'], function (nodeId, data) {
-        if (!data[viewName]) return;
-
-        $.each(data[viewName], function (rowNumber, row) {
-            const rowWithId = new Map();
-
-            rowWithId['System View Node Id'] = nodeId;
-            for (let key in row) rowWithId[key] = row[key];
-
-            mergedData.push(rowWithId);
-        });
-    });
-
-    return mergedData;
 }
 
 function drawSystemViewsTable() {
     const div = document.getElementById('systemViewTableDiv');
     div.innerHTML = "";
 
-    const nodeId = svSearchNodesSelect.val();
+    const nodeId = sysViewSearchNodesSelect.val();
     const viewName = searchViewsSelect.val();
 
-    let data;
+    let rows = generateRows(viewName, nodeId);
+    const columns = generateColumns(viewName, nodeId);
 
-    if (nodeId === "total") data = mergeData(viewName);
-    else data = REPORT_DATA['systemView'][nodeId][viewName];
-
-    if (!data) {
+    if (!rows || !columns) {
         const heading = document.createElement('h2');
         heading.className = 'mt-4';
         heading.textContent = 'No data to display';
@@ -80,11 +72,6 @@ function drawSystemViewsTable() {
         div.appendChild(heading);
         return;
     }
-
-
-    const uniqueKeys = getUniqueKeys(data);
-
-    const columns = generateColumns(uniqueKeys);
 
     const table = document.createElement('table');
 
@@ -95,8 +82,7 @@ function drawSystemViewsTable() {
         pagination: true,
         search: true,
         columns: columns,
-        data: data,
-        sortName: uniqueKeys[0],
+        data: rows,
         sortOrder: 'desc'
     });
 }
@@ -106,7 +92,7 @@ function update() {
     drawSystemViewsTable();
 }
 
-buildSelectNodesSystemView(svSearchNodesSelect, update);
+buildSelectNodesSystemView(sysViewSearchNodesSelect, update);
 buildSelectSystemViews(searchViewsSelect, drawSystemViewsTable);
 
 drawSystemViewsTable();
