@@ -213,11 +213,9 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
      *
      * @param m1 First map to check.
      * @param m2 Second map to check
-     * @param <K> Collection elements key.
-     * @param <V> Collection elements value.
      * @return {@code True} is maps are equal, {@code False} otherwise.
      */
-    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+    public static boolean eqNotOrdered(@Nullable Map<TopicPartition, Long> m1, @Nullable Map<TopicPartition, Long> m2) {
         if (m1 == m2)
             return true;
 
@@ -227,14 +225,11 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         if (m1.size() != m2.size())
             return false;
 
-        for (Map.Entry<K, V> e : m1.entrySet()) {
-            V v1 = e.getValue();
-            V v2 = m2.get(e.getKey());
+        for (Map.Entry<TopicPartition, Long> e : m1.entrySet()) {
+            Long v1 = e.getValue();
+            Long v2 = m2.get(e.getKey());
 
-            if (v1 == v2)
-                continue;
-
-            if (v1 == null || v2 == null)
+            if (!Objects.equals(v1, v2))
                 return false;
         }
 
