@@ -20,12 +20,13 @@ package org.apache.ignite.spark;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -127,8 +128,10 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
         try {
             JavaIgniteContext<String, String> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
 
+            List<Integer> keyList = IntStream.range(0, KEYS_CNT).boxed().collect(Collectors.toList());
+
             ic.fromCache(ENTITY_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), 2).mapToPair(TO_PAIR_F));
+                .savePairs(sc.parallelize(keyList, 2).mapToPair(TO_PAIR_F));
 
             Ignite ignite = Ignition.ignite("grid-0");
 
@@ -188,7 +191,9 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(ENTITY_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), 2).mapToPair(INT_TO_ENTITY_F));
+            List<Integer> cntList = IntStream.range(0, 1001).boxed().collect(Collectors.toList());
+
+            cache.savePairs(sc.parallelize(cntList, 2).mapToPair(INT_TO_ENTITY_F));
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -216,7 +221,9 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(ENTITY_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), 2).mapToPair(INT_TO_ENTITY_F));
+            List<Integer> cntList = IntStream.range(0, 1001).boxed().collect(Collectors.toList());
+
+            cache.savePairs(sc.parallelize(cntList, 2).mapToPair(INT_TO_ENTITY_F));
 
             Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
@@ -264,7 +271,9 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, EntityTestAllTypeFields> cache = ic.fromCache(ENTITY_ALL_TYPES_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, cnt), 2).mapToPair(INT_TO_ENTITY_ALL_FIELDS_F));
+            List<Integer> cntList = IntStream.range(0, 1001).boxed().collect(Collectors.toList());
+
+            cache.savePairs(sc.parallelize(cntList, 2).mapToPair(INT_TO_ENTITY_ALL_FIELDS_F));
 
             EntityTestAllTypeFields e = new EntityTestAllTypeFields(cnt / 2);
             for (Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {

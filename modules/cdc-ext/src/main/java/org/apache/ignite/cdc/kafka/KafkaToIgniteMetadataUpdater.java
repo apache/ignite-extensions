@@ -18,10 +18,12 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +46,7 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.VoidDeserializer;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerBinaryMeta;
 import static org.apache.ignite.cdc.AbstractIgniteCdcStreamer.registerMapping;
@@ -137,7 +141,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
         Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
 
-        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
+        if (!F.isEmpty(offsets0) && eqNotOrdered(offsets, offsets0)) {
             if (log.isDebugEnabled())
                 log.debug("Offsets unchanged, poll skipped");
 
@@ -201,5 +205,39 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(KafkaToIgniteMetadataUpdater.class, this);
+    }
+
+    /**
+     * Compares two maps. Unlike {@code java.util.AbstractMap#equals(...)} method this implementation
+     * checks not only entry sets, but also the keys. Some optimization checks are also used.
+     *
+     * @param m1 First map to check.
+     * @param m2 Second map to check
+     * @param <K> Collection elements key.
+     * @param <V> Collection elements value.
+     * @return {@code True} is maps are equal, {@code False} otherwise.
+     */
+    public static <K, V> boolean eqNotOrdered(@Nullable Map<K, V> m1, @Nullable Map<K, V> m2) {
+        if (m1 == m2)
+            return true;
+
+        if (m1 == null || m2 == null)
+            return false;
+
+        if (m1.size() != m2.size())
+            return false;
+
+        for (Map.Entry<K, V> e : m1.entrySet()) {
+            V v1 = e.getValue();
+            V v2 = m2.get(e.getKey());
+
+            if (v1 == v2)
+                continue;
+
+            if (v1 == null || v2 == null)
+                return false;
+        }
+
+        return true;
     }
 }
