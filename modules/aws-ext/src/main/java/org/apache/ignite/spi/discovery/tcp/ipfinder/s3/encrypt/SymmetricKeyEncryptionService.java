@@ -17,12 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt;
 
+import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -55,8 +57,8 @@ public class SymmetricKeyEncryptionService implements EncryptionService {
         if (secretKey == null)
             throw new IgniteException("Secret key was not set / was set to null.");
 
-        encCipher = IgniteUtils.createCipher(secretKey, Cipher.ENCRYPT_MODE);
-        decCipher = IgniteUtils.createCipher(secretKey, Cipher.DECRYPT_MODE);
+        encCipher = createCipher(secretKey, Cipher.ENCRYPT_MODE);
+        decCipher = createCipher(secretKey, Cipher.DECRYPT_MODE);
     }
 
     /** {@inheritDoc} */
@@ -94,5 +96,25 @@ public class SymmetricKeyEncryptionService implements EncryptionService {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SymmetricKeyEncryptionService.class, this, "super", super.toString());
+    }
+
+    /**
+     * @param key Cipher Key.
+     * @param encMode Enc mode see {@link Cipher#ENCRYPT_MODE}, {@link Cipher#DECRYPT_MODE}, etc.
+     */
+    public static Cipher createCipher(Key key, int encMode) {
+        if (key == null)
+            throw new IgniteException("Cipher Key cannot be null");
+
+        try {
+            Cipher cipher = Cipher.getInstance(key.getAlgorithm());
+
+            cipher.init(encMode, key);
+
+            return cipher;
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+            throw new IgniteException(e);
+        }
     }
 }

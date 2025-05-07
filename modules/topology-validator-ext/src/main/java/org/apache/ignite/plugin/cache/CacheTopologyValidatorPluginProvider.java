@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -351,7 +352,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                                         " mode. Cache writes were already restricted for all configured caches, but this" +
                                         " step is still required in order to be able to unlock cache writes in the future." +
                                         " Retry this operation manually, if possible [segmentedNodes=" +
-                                        F.viewReadOnly(discoCache.allNodes(), F.node2id()) + "]", e);
+                                        F.viewReadOnly(discoCache.allNodes(), ClusterNodeFunc.node2id()) + "]", e);
                             }
                         }
                     }, PUBLIC_POOL);
@@ -361,7 +362,7 @@ public class CacheTopologyValidatorPluginProvider implements PluginProvider<Plug
                 }
 
                 U.warn(log, "Cluster segmentation was detected. Write to all user caches were blocked" +
-                    " [segmentedNodes=" + F.viewReadOnly(discoCache.allNodes(), F.node2id()) + ']');
+                    " [segmentedNodes=" + F.viewReadOnly(discoCache.allNodes(), ClusterNodeFunc.node2id()) + ']');
             }
 
             state = locStateCopy;

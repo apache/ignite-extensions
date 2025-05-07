@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spark;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.Ignite;
@@ -26,7 +29,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.spark.SparkConf;
@@ -117,14 +119,18 @@ public class JavaEmbeddedIgniteRDDWithLocalStoreSelfTest extends GridCommonAbstr
             for (int i = 0; i < 1000; i++)
                 storeMap.put(i, i);
 
+            List<Integer> cntList = IntStream.range(1000, 2000).boxed().collect(Collectors.toList());
+
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(1000, 2000), GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, false);
+                .savePairs(sc.parallelize(cntList, GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, false);
 
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, storeMap.get(i));
 
+            cntList = IntStream.range(2000, 3000).boxed().collect(Collectors.toList());
+
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(2000, 3000), GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, true);
+                .savePairs(sc.parallelize(cntList, GRID_CNT).mapToPair(SIMPLE_FUNCTION), true, true);
 
             for (int i = 2000; i < 3000; i++)
                 assertNull(storeMap.get(i));
