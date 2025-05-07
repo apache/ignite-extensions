@@ -19,11 +19,12 @@ package org.apache.ignite.spark;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.spark.SparkConf;
@@ -128,8 +129,10 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         try {
             ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
+            List<Integer> keyList = IntStream.range(0, KEYS_CNT).boxed().collect(Collectors.toList());
+
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true, false);
+                .savePairs(sc.parallelize(keyList, GRID_CNT).mapToPair(TO_PAIR_F), true, false);
 
             Ignite ignite = ic.ignite();
 
@@ -200,7 +203,10 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
             int cnt = 1001;
-            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
+
+            List<Integer> cntList = IntStream.range(0, cnt).boxed().collect(Collectors.toList());
+
+            cache.savePairs(sc.parallelize(cntList, GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -238,7 +244,9 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
+            List<Integer> cntList = IntStream.range(0, 1001).boxed().collect(Collectors.toList());
+
+            cache.savePairs(sc.parallelize(cntList, GRID_CNT).mapToPair(INT_TO_ENTITY_F), true, false);
 
             Dataset<Row> df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);

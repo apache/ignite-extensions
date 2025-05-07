@@ -137,7 +137,7 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
         // (stored in 'offsets' field). If there are no offsets changes, polling cycle is skipped.
         Map<TopicPartition, Long> offsets0 = cnsmr.endOffsets(parts, Duration.ofMillis(kafkaReqTimeout));
 
-        if (!F.isEmpty(offsets0) && F.eqNotOrdered(offsets, offsets0)) {
+        if (!F.isEmpty(offsets0) && offsets0.equals(offsets)) {
             if (log.isDebugEnabled())
                 log.debug("Offsets unchanged, poll skipped");
 
