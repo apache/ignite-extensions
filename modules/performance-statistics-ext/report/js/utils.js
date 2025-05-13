@@ -84,3 +84,41 @@ function buildSelectNodes(el, onSelect) {
 
     el.on('changed.bs.select', onSelect);
 }
+
+/** Builds bootstrap-select for nodes in system view tab. */
+function buildSelectNodesSystemView(el, onSelect) {
+    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+
+    Object.keys(REPORT_DATA['systemView']).forEach(nodeId =>
+        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>'));
+
+    el.on('changed.bs.select', onSelect);
+}
+
+/** Builds bootstrap-select for system views. */
+function buildSelectSystemViews(el, onSelect) {
+    let selectElement = document.querySelector('#searchViews');
+    selectElement.innerHTML = '';
+
+    const nodeId = $('#sysViewSearchNodes').val();
+    const views = new Set();
+
+    const keys = nodeId === 'total' ? Object.keys(REPORT_DATA['systemView']) : [nodeId];
+    keys.flatMap(nodeId => Object.keys(REPORT_DATA['systemView'][nodeId])).forEach(view => views.add(view));
+
+    views.forEach(function (view) {
+        const option = document.createElement('option');
+        option.setAttribute('data-content', view);
+        option.setAttribute('value', view);
+        selectElement.appendChild(option);
+    });
+
+    const firstValue = $('#searchViews option:first').val();
+    selectElement = $('#searchViews');
+    selectElement.selectpicker('val', firstValue);
+
+    selectElement.selectpicker('refresh');
+    selectElement.selectpicker('refresh');
+
+    el.on('changed.bs.select', onSelect);
+}
