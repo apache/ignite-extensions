@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -40,6 +43,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.performancestatistics.handlers.QueryHandler;
+import org.apache.ignite.internal.performancestatistics.handlers.SystemViewHandler;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -247,6 +251,53 @@ public class PerformanceStatisticsReportSelfTest {
             assertNotNull(rows);
             assertEquals(10, rows.get("ROWS").asInt());
             assertEquals(20, rows.get("ROWSx2").asInt());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSystemViewHandler() {
+        SystemViewHandler sysViewHandler = new SystemViewHandler();
+
+        int nodesNumber = 10;
+        int viewsNumber = 10;
+
+        List<String> schema = new ArrayList<>();
+        schema.add("col1");
+        schema.add("col2");
+
+        for (int id = 0; id < nodesNumber; id++) {
+            UUID nodeId = new UUID(0, id);
+
+            for (int i = 0; i < viewsNumber; i++) {
+                List<Object> data = new ArrayList<>();
+                data.add(i);
+                data.add(i);
+
+                sysViewHandler.systemView(nodeId, "view" + i, schema, data);
+            }
+        }
+
+        JsonNode res = sysViewHandler.results().get("systemView");
+
+        for (int id = 0; id < nodesNumber; id++) {
+            UUID nodeId = new UUID(0, id);
+
+            JsonNode nodeRes = res.get(nodeId.toString());
+
+            for (int i = 0; i < viewsNumber; i++) {
+                ObjectNode view = (ObjectNode)nodeRes.get("view" + i);
+
+                ArrayNode schemaNode = (ArrayNode)view.get("schema");
+
+                assertEquals(schemaNode.get(0).asText(), schema.get(0));
+                assertEquals(schemaNode.get(1).asText(), schema.get(1));
+
+                ArrayNode rowNode = (ArrayNode)view.get("data").get(0);
+
+                assertEquals(Integer.toString(i), rowNode.get(0).asText());
+                assertEquals(Integer.toString(i), rowNode.get(1).asText());
+            }
         }
     }
 

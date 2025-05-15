@@ -27,6 +27,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.base.Splitter;
@@ -42,9 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.stream.StreamMultipleTupleExtractor;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -534,18 +533,12 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
             final List<StringBuilder> sbs = new ArrayList<>(topics.size());
 
             // initialize String Builders for each topic
-            F.forEach(topics, new IgniteInClosure<String>() {
-                @Override public void apply(String s) {
-                    sbs.add(new StringBuilder());
-                }
-            });
+            topics.forEach(t -> sbs.add(new StringBuilder()));
 
             // fill String Builders for each topic
-            F.forEach(F.range(fromIdx, fromIdx + cnt), new IgniteInClosure<Integer>() {
-                @Override public void apply(Integer integer) {
-                    sbs.get(integer % topics.size()).append(integer.toString() + "," + TEST_DATA.get(integer) + "\n");
-                }
-            });
+            IntStream.range(fromIdx, fromIdx + cnt)
+                .forEach(integer ->
+                    sbs.get(integer % topics.size()).append(integer).append(",").append(TEST_DATA.get(integer)).append("\n"));
 
             // send each buffer out
             for (int i = 0; i < topics.size(); i++) {
@@ -633,11 +626,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
 
                 final Map<Integer, String> answer = new HashMap<>();
 
-                F.forEach(map.keySet(), new IgniteInClosure<String>() {
-                    @Override public void apply(String s) {
-                        answer.put(Integer.parseInt(s), map.get(s));
-                    }
-                });
+                map.keySet().forEach(s -> answer.put(Integer.parseInt(s), map.get(s)));
 
                 return answer;
             }

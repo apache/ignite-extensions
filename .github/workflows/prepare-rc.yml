@@ -172,10 +172,11 @@ jobs:
             })
 
       - name: Checkout Sources Into Distribution
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: ${{ env.EXTENSION_DIST }}/git
           ref: ${{ github.ref_name }}
+          persist-credentials: false
 
       - name: Configure Git for Release
         run: |

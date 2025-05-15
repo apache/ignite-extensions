@@ -23,8 +23,9 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.spi.discovery.tcp.ipfinder.s3.encrypt.SymmetricKeyEncryptionService.createCipher;
 
 /**
  * Provides an implementation of asymmetric encryption to encrypt/decrypt the data.
@@ -66,8 +67,8 @@ public class AsymmetricKeyEncryptionService implements EncryptionService {
         if (publicKey == null)
             throw new IgniteException("Public key was not set / was set to null.");
 
-        encCipher = IgniteUtils.createCipher(privateKey, Cipher.ENCRYPT_MODE);
-        decCipher = IgniteUtils.createCipher(publicKey, Cipher.DECRYPT_MODE);
+        encCipher = createCipher(privateKey, Cipher.ENCRYPT_MODE);
+        decCipher = createCipher(publicKey, Cipher.DECRYPT_MODE);
     }
 
     /** {@inheritDoc} */
