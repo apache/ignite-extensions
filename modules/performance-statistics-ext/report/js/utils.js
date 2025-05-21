@@ -97,28 +97,9 @@ function buildSelectNodesSystemView(el, onSelect) {
 
 /** Builds bootstrap-select for system views. */
 function buildSelectSystemViews(el, onSelect) {
-    let selectElement = document.querySelector('#searchViews');
-    selectElement.innerHTML = '';
+    const views = new Set(Object.values(REPORT_DATA['systemView']).flatMap(nodeData => Object.keys(nodeData)));
 
-    const nodeId = $('#sysViewSearchNodes').val();
-    const views = new Set();
-
-    const keys = nodeId === 'total' ? Object.keys(REPORT_DATA['systemView']) : [nodeId];
-    keys.flatMap(nodeId => Object.keys(REPORT_DATA['systemView'][nodeId])).forEach(view => views.add(view));
-
-    views.forEach(function (view) {
-        const option = document.createElement('option');
-        option.setAttribute('data-content', view);
-        option.setAttribute('value', view);
-        selectElement.appendChild(option);
-    });
-
-    const firstValue = $('#searchViews option:first').val();
-    selectElement = $('#searchViews');
-    selectElement.selectpicker('val', firstValue);
-
-    selectElement.selectpicker('refresh');
-    selectElement.selectpicker('refresh');
+    views.forEach(view => el.append('<option data-content="' + view + '" value="' + view + '"/>'));
 
     el.on('changed.bs.select', onSelect);
 }

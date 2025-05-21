@@ -43,8 +43,13 @@ function generateColumns(viewName, nodeId) {
 }
 
 function generateRows(viewName, nodeId) {
-    if (nodeId !== "total")
-        return REPORT_DATA['systemView'][nodeId][viewName]['data'];
+    if (nodeId !== "total") {
+        const view = REPORT_DATA['systemView'][nodeId][viewName];
+        if (view)
+            return view['data'];
+
+        return [];
+    }
 
     return Object.entries(REPORT_DATA['systemView']).flatMap(([nodeId, nodeData]) => {
         if (!nodeData[viewName])
@@ -61,13 +66,13 @@ function drawSystemViewsTable() {
     const nodeId = sysViewSearchNodesSelect.val();
     const viewName = searchViewsSelect.val();
 
-    const rows = generateRows(viewName, nodeId);
     const columns = generateColumns(viewName, nodeId);
+    const rows = generateRows(viewName, nodeId);
 
-    if (!rows || !columns) {
-        const heading = document.createElement('h2');
+    if (rows.length === 0) {
+        const heading = document.createElement('h4');
         heading.className = 'mt-4';
-        heading.textContent = 'No data to display';
+        heading.textContent = `No ${viewName} records found on node ${nodeId}.`;
 
         div.appendChild(heading);
         return;
@@ -87,12 +92,7 @@ function drawSystemViewsTable() {
     });
 }
 
-function update() {
-    buildSelectSystemViews(searchViewsSelect, drawSystemViewsTable);
-    drawSystemViewsTable();
-}
-
-buildSelectNodesSystemView(sysViewSearchNodesSelect, update);
+buildSelectNodesSystemView(sysViewSearchNodesSelect, drawSystemViewsTable);
 buildSelectSystemViews(searchViewsSelect, drawSystemViewsTable);
 
 drawSystemViewsTable();
