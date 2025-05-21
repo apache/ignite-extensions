@@ -22,7 +22,7 @@ function generateColumns(viewName, nodeId) {
     const keys = [];
 
     if (nodeId === "total")
-        keys.push("nodeId");
+        keys.push("viewNodeId");
 
     const hasSchema = Object.values(REPORT_DATA['systemView']).some(nodeData => {
         if (nodeData[viewName]) {
