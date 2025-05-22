@@ -74,15 +74,8 @@ function drawSystemViewsTable() {
     table.id = 'systemViewTable';
     div.appendChild(table);
 
-    if (rows.length === 0) {
-        $(table).bootstrapTable({
-            formatNoMatches: () => `No ${viewName} records found on node ${nodeId}.`,
-        });
-
-        return;
-    }
-
     $(table).bootstrapTable({
+        formatNoMatches: () => `No ${viewName} records found on node ${nodeId}.`,
         pagination: true,
         search: true,
         columns: columns,
