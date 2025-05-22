@@ -69,21 +69,20 @@ function drawSystemViewsTable() {
     const columns = generateColumns(viewName, nodeId);
     const rows = generateRows(viewName, nodeId);
 
-    if (rows.length === 0) {
-        const heading = document.createElement('h4');
-        heading.className = 'mt-4';
-        heading.textContent = `No ${viewName} records found on node ${nodeId}.`;
-
-        div.appendChild(heading);
-        return;
-    }
-
     const table = document.createElement('table');
 
     table.id = 'systemViewTable';
     div.appendChild(table);
 
-    $('#systemViewTable').bootstrapTable({
+    if (rows.length === 0) {
+        $(table).bootstrapTable({
+            formatNoMatches: () => `No ${viewName} records found on node ${nodeId}.`,
+        });
+
+        return;
+    }
+
+    $(table).bootstrapTable({
         pagination: true,
         search: true,
         columns: columns,
