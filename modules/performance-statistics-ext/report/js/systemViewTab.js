@@ -75,7 +75,7 @@ function drawSystemViewsTable() {
     div.appendChild(table);
 
     $(table).bootstrapTable({
-        formatNoMatches: () => `The ${viewName} system view is empty on node ${nodeId}`,
+        formatNoMatches: () => `The "${viewName}" system view is empty on node "${nodeId}".`,
         pagination: true,
         search: true,
         columns: columns,
