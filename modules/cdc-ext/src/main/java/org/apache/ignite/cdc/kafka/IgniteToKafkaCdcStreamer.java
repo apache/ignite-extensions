@@ -42,7 +42,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
-import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cdc.CdcConsumerEx;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
@@ -87,7 +87,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToKafkaCdcStreamer implements CdcConsumer {
+public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String EVTS_SENT_CNT = "EventsCount";
 
@@ -374,6 +374,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
             if (log.isInfoEnabled())
                 log.info("Items processed [count=" + cntr.value() + ']');
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(MetricRegistry reg) {
+        //No-op
     }
 
     /** {@inheritDoc} */
