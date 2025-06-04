@@ -53,7 +53,7 @@ import static org.apache.ignite.cdc.kafka.IgniteToKafkaCdcStreamer.DFLT_IS_ONLY_
  *
  * @see AbstractCdcEventsApplier
  */
-public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
+public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String EVTS_SENT_CNT = "EventsCount";
 
@@ -129,6 +129,11 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     /** Logger. */
     @LoggerResource
     protected IgniteLogger log;
+
+    /** {@inheritDoc} */
+    @Override public void start(MetricRegistry reg) {
+        //No-op
+    }
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry reg, Path cdcDir) {
