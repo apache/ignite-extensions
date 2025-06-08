@@ -30,6 +30,7 @@ import org.apache.spark.sql.SparkSession.Builder
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst._
 import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.types.DataTypeUtils
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, Range}
 import org.apache.spark.sql.execution._
@@ -101,12 +102,12 @@ class IgniteSparkSession private(
     /** @inheritdoc */
     override def emptyDataset[T: Encoder]: Dataset[T] = {
         val encoder = implicitly[Encoder[T]]
-        new Dataset(self, LocalRelation(encoder.schema.toAttributes), encoder)
+        new Dataset(self, LocalRelation(DataTypeUtils.toAttributes(encoder.schema)), encoder)
     }
 
     /** @inheritdoc */
     override def createDataFrame(rows: java.util.List[Row], schema: StructType): DataFrame = {
-        Dataset.ofRows(self, LocalRelation.fromExternalRows(schema.toAttributes, rows.asScala))
+        Dataset.ofRows(self, LocalRelation.fromExternalRows(DataTypeUtils.toAttributes(schema), rows.asScala))
     }
 
     /** @inheritdoc */
@@ -141,7 +142,7 @@ class IgniteSparkSession private(
     /** @inheritdoc */
     override def createDataset[T: Encoder](data: Seq[T]): Dataset[T] = {
         val enc = encoderFor[T]
-        val attributes = enc.schema.toAttributes
+        val attributes = DataTypeUtils.toAttributes(enc.schema)
         val encoded = data.map(d => enc.createSerializer().apply(d))
         val plan = new LocalRelation(attributes, encoded)
         Dataset[T](self, plan)
@@ -179,7 +180,7 @@ class IgniteSparkSession private(
     /** @inheritdoc */
     override private[sql] def applySchemaToPythonRDD(rdd: RDD[Array[Any]], schema: StructType) = {
         val rowRdd = rdd.map(r => python.EvaluatePython.makeFromJava(schema).asInstanceOf[InternalRow])
-        Dataset.ofRows(self, LogicalRDD(schema.toAttributes, rowRdd)(self))
+        Dataset.ofRows(self, LogicalRDD(DataTypeUtils.toAttributes(schema), rowRdd)(self))
     }
 
     /** @inheritdoc */
@@ -198,11 +199,13 @@ class IgniteSparkSession private(
     /** @inheritdoc */
     override def createDataFrame(rowRDD: RDD[Row],
         schema: StructType): DataFrame = {
+
         val catalystRows = {
-            val encoder = RowEncoder(schema).createSerializer()
+            val encoder = Encoders.row(schema).asInstanceOf[ExpressionEncoder[Row]].createSerializer()
             rowRDD.map(encoder.apply)
         }
-        val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
+        val logicalPlan = LogicalRDD(DataTypeUtils.toAttributes(schema), catalystRows)(self)
+
         Dataset.ofRows(self, logicalPlan)
     }
 
