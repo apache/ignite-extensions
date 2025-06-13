@@ -200,8 +200,9 @@ class IgniteSparkSession private(
     override def createDataFrame(rowRDD: RDD[Row],
         schema: StructType): DataFrame = {
         val catalystRows = {
-            val encoder = RowEncoder(schema).createSerializer()
+            val encoder = ExpressionEncoder.apply(schema).createSerializer()
             rowRDD.map(encoder.apply)
+//            rowRDD
         }
         val logicalPlan = LogicalRDD(DataTypeUtils.toAttributes(schema), catalystRows)(self)
         Dataset.ofRows(self, logicalPlan)
