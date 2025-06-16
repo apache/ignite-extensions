@@ -52,8 +52,8 @@ private[optimization] object DateExpressions extends SupportedExpressions {
         case Month(date) ⇒
             checkChild(date)
 
-//        case ParseToDate(left, format, child, false) ⇒
-//            checkChild(left) && (format.isEmpty || checkChild(format.get)) && checkChild(child)
+        case ParseToDate(left, format, _, _) ⇒
+            checkChild(left) && (format.isEmpty || checkChild(format.get))
 
         case Quarter(date) ⇒
             checkChild(date)
@@ -101,7 +101,7 @@ private[optimization] object DateExpressions extends SupportedExpressions {
         case Month(date) ⇒
             Some(s"MINUTE(${childToString(date)})")
 
-        case ParseToDate(left, formatOption, _, false) ⇒
+        case ParseToDate(left, formatOption, _, _) ⇒
             formatOption match {
                 case Some(format) ⇒
                     Some(s"PARSEDATETIME(${childToString(left)}, ${childToString(format)})")

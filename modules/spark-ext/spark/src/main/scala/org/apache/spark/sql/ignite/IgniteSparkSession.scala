@@ -202,7 +202,6 @@ class IgniteSparkSession private(
         val catalystRows = {
             val encoder = ExpressionEncoder.apply(schema).createSerializer()
             rowRDD.map(encoder.apply)
-//            rowRDD
         }
         val logicalPlan = LogicalRDD(DataTypeUtils.toAttributes(schema), catalystRows)(self)
         Dataset.ofRows(self, logicalPlan)

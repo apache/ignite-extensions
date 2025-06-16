@@ -32,9 +32,6 @@ private[optimization] object SystemExpressions extends SupportedExpressions {
         case Greatest(children) ⇒
             children.forall(checkChild)
 
-//        case IfNull(left, right, _) ⇒
-//            checkChild(left) && checkChild(right)
-
         case Least(children) ⇒
             children.forall(checkChild)
 
@@ -77,9 +74,6 @@ private[optimization] object SystemExpressions extends SupportedExpressions {
 
         case Greatest(children) ⇒
             Some(s"GREATEST(${children.map(childToString(_)).mkString(", ")})")
-
-//        case IfNull(left, right, _) ⇒
-//            Some(s"IFNULL(${childToString(left)}, ${childToString(right)})")
 
         case Least(children) ⇒
             Some(s"LEAST(${children.map(childToString(_)).mkString(", ")})")
