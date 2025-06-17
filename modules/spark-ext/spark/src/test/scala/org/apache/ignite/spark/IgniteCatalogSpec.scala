@@ -88,7 +88,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         it("Should provide the list of all schemas") {
             val schemas = igniteSession.catalog.listDatabases().collect()
 
-            schemas.map(_.name).sorted should equal(Array("cache3", "employeeschema", "public"))
+            schemas.map(_.name).sorted should equal(Array("EMPLOYEESCHEMA", "PUBLIC", "cache3"))
         }
 
         it("Should provide ability to query SQL table without explicit registration") {
