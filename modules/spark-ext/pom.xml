@@ -36,8 +36,8 @@
     <properties>
         <scala.library.version>2.12.16</scala.library.version>
         <scala.test.version>3.2.12</scala.test.version>
-        <spark.version>3.2.2</spark.version>
-        <spark.jackson.version>2.12.7</spark.jackson.version>
+        <spark.version>3.5.6</spark.version>
+        <spark.jackson.version>2.15.4</spark.jackson.version>
     </properties>
 
     <modules>

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spark
 
-import org.apache.commons.lang.StringUtils.equalsIgnoreCase
+import org.apache.commons.lang3.StringUtils.equalsIgnoreCase
 import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
