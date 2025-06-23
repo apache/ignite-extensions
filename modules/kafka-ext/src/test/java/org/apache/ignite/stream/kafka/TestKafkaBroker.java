@@ -38,7 +38,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.common.utils.SystemTime;
+import org.apache.kafka.common.utils.Time;
 
 /**
  * Kafka Test Broker.
@@ -78,7 +78,7 @@ public class TestKafkaBroker {
         try {
             zkServer = new TestingServer(ZK_PORT, true);
             kafkaCfg = new KafkaConfig(getKafkaConfig());
-            kafkaSrv = TestUtils.createServer(kafkaCfg, new SystemTime());
+            kafkaSrv = TestUtils.createServer(kafkaCfg, Time.SYSTEM);
 
             kafkaSrv.startup();
         }

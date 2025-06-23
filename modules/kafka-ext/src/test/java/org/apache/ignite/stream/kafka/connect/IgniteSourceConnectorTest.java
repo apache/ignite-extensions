@@ -42,8 +42,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.utils.SystemTime;
-import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -115,7 +114,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         AllConnectorClientConfigOverridePolicy allConnectorClientCfgOverridePlc
             = new AllConnectorClientConfigOverridePolicy();
 
-        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore,
+        worker = new Worker(WORKER_ID, Time.SYSTEM, new Plugins(props), workerCfg, offBackingStore,
             allConnectorClientCfgOverridePlc);
         worker.start();
 
