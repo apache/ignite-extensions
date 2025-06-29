@@ -1,5 +1,6 @@
 package org.apache.ignite.cdc.postgresql;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -170,23 +172,87 @@ public class IgniteToPostgreSqlCdcApplier {
 
         String field;
 
-        BinaryObject keyObj = (BinaryObject)evt.key();
-        BinaryObject valObj = isDelete ? null : (BinaryObject)evt.value();
+        BinaryObject keyObj = (evt.key() instanceof BinaryObject) ? (BinaryObject)evt.key() : null;
+        BinaryObject valObj = (evt.value() instanceof BinaryObject) ? (BinaryObject)evt.value() : null;
 
         int idx = 1;
+        Object obj;
 
         while (itFields.hasNext()) {
             field = itFields.next();
 
             if (cacheIdToPrimaryKeys.get(evt.cacheId()).contains(field))
-                curPrepStmt.setString(idx, keyObj.field(field).toString());
+                if (keyObj != null)
+                    obj = keyObj.field(field);
+                else
+                    obj = evt.key();
             else
-                curPrepStmt.setString(idx, valObj.field(field).toString());
+                if (valObj != null)
+                    obj = valObj.field(field);
+                else
+                    obj = evt.value();
+
+            addObject(idx, obj);
 
             idx++;
         }
 
-        return idx;
+        return idx; //curPrepStmt.setString(idx, evt.value().toString());
+    }
+
+    /**
+     * Sets a value in the PreparedStatement at the given index using the appropriate setter
+     * based on the runtime type of the object.
+     */
+    private void addObject(int idx, Object obj) throws SQLException {
+        if (obj == null) {
+            curPrepStmt.setObject(idx, null);
+
+            return;
+        }
+
+        if (obj instanceof String)
+            curPrepStmt.setString(idx, (String)obj);
+        else if (obj instanceof Integer)
+            curPrepStmt.setInt(idx, (Integer)obj);
+        else if (obj instanceof Long)
+            curPrepStmt.setLong(idx, (Long)obj);
+        else if (obj instanceof Short)
+            curPrepStmt.setShort(idx, (Short)obj);
+        else if (obj instanceof Byte)
+            curPrepStmt.setByte(idx, (Byte)obj);
+        else if (obj instanceof Boolean)
+            curPrepStmt.setBoolean(idx, (Boolean)obj);
+        else if (obj instanceof Float)
+            curPrepStmt.setFloat(idx, (Float)obj);
+        else if (obj instanceof Double)
+            curPrepStmt.setDouble(idx, (Double)obj);
+        else if (obj instanceof BigDecimal)
+            curPrepStmt.setBigDecimal(idx, (BigDecimal)obj);
+        else if (obj instanceof UUID)
+            curPrepStmt.setObject(idx, obj, java.sql.Types.OTHER); // PostgreSQL expects UUID as OTHER
+        else if (obj instanceof byte[])
+            curPrepStmt.setBytes(idx, (byte[])obj);
+        else if (obj instanceof java.sql.Date)
+            curPrepStmt.setDate(idx, (java.sql.Date)obj);
+        else if (obj instanceof java.sql.Time)
+            curPrepStmt.setTime(idx, (java.sql.Time)obj);
+        else if (obj instanceof java.sql.Timestamp)
+            curPrepStmt.setTimestamp(idx, (java.sql.Timestamp)obj);
+        else if (obj instanceof java.util.Date)
+            curPrepStmt.setTimestamp(idx, new java.sql.Timestamp(((java.util.Date)obj).getTime()));
+        else if (obj instanceof java.time.LocalDate)
+            curPrepStmt.setDate(idx, java.sql.Date.valueOf((java.time.LocalDate)obj));
+        else if (obj instanceof java.time.LocalTime)
+            curPrepStmt.setTime(idx, java.sql.Time.valueOf((java.time.LocalTime)obj));
+        else if (obj instanceof java.time.LocalDateTime)
+            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.valueOf((java.time.LocalDateTime)obj));
+        else if (obj instanceof java.time.OffsetDateTime)
+            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.from(((java.time.OffsetDateTime)obj).toInstant()));
+        else if (obj instanceof java.time.ZonedDateTime)
+            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.from(((java.time.ZonedDateTime)obj).toInstant()));
+        else
+            curPrepStmt.setObject(idx, obj);
     }
 
     /**

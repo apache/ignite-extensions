@@ -41,8 +41,10 @@ public final class IgniteToPostgreSqlCdcUtils {
         Map.entry("java.lang.Byte", "SMALLINT"),
         Map.entry("byte", "SMALLINT"),
         Map.entry("java.util.Date", "DATE"),
-        Map.entry("java.time.LocalDate", "DATE"),
+        Map.entry("java.sql.Date", "DATE"),
+        Map.entry("java.sql.Time", "TIME"),
         Map.entry("java.sql.Timestamp", "TIMESTAMP"),
+        Map.entry("java.time.LocalDate", "DATE"),
         Map.entry("java.time.LocalDateTime", "TIMESTAMP"),
         Map.entry("java.util.UUID", "UUID"),
         Map.entry("[B", "BYTEA")
