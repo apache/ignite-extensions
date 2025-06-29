@@ -133,7 +133,7 @@ public final class IgniteToPostgreSqlCdcUtils {
 
         addUpdateFields(entity, sql);
 
-        sql.append(" WHERE version < EXCLUDED.version");
+        sql.append(" WHERE ").append(entity.getTableName()).append(".version < EXCLUDED.version");
 
         return sql.toString();
     }
