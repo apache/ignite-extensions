@@ -47,6 +47,9 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     private static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
     /** */
+    private static final boolean DFLT_CREATE_TABLES = false;
+
+    /** */
     private static final long DFLT_BATCH_SIZE = 1024;
 
     /** */
@@ -60,6 +63,9 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
 
     /** */
     private long maxBatchSize = DFLT_BATCH_SIZE;
+
+    /** */
+    private boolean createTables = DFLT_CREATE_TABLES;
 
     /** Log. */
     @LoggerResource
@@ -141,7 +147,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             true,
             evt -> cachesIds.contains(evt.cacheId()));
 
-        withTx((conn) -> applier.applyCacheEvents(conn, filtered));
+        withTx((conn) -> applier.applyCacheEvents(conn, filtered, createTables));
     }
 
     /** {@inheritDoc} */
@@ -223,6 +229,18 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      */
     public IgniteToPostgreSqlCdcConsumer setMaxBatchSize(int maxBatchSize) {
         this.maxBatchSize = maxBatchSize;
+
+        return this;
+    }
+
+    /**
+     * Enables/disables creation of tables by this instance.
+     *
+     * @param createTables True to create tables on start-up
+     * @return {@code this} for chaining.
+     */
+    public IgniteToPostgreSqlCdcConsumer setCreateTables(boolean createTables) {
+        this.createTables = createTables;
 
         return this;
     }

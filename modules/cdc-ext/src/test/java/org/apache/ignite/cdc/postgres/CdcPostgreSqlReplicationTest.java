@@ -356,8 +356,9 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
+            boolean createTables = idx == 0;
 
-            futs.add(igniteToPostgres(ex.configuration(), cache, "ignite-src-to-postgres-" + idx));
+            futs.add(igniteToPostgres(ex.configuration(), cache, "ignite-src-to-postgres-" + idx, createTables));
         }
 
         return futs;
@@ -366,18 +367,21 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /**
      * @param igniteCfg Ignite configuration.
      * @param cache Cache name to stream to kafka.
+     * @param createTables Create tables flag.
      * @return Future for Change Data Capture application.
      */
     private IgniteInternalFuture<?> igniteToPostgres(
         IgniteConfiguration igniteCfg,
         String cache,
-        String threadName
+        String threadName,
+        boolean createTables
     ) {
         IgniteToPostgreSqlCdcConsumer cdcCnsmr = new IgniteToPostgreSqlCdcConsumer()
             .setCaches(Collections.singleton(cache))
             .setMaxBatchSize(MAX_BATCH_SIZE)
             .setOnlyPrimary(onlyPrimary)
-            .setDataSource(postgres.getPostgresDatabase());
+            .setDataSource(postgres.getPostgresDatabase())
+            .setCreateTables(createTables);
 
         CdcConfiguration cdcCfg = new CdcConfiguration();
 
