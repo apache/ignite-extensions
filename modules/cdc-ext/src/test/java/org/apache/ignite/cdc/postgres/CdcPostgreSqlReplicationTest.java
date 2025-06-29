@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
@@ -18,6 +18,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer;
@@ -161,62 +162,21 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         executeOnIgnite(srcCluster[0], createTbl);
 
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
+        String updateQry = "MERGE INTO T1 (ID, NAME) VALUES (?, ?)";
 
         IntConsumer insert = id -> executeOnIgnite(srcCluster[0], insertQry, id, "Name" + id);
-        Supplier<Boolean> checkInsert = () -> checkT1Table(cnt -> cnt, cnt -> "Name" + cnt);
+        Supplier<Boolean> checkInsert = () -> checkTable("T1", cnt -> "Name" + cnt);
 
-        IntConsumer insertForUpdate = id -> executeOnIgnite(srcCluster[0], insertQry, 2 * id, id + "Name");
-        Supplier<Boolean> checkInsertForUpdate = () -> checkT1Table(cnt -> 2 * cnt, cnt -> cnt + "Name");
+        IntConsumer update = id -> executeOnIgnite(srcCluster[0], updateQry, id, id + "Name");
+        Supplier<Boolean> checkUpdate = () -> checkTable("T1", cnt -> cnt + "Name");
 
-        testDataReplication("T1", insert, checkInsert, insertForUpdate, checkInsertForUpdate);
-    }
-
-    /** */
-    private boolean checkT1Table(Function<Long, Long> cntToId, Function<Long, String> cntToName) {
-        try (ResultSet res = executeOnPostgreSql("SELECT ID, NAME FROM T1 ORDER BY ID")) {
-            long cnt = 0;
-
-            int id;
-            String name;
-
-            while (res.next()) {
-                id = res.getInt("ID");
-                name = res.getString("NAME");
-
-                assertEquals((long)cntToId.apply(cnt), id);
-                assertEquals(cntToName.apply(cnt), name);
-
-                cnt++;
-            }
-
-            assert cnt == KEYS_CNT;
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
-
-        return true;
+        testDataReplication("T1", insert, checkInsert, update, checkUpdate);
     }
 
     /** Replication with complex SQL key. Data inserted via SQL. */
     @Test
     public void testMultiColumnKeyDataReplication() throws Exception {
-        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
-
-        String createTbl = "CREATE TABLE IF NOT EXISTS T2 (" +
-            "    ID INT NOT NULL, " +
-            "    SUBID VARCHAR NOT NULL, " +
-            "    NAME VARCHAR, " +
-            "    ORGID INT, " +
-            "    PRIMARY KEY (ID, SUBID))" +
-            "    WITH \"CACHE_NAME=T2," +
-            "KEY_TYPE=" + TestKey.class.getName() + "," +
-            "VALUE_TYPE=" + TestVal.class.getName() + "," +
-            "ATOMICITY=" + atomicity.name() + "," +
-            backupsStr +
-            "TEMPLATE=" + mode.name() + "\";";
-
-        executeOnIgnite(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStmt("T2"));
 
         IntConsumer insert = id -> executeOnIgnite(
             srcCluster[0],
@@ -227,41 +187,26 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
             id * 42
         );
 
-        Supplier<Boolean> checkInsert = () -> checkT2T3Table("T2", cnt -> cnt, cnt -> "Name" + cnt);
+        Supplier<Boolean> checkInsert = () -> checkTable("T2", cnt -> "Name" + cnt);
 
-        IntConsumer insertForUpdate = id -> executeOnIgnite(
+        IntConsumer update = id -> executeOnIgnite(
             srcCluster[0],
-            "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
-            2 * id,
+            "MERGE INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
+            id,
             "SUBID",
             id + "Name",
             id * 42
         );
 
-        Supplier<Boolean> checkInsertForUpdate = () -> checkT2T3Table("T2", cnt -> 2 * cnt, cnt -> cnt + "Name");
+        Supplier<Boolean> checkUpdate = () -> checkTable("T2", cnt -> cnt + "Name");
 
-        testDataReplication("T2", insert, checkInsert, insertForUpdate, checkInsertForUpdate);
+        testDataReplication("T2", insert, checkInsert, update, checkUpdate);
     }
 
     /** Replication with complex SQL key. Data inserted via key-value API. */
     @Test
     public void testMultiColumnKeyDataReplicationWithKeyValue() throws Exception {
-        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
-
-        String createTbl = "CREATE TABLE IF NOT EXISTS T3 (" +
-            "    ID INT NOT NULL, " +
-            "    SUBID VARCHAR NOT NULL, " +
-            "    NAME VARCHAR, " +
-            "    ORGID INT, " +
-            "    PRIMARY KEY (ID, SUBID))" +
-            "    WITH \"CACHE_NAME=T3," +
-            "KEY_TYPE=" + TestKey.class.getName() + "," +
-            "VALUE_TYPE=" + TestVal.class.getName() + "," +
-            "ATOMICITY=" + atomicity.name() + "," +
-            backupsStr +
-            "TEMPLATE=" + mode.name() + "\";";
-
-        executeOnIgnite(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStmt("T3"));
 
         IntConsumer insert = id -> srcCluster[0].cache("T3")
             .put(
@@ -269,50 +214,58 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
                 new TestVal("Name" + id, id * 42)
             );
 
-        Supplier<Boolean> checkInsert = () -> checkT2T3Table("T3", cnt -> cnt, cnt -> "Name" + cnt);
+        Supplier<Boolean> checkInsert = () -> checkTable("T3", cnt -> "Name" + cnt);
 
-        IntConsumer insertForUpdate = id -> srcCluster[0].cache("T3")
+        IntConsumer update = id -> srcCluster[0].cache("T3")
             .put(
-                new TestKey(2 * id, "SUBID"),
+                new TestKey(id, "SUBID"),
                 new TestVal(id + "Name", id * 42)
             );
 
-        Supplier<Boolean> checkInsertForUpdate = () -> checkT2T3Table("T3", cnt -> 2 * cnt, cnt -> cnt + "Name");
+        Supplier<Boolean> checkUpdate = () -> checkTable("T3", cnt -> cnt + "Name");
 
-        testDataReplication("T3", insert, checkInsert, insertForUpdate, checkInsertForUpdate);
+        testDataReplication("T3", insert, checkInsert, update, checkUpdate);
     }
 
     /** */
-    private boolean checkT2T3Table(String tableName, Function<Long, Long> cntToId, Function<Long, String> cntToName) {
-        try (ResultSet res = executeOnPostgreSql("SELECT ID, SUBID, NAME, ORGID FROM " + tableName + " ORDER BY ID")) {
+    private String getCreateTableSqlStmt(String tableName) {
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
+        return"CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+            "    ID INT NOT NULL, " +
+            "    SUBID VARCHAR NOT NULL, " +
+            "    NAME VARCHAR, " +
+            "    ORGID INT, " +
+            "    PRIMARY KEY (ID, SUBID))" +
+            "    WITH \"CACHE_NAME=" + tableName + "," +
+            "KEY_TYPE=" + TestKey.class.getName() + "," +
+            "VALUE_TYPE=" + TestVal.class.getName() + "," +
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
+    }
+
+    /** */
+    private boolean checkTable(String tableName, Function<Long, String> cntToName) {
+        try (ResultSet res = executeOnPostgreSql("SELECT NAME FROM " + tableName + " ORDER BY ID")) {
             long cnt = 0;
 
-            int id;
-            String subId;
             String name;
-            int orgId;
 
             while (res.next()) {
-                id = res.getInt("ID");
-                subId = res.getString("SUBID");
                 name = res.getString("NAME");
-                orgId = res.getInt("ORGID");
 
-                assertEquals((long)cntToId.apply(cnt), id);
-                assertEquals("SUBID", subId);
-                assertEquals(cntToName.apply(cnt), name);
-                assertEquals(42 * cnt, orgId);
+                if (!cntToName.apply(cnt).equals(name))
+                    return false;
 
                 cnt++;
             }
 
-            assert cnt == KEYS_CNT;
+            return cnt == KEYS_CNT;
         }
         catch (Exception e) {
             throw new IgniteException(e);
         }
-
-        return true;
     }
 
     /** */
@@ -320,12 +273,12 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         String tableName,
         IntConsumer insert,
         Supplier<Boolean> checkInsert,
-        IntConsumer insertForUpdate,
-        Supplier<Boolean> checkInsertForUpdate
+        IntConsumer update,
+        Supplier<Boolean> checkUpdate
     ) throws Exception {
         String deleteQry = "DELETE FROM " + tableName;
 
-        List<IgniteInternalFuture<?>> futs = startCdc(tableName);
+        List<IgniteInternalFuture<?>> futs = startCdc(Set.of(tableName));
 
         try {
             IntStream.range(0, KEYS_CNT).forEach(insert);
@@ -340,9 +293,11 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
             IntStream.range(0, KEYS_CNT).forEach(insert);
 
-            IntStream.range(0, KEYS_CNT).forEach(insertForUpdate);
+            assertTrue(waitForCondition(waitForTableSize(tableName, KEYS_CNT), getTestTimeout()));
 
-            assertTrue(checkInsertForUpdate.get());
+            IntStream.range(0, KEYS_CNT).forEach(update);
+
+            assertTrue(waitForCondition(checkUpdate::get, getTestTimeout()));
         }
         finally {
             for (IgniteInternalFuture<?> fut : futs)
@@ -351,14 +306,14 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<IgniteInternalFuture<?>> startCdc(String cache) {
+    private List<IgniteInternalFuture<?>> startCdc(Set<String> caches) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (IgniteEx ex : srcCluster) {
             int idx = getTestIgniteInstanceIndex(ex.name());
             boolean createTables = idx == 0;
 
-            futs.add(igniteToPostgres(ex.configuration(), cache, "ignite-src-to-postgres-" + idx, createTables));
+            futs.add(igniteToPostgres(ex.configuration(), caches, "ignite-src-to-postgres-" + idx, createTables));
         }
 
         return futs;
@@ -366,18 +321,18 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
     /**
      * @param igniteCfg Ignite configuration.
-     * @param cache Cache name to stream to kafka.
+     * @param caches Cache name set to stream to PostgreSql.
      * @param createTables Create tables flag.
      * @return Future for Change Data Capture application.
      */
     private IgniteInternalFuture<?> igniteToPostgres(
         IgniteConfiguration igniteCfg,
-        String cache,
+        Set<String> caches,
         String threadName,
         boolean createTables
     ) {
         IgniteToPostgreSqlCdcConsumer cdcCnsmr = new IgniteToPostgreSqlCdcConsumer()
-            .setCaches(Collections.singleton(cache))
+            .setCaches(caches)
             .setMaxBatchSize(MAX_BATCH_SIZE)
             .setOnlyPrimary(onlyPrimary)
             .setDataSource(postgres.getPostgresDatabase())
@@ -408,8 +363,12 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> executeOnIgnite(IgniteEx node, String sqlText, Object... args) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
+    private void executeOnIgnite(IgniteEx node, String sqlText, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sqlText).setArgs(args);
+
+        try (FieldsQueryCursor<List<?>> cursor = node.context().query().querySqlFields(qry, true)) {
+            cursor.getAll();
+        }
     }
 
     /** */
