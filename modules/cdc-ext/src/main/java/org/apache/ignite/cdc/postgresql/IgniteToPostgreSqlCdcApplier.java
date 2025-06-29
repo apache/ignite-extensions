@@ -282,6 +282,10 @@ public class IgniteToPostgreSqlCdcApplier {
             cacheIdToPrimaryKeys.put(evt.cacheId(), getPrimaryKeys(entity));
 
             cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
+
+            if (log.isInfoEnabled())
+                log.info("Cache table created [tableName=" + entity.getTableName() +
+                    ", columns=" + entity.getFields().keySet() + ']');
         }
     }
 

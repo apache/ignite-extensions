@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -139,16 +140,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testSingleColumnKeyDataReplication() throws Exception {
-        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
-
-        String createTbl = "CREATE TABLE T1(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"" +
-            "CACHE_NAME=T1," +
-            "VALUE_TYPE=T1Type," +
-            "ATOMICITY=" + atomicity.name() + "," +
-            backupsStr +
-            "TEMPLATE=" + mode.name() + "\";";
-
-        executeOnIgnite(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatement("T1"));
 
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
         String updateQry = "MERGE INTO T1 (ID, NAME) VALUES (?, ?)";
@@ -165,7 +157,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** Replication with complex SQL key. Data inserted via SQL. */
     @Test
     public void testMultiColumnKeyDataReplication() throws Exception {
-        executeOnIgnite(srcCluster[0], getCreateTableSqlStmt("T2"));
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatementWithCompositeKey("T2"));
 
         IntConsumer insert = id -> executeOnIgnite(
             srcCluster[0],
@@ -195,7 +187,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** Replication with complex SQL key. Data inserted via key-value API. */
     @Test
     public void testMultiColumnKeyDataReplicationWithKeyValue() throws Exception {
-        executeOnIgnite(srcCluster[0], getCreateTableSqlStmt("T3"));
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatementWithCompositeKey("T3"));
 
         IntConsumer insert = id -> srcCluster[0].cache("T3")
             .put(
@@ -217,7 +209,19 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private String getCreateTableSqlStmt(String tableName) {
+    private String getCreateTableSqlStatement(String tableName) {
+        String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
+
+        return "CREATE TABLE " + tableName + " (ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH \"" +
+            "CACHE_NAME=" + tableName + "," +
+            "VALUE_TYPE=T1Type," +
+            "ATOMICITY=" + atomicity.name() + "," +
+            backupsStr +
+            "TEMPLATE=" + mode.name() + "\";";
+    }
+
+    /** */
+    private String getCreateTableSqlStatementWithCompositeKey(String tableName) {
         String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
 
         return "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
@@ -295,15 +299,78 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<IgniteInternalFuture<?>> startCdc(Set<String> caches) {
+    @Test
+    public void testMultipleTableDataReplication() throws Exception {
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatement("T4"));
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatement("T5"));
+        executeOnIgnite(srcCluster[0], getCreateTableSqlStatement("T6"));
+
+        List<IgniteInternalFuture<?>> futs = startCdc(Set.of("T4", "T5", "T6"));
+
+        try {
+            String insertQry = "INSERT INTO %s VALUES(?, ?)";
+            String updateQry = "MERGE INTO %s (ID, NAME) VALUES (?, ?)";
+
+            executeOnIgnite(srcCluster[0], String.format(insertQry, "T4"), 1, "Name" + 1);
+            executeOnIgnite(srcCluster[0], String.format(updateQry, "T4"), 1, "Name" + 2);
+            executeOnIgnite(srcCluster[0], String.format(insertQry, "T4"), 3, "Name" + 1);
+            executeOnIgnite(srcCluster[0], String.format(insertQry, "T5"), 4, "Name" + 1);
+            executeOnIgnite(srcCluster[0], String.format(insertQry, "T6"), 5, "Name" + 5);
+            executeOnIgnite(srcCluster[0], String.format(insertQry, "T6"), 6, "Name" + 6);
+            executeOnIgnite(srcCluster[0], String.format(updateQry, "T6"), 5, 5 + "Name");
+
+            assertTrue(waitForCondition(waitForTableSize("T4", 2), getTestTimeout()));
+            assertTrue(waitForCondition(waitForTableSize("T5", 1), getTestTimeout()));
+            assertTrue(waitForCondition(waitForTableSize("T6", 2), getTestTimeout()));
+
+            assertTrue(checkRow("T4", 1, "Name" + 2));
+            assertTrue(checkRow("T4", 3, "Name" + 1));
+            assertTrue(checkRow("T5", 4, "Name" + 1));
+            assertTrue(checkRow("T6", 5, 5 + "Name"));
+            assertTrue(checkRow("T6", 6, "Name" + 6));
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
+    /** */
+    private boolean checkRow(String tableName, int id, String exp) {
+        try (ResultSet res = executeOnPostgreSql("SELECT NAME FROM " + tableName + " WHERE ID=" + id)) {
+            res.next();
+
+            String name = res.getString("NAME");
+
+            if (!exp.equals(name))
+                return false;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
+        return true;
+    }
+
+    /** */
+    private List<IgniteInternalFuture<?>> startCdc(Set<String> caches) throws IgniteInterruptedCheckedException {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (IgniteEx ex : srcCluster) {
-            int idx = getTestIgniteInstanceIndex(ex.name());
-            boolean createTables = idx == 0;
+        futs.add(igniteToPostgres(
+            srcCluster[0].configuration(),
+            caches,
+            "ignite-src-to-postgres-0",
+            true)
+        );
 
-            futs.add(igniteToPostgres(ex.configuration(), caches, "ignite-src-to-postgres-" + idx, createTables));
-        }
+        assertTrue(waitForCondition(waitForTablesCreatedOnPostgres(caches), getTestTimeout()));
+
+        futs.add(igniteToPostgres(
+            srcCluster[1].configuration(),
+            caches,
+            "ignite-src-to-postgres-1",
+            false)
+        );
 
         return futs;
     }
@@ -333,6 +400,32 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
         return runAsync(new CdcMain(igniteCfg, null, cdcCfg), threadName);
+    }
+
+    /** */
+    private GridAbsPredicate waitForTablesCreatedOnPostgres(Set<String> caches) {
+        return () -> {
+            String sql = "SELECT EXISTS (" +
+                "  SELECT 1 FROM information_schema.tables " +
+                "  WHERE table_name = '%s'" +
+                ")";
+
+            for (String cache : caches) {
+                try (ResultSet rs = executeOnPostgreSql(String.format(sql, cache.toLowerCase()))) {
+                    rs.next();
+
+                    if (!rs.getBoolean(1))
+                        return false;
+                }
+                catch (SQLException e) {
+                    log.error(e.getMessage(), e);
+
+                    throw new IgniteException(e);
+                }
+            }
+
+            return true;
+        };
     }
 
     /** */
