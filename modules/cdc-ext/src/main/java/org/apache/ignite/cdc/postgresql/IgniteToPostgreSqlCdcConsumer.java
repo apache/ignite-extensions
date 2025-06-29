@@ -1,24 +1,21 @@
 package org.apache.ignite.cdc.postgresql;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -35,16 +32,22 @@ import org.apache.ignite.resources.LoggerResource;
  */
 public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     /** */
+    public static final String EVTS_SENT_CNT = "EventsCount";
+
+    /** */
+    public static final String EVTS_SENT_CNT_DESC = "Count of events applied to PostgreSQL";
+
+    /** */
+    public static final String LAST_EVT_SENT_TIME = "LastEventTime";
+
+    /** */
+    public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last applied event to PostgreSQL";
+
+    /** */
     private static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
     /** */
-    private static final long DFLT_SQL_BATCH_SIZE = 1024;
-
-    /** */
-    private static final long DFLT_SQL_VALUE_SIZE = 100;
-
-    /** Manager instance responsible for applying individual CDC events to PostgreSQL. */
-    private final IgniteToPostgreSqlCdcManager replicationMgr = new IgniteToPostgreSqlCdcManager();
+    private static final long DFLT_BATCH_SIZE = 1024;
 
     /** */
     private DataSource dataSrc;
@@ -56,10 +59,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
     /** */
-    private long sqlBatchSize = DFLT_SQL_BATCH_SIZE;
-
-    /** */
-    private long sqlValSize = DFLT_SQL_VALUE_SIZE;
+    private long maxBatchSize = DFLT_BATCH_SIZE;
 
     /** Log. */
     @LoggerResource
@@ -68,14 +68,30 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     /** Cache IDs. */
     private Set<Integer> cachesIds;
 
+    /** Applier instance responsible for applying individual CDC events to PostgreSQL. */
+    private IgniteToPostgreSqlCdcApplier applier;
+
+    /** Count of events applied to PostgreSQL. */
+    private AtomicLongMetric evtsCnt;
+
+    /** Timestamp of last applied batch to PostgreSQL. */
+    private AtomicLongMetric lastEvtTs;
+
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
+    @Override public void start(MetricRegistry reg) {
         A.notNull(dataSrc, "dataSource");
-        A.notEmpty(caches, "cachesToReplicate");
+        A.notEmpty(caches, "caches");
 
         cachesIds = caches.stream()
             .map(CU::cacheId)
             .collect(Collectors.toSet());
+
+        applier = new IgniteToPostgreSqlCdcApplier(maxBatchSize, log);
+
+        MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
+
+        this.evtsCnt = mreg.longMetric(EVTS_SENT_CNT, EVTS_SENT_CNT_DESC);
+        this.lastEvtTs = mreg.longMetric(LAST_EVT_SENT_TIME, LAST_EVT_SENT_TIME_DESC);
 
         if (log.isInfoEnabled())
             log.info("CDC Ignite to PostgreSQL start-up [cacheIds=" + cachesIds + ']');
@@ -91,40 +107,16 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             evt -> cachesIds.contains(evt.cacheId()));
 
         return withTx((conn) -> {
-            List<PreparedStatement> activeBatch = new ArrayList<>();
+            long evtsSent = applier.applyEvents(conn, filtered);
 
-            int cnt = 0;
+            if (evtsSent > 0) {
+                evtsCnt.add(evtsSent);
+                lastEvtTs.value(System.currentTimeMillis());
 
-            while (filtered.hasNext()) {
-                CdcEvent evt = filtered.next();
-
-                cnt += replicationMgr.handleEvent(evt, conn, activeBatch);
-
-                if (cnt >= sqlBatchSize) {
-                    flush(activeBatch);
-                    cnt = 0;
-                }
+                if (log.isInfoEnabled())
+                    log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
             }
-
-            flush(activeBatch);
         });
-    }
-
-    /**
-     * Flushes accumulated SQL statements by executing each PreparedStatement's batch.
-     *
-     * @param batch List of prepared statements waiting to be executed.
-     */
-    private void flush(List<PreparedStatement> batch) {
-        try {
-            for (PreparedStatement ps : batch)
-                ps.executeBatch();
-
-            batch.clear();
-        }
-        catch (SQLException sqlException) {
-            throw new IgniteException(sqlException);
-        }
     }
 
     /** {@inheritDoc} */
@@ -149,28 +141,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             true,
             evt -> cachesIds.contains(evt.cacheId()));
 
-        withTx((conn) -> {
-            while (filtered.hasNext()) {
-                CdcCacheEvent cacheEvt = filtered.next();
-
-                int cacheId = cacheEvt.cacheId();
-
-                assert cacheEvt.queryEntities().size() == 1 : "There should be exactly 1 QueryEntity for cacheId: " + cacheId;
-
-                QueryEntity entity = cacheEvt.queryEntities().iterator().next();
-
-                IgniteToPostgreSqlCdcApplier hnd = new IgniteToPostgreSqlCdcApplier(entity, sqlValSize);
-
-                try {
-                    hnd.createTableIfNotExists(conn);
-                }
-                catch (SQLException e) {
-                    throw new IgniteException(e);
-                }
-
-                replicationMgr.registerHandler(cacheId, hnd);
-            }
-        });
+        withTx((conn) -> applier.applyCacheEvents(conn, filtered));
     }
 
     /** {@inheritDoc} */
@@ -191,11 +162,8 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      * @param op Function accepting a Connection argument.
      * @return True upon successful completion of the operation.
      */
-    private boolean withTx(IgniteThrowableConsumer<Connection> op) {
-        Connection conn = null;
-
-        try {
-            conn = dataSrc.getConnection();
+    private boolean withTx(Consumer<Connection> op) {
+        try (Connection conn = dataSrc.getConnection()) {
             conn.setAutoCommit(false);
 
             op.accept(conn);
@@ -205,24 +173,9 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             return true;
         }
         catch (Throwable e) {
-            try {
-                if (conn != null && !conn.isClosed())
-                    conn.rollback();
-            }
-            catch (SQLException rollbackEx) {
-                e.addSuppressed(rollbackEx);
-            }
+            log.error(e.getMessage(), e);
 
-            throw new IgniteException("CDC failure, transaction rolled back", e);
-        }
-        finally {
-            try {
-                if (conn != null && !conn.isClosed())
-                    conn.close();
-            }
-            catch (SQLException closeEx) {
-                log.warning("Error closing connection", closeEx);
-            }
+            throw new IgniteException("CDC failure", e);
         }
     }
 
@@ -239,12 +192,12 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     }
 
     /**
-     * Specifies the collection of cache names whose changes need to be replicated to PostgreSQL.
+     * Sets cache names to replicate.
      *
-     * @param caches Collection of cache names.
+     * @param caches Cache names.
      * @return {@code this} for chaining.
      */
-    public IgniteToPostgreSqlCdcConsumer setCachesToReplicate(Collection<String> caches) {
+    public IgniteToPostgreSqlCdcConsumer setCaches(Set<String> caches) {
         this.caches = caches;
 
         return this;
@@ -263,25 +216,13 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     }
 
     /**
-     * Adjusts the number of events after which the batch is flushed to the database.
+     * Sets maximum batch size that will be applied to PostgreSql in one commit.
      *
-     * @param sqlBatchSize New batch size setting.
+     * @param maxBatchSize Maximum batch size.
      * @return {@code this} for chaining.
      */
-    public IgniteToPostgreSqlCdcConsumer setSqlBatchSize(long sqlBatchSize) {
-        this.sqlBatchSize = sqlBatchSize;
-
-        return this;
-    }
-
-    /**
-     * Changes the threshold for splitting large values across multiple SQL rows.
-     *
-     * @param sqlValSize Threshold value size (in bytes).
-     * @return {@code this} for chaining.
-     */
-    public IgniteToPostgreSqlCdcConsumer setSqlValueSize(long sqlValSize) {
-        this.sqlValSize = sqlValSize;
+    public IgniteToPostgreSqlCdcConsumer setMaxBatchSize(int maxBatchSize) {
+        this.maxBatchSize = maxBatchSize;
 
         return this;
     }

@@ -98,9 +98,6 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     private static final int MAX_BATCH_SIZE = 128;
 
     /** */
-    private static final int MAX_VALUE_SIZE = 32;
-
-    /** */
     private static IgniteEx[] srcCluster;
 
     /** */
@@ -161,14 +158,14 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
             backupsStr +
             "TEMPLATE=" + mode.name() + "\";";
 
-        executeSql(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], createTbl);
 
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
 
-        IntConsumer insert = id -> executeSql(srcCluster[0], insertQry, id, "Name" + id);
+        IntConsumer insert = id -> executeOnIgnite(srcCluster[0], insertQry, id, "Name" + id);
         Supplier<Boolean> checkInsert = () -> checkT1Table(cnt -> cnt, cnt -> "Name" + cnt);
 
-        IntConsumer insertForUpdate = id -> executeSql(srcCluster[0], insertQry, 2 * id, id + "Name");
+        IntConsumer insertForUpdate = id -> executeOnIgnite(srcCluster[0], insertQry, 2 * id, id + "Name");
         Supplier<Boolean> checkInsertForUpdate = () -> checkT1Table(cnt -> 2 * cnt, cnt -> cnt + "Name");
 
         testDataReplication("T1", insert, checkInsert, insertForUpdate, checkInsertForUpdate);
@@ -219,9 +216,9 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
             backupsStr +
             "TEMPLATE=" + mode.name() + "\";";
 
-        executeSql(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], createTbl);
 
-        IntConsumer insert = id -> executeSql(
+        IntConsumer insert = id -> executeOnIgnite(
             srcCluster[0],
             "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
             id,
@@ -232,7 +229,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
         Supplier<Boolean> checkInsert = () -> checkT2T3Table("T2", cnt -> cnt, cnt -> "Name" + cnt);
 
-        IntConsumer insertForUpdate = id -> executeSql(
+        IntConsumer insertForUpdate = id -> executeOnIgnite(
             srcCluster[0],
             "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
             2 * id,
@@ -264,7 +261,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
             backupsStr +
             "TEMPLATE=" + mode.name() + "\";";
 
-        executeSql(srcCluster[0], createTbl);
+        executeOnIgnite(srcCluster[0], createTbl);
 
         IntConsumer insert = id -> srcCluster[0].cache("T3")
             .put(
@@ -337,7 +334,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
             assertTrue(checkInsert.get());
 
-            executeSql(srcCluster[0], deleteQry);
+            executeOnIgnite(srcCluster[0], deleteQry);
 
             assertTrue(waitForCondition(waitForTableSize(tableName, 0), getTestTimeout()));
 
@@ -377,9 +374,8 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         String threadName
     ) {
         IgniteToPostgreSqlCdcConsumer cdcCnsmr = new IgniteToPostgreSqlCdcConsumer()
-            .setCachesToReplicate(Collections.singleton(cache))
-            .setSqlBatchSize(MAX_BATCH_SIZE)
-            .setSqlValueSize(MAX_VALUE_SIZE)
+            .setCaches(Collections.singleton(cache))
+            .setMaxBatchSize(MAX_BATCH_SIZE)
             .setOnlyPrimary(onlyPrimary)
             .setDataSource(postgres.getPostgresDatabase());
 
@@ -408,7 +404,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    private List<List<?>> executeOnIgnite(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 
