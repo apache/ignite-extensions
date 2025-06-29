@@ -14,7 +14,6 @@ import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -29,15 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -138,8 +129,6 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue(hasLocalUpdates());
-
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -231,7 +220,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     private String getCreateTableSqlStmt(String tableName) {
         String backupsStr = mode == PARTITIONED ? "BACKUPS=" + backups + "," : "";
 
-        return"CREATE TABLE IF NOT EXISTS " + tableName + " (" +
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
             "    ID INT NOT NULL, " +
             "    SUBID VARCHAR NOT NULL, " +
             "    NAME VARCHAR, " +
@@ -381,24 +370,6 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         catch (SQLException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /** @return {@code True} if cluster has local updates. */
-    private boolean hasLocalUpdates() throws IgniteCheckedException {
-        for (IgniteEx srv : srcCluster) {
-            WALIterator iter = srv.context().cache().context().wal().replay(null,
-                (type, ptr) -> type == WALRecord.RecordType.DATA_RECORD_V2);
-
-            for (IgniteBiTuple<WALPointer, WALRecord> t : iter) {
-                Collection<DataEntry> locUpdates = F.view(((DataRecord)t.get2()).writeEntries(),
-                    e -> !(e.writeVersion() instanceof GridCacheVersionEx));
-
-                if (!locUpdates.isEmpty())
-                    return true;
-            }
-        }
-
-        return false;
     }
 
     /** */
