@@ -192,8 +192,9 @@ public class IgniteToPostgreSqlCdcApplier {
     /**
      * @param conn the JDBC {@link Connection} to the PostgreSQL database
      * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
+     * @param createTables tables creation flag. If true - attempt to create tables will be made.
      */
-    public void applyCacheEvents(Connection conn, Iterator<CdcCacheEvent> evts) {
+    public void applyCacheEvents(Connection conn, Iterator<CdcCacheEvent> evts, boolean createTables) {
         CdcCacheEvent evt;
         QueryEntity entity;
 
@@ -205,7 +206,8 @@ public class IgniteToPostgreSqlCdcApplier {
 
             entity = evt.queryEntities().iterator().next();
 
-            createTableIfNotExists(conn, entity);
+            if (createTables)
+                createTableIfNotExists(conn, entity);
 
             cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
 
