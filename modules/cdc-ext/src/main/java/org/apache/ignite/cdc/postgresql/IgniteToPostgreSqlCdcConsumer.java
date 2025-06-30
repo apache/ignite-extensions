@@ -47,10 +47,13 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     private static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
     /** */
+    private static final long DFLT_BATCH_SIZE = 1024;
+
+    /** */
     private static final boolean DFLT_CREATE_TABLES = false;
 
     /** */
-    private static final long DFLT_BATCH_SIZE = 1024;
+    private static final boolean DFLT_AUTO_COMMIT = false;
 
     /** */
     private DataSource dataSrc;
@@ -66,6 +69,9 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
 
     /** */
     private boolean createTables = DFLT_CREATE_TABLES;
+
+    /** */
+    private boolean autoCommit = DFLT_AUTO_COMMIT;
 
     /** Log. */
     @LoggerResource
@@ -170,7 +176,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      */
     private boolean withTx(Consumer<Connection> op) {
         try (Connection conn = dataSrc.getConnection()) {
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(autoCommit);
 
             op.accept(conn);
 
@@ -241,6 +247,18 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      */
     public IgniteToPostgreSqlCdcConsumer setCreateTables(boolean createTables) {
         this.createTables = createTables;
+
+        return this;
+    }
+
+    /**
+     * Enables/disables autocommit
+     *
+     * @param autoCommit True to commit each batch
+     * @return {@code this} for chaining.
+     */
+    public IgniteToPostgreSqlCdcConsumer setAutoCommit(boolean autoCommit) {
+        this.autoCommit = autoCommit;
 
         return this;
     }
