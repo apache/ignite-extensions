@@ -54,7 +54,14 @@
                 <property name="maxBatchSize" value="{MAX_BATCH_SIZE}" />
                 <property name="onlyPrimary" value="false" />
                 <property name="createTables" value="true" />
+                <property name="dataSource" ref="postgresDataSource" />
             </bean>
         </property>
+    </bean>
+
+    <bean id="postgresDataSource" class="org.postgresql.ds.PGSimpleDataSource">
+        <property name="url" value="jdbc:postgresql://localhost:5432/databaseName" />
+        <property name="user" value="user" />
+        <property name="password" value="password" />
     </bean>
 </beans>
