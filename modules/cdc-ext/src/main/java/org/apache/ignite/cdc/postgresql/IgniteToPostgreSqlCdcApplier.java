@@ -1,10 +1,13 @@
 package org.apache.ignite.cdc.postgresql;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,19 +17,53 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.internal.util.typedef.F;
 
-import static org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcUtils.encodeVersion;
-import static org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcUtils.getCreateTableSqlStatement;
-import static org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcUtils.getDeleteSqlQry;
-import static org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcUtils.getPrimaryKeys;
-import static org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcUtils.getUpsertSqlQry;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /** */
-public class IgniteToPostgreSqlCdcApplier {
+class IgniteToPostgreSqlCdcApplier {
+    /** */
+    public static final String DFLT_SQL_TYPE = "BYTEA";
+
+    /** */
+    public static final Map<String, String> JAVA_TO_SQL_TYPES;
+
+    static {
+        Map<String, String> map = new HashMap<>();
+
+        map.put("java.lang.String", "TEXT");
+        map.put("java.lang.Integer", "INT");
+        map.put("int", "INT");
+        map.put("java.lang.Long", "BIGINT");
+        map.put("long", "BIGINT");
+        map.put("java.lang.Boolean", "BOOLEAN");
+        map.put("boolean", "BOOLEAN");
+        map.put("java.lang.Double", "DOUBLE PRECISION");
+        map.put("double", "DOUBLE PRECISION");
+        map.put("java.lang.Float", "REAL");
+        map.put("float", "REAL");
+        map.put("java.math.BigDecimal", "NUMERIC");
+        map.put("java.lang.Short", "SMALLINT");
+        map.put("short", "SMALLINT");
+        map.put("java.lang.Byte", "SMALLINT");
+        map.put("byte", "SMALLINT");
+        map.put("java.util.Date", "DATE");
+        map.put("java.sql.Date", "DATE");
+        map.put("java.sql.Time", "TIME");
+        map.put("java.sql.Timestamp", "TIMESTAMP");
+        map.put("java.time.LocalDate", "DATE");
+        map.put("java.time.LocalDateTime", "TIMESTAMP");
+        map.put("java.util.UUID", "UUID");
+        map.put("[B", "BYTEA");
+
+        JAVA_TO_SQL_TYPES = Collections.unmodifiableMap(map);
+    }
+
     /** */
     private final long maxBatchSize;
 
@@ -69,7 +106,7 @@ public class IgniteToPostgreSqlCdcApplier {
         long evtsApplied = 0;
 
         int currCacheId = UNDEFINED_CACHE_ID;
-        SqlOperation prevOp = SqlOperation.UNDEFINED;
+        boolean prevOpIsDelete = false;
 
         CdcEvent evt;
 
@@ -79,13 +116,11 @@ public class IgniteToPostgreSqlCdcApplier {
             if (log.isDebugEnabled())
                 log.debug("Event received [evt=" + evt + ']');
 
-            SqlOperation curOp = SqlOperation.of(evt);
-
-            if (currCacheId != evt.cacheId() || curOp != prevOp) {
+            if (currCacheId != evt.cacheId() || prevOpIsDelete ^ (evt.value() == null)) {
                 evtsApplied += executeBatch();
 
                 currCacheId = evt.cacheId();
-                prevOp = curOp;
+                prevOpIsDelete = evt.value() == null;
 
                 prepareStatement(conn, evt);
             }
@@ -306,20 +341,235 @@ public class IgniteToPostgreSqlCdcApplier {
         }
     }
 
-    /** */
-    enum SqlOperation {
-        /** */
-        UPSERT,
+    /**
+     * Generates the SQL statement for creating a table.
+     *
+     * @param entity QueryEntity instance describing the cache structure.
+     * @return SQL statement for creating a table.
+     */
+    public String getCreateTableSqlStatement(QueryEntity entity) {
+        StringBuilder ddl = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(entity.getTableName()).append(" (");
 
-        /** */
-        DELETE,
+        addFieldsAndTypes(entity, ddl);
 
-        /** */
-        UNDEFINED;
+        ddl.append(", version BYTEA NOT NULL");
 
-        /** */
-        public static SqlOperation of(CdcEvent evt) {
-            return evt.value() == null ? DELETE : UPSERT;
+        ddl.append(", PRIMARY KEY (");
+
+        addPrimaryKeys(entity, ddl);
+
+        ddl.append(')').append(')');
+
+        return ddl.toString();
+    }
+
+    /**
+     * Constructs DDL-compatible SQL fragment listing fields along with their mapped SQL types.
+     *
+     * @param entity QueryEntity instance describing the cache structure.
+     * @param sql Target StringBuilder where the result will be appended.
+     */
+    private void addFieldsAndTypes(QueryEntity entity, StringBuilder sql) {
+        Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
+        Map.Entry<String, String> field;
+
+        while (iter.hasNext()) {
+            field = iter.next();
+
+            sql.append(field.getKey()).append(" ").append(JAVA_TO_SQL_TYPES.getOrDefault(field.getValue(), DFLT_SQL_TYPE));
+
+            if (iter.hasNext())
+                sql.append(", ");
         }
+    }
+
+    /**
+     * Generates a parameterized SQL UPSERT (INSERT ... ON CONFLICT DO UPDATE) query
+     * for the given {@link QueryEntity}, including a version-based conflict resolution condition.
+     * <pre>{@code
+     * INSERT INTO my_table (id, name, version) VALUES (?, ?, ?)
+     * ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+     * WHERE version < EXCLUDED.version
+     * }</pre>
+     *
+     * Notes:
+     * <ul>
+     *   <li>The {@code version} field is added to support version-based upsert logic.</li>
+     *   <li>Primary key fields are excluded from the {@code DO UPDATE SET} clause.</li>
+     *   <li>All fields are assigned {@code ?} placeholders for use with {@link java.sql.PreparedStatement}.</li>
+     * </ul>
+     *
+     * @param entity the {@link QueryEntity} describing the table, fields, and primary keys
+     * @return a SQL UPSERT query string with parameter placeholders and version conflict resolution
+     */
+    public String getUpsertSqlQry(QueryEntity entity) {
+        StringBuilder sql = new StringBuilder("INSERT INTO ").append(entity.getTableName()).append(" (");
+
+        addFields(entity, sql);
+
+        sql.append(", version) VALUES (");
+
+        for (int i = 0; i < entity.getFields().size() + 1; ++i) { // version field included
+            sql.append('?');
+
+            if (i < entity.getFields().size())
+                sql.append(", ");
+        }
+
+        sql.append(") ON CONFLICT (");
+
+        addPrimaryKeys(entity, sql);
+
+        sql.append(") DO UPDATE SET ");
+
+        addUpdateFields(entity, sql);
+
+        sql.append(" WHERE ").append(entity.getTableName()).append(".version < EXCLUDED.version");
+
+        return sql.toString();
+    }
+
+    /**
+     * Builds a comma-separated list of field names extracted from the QueryEntity.
+     *
+     * @param entity QueryEntity instance describing the cache structure.
+     * @param sql Target StringBuilder where the result will be appended.
+     */
+    private void addFields(QueryEntity entity, StringBuilder sql) {
+        Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
+        Map.Entry<String, String> field;
+
+        while (iter.hasNext()) {
+            field = iter.next();
+
+            sql.append(field.getKey());
+
+            if (iter.hasNext())
+                sql.append(", ");
+        }
+    }
+
+    /**
+     * Builds a SQL update clause excluding primary key fields, including version-specific fields.
+     *
+     * @param entity QueryEntity instance describing the cache structure.
+     * @param sql Target StringBuilder where the resulting SQL fragment will be appended.
+     */
+    private void addUpdateFields(QueryEntity entity, StringBuilder sql) {
+        Set<String> primaryFields = getPrimaryKeys(entity);
+
+        Iterator<String> itAllFields = F.concat(false, "version", entity.getFields().keySet()).iterator();
+
+        String field;
+
+        while (itAllFields.hasNext()) {
+            field = itAllFields.next();
+
+            if (primaryFields.contains(field))
+                continue;
+
+            sql.append(field).append(" = EXCLUDED.").append(field);
+
+            if (itAllFields.hasNext())
+                sql.append(", ");
+        }
+    }
+
+    /**
+     * Generates a parameterized SQL DELETE query for the given {@link QueryEntity}.
+     * Example:
+     * <pre>{@code
+     * // For a key: id
+     * DELETE FROM my_table WHERE (id = ?)
+     * }</pre>
+     *
+     * If the table has a composite primary key, all keys will be included with AND conditions:
+     * <pre>{@code
+     * // For a composite key: id1, id2
+     * DELETE FROM my_table WHERE (id1 = ? AND id2 = ?)
+     * }</pre>
+     *
+     * @param entity the {@link QueryEntity} describing the table and its primary keys
+     * @return a SQL DELETE query string with parameter placeholders for primary key values
+     */
+    public String getDeleteSqlQry(QueryEntity entity) {
+        StringBuilder deleteQry = new StringBuilder("DELETE FROM ").append(entity.getTableName()).append(" WHERE (");
+
+        Iterator<String> itKeys = getPrimaryKeys(entity).iterator();
+        String key;
+
+        while (itKeys.hasNext()) {
+            key = itKeys.next();
+
+            deleteQry.append(key).append(" = ?");
+
+            if (itKeys.hasNext())
+                deleteQry.append(" AND ");
+        }
+
+        deleteQry.append(')');
+
+        return deleteQry.toString();
+    }
+
+    /**
+     * Generates a SQL fragment listing primary key fields for the given QueryEntity.
+     *
+     * @param entity QueryEntity instance describing the cache structure.
+     * @param sql Target StringBuilder where the resulting SQL fragment will be appended.
+     */
+    private void addPrimaryKeys(QueryEntity entity, StringBuilder sql) {
+        Iterator<String> iterKeys = getPrimaryKeys(entity).iterator();
+
+        while (iterKeys.hasNext()) {
+            sql.append(iterKeys.next());
+
+            if (iterKeys.hasNext())
+                sql.append(", ");
+        }
+    }
+
+    /**
+     * Retrieves the primary key field names from the provided {@link QueryEntity}.
+     * If no primary keys are defined, it returns a set containing the first field from the table.
+     *
+     * @param entity The {@link QueryEntity} representing the table and its metadata.
+     * @return A set of primary key field names or a set containing the first field if no primary keys are defined.
+     */
+    public Set<String> getPrimaryKeys(QueryEntity entity) {
+        Set<String> keys = entity.getKeyFields();
+
+        if (keys == null || keys.isEmpty())
+            return Collections.singleton(entity.getFields().keySet().iterator().next());
+
+        return keys;
+    }
+
+    /**
+     * Encodes the components of a {@link CacheEntryVersion} into a 16-byte array
+     * using big-endian byte order for compact and lexicographically comparable storage.
+     * <p>
+     * The encoding format is:
+     * <ul>
+     *   <li>4 bytes — {@code topologyVersion} (int)</li>
+     *   <li>8 bytes — {@code order} (long)</li>
+     *   <li>4 bytes — {@code nodeOrder} (int)</li>
+     * </ul>
+     * This format ensures that the resulting {@code byte[]} can be compared
+     * lexicographically to determine version ordering (i.e., a larger byte array
+     * represents a newer version), which is compatible with PostgreSQL {@code BYTEA}
+     * comparison semantics.
+     *
+     * @param ver the {@link CacheEntryVersion} instance to encode
+     * @return a 16-byte array representing the version in big-endian format
+     */
+    private byte[] encodeVersion(CacheEntryVersion ver) {
+        ByteBuffer buf = ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN);
+
+        buf.putInt(ver.topologyVersion());
+        buf.putLong(ver.order());
+        buf.putInt(ver.nodeOrder());
+
+        return buf.array();
     }
 }
