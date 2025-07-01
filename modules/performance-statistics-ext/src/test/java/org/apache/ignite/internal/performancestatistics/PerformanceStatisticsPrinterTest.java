@@ -102,11 +102,11 @@ public class PerformanceStatisticsPrinterTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setNodeId(NODE_ID);
 
-        ListeningTestLogger logger = new ListeningTestLogger(new JavaLogger());
-        cfg.setGridLogger(logger);
+        ListeningTestLogger log = new ListeningTestLogger(new JavaLogger());
+        cfg.setGridLogger(log);
 
         LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
-        logger.registerListener(lsnr);
+        log.registerListener(lsnr);
 
         try (IgniteEx ign = (IgniteEx)Ignition.start(cfg)) {
             IgniteCache<String, String> cache = ign.createCache("myCache");
@@ -143,11 +143,11 @@ public class PerformanceStatisticsPrinterTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setNodeId(NODE_ID);
 
-        ListeningTestLogger logger = new ListeningTestLogger(new JavaLogger());
-        cfg.setGridLogger(logger);
+        ListeningTestLogger log = new ListeningTestLogger(new JavaLogger());
+        cfg.setGridLogger(log);
 
         LogListener lsnr = LogListener.matches("Finished writing system views to performance statistics file:").build();
-        logger.registerListener(lsnr);
+        log.registerListener(lsnr);
 
         try (IgniteEx ign = (IgniteEx)Ignition.start(cfg)) {
             IgniteCache<String, Integer> myCache = ign.createCache("myCache");

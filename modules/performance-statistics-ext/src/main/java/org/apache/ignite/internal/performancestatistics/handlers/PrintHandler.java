@@ -367,7 +367,8 @@ public class PrintHandler implements PerformanceStatisticsHandler {
             sysViewGenerator.writeEndObject();
 
             sysViewGenerator.flush();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException("Unable to write view " + viewName + ".", e);
         }
 

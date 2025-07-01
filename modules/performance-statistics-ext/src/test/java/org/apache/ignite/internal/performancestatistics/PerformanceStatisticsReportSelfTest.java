@@ -257,7 +257,7 @@ public class PerformanceStatisticsReportSelfTest {
     /** */
     @Test
     public void testSystemViewHandler() {
-        SystemViewHandler sysViewHandler = new SystemViewHandler();
+        SystemViewHandler sysViewHnd = new SystemViewHandler();
 
         int nodesNumber = 10;
         int viewsNumber = 10;
@@ -274,11 +274,11 @@ public class PerformanceStatisticsReportSelfTest {
                 data.add(i);
                 data.add(i);
 
-                sysViewHandler.systemView(nodeId, "view" + i, schema, data);
+                sysViewHnd.systemView(nodeId, "view" + i, schema, data);
             }
         }
 
-        JsonNode res = sysViewHandler.results().get("systemView");
+        JsonNode res = sysViewHnd.results().get("systemView");
 
         for (int id = 0; id < nodesNumber; id++) {
             UUID nodeId = new UUID(0, id);
