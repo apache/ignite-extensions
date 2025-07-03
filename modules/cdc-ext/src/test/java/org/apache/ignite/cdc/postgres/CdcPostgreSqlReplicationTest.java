@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cdc.postgres;
 
 import java.sql.Connection;
@@ -119,16 +136,41 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testSingleColumnKeyDataReplication() throws Exception {
-        createTable("T1");
+    public void testSingleColumnKeyDataReplicationWithPrimaryFirst() throws Exception {
+        testSingleColumnKeyDataReplication(false);
+    }
+
+    /** */
+    @Test
+    public void testSingleColumnKeyDataReplicationWithPrimaryLast() throws Exception {
+        testSingleColumnKeyDataReplication(true);
+    }
+
+    /** */
+    public void testSingleColumnKeyDataReplication(boolean isPrimaryLast) throws Exception {
+        createTable("T1", isPrimaryLast);
 
         String insertQry = "INSERT INTO T1 VALUES(?, ?)";
-        String updateQry = "MERGE INTO T1 (ID, NAME) VALUES (?, ?)";
 
-        IntConsumer insert = id -> executeOnIgnite(insertQry, id, "Name" + id);
+        String updateQry;
+
+        IntConsumer insert;
+        IntConsumer update;
+
+        if (isPrimaryLast) {
+            updateQry = "MERGE INTO T1 (NAME, ID) VALUES (?, ?)";
+
+            insert = id -> executeOnIgnite(insertQry, "Name" + id, id);
+            update = id -> executeOnIgnite(updateQry, id + "Name", id);
+        }
+        else {
+            updateQry = "MERGE INTO T1 (ID, NAME) VALUES (?, ?)";
+
+            insert = id -> executeOnIgnite(insertQry, id, "Name" + id);
+            update = id -> executeOnIgnite(updateQry, id, id + "Name");
+        }
+
         Supplier<Boolean> checkInsert = () -> checkTable("T1", cnt -> "Name" + cnt);
-
-        IntConsumer update = id -> executeOnIgnite(updateQry, id, id + "Name");
         Supplier<Boolean> checkUpdate = () -> checkTable("T1", cnt -> cnt + "Name");
 
         testDataReplication("T1", insert, checkInsert, update, checkUpdate);
@@ -137,7 +179,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** Replication with complex SQL key. Data inserted via SQL. */
     @Test
     public void testMultiColumnKeyDataReplication() throws Exception {
-        сreateTableWithCompositeKey("T2");
+        createTableWithCompositeKey("T2");
 
         IntConsumer insert = id -> executeOnIgnite(
             "INSERT INTO T2 (ID, SUBID, NAME, ORGID) VALUES(?, ?, ?, ?)",
@@ -165,7 +207,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** Replication with complex SQL key. Data inserted via key-value API. */
     @Test
     public void testMultiColumnKeyDataReplicationWithKeyValue() throws Exception {
-        сreateTableWithCompositeKey("T3");
+        createTableWithCompositeKey("T3");
 
         IntConsumer insert = id -> src.cache("T3")
             .put(
@@ -187,28 +229,10 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void createTable(String tableName) {
-        String createQry = "CREATE TABLE IF NOT EXISTS " + tableName + " (ID BIGINT PRIMARY KEY, NAME VARCHAR)";
-
-        String createQryWithArgs = createQry +
-            "    WITH \"CACHE_NAME=" + tableName + "," +
-            "VALUE_TYPE=T1Type," +
-            "ATOMICITY=" + atomicity.name() + "," +
-            "BACKUPS=0," +
-            "TEMPLATE=PARTITIONED\";";
-
-        executeOnIgnite(createQryWithArgs);
-
-        if (!createTables)
-            createTableOnPostgreSql("CREATE TABLE IF NOT EXISTS " + tableName +
-                " (ID BIGINT PRIMARY KEY, NAME VARCHAR, version BYTEA NOT NULL)");
-    }
-
-    /** */
-    private void сreateTableWithCompositeKey(String tableName) {
+    private void createTableWithCompositeKey(String tableName) {
         String createQry = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
             "    ID INT NOT NULL, " +
-            "    SUBID VARCHAR NOT NULL, " +
+            "    SUBID VARCHAR(15) NOT NULL, " +
             "    NAME VARCHAR, " +
             "    ORGID INT, " +
             "    PRIMARY KEY (ID, SUBID))";
@@ -293,9 +317,9 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMultipleTableDataReplication() throws Exception {
-        createTable("T4");
-        createTable("T5");
-        createTable("T6");
+        createTable("T4", false);
+        createTable("T5", false);
+        createTable("T6", false);
 
         IgniteInternalFuture<?> fut = startCdc(Stream.of("T4", "T5", "T6").collect(Collectors.toSet()));
 
@@ -327,6 +351,29 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void createTable(String tableName, boolean isPrimaryLast) {
+        String createQry;
+
+        if (isPrimaryLast)
+            createQry = "CREATE TABLE IF NOT EXISTS " + tableName + " (NAME VARCHAR(20), ID BIGINT PRIMARY KEY)";
+        else
+            createQry = "CREATE TABLE IF NOT EXISTS " + tableName + " (ID BIGINT PRIMARY KEY, NAME VARCHAR)";
+
+        String createQryWithArgs = createQry +
+            "    WITH \"CACHE_NAME=" + tableName + "," +
+            "VALUE_TYPE=T1Type," +
+            "ATOMICITY=" + atomicity.name() + "," +
+            "BACKUPS=0," +
+            "TEMPLATE=PARTITIONED\";";
+
+        executeOnIgnite(createQryWithArgs);
+
+        if (!createTables)
+            createTableOnPostgreSql("CREATE TABLE IF NOT EXISTS " + tableName +
+                " (ID BIGINT PRIMARY KEY, NAME VARCHAR, version BYTEA NOT NULL)");
+    }
+
+    /** */
     private boolean checkRow(String tableName, int id, String exp) {
         try (ResultSet res = executeOnPostgreSql("SELECT NAME FROM " + tableName + " WHERE ID=" + id)) {
             res.next();
@@ -345,7 +392,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteInternalFuture<?> startCdc(Set<String> caches) throws IgniteInterruptedCheckedException {
-        IgniteInternalFuture<?> fut = igniteToPostgres(src.configuration(), caches, "ignite-src-to-postgres-0");
+        IgniteInternalFuture<?> fut = igniteToPostgres(src.configuration(), caches);
 
         assertTrue(waitForCondition(waitForTablesCreatedOnPostgres(caches), getTestTimeout()));
 
@@ -359,8 +406,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
      */
     private IgniteInternalFuture<?> igniteToPostgres(
         IgniteConfiguration igniteCfg,
-        Set<String> caches,
-        String threadName
+        Set<String> caches
     ) {
         IgniteToPostgreSqlCdcConsumer cdcCnsmr = new IgniteToPostgreSqlCdcConsumer()
             .setCaches(caches)
@@ -374,7 +420,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
         cdcCfg.setConsumer(cdcCnsmr);
         cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
-        return runAsync(new CdcMain(igniteCfg, null, cdcCfg), threadName);
+        return runAsync(new CdcMain(igniteCfg, null, cdcCfg), "ignite-src-to-postgres");
     }
 
     /** */
