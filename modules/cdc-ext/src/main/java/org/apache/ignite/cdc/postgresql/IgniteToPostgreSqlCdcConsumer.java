@@ -1,13 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cdc.postgresql;
 
-import java.sql.Connection;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
@@ -44,7 +58,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last applied event to PostgreSQL";
 
     /** */
-    private static final boolean DFLT_IS_ONLY_PRIMARY = false;
+    private static final boolean DFLT_IS_ONLY_PRIMARY = true;
 
     /** */
     private static final long DFLT_BATCH_SIZE = 1024;
@@ -98,7 +112,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             .map(CU::cacheId)
             .collect(Collectors.toSet());
 
-        applier = new IgniteToPostgreSqlCdcApplier(maxBatchSize, log);
+        applier = new IgniteToPostgreSqlCdcApplier(dataSrc, autoCommit, maxBatchSize, log);
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
@@ -118,17 +132,17 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             evt -> !onlyPrimary || evt.primary(),
             evt -> cachesIds.contains(evt.cacheId()));
 
-        return withTx((conn) -> {
-            long evtsSent = applier.applyEvents(conn, filtered);
+        long evtsSent = applier.applyEvents(filtered);
 
-            if (evtsSent > 0) {
-                evtsCnt.add(evtsSent);
-                lastEvtTs.value(System.currentTimeMillis());
+        if (evtsSent > 0) {
+            evtsCnt.add(evtsSent);
+            lastEvtTs.value(System.currentTimeMillis());
 
-                if (log.isInfoEnabled())
-                    log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
-            }
-        });
+            if (log.isInfoEnabled())
+                log.info("Events applied [evtsApplied=" + evtsCnt.value() + ']');
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -153,7 +167,10 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
             true,
             evt -> cachesIds.contains(evt.cacheId()));
 
-        withTx((conn) -> applier.applyCacheEvents(conn, filtered, createTables));
+        long tablesCreated = applier.applyCacheEvents(filtered, createTables);
+
+        if (tablesCreated > 0 && log.isInfoEnabled())
+            log.info("Cache changes applied [tablesCreatedCnt=" + tablesCreated + ']');
     }
 
     /** {@inheritDoc} */
@@ -166,29 +183,6 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void stop() {
 
-    }
-
-    /**
-     * Executes the given operation inside a database transaction, providing a Connection instance.
-     *
-     * @param op Function accepting a Connection argument.
-     * @return True upon successful completion of the operation.
-     */
-    private boolean withTx(Consumer<Connection> op) {
-        try (Connection conn = dataSrc.getConnection()) {
-            conn.setAutoCommit(autoCommit);
-
-            op.accept(conn);
-
-            conn.commit();
-
-            return true;
-        }
-        catch (Throwable e) {
-            log.error(e.getMessage(), e);
-
-            throw new IgniteException("CDC failure", e);
-        }
     }
 
     /**

@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cdc.postgresql;
 
 import java.math.BigDecimal;
@@ -14,6 +31,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
@@ -36,7 +55,7 @@ class IgniteToPostgreSqlCdcApplier {
     static {
         Map<String, String> map = new HashMap<>();
 
-        map.put("java.lang.String", "TEXT");
+        map.put("java.lang.String", "VARCHAR");
         map.put("java.lang.Integer", "INT");
         map.put("int", "INT");
         map.put("java.lang.Long", "BIGINT");
@@ -47,22 +66,28 @@ class IgniteToPostgreSqlCdcApplier {
         map.put("double", "DOUBLE PRECISION");
         map.put("java.lang.Float", "REAL");
         map.put("float", "REAL");
-        map.put("java.math.BigDecimal", "NUMERIC");
+        map.put("java.math.BigDecimal", "DECIMAL");
         map.put("java.lang.Short", "SMALLINT");
         map.put("short", "SMALLINT");
         map.put("java.lang.Byte", "SMALLINT");
         map.put("byte", "SMALLINT");
-        map.put("java.util.Date", "DATE");
         map.put("java.sql.Date", "DATE");
         map.put("java.sql.Time", "TIME");
+        map.put("java.time.Period", "INTERVAL YEAR TO MONTH");
+        map.put("java.time.Duration", "INTERVAL DAY TO SECOND");
         map.put("java.sql.Timestamp", "TIMESTAMP");
-        map.put("java.time.LocalDate", "DATE");
-        map.put("java.time.LocalDateTime", "TIMESTAMP");
         map.put("java.util.UUID", "UUID");
         map.put("[B", "BYTEA");
+        map.put("java.lang.Object", "OTHER");
 
         JAVA_TO_SQL_TYPES = Collections.unmodifiableMap(map);
     }
+
+    /** */
+    private final DataSource dataSrc;
+
+    /** */
+    private final boolean autoCommit;
 
     /** */
     private final long maxBatchSize;
@@ -89,20 +114,32 @@ class IgniteToPostgreSqlCdcApplier {
     private PreparedStatement curPrepStmt;
 
     /**
+     * @param dataSrc {@link DataSource} - connection pool to PostgreSql
+     * @param autoCommit - autoCommit flag for batch execution
      * @param maxBatchSize the maximum number of CDC events to include in a single batch
      * @param log the {@link IgniteLogger} instance used for logging CDC processing events
      */
-    public IgniteToPostgreSqlCdcApplier(long maxBatchSize, IgniteLogger log) {
+    public IgniteToPostgreSqlCdcApplier(DataSource dataSrc, boolean autoCommit, long maxBatchSize, IgniteLogger log) {
+        this.dataSrc = dataSrc;
+        this.autoCommit = autoCommit;
         this.maxBatchSize = maxBatchSize;
         this.log = log;
     }
 
     /**
-     * @param conn the active JDBC {@link Connection} to the PostgreSQL database
      * @param evts an {@link Iterator} of {@link CdcEvent} objects to be applied
      * @return the total number of events successfully batched and executed
      */
-    public long applyEvents(Connection conn, Iterator<CdcEvent> evts) {
+    public long applyEvents(Iterator<CdcEvent> evts) {
+        return withTx((conn) -> applyEvents(conn, evts));
+    }
+
+    /**
+     * @param conn connection to PostgreSql
+     * @param evts an {@link Iterator} of {@link CdcEvent} objects to be applied
+     * @return the total number of events successfully batched and executed
+     */
+    private long applyEvents(Connection conn, Iterator<CdcEvent> evts) {
         long evtsApplied = 0;
 
         int currCacheId = UNDEFINED_CACHE_ID;
@@ -137,7 +174,9 @@ class IgniteToPostgreSqlCdcApplier {
         return evtsApplied;
     }
 
-    /** */
+    /**
+     * @return the total number of batches successfully executed. One CdcEvent - one batch.
+     */
     private int executeBatch() {
         if (curPrepStmt == null)
             return 0;
@@ -157,7 +196,10 @@ class IgniteToPostgreSqlCdcApplier {
         }
     }
 
-    /** */
+    /**
+     * @param conn connection to PostgreSql
+     * @param evt {@link CdcEvent}
+     */
     private void prepareStatement(Connection conn, CdcEvent evt) {
         String sqlQry;
 
@@ -179,7 +221,9 @@ class IgniteToPostgreSqlCdcApplier {
         }
     }
 
-    /** */
+    /**
+     * @param evt {@link CdcEvent}
+     */
     private void addEvent(CdcEvent evt) {
         try {
             if (evt.value() == null)
@@ -199,7 +243,11 @@ class IgniteToPostgreSqlCdcApplier {
         }
     }
 
-    /** */
+    /**
+     * @param evt {@link CdcEvent}
+     * @param isDelete - flag that indicate delete sql statement usage
+     * @return number of filled values
+     */
     private int addEvent(CdcEvent evt, boolean isDelete) throws SQLException {
         Iterator<String> itFields = isDelete ?
             cacheIdToPrimaryKeys.get(evt.cacheId()).iterator() :
@@ -232,12 +280,14 @@ class IgniteToPostgreSqlCdcApplier {
             idx++;
         }
 
-        return idx; //curPrepStmt.setString(idx, evt.value().toString());
+        return idx;
     }
 
     /**
      * Sets a value in the PreparedStatement at the given index using the appropriate setter
      * based on the runtime type of the object.
+     * @param idx value index in {@link PreparedStatement}
+     * @param obj value
      */
     private void addObject(int idx, Object obj) throws SQLException {
         if (obj == null) {
@@ -291,13 +341,24 @@ class IgniteToPostgreSqlCdcApplier {
     }
 
     /**
-     * @param conn the JDBC {@link Connection} to the PostgreSQL database
+     * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
+     * @param createTables tables creation flag. If true - attempt to create tables will be made
+     * @return number of {@link CdcCacheEvent} processed
+     */
+    public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
+        return withTx((conn) -> applyCacheEvents(conn, evts, createTables));
+    }
+
+    /**
+     * @param conn connection to PostgreSql
      * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
      * @param createTables tables creation flag. If true - attempt to create tables will be made.
      */
-    public void applyCacheEvents(Connection conn, Iterator<CdcCacheEvent> evts, boolean createTables) {
+    private long applyCacheEvents(Connection conn, Iterator<CdcCacheEvent> evts, boolean createTables) {
         CdcCacheEvent evt;
         QueryEntity entity;
+
+        long cnt = 0;
 
         while (evts.hasNext()) {
             evt = evts.next();
@@ -321,6 +382,33 @@ class IgniteToPostgreSqlCdcApplier {
             if (log.isInfoEnabled())
                 log.info("Cache table created [tableName=" + entity.getTableName() +
                     ", columns=" + entity.getFields().keySet() + ']');
+
+            cnt++;
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Executes the given operation inside a database transaction, providing a Connection instance.
+     *
+     * @param op Function accepting a Connection argument and returns operation result.
+     * @return operation result.
+     */
+    private long withTx(Function<Connection, Long> op) {
+        try (Connection conn = dataSrc.getConnection()) {
+            conn.setAutoCommit(autoCommit);
+
+            long res = op.apply(conn);
+
+            conn.commit();
+
+            return res;
+        }
+        catch (Throwable e) {
+            log.error(e.getMessage(), e);
+
+            throw new IgniteException("CDC failure", e);
         }
     }
 
@@ -347,7 +435,7 @@ class IgniteToPostgreSqlCdcApplier {
      * @param entity QueryEntity instance describing the cache structure.
      * @return SQL statement for creating a table.
      */
-    public String getCreateTableSqlStatement(QueryEntity entity) {
+    private String getCreateTableSqlStatement(QueryEntity entity) {
         StringBuilder ddl = new StringBuilder("CREATE TABLE IF NOT EXISTS ").append(entity.getTableName()).append(" (");
 
         addFieldsAndTypes(entity, ddl);
@@ -371,12 +459,36 @@ class IgniteToPostgreSqlCdcApplier {
      */
     private void addFieldsAndTypes(QueryEntity entity, StringBuilder sql) {
         Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
+
         Map.Entry<String, String> field;
+        String type;
+
+        Integer precision;
+        Integer scale;
 
         while (iter.hasNext()) {
             field = iter.next();
+            type = JAVA_TO_SQL_TYPES.getOrDefault(field.getValue(), DFLT_SQL_TYPE);
 
-            sql.append(field.getKey()).append(" ").append(JAVA_TO_SQL_TYPES.getOrDefault(field.getValue(), DFLT_SQL_TYPE));
+            sql.append(field.getKey()).append(" ").append(type);
+
+            precision = entity.getFieldsPrecision().get(field.getKey());
+            scale = entity.getFieldsScale().get(field.getKey());
+
+            if (precision != null && precision > 0) {
+                if (type.equals("VARCHAR") || type.equals("TIME") || type.equals("TIMESTAMP") ||
+                    type.equals("INTERVAL YEAR TO MONTH") || type.equals("DOUBLE PRECISION")
+                )
+                    sql.append("(").append(precision).append(")");
+                else if (type.equals("DECIMAL") || type.equals("REAL") || type.equals("INTERVAL DAY TO SECOND")) {
+                    sql.append("(").append(precision);
+
+                    if (scale != null && scale >= 0)
+                        sql.append(", ").append(scale);
+
+                    sql.append(")");
+                }
+            }
 
             if (iter.hasNext())
                 sql.append(", ");
@@ -402,7 +514,7 @@ class IgniteToPostgreSqlCdcApplier {
      * @param entity the {@link QueryEntity} describing the table, fields, and primary keys
      * @return a SQL UPSERT query string with parameter placeholders and version conflict resolution
      */
-    public String getUpsertSqlQry(QueryEntity entity) {
+    private String getUpsertSqlQry(QueryEntity entity) {
         StringBuilder sql = new StringBuilder("INSERT INTO ").append(entity.getTableName()).append(" (");
 
         addFields(entity, sql);
@@ -462,16 +574,21 @@ class IgniteToPostgreSqlCdcApplier {
 
         String field;
 
+        boolean first = true;
+
         while (itAllFields.hasNext()) {
             field = itAllFields.next();
 
             if (primaryFields.contains(field))
                 continue;
 
+            if (!first)
+                sql.append(", ");
+
             sql.append(field).append(" = EXCLUDED.").append(field);
 
-            if (itAllFields.hasNext())
-                sql.append(", ");
+            if (first)
+                first = false;
         }
     }
 
@@ -492,7 +609,7 @@ class IgniteToPostgreSqlCdcApplier {
      * @param entity the {@link QueryEntity} describing the table and its primary keys
      * @return a SQL DELETE query string with parameter placeholders for primary key values
      */
-    public String getDeleteSqlQry(QueryEntity entity) {
+    private String getDeleteSqlQry(QueryEntity entity) {
         StringBuilder deleteQry = new StringBuilder("DELETE FROM ").append(entity.getTableName()).append(" WHERE (");
 
         Iterator<String> itKeys = getPrimaryKeys(entity).iterator();
@@ -536,11 +653,11 @@ class IgniteToPostgreSqlCdcApplier {
      * @param entity The {@link QueryEntity} representing the table and its metadata.
      * @return A set of primary key field names or a set containing the first field if no primary keys are defined.
      */
-    public Set<String> getPrimaryKeys(QueryEntity entity) {
+    private Set<String> getPrimaryKeys(QueryEntity entity) {
         Set<String> keys = entity.getKeyFields();
 
         if (keys == null || keys.isEmpty())
-            return Collections.singleton(entity.getFields().keySet().iterator().next());
+            return Collections.singleton(entity.getKeyFieldName());
 
         return keys;
     }
