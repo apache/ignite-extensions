@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +32,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,9 +45,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /** */
-class IgniteToPostgreSqlCdcApplier {
+public class IgniteToPostgreSqlCdcApplier {
     /** */
-    public static final String DFLT_SQL_TYPE = "BYTEA";
+    public static final String DFLT_SQL_TYPE = "OTHER";
 
     /** */
     public static final Map<String, String> JAVA_TO_SQL_TYPES;
@@ -71,11 +71,6 @@ class IgniteToPostgreSqlCdcApplier {
         map.put("short", "SMALLINT");
         map.put("java.lang.Byte", "SMALLINT");
         map.put("byte", "SMALLINT");
-        map.put("java.sql.Date", "DATE");
-        map.put("java.sql.Time", "TIME");
-        map.put("java.time.Period", "INTERVAL YEAR TO MONTH");
-        map.put("java.time.Duration", "INTERVAL DAY TO SECOND");
-        map.put("java.sql.Timestamp", "TIMESTAMP");
         map.put("java.util.UUID", "UUID");
         map.put("[B", "BYTEA");
         map.put("java.lang.Object", "OTHER");
@@ -110,9 +105,6 @@ class IgniteToPostgreSqlCdcApplier {
     /** */
     private final Set<Object> curKeys = new HashSet<>();
 
-    /** */
-    private PreparedStatement curPrepStmt;
-
     /**
      * @param dataSrc {@link DataSource} - connection pool to PostgreSql
      * @param autoCommit - autoCommit flag for batch execution
@@ -131,7 +123,20 @@ class IgniteToPostgreSqlCdcApplier {
      * @return the total number of events successfully batched and executed
      */
     public long applyEvents(Iterator<CdcEvent> evts) {
-        return withTx((conn) -> applyEvents(conn, evts));
+        try (Connection conn = dataSrc.getConnection()) {
+            conn.setAutoCommit(autoCommit);
+
+            long res = applyEvents(conn, evts);
+
+            conn.commit();
+
+            return res;
+        }
+        catch (Throwable e) {
+            log.error(e.getMessage(), e);
+
+            throw new IgniteException("CDC failure", e);
+        }
     }
 
     /**
@@ -144,7 +149,8 @@ class IgniteToPostgreSqlCdcApplier {
 
         int currCacheId = UNDEFINED_CACHE_ID;
         boolean prevOpIsDelete = false;
-
+        
+        PreparedStatement curPrepStmt = null;
         CdcEvent evt;
 
         while (evts.hasNext()) {
@@ -154,40 +160,42 @@ class IgniteToPostgreSqlCdcApplier {
                 log.debug("Event received [evt=" + evt + ']');
 
             if (currCacheId != evt.cacheId() || prevOpIsDelete ^ (evt.value() == null)) {
-                evtsApplied += executeBatch();
+                if (curPrepStmt != null)
+                    evtsApplied += executeBatch(curPrepStmt);
 
                 currCacheId = evt.cacheId();
                 prevOpIsDelete = evt.value() == null;
 
-                prepareStatement(conn, evt);
+                curPrepStmt = prepareStatement(conn, evt);
             }
 
             if (curKeys.size() >= maxBatchSize || curKeys.contains(evt.key()))
-                evtsApplied += executeBatch();
+                evtsApplied += executeBatch(curPrepStmt);
 
-            addEvent(evt);
+            addEvent(curPrepStmt, evt);
         }
 
         if (currCacheId != UNDEFINED_CACHE_ID)
-            evtsApplied += executeBatch();
+            evtsApplied += executeBatch(curPrepStmt);
 
         return evtsApplied;
     }
 
     /**
+     * @param curPrepStmt {@link PreparedStatement}
      * @return the total number of batches successfully executed. One CdcEvent - one batch.
      */
-    private int executeBatch() {
-        if (curPrepStmt == null)
-            return 0;
-
+    private int executeBatch(PreparedStatement curPrepStmt) {
         try {
             curKeys.clear();
 
             if (log.isDebugEnabled())
                 log.debug("Applying batch " + curPrepStmt.toString());
 
-            return curPrepStmt.executeBatch().length;
+            if (!curPrepStmt.isClosed())
+                return curPrepStmt.executeBatch().length;
+
+            throw new IgniteException("Tried to execute on closed prepared statement!");
         }
         catch (SQLException e) {
             log.error(e.getMessage(), e);
@@ -199,8 +207,9 @@ class IgniteToPostgreSqlCdcApplier {
     /**
      * @param conn connection to PostgreSql
      * @param evt {@link CdcEvent}
+     * @return relevant {@link PreparedStatement}
      */
-    private void prepareStatement(Connection conn, CdcEvent evt) {
+    private PreparedStatement prepareStatement(Connection conn, CdcEvent evt) {
         String sqlQry;
 
         if (evt.value() == null)
@@ -208,11 +217,14 @@ class IgniteToPostgreSqlCdcApplier {
         else
             sqlQry = cacheIdToUpsertQry.get(evt.cacheId());
 
+        if (sqlQry == null)
+            throw new IgniteException("No SQL query is found for cacheId=" + evt.cacheId());
+
         if (log.isDebugEnabled())
             log.debug("Statement updated [cacheId=" + evt.cacheId() + ", sqlQry=" + sqlQry + ']');
 
         try {
-            curPrepStmt = conn.prepareStatement(sqlQry);
+            return conn.prepareStatement(sqlQry);
         }
         catch (SQLException e) {
             log.error(e.getMessage(), e);
@@ -222,14 +234,15 @@ class IgniteToPostgreSqlCdcApplier {
     }
 
     /**
+     * @param curPrepStmt {@link PreparedStatement}
      * @param evt {@link CdcEvent}
      */
-    private void addEvent(CdcEvent evt) {
+    private void addEvent(PreparedStatement curPrepStmt, CdcEvent evt) {
         try {
             if (evt.value() == null)
-                addEvent(evt, true);
+                addEvent(curPrepStmt, evt, true);
             else {
-                int idx = addEvent(evt, false);
+                int idx = addEvent(curPrepStmt, evt, false);
 
                 curPrepStmt.setBytes(idx, encodeVersion(evt.version()));
             }
@@ -244,11 +257,12 @@ class IgniteToPostgreSqlCdcApplier {
     }
 
     /**
+     * @param curPrepStmt {@link PreparedStatement}
      * @param evt {@link CdcEvent}
      * @param isDelete - flag that indicate delete sql statement usage
      * @return number of filled values
      */
-    private int addEvent(CdcEvent evt, boolean isDelete) throws SQLException {
+    private int addEvent(PreparedStatement curPrepStmt, CdcEvent evt, boolean isDelete) throws SQLException {
         Iterator<String> itFields = isDelete ?
             cacheIdToPrimaryKeys.get(evt.cacheId()).iterator() :
             cacheIdToFields.get(evt.cacheId()).iterator();
@@ -275,7 +289,7 @@ class IgniteToPostgreSqlCdcApplier {
                 else
                     obj = evt.value();
 
-            addObject(idx, obj);
+            addObject(curPrepStmt, idx, obj);
 
             idx++;
         }
@@ -286,10 +300,11 @@ class IgniteToPostgreSqlCdcApplier {
     /**
      * Sets a value in the PreparedStatement at the given index using the appropriate setter
      * based on the runtime type of the object.
+     * @param curPrepStmt {@link PreparedStatement}
      * @param idx value index in {@link PreparedStatement}
      * @param obj value
      */
-    private void addObject(int idx, Object obj) throws SQLException {
+    private void addObject(PreparedStatement curPrepStmt, int idx, Object obj) throws SQLException {
         if (obj == null) {
             curPrepStmt.setObject(idx, null);
 
@@ -315,46 +330,18 @@ class IgniteToPostgreSqlCdcApplier {
         else if (obj instanceof BigDecimal)
             curPrepStmt.setBigDecimal(idx, (BigDecimal)obj);
         else if (obj instanceof UUID)
-            curPrepStmt.setObject(idx, obj, java.sql.Types.OTHER); // PostgreSQL expects UUID as OTHER
+            curPrepStmt.setObject(idx, obj, Types.OTHER); // PostgreSQL expects UUID as OTHER
         else if (obj instanceof byte[])
             curPrepStmt.setBytes(idx, (byte[])obj);
-        else if (obj instanceof java.sql.Date)
-            curPrepStmt.setDate(idx, (java.sql.Date)obj);
-        else if (obj instanceof java.sql.Time)
-            curPrepStmt.setTime(idx, (java.sql.Time)obj);
-        else if (obj instanceof java.sql.Timestamp)
-            curPrepStmt.setTimestamp(idx, (java.sql.Timestamp)obj);
-        else if (obj instanceof java.util.Date)
-            curPrepStmt.setTimestamp(idx, new java.sql.Timestamp(((java.util.Date)obj).getTime()));
-        else if (obj instanceof java.time.LocalDate)
-            curPrepStmt.setDate(idx, java.sql.Date.valueOf((java.time.LocalDate)obj));
-        else if (obj instanceof java.time.LocalTime)
-            curPrepStmt.setTime(idx, java.sql.Time.valueOf((java.time.LocalTime)obj));
-        else if (obj instanceof java.time.LocalDateTime)
-            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.valueOf((java.time.LocalDateTime)obj));
-        else if (obj instanceof java.time.OffsetDateTime)
-            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.from(((java.time.OffsetDateTime)obj).toInstant()));
-        else if (obj instanceof java.time.ZonedDateTime)
-            curPrepStmt.setTimestamp(idx, java.sql.Timestamp.from(((java.time.ZonedDateTime)obj).toInstant()));
         else
             curPrepStmt.setObject(idx, obj);
     }
 
     /**
      * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
-     * @param createTables tables creation flag. If true - attempt to create tables will be made
-     * @return number of {@link CdcCacheEvent} processed
-     */
-    public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
-        return withTx((conn) -> applyCacheEvents(conn, evts, createTables));
-    }
-
-    /**
-     * @param conn connection to PostgreSql
-     * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
      * @param createTables tables creation flag. If true - attempt to create tables will be made.
      */
-    private long applyCacheEvents(Connection conn, Iterator<CdcCacheEvent> evts, boolean createTables) {
+    public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
         CdcCacheEvent evt;
         QueryEntity entity;
 
@@ -369,7 +356,7 @@ class IgniteToPostgreSqlCdcApplier {
             entity = evt.queryEntities().iterator().next();
 
             if (createTables)
-                createTableIfNotExists(conn, entity);
+                createTableIfNotExists(entity);
 
             cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
 
@@ -390,36 +377,12 @@ class IgniteToPostgreSqlCdcApplier {
     }
 
     /**
-     * Executes the given operation inside a database transaction, providing a Connection instance.
-     *
-     * @param op Function accepting a Connection argument and returns operation result.
-     * @return operation result.
-     */
-    private long withTx(Function<Connection, Long> op) {
-        try (Connection conn = dataSrc.getConnection()) {
-            conn.setAutoCommit(autoCommit);
-
-            long res = op.apply(conn);
-
-            conn.commit();
-
-            return res;
-        }
-        catch (Throwable e) {
-            log.error(e.getMessage(), e);
-
-            throw new IgniteException("CDC failure", e);
-        }
-    }
-
-    /**
-     * @param conn the JDBC {@link Connection} used to execute the DDL statement
      * @param entity the {@link QueryEntity} describing the table schema to create
      */
-    private void createTableIfNotExists(Connection conn, QueryEntity entity) {
+    private void createTableIfNotExists(QueryEntity entity) {
         String createSqlStmt = getCreateTableSqlStatement(entity);
 
-        try (Statement stmt = conn.createStatement()) {
+        try (Connection conn = dataSrc.getConnection(); Statement stmt = conn.createStatement()) {
             stmt.execute(createSqlStmt);
         }
         catch (SQLException e) {
@@ -508,7 +471,7 @@ class IgniteToPostgreSqlCdcApplier {
      * <ul>
      *   <li>The {@code version} field is added to support version-based upsert logic.</li>
      *   <li>Primary key fields are excluded from the {@code DO UPDATE SET} clause.</li>
-     *   <li>All fields are assigned {@code ?} placeholders for use with {@link java.sql.PreparedStatement}.</li>
+     *   <li>All fields are assigned {@code ?} placeholders for use with {@link PreparedStatement}.</li>
      * </ul>
      *
      * @param entity the {@link QueryEntity} describing the table, fields, and primary keys

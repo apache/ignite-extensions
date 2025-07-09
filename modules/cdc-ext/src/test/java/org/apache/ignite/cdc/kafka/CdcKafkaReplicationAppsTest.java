@@ -191,7 +191,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     }
 
     /** */
-    private String prepareConfig(String path, Map<String, String> params) {
+    public static String prepareConfig(String path, Map<String, String> params) {
         try {
             String cfg = new String(Files.readAllBytes(Paths.get(CdcKafkaReplicationAppsTest.class.getResource(path).toURI())));
 

@@ -88,13 +88,13 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
     private static final int KEYS_CNT = 1024;
 
     /** */
-    private static final int MAX_BATCH_SIZE = 128;
+    protected static final int MAX_BATCH_SIZE = 128;
 
     /** */
-    private static IgniteEx src;
+    protected static IgniteEx src;
 
     /** */
-    private static EmbeddedPostgres postgres;
+    protected static EmbeddedPostgres postgres;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -404,7 +404,7 @@ public class CdcPostgreSqlReplicationTest extends GridCommonAbstractTest {
      * @param caches Cache name set to stream to PostgreSql.
      * @return Future for Change Data Capture application.
      */
-    private IgniteInternalFuture<?> igniteToPostgres(
+    protected IgniteInternalFuture<?> igniteToPostgres(
         IgniteConfiguration igniteCfg,
         Set<String> caches
     ) {

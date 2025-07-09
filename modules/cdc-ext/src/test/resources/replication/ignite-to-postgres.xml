@@ -45,23 +45,35 @@
         <property name="consumer">
             <bean class="org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer">
                 <property name="caches">
-                    <util:list>
-                        <bean class="java.lang.String">
-                            <constructor-arg type="String" value="{REPLICATED_CACHE}" />
-                        </bean>
-                    </util:list>
+                    <list>
+                        <value>T1</value>
+                        <value>T2</value>
+                        <value>T3</value>
+                        <value>T4</value>
+                        <value>T5</value>
+                        <value>T6</value>
+                    </list>
                 </property>
                 <property name="maxBatchSize" value="{MAX_BATCH_SIZE}" />
-                <property name="onlyPrimary" value="false" />
-                <property name="createTables" value="true" />
-                <property name="dataSource" ref="postgresDataSource" />
+                <property name="onlyPrimary" value="{ONLY_PRIMARY}" />
+                <property name="createTables" value="{CREATE_TABLE}" />
+                <property name="dataSource" ref="dataSource" />
             </bean>
         </property>
     </bean>
 
-    <bean id="postgresDataSource" class="org.postgresql.ds.PGSimpleDataSource">
-        <property name="url" value="jdbc:postgresql://localhost:5432/databaseName" />
-        <property name="user" value="user" />
-        <property name="password" value="password" />
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="org.postgresql.Driver"/>
+        <property name="url" value="{DB_URL}"/>
+        <property name="username" value="{DB_USER}"/>
+        <property name="password" value="{DB_PASSWORD}"/>
+
+        <!-- Optional pool configuration -->
+        <property name="initialSize" value="3"/>
+        <property name="maxTotal" value="10"/>
+        <property name="maxIdle" value="3"/>
+        <property name="minIdle" value="1"/>
+        <property name="validationQuery" value="SELECT 1"/>
+        <property name="testOnBorrow" value="true"/>
     </bean>
 </beans>
