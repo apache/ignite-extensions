@@ -340,6 +340,7 @@ public class IgniteToPostgreSqlCdcApplier {
     /**
      * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
      * @param createTables tables creation flag. If true - attempt to create tables will be made.
+     * @return Number of applied events.
      */
     public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
         CdcCacheEvent evt;

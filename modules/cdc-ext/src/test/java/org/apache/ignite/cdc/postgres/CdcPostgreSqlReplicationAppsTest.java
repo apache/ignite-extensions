@@ -3,6 +3,7 @@ package org.apache.ignite.cdc.postgres;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
@@ -13,7 +14,11 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /** PostgreSql CDC test with .xml configuration. */
 public class CdcPostgreSqlReplicationAppsTest extends CdcPostgreSqlReplicationTest {
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<?> igniteToPostgres(IgniteConfiguration igniteCfg, Set<String> caches) {
+    @Override protected IgniteInternalFuture<?> startIgniteToPostgreSqlCdcConsumer(
+        IgniteConfiguration igniteCfg,
+        Set<String> caches,
+        DataSource dataSrc
+    ) {
         String cfgPath = "/replication/ignite-to-postgres.xml";
         String threadName = "ignite-src-to-postgres-xml";
 
