@@ -620,8 +620,13 @@ public class IgniteToPostgreSqlCdcApplier {
     private Set<String> getPrimaryKeys(QueryEntity entity) {
         Set<String> keys = entity.getKeyFields();
 
-        if (keys == null || keys.isEmpty())
+        if (keys == null || keys.isEmpty()) {
+            if (entity.getKeyFieldName() == null)
+                throw new IgniteException("Couldn't determine key field for queryEntity [tableName=" +
+                    entity.getTableName() + ']');
+
             return Collections.singleton(entity.getKeyFieldName());
+        }
 
         return keys;
     }

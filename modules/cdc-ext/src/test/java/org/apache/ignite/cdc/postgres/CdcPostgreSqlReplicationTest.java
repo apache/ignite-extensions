@@ -19,9 +19,13 @@ package org.apache.ignite.cdc.postgres;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -30,10 +34,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -414,6 +422,224 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
         if (!createTables)
             executeOnPostgreSql(postgres, "CREATE TABLE IF NOT EXISTS " + tableName +
                 " (" + fieldsBldr + ", version BYTEA NOT NULL" + constraintQry + ")");
+    }
+
+    /** */
+    @Test
+    public void testQueryEntityError() throws IgniteCheckedException {
+        QueryEntity qryOnlyValType = new QueryEntity()
+            .setTableName("qryOnlyValType")
+            .setValueType("org.apache.ignite.cdc.postgres.TestVal");
+
+        testQueryEntityReplicationError(qryOnlyValType);
+
+        QueryEntity qryOnlyValName = new QueryEntity()
+            .setTableName("qryOnlyValName")
+            .setValueFieldName("name")
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("val", Integer.class.getName(), null);
+
+        testQueryEntityReplicationError(qryOnlyValName);
+    }
+
+    /** */
+    private void testQueryEntityReplicationError(QueryEntity qryEntity) throws IgniteInterruptedCheckedException {
+        CacheConfiguration<Integer, TestVal> ccfg = new CacheConfiguration<Integer, TestVal>(qryEntity.getTableName())
+            .setQueryEntities(Collections.singletonList(qryEntity));
+
+        src.getOrCreateCache(ccfg);
+
+        IgniteInternalFuture<?> fut = startIgniteToPostgreSqlCdcConsumer(
+            src.configuration(),
+            new HashSet<>(Collections.singletonList(qryEntity.getTableName())),
+            postgres.getPostgresDatabase()
+        );
+
+        waitForCondition(fut::isDone, getTestTimeout());
+
+        assertTrue(fut.error() != null);
+    }
+
+    /** */
+    @Test
+    public void testQueryEntityWithKeyValueFieldNames() throws IgniteCheckedException {
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName("qryKeyValName")
+            .setKeyFieldName("id")
+            .setValueFieldName("name")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("val", Integer.class.getName(), null);
+
+        int id = 2;
+
+        String name = "1";
+        int val = 3;
+
+        Function<ResultSet, Boolean> check = res -> {
+            try {
+                assertTrue(res.next());
+
+                int actId = res.getInt("id");
+                String actName = res.getString("name");
+                int actVal = res.getInt("val");
+
+                return actId == id && Objects.equals(actName, name) && actVal == val;
+            }
+            catch (Exception e) {
+                return false;
+            }
+        };
+
+        String[] tableFields = new String[] {
+            "ID INT NOT NULL",
+            "NAME VARCHAR",
+            "VAL INT"
+        };
+
+        String constraint = "PRIMARY KEY (ID)";
+
+        testQueryEntityReplicationSuccess(qryEntity, tableFields, constraint, id, new TestVal(name, val), check);
+    }
+
+    /** */
+    @Test
+    public void testQueryEntityWithKeyFieldsAndValName() throws IgniteCheckedException {
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName("qryKeyFieldsValName")
+            .setKeyFields(new HashSet<>(Arrays.asList("id", "subId")))
+            .setValueFieldName("name")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("subId", String.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("val", Integer.class.getName(), null);
+
+        int id = 4;
+        String subId = "foobar";
+
+        String name = "5";
+        int val = 0;
+
+        Function<ResultSet, Boolean> check = res -> {
+            try {
+                assertTrue(res.next());
+
+                int actId = res.getInt("id");
+                String actSubId = res.getString("subId");
+                String actName = res.getString("name");
+                int actVal = res.getInt("val");
+
+                return actId == id && Objects.equals(actSubId, subId) && Objects.equals(actName, name) && actVal == val;
+            }
+            catch (Exception e) {
+                return false;
+            }
+        };
+
+        String[] tableFields = new String[] {
+            "ID INT NOT NULL",
+            "SUBID VARCHAR(15) NOT NULL",
+            "NAME VARCHAR",
+            "VAL INT"
+        };
+
+        String constraint = "PRIMARY KEY (ID, SUBID)";
+
+        testQueryEntityReplicationSuccess(
+            qryEntity,
+            tableFields,
+            constraint,
+            new TestKey(id, subId),
+            new TestVal(name, val),
+            check
+        );
+    }
+
+    /** */
+    @Test
+    public void testQueryEntityWithKeyNameValueTypeAndFields() throws IgniteCheckedException {
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName("TESTING")
+            .setKeyFieldName("id")
+            .setValueType("org.apache.ignite.cdc.postgres.TestVal")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .addQueryField("val", Integer.class.getName(), null);
+
+        int id = 3;
+
+        String name = "test";
+        int val = 9;
+
+        Function<ResultSet, Boolean> check = res -> {
+            try {
+                assertTrue(res.next());
+
+                int actId = res.getInt("id");
+                String actName = res.getString("name");
+                int actVal = res.getInt("val");
+
+                return actId == id && Objects.equals(actName, name) && actVal == val;
+            }
+            catch (Exception e) {
+                return false;
+            }
+        };
+
+        String[] tableFields = new String[] {
+            "ID INT NOT NULL",
+            "NAME VARCHAR",
+            "VAL INT"
+        };
+
+        String constraint = "PRIMARY KEY (ID)";
+
+        testQueryEntityReplicationSuccess(qryEntity, tableFields, constraint, id, new TestVal(name, val), check);
+    }
+
+    /** */
+    public <K, V> void testQueryEntityReplicationSuccess(
+        QueryEntity qryEntity,
+        String[] fields,
+        String constraint,
+        K key,
+        V val,
+        Function<ResultSet, Boolean> checkTable
+    ) throws IgniteCheckedException {
+        CacheConfiguration<K, V> ccfg = new CacheConfiguration<K, V>(qryEntity.getTableName())
+            .setQueryEntities(Collections.singletonList(qryEntity));
+
+        IgniteCache<K, V> cache = src.getOrCreateCache(ccfg);
+
+        if (!createTables) {
+            StringBuilder fieldsBldr = new StringBuilder();
+
+            A.notEmpty(fields, "Empty fields declaration.");
+
+            for (int i = 0; i < fields.length; ++i) {
+                fieldsBldr.append(fields[i]);
+
+                if (i < fields.length - 1)
+                    fieldsBldr.append(",");
+            }
+
+            String constraintQry = constraint == null ? "" : ", " + constraint;
+
+            executeOnPostgreSql(postgres, "CREATE TABLE IF NOT EXISTS " + qryEntity.getTableName() +
+                " (" + fieldsBldr + ", version BYTEA NOT NULL" + constraintQry + ")");
+        }
+
+        cache.put(key, val);
+
+        IgniteInternalFuture<?> fut = startCdc(new HashSet<>(Collections.singletonList(qryEntity.getTableName())));
+
+        assertTrue(waitForCondition(waitForTableSize(postgres, qryEntity.getTableName(), 1), getTestTimeout()));
+
+        ResultSet set = selectOnPostgreSql(postgres, "SELECT * FROM " + qryEntity.getTableName());
+
+        assertTrue(checkTable.apply(set));
+
+        fut.cancel();
     }
 
     /** */
