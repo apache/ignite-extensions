@@ -222,9 +222,18 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     }
 
     /**
-     * Sets maximum batch size that will be applied to PostgreSql in one commit.
+     * Sets the maximum batch size that will be submitted to PostgreSQL.
+     * <p>
+     * This setting controls how many statements are sent in a single {@link java.sql.PreparedStatement#executeBatch()} call.
+     * <p>
+     * Commit behavior depends on the {@code autoCommit} setting:
+     * <ul>
+     *   <li>If {@code autoCommit} is {@code true}, each batch will be committed immediately after submission.</li>
+     *   <li>If {@code autoCommit} is {@code false}, batches accumulate and are committed by the connector after
+     *   finishing the last WAL segment.</li>
+     * </ul>
      *
-     * @param maxBatchSize Maximum batch size.
+     * @param maxBatchSize Maximum number of statements per batch.
      * @return {@code this} for chaining.
      */
     public IgniteToPostgreSqlCdcConsumer setMaxBatchSize(int maxBatchSize) {
