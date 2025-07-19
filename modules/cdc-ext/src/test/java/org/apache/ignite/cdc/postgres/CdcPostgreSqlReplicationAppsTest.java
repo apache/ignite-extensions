@@ -37,4 +37,9 @@ public class CdcPostgreSqlReplicationAppsTest extends CdcPostgreSqlReplicationTe
 
         return runAsync(() -> CdcCommandLineStartup.main(new String[] {prepareConfig(cfgPath, params)}), threadName);
     }
+
+    /** {@inheritDoc} */
+    @Override protected void checkFutureEndWithError(IgniteInternalFuture<?> fut) {
+        // CdcMain error in CdcCommandLineStartup leads to 'System.exit(-1)' without showing error/cancellation in fut
+    }
 }

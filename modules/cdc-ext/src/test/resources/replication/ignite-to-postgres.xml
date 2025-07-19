@@ -52,6 +52,11 @@
                         <value>T4</value>
                         <value>T5</value>
                         <value>T6</value>
+                        <value>qryOnlyValType</value>
+                        <value>qryOnlyValName</value>
+                        <value>qryKeyValName</value>
+                        <value>qryKeyFieldsValName</value>
+                        <value>TESTING</value>
                     </list>
                 </property>
                 <property name="maxBatchSize" value="{MAX_BATCH_SIZE}" />

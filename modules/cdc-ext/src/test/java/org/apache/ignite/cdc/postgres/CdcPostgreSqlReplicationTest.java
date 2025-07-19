@@ -457,6 +457,11 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
 
         waitForCondition(fut::isDone, getTestTimeout());
 
+        checkFutureEndWithError(fut);
+    }
+
+    /** */
+    protected void checkFutureEndWithError(IgniteInternalFuture<?> fut) {
         assertTrue(fut.error() != null);
     }
 
