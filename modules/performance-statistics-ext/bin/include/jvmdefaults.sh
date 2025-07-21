@@ -46,7 +46,7 @@ checkJava() {
         if [ $RETCODE -ne 0 ]; then
             echo $0", ERROR:"
             echo "JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 1.8 or later."
+            echo "Please point JAVA_HOME variable to location of JDK 11 or later."
             echo "You can also download latest JDK at http://java.com/download"
 
             exit 1
@@ -62,10 +62,10 @@ checkJava() {
     #
     javaMajorVersion "$JAVA"
 
-    if [ $version -lt 8 ]; then
+    if [ $version -lt 11 ]; then
         echo "$0, ERROR:"
         echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
-        echo "Please point JAVA_HOME variable to installation of JDK 1.8 or later."
+        echo "Please point JAVA_HOME variable to installation of JDK 11 or later."
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
     fi
@@ -78,23 +78,6 @@ getJavaSpecificOpts() {
   version=$1
   current_value=$2
   value=""
-
-  if [ $version -eq 8 ] ; then
-      value="\
-          -XX:+AggressiveOpts \
-           ${current_value}"
-
-  elif [ $version -gt 8 ] && [ $version -lt 11 ]; then
-      value="\
-          -XX:+AggressiveOpts \
-          --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-          --illegal-access=permit \
-          --add-modules=java.xml.bind \
-          ${current_value}"
 
   elif [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
       value="\
