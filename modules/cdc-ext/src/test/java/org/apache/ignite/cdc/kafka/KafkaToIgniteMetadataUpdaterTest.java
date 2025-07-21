@@ -21,7 +21,6 @@ import java.util.Collections;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cdc.TypeMappingImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -166,7 +165,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
 
     /** */
     private KafkaToIgniteMetadataUpdater metadataUpdater(KafkaToIgniteCdcStreamerConfiguration streamerCfg) {
-        BinaryContext noOpCtx = new BinaryContext(new IgniteConfiguration(), log) {
+        BinaryContext noOpCtx = new BinaryContext(log) {
             @Override public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered,
                 boolean onlyLocReg, byte platformId) {
                 return true;
