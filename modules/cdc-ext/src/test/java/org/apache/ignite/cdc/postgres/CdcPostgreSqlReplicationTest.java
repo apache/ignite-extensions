@@ -88,10 +88,10 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
     }
 
     /** */
-    protected static IgniteEx src;
+    protected IgniteEx src;
 
     /** */
-    protected static EmbeddedPostgres postgres;
+    protected EmbeddedPostgres postgres;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -335,13 +335,30 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
 
             assertTrue(waitForCondition(waitForTableSize(postgres, tableName, KEYS_CNT), getTestTimeout()));
 
-            IntStream.range(0, KEYS_CNT).forEach(update);
+            rangeWithDuplicates(0, KEYS_CNT).forEach(update);
 
             assertTrue(waitForCondition(checkUpdate::get, getTestTimeout()));
         }
         finally {
             fut.cancel();
         }
+    }
+
+    /**
+     * @param startInclusive Start inclusive.
+     * @param endExclusive End exclusive.
+     */
+    private IntStream rangeWithDuplicates(int startInclusive, int endExclusive) {
+        List<Integer> duplicatedKeys = IntStream.concat(
+                IntStream.range(startInclusive, endExclusive),
+                IntStream.range(startInclusive, endExclusive)
+            )
+            .boxed()
+            .collect(Collectors.toList());
+
+        Collections.shuffle(duplicatedKeys);
+
+        return duplicatedKeys.stream().mapToInt(Integer::intValue);
     }
 
     /** */
@@ -360,6 +377,9 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
             String updateQry = "MERGE INTO %s (ID, NAME) VALUES (?, ?)";
 
             executeOnIgnite(src, String.format(insertQry, "T4"), 1, "Name" + 1);
+
+            assertTrue(waitForCondition(waitForTableSize(postgres, "T4", 1), getTestTimeout()));
+
             executeOnIgnite(src, String.format(updateQry, "T4"), 1, "Name" + 2);
             executeOnIgnite(src, String.format(insertQry, "T4"), 3, "Name" + 1);
             executeOnIgnite(src, String.format(insertQry, "T5"), 4, "Name" + 1);

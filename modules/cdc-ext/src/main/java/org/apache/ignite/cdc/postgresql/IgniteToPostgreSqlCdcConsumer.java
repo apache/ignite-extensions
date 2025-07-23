@@ -67,9 +67,6 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     private static final boolean DFLT_CREATE_TABLES = false;
 
     /** */
-    private static final boolean DFLT_AUTO_COMMIT = false;
-
-    /** */
     private DataSource dataSrc;
 
     /** Collection of cache names which will be replicated to PostgreSQL. */
@@ -79,13 +76,10 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
     /** */
-    private long maxBatchSize = DFLT_BATCH_SIZE;
+    private long batchSize = DFLT_BATCH_SIZE;
 
     /** */
     private boolean createTables = DFLT_CREATE_TABLES;
-
-    /** */
-    private boolean autoCommit = DFLT_AUTO_COMMIT;
 
     /** Log. */
     @LoggerResource
@@ -107,12 +101,13 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     @Override public void start(MetricRegistry reg) {
         A.notNull(dataSrc, "dataSource");
         A.notEmpty(caches, "caches");
+        A.ensure(batchSize > 0, "batchSize");
 
         cachesIds = caches.stream()
             .map(CU::cacheId)
             .collect(Collectors.toSet());
 
-        applier = new IgniteToPostgreSqlCdcApplier(dataSrc, autoCommit, maxBatchSize, log);
+        applier = new IgniteToPostgreSqlCdcApplier(dataSrc, batchSize, log);
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
@@ -222,7 +217,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
     }
 
     /**
-     * Sets the maximum batch size that will be submitted to PostgreSQL.
+     * Sets the batch size that will be submitted to PostgreSQL.
      * <p>
      * This setting controls how many statements are sent in a single {@link java.sql.PreparedStatement#executeBatch()} call.
      * <p>
@@ -233,11 +228,11 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      *   finishing the last WAL segment.</li>
      * </ul>
      *
-     * @param maxBatchSize Maximum number of statements per batch.
+     * @param batchSize number of statements per batch.
      * @return {@code this} for chaining.
      */
-    public IgniteToPostgreSqlCdcConsumer setMaxBatchSize(int maxBatchSize) {
-        this.maxBatchSize = maxBatchSize;
+    public IgniteToPostgreSqlCdcConsumer setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
 
         return this;
     }
@@ -250,18 +245,6 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      */
     public IgniteToPostgreSqlCdcConsumer setCreateTables(boolean createTables) {
         this.createTables = createTables;
-
-        return this;
-    }
-
-    /**
-     * Enables/disables autocommit
-     *
-     * @param autoCommit True to commit each batch
-     * @return {@code this} for chaining.
-     */
-    public IgniteToPostgreSqlCdcConsumer setAutoCommit(boolean autoCommit) {
-        this.autoCommit = autoCommit;
 
         return this;
     }

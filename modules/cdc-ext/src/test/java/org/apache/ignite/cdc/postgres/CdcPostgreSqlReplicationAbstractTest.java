@@ -42,13 +42,13 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /** */
 public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest {
     /** */
-    protected static final int MAX_BATCH_SIZE = 128;
+    protected static final int BATCH_SIZE = 128;
 
     /** */
     protected static final int KEYS_CNT = 1024;
 
     /** */
-    protected static void executeOnIgnite(IgniteEx src, String sqlText, Object... args) {
+    protected void executeOnIgnite(IgniteEx src, String sqlText, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText).setArgs(args);
 
         try (FieldsQueryCursor<List<?>> cursor = src.context().query().querySqlFields(qry, true)) {
@@ -57,7 +57,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static ResultSet selectOnPostgreSql(EmbeddedPostgres postgres, String qry) {
+    protected ResultSet selectOnPostgreSql(EmbeddedPostgres postgres, String qry) {
         try (Connection conn = postgres.getPostgresDatabase().getConnection()) {
             PreparedStatement stmt = conn.prepareStatement(qry);
 
@@ -69,7 +69,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static void executeOnPostgreSql(EmbeddedPostgres postgres, String qry) {
+    protected void executeOnPostgreSql(EmbeddedPostgres postgres, String qry) {
         try (Connection conn = postgres.getPostgresDatabase().getConnection()) {
             PreparedStatement stmt = conn.prepareStatement(qry);
 
@@ -81,7 +81,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static boolean checkRow(
+    protected boolean checkRow(
         EmbeddedPostgres postgres,
         String tableName,
         String columnName,
@@ -105,7 +105,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static GridAbsPredicate waitForTablesCreatedOnPostgres(EmbeddedPostgres postgres, Set<String> caches) {
+    protected GridAbsPredicate waitForTablesCreatedOnPostgres(EmbeddedPostgres postgres, Set<String> caches) {
         return () -> {
             String sql = "SELECT EXISTS (" +
                 "  SELECT 1 FROM information_schema.tables " +
@@ -131,7 +131,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     }
 
     /** */
-    protected static GridAbsPredicate waitForTableSize(EmbeddedPostgres postgres, String tableName, long expSz) {
+    protected GridAbsPredicate waitForTableSize(EmbeddedPostgres postgres, String tableName, long expSz) {
         return () -> {
             try (ResultSet res = selectOnPostgreSql(postgres, "SELECT COUNT(*) FROM " + tableName)) {
                 res.next();
@@ -149,7 +149,7 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
     /** */
     protected IgniteToPostgreSqlCdcConsumer getCdcConsumerConfiguration() {
         return new IgniteToPostgreSqlCdcConsumer()
-            .setMaxBatchSize(MAX_BATCH_SIZE)
+            .setBatchSize(BATCH_SIZE)
             .setOnlyPrimary(true)
             .setCreateTables(false);
     }

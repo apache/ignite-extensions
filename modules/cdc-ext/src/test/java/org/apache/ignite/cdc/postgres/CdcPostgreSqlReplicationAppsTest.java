@@ -27,7 +27,7 @@ public class CdcPostgreSqlReplicationAppsTest extends CdcPostgreSqlReplicationTe
         params.put("INSTANCE_NAME", igniteCfg.getIgniteInstanceName());
         params.put("CONSISTENT_ID", String.valueOf(igniteCfg.getConsistentId()));
 
-        params.put("MAX_BATCH_SIZE", Integer.toString(MAX_BATCH_SIZE));
+        params.put("BATCH_SIZE", Integer.toString(BATCH_SIZE));
         params.put("ONLY_PRIMARY", "true");
         params.put("CREATE_TABLE", String.valueOf(createTables));
 

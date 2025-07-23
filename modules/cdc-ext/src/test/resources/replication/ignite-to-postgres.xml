@@ -59,7 +59,7 @@
                         <value>TESTING</value>
                     </list>
                 </property>
-                <property name="maxBatchSize" value="{MAX_BATCH_SIZE}" />
+                <property name="batchSize" value="{BATCH_SIZE}" />
                 <property name="onlyPrimary" value="{ONLY_PRIMARY}" />
                 <property name="createTables" value="{CREATE_TABLE}" />
                 <property name="dataSource" ref="dataSource" />

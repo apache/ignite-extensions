@@ -99,13 +99,13 @@ public class IgniteToPostgreSqlCdcApplier {
     }
 
     /** */
+    private static final boolean DFLT_AUTO_COMMIT = false;
+
+    /** */
     private final DataSource dataSrc;
 
     /** */
-    private final boolean autoCommit;
-
-    /** */
-    private final long maxBatchSize;
+    private final long batchSize;
 
     /** */
     private final IgniteLogger log;
@@ -127,14 +127,16 @@ public class IgniteToPostgreSqlCdcApplier {
 
     /**
      * @param dataSrc {@link DataSource} - connection pool to PostgreSql
-     * @param autoCommit - autoCommit flag for batch execution
-     * @param maxBatchSize the maximum number of CDC events to include in a single batch
+     * @param batchSize the number of CDC events to include in a single batch
      * @param log the {@link IgniteLogger} instance used for logging CDC processing events
      */
-    public IgniteToPostgreSqlCdcApplier(DataSource dataSrc, boolean autoCommit, long maxBatchSize, IgniteLogger log) {
+    public IgniteToPostgreSqlCdcApplier(
+        DataSource dataSrc,
+        long batchSize,
+        IgniteLogger log
+    ) {
         this.dataSrc = dataSrc;
-        this.autoCommit = autoCommit;
-        this.maxBatchSize = maxBatchSize;
+        this.batchSize = batchSize;
         this.log = log;
     }
 
@@ -144,7 +146,7 @@ public class IgniteToPostgreSqlCdcApplier {
      */
     public long applyEvents(Iterator<CdcEvent> evts) {
         try (Connection conn = dataSrc.getConnection()) {
-            conn.setAutoCommit(autoCommit);
+            conn.setAutoCommit(DFLT_AUTO_COMMIT);
 
             long res = applyEvents(conn, evts);
 
@@ -164,7 +166,7 @@ public class IgniteToPostgreSqlCdcApplier {
      * @param evts an {@link Iterator} of {@link CdcEvent} objects to be applied
      * @return the total number of events successfully batched and executed
      */
-    private long applyEvents(Connection conn, Iterator<CdcEvent> evts) {
+    private long applyEvents(Connection conn, Iterator<CdcEvent> evts) throws SQLException {
         long evtsApplied = 0;
 
         int currCacheId = UNDEFINED_CACHE_ID;
@@ -181,7 +183,7 @@ public class IgniteToPostgreSqlCdcApplier {
 
             if (currCacheId != evt.cacheId() || prevOpIsDelete ^ (evt.value() == null)) {
                 if (curPrepStmt != null)
-                    evtsApplied += executeBatch(curPrepStmt);
+                    evtsApplied += executeBatch(conn, curPrepStmt);
 
                 currCacheId = evt.cacheId();
                 prevOpIsDelete = evt.value() == null;
@@ -189,31 +191,39 @@ public class IgniteToPostgreSqlCdcApplier {
                 curPrepStmt = prepareStatement(conn, evt);
             }
 
-            if (curKeys.size() >= maxBatchSize || curKeys.contains(evt.key()))
-                evtsApplied += executeBatch(curPrepStmt);
+            if (curKeys.size() >= batchSize || curKeys.contains(evt.key()))
+                evtsApplied += executeBatch(conn, curPrepStmt);
 
             addEvent(curPrepStmt, evt);
         }
 
-        if (currCacheId != UNDEFINED_CACHE_ID)
-            evtsApplied += executeBatch(curPrepStmt);
+        if (!curKeys.isEmpty())
+            evtsApplied += executeBatch(conn, curPrepStmt);
 
         return evtsApplied;
     }
 
     /**
+     * @param conn connection to PostgreSql
      * @param curPrepStmt {@link PreparedStatement}
      * @return the total number of batches successfully executed. One CdcEvent - one batch.
      */
-    private int executeBatch(PreparedStatement curPrepStmt) {
+    private int executeBatch(Connection conn, PreparedStatement curPrepStmt) {
         try {
             curKeys.clear();
 
             if (log.isDebugEnabled())
                 log.debug("Applying batch " + curPrepStmt.toString());
 
-            if (!curPrepStmt.isClosed())
-                return curPrepStmt.executeBatch().length;
+            if (!curPrepStmt.isClosed()) {
+                int batchSize = curPrepStmt.executeBatch().length;
+
+                // It's better to use autoCommit = false and call commit() manually for improved performance and
+                // clearer transaction boundaries
+                conn.commit();
+
+                return batchSize;
+            }
 
             throw new IgniteException("Tried to execute on closed prepared statement!");
         }
