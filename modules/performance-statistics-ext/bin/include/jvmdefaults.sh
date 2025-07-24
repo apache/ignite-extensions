@@ -79,7 +79,7 @@ getJavaSpecificOpts() {
   current_value=$2
   value=""
 
-  elif [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
+  if [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
       value="\
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
