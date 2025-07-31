@@ -99,9 +99,6 @@ public class IgniteToPostgreSqlCdcApplier {
     }
 
     /** */
-    private static final boolean DFLT_AUTO_COMMIT = false;
-
-    /** */
     private final DataSource dataSrc;
 
     /** */
@@ -145,19 +142,40 @@ public class IgniteToPostgreSqlCdcApplier {
      * @return the total number of events successfully batched and executed
      */
     public long applyEvents(Iterator<CdcEvent> evts) {
-        try (Connection conn = dataSrc.getConnection()) {
-            conn.setAutoCommit(DFLT_AUTO_COMMIT);
+        Connection conn = null;
 
-            long res = applyEvents(conn, evts);
+        try {
+            conn = dataSrc.getConnection();
 
-            conn.commit();
+            // Setting it to true doesn't make each SQL query commit individually - it still commits the entire batch.
+            // We chose to handle commits manually for better control.
+            conn.setAutoCommit(false);
 
-            return res;
+            return applyEvents(conn, evts);
         }
         catch (Throwable e) {
-            log.error(e.getMessage(), e);
+            log.error("Error during CDC event application: " + e.getMessage(), e);
 
-            throw new IgniteException("CDC failure", e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                }
+                catch (SQLException rollbackEx) {
+                    log.error("Rollback failed: " + rollbackEx.getMessage(), rollbackEx);
+                }
+            }
+
+            throw new IgniteException("Failed to apply CDC events", e);
+        }
+        finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                }
+                catch (SQLException closeEx) {
+                    log.error("Failed to close PostgreSQL connection: " + closeEx.getMessage(), closeEx);
+                }
+            }
         }
     }
 
@@ -166,7 +184,7 @@ public class IgniteToPostgreSqlCdcApplier {
      * @param evts an {@link Iterator} of {@link CdcEvent} objects to be applied
      * @return the total number of events successfully batched and executed
      */
-    private long applyEvents(Connection conn, Iterator<CdcEvent> evts) throws SQLException {
+    private long applyEvents(Connection conn, Iterator<CdcEvent> evts) {
         long evtsApplied = 0;
 
         int currCacheId = UNDEFINED_CACHE_ID;
@@ -378,7 +396,7 @@ public class IgniteToPostgreSqlCdcApplier {
 
             cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
 
-            if (log.isInfoEnabled())
+            if (createTables && log.isInfoEnabled())
                 log.info("Cache table created [tableName=" + entity.getTableName() +
                     ", columns=" + entity.getFields().keySet() + ']');
 

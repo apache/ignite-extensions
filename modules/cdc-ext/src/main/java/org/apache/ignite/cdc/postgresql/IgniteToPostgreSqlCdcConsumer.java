@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc.postgresql;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -199,7 +200,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      * @return {@code this} for chaining.
      */
     public IgniteToPostgreSqlCdcConsumer setCaches(Set<String> caches) {
-        this.caches = caches;
+        this.caches = Collections.unmodifiableSet(caches);
 
         return this;
     }
@@ -221,12 +222,6 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
      * <p>
      * This setting controls how many statements are sent in a single {@link java.sql.PreparedStatement#executeBatch()} call.
      * <p>
-     * Commit behavior depends on the {@code autoCommit} setting:
-     * <ul>
-     *   <li>If {@code autoCommit} is {@code true}, each batch will be committed immediately after submission.</li>
-     *   <li>If {@code autoCommit} is {@code false}, batches accumulate and are committed by the connector after
-     *   finishing the last WAL segment.</li>
-     * </ul>
      *
      * @param batchSize number of statements per batch.
      * @return {@code this} for chaining.

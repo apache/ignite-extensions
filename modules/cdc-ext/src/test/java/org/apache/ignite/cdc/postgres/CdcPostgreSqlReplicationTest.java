@@ -190,7 +190,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
 
     /** */
     private boolean checkSingleColumnKeyTable(Function<Long, String> idToName) {
-        String qry = "SELECT ID, NAME FROM T1";
+        String qry = "SELECT ID, NAME FROM T1 ORDER BY ID";
 
         try (ResultSet res = selectOnPostgreSql(postgres, qry)) {
             long cnt = 0;
@@ -202,7 +202,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
                 id = res.getLong("ID");
                 curName = res.getString("NAME");
 
-                if (!idToName.apply(id).equals(curName))
+                if (!idToName.apply(id).equals(curName) || cnt != id)
                     return false;
 
                 cnt++;
@@ -283,7 +283,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
         Function<Integer, String> idToName,
         Function<Integer, Integer> idToVal
     ) {
-        String qry = "SELECT ID, NAME, VAL FROM " + tableName;
+        String qry = "SELECT ID, NAME, VAL FROM " + tableName + " ORDER BY ID";
 
         try (ResultSet res = selectOnPostgreSql(postgres, qry)) {
             long cnt = 0;
@@ -297,7 +297,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
                 curName = res.getString("NAME");
                 curVal = res.getInt("VAL");
 
-                if (!idToVal.apply(id).equals(curVal) || !idToName.apply(id).equals(curName))
+                if (!idToVal.apply(id).equals(curVal) || !idToName.apply(id).equals(curName) || cnt != id)
                     return false;
 
                 cnt++;
