@@ -32,7 +32,7 @@
     </parent>
 
     <properties>
-        <kafka.version>3.4.0</kafka.version>
+        <kafka.version>3.9.1</kafka.version>
     </properties>
 
     <artifactId>ignite-kafka-ext</artifactId>
@@ -186,6 +186,14 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>9</source>
+                    <target>9</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>

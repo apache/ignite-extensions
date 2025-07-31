@@ -32,52 +32,75 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 
 import static org.apache.ignite.cdc.AbstractReplicationTest.ACTIVE_PASSIVE_CACHE;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.DFLT_PARTS;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.SRC_DEST_META_TOPIC;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.SRC_DEST_TOPIC;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.initKafka;
 import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.kafkaProperties;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.removeKafkaTopicsAndWait;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_CONSUMER_POLL_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.logging.log4j.Level.DEBUG;
 
+
 /**
  *
  */
+
+@SpringBootTest
+@EmbeddedKafka(
+        partitions = 16,
+        topics = {
+            CdcKafkaReplicationTest.SRC_DEST_TOPIC,
+            CdcKafkaReplicationTest.DEST_SRC_TOPIC,
+            CdcKafkaReplicationTest.SRC_DEST_META_TOPIC,
+            CdcKafkaReplicationTest.DEST_SRC_META_TOPIC
+        },
+        brokerProperties = {
+            "listeners=PLAINTEXT://localhost:9092",
+            "auto.create.topics.enable=false"
+        }
+)
+
 public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     /** Markers sent messages listener. */
     private static final LogListener MARKERS_LISTENER = LogListener.matches("Meta update markers sent.")
-        .times(1)
-        .build();
+            .times(1)
+            .build();
 
     /** Polled from meta topic message listener. */
     private static final LogListener POLLED_LISTENER = LogListener.matches("Polled from meta topic [rcvdEvts=1]")
-        .times(1)
-        .build();
+            .times(1)
+            .build();
 
     /** Poll skip messages listener. */
     private static final LogListener POLL_SKIP_LISTENER = LogListener.matches("Offsets unchanged, poll skipped")
-        .times(1)
-        .build();
+            .times(1)
+            .build();
 
     /** Kafka cluster. */
-    private EmbeddedKafkaCluster kafka;
+    private static EmbeddedKafkaBroker embeddedKafka;
 
     /** Listening logger. */
     private ListeningTestLogger listeningLog;
 
+   /** */
+    @BeforeAll
+    static void beforeAll(@Autowired EmbeddedKafkaBroker broker) {
+        embeddedKafka = broker;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        kafka = initKafka(kafka);
 
         listeningLog = new ListeningTestLogger(log);
 
@@ -92,8 +115,6 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        removeKafkaTopicsAndWait(kafka, getTestTimeout());
 
         MARKERS_LISTENER.reset();
         POLLED_LISTENER.reset();
@@ -147,12 +168,12 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
     /** */
     private IgniteToKafkaCdcStreamer igniteToKafkaCdcStreamer() {
         IgniteToKafkaCdcStreamer streamer = new IgniteToKafkaCdcStreamer()
-            .setTopic(SRC_DEST_TOPIC)
-            .setMetadataTopic(SRC_DEST_META_TOPIC)
-            .setKafkaPartitions(DFLT_PARTS)
-            .setKafkaProperties(kafkaProperties(kafka))
-            .setCaches(Collections.singleton(ACTIVE_PASSIVE_CACHE))
-            .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
+                .setTopic(SRC_DEST_TOPIC)
+                .setMetadataTopic(SRC_DEST_META_TOPIC)
+                .setKafkaPartitions(DFLT_PARTS)
+                .setKafkaProperties(kafkaProperties(embeddedKafka))
+                .setCaches(Collections.singleton(ACTIVE_PASSIVE_CACHE))
+                .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
         GridTestUtils.setFieldValue(streamer, "log", listeningLog.getLogger(IgniteToKafkaCdcStreamer.class));
 
@@ -182,12 +203,12 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             log
         ) {
             @Override public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered,
-                boolean onlyLocReg, byte platformId) {
+                                                           boolean onlyLocReg, byte platformId) {
                 return true;
             }
         };
 
-        return new KafkaToIgniteMetadataUpdater(noOpCtx, listeningLog, kafkaProperties(kafka), streamerCfg);
+        return new KafkaToIgniteMetadataUpdater(noOpCtx, listeningLog, kafkaProperties(embeddedKafka), streamerCfg);
     }
 
     /** */
