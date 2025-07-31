@@ -58,6 +58,7 @@
         <module>modules/osgi-ext</module>
         <module>modules/ssh-ext</module>
         <module>modules/ml-ext</module>
+        <module>modules/gatling-ext</module>
     </modules>
 
     <profiles>
@@ -65,15 +66,6 @@
             <id>use-ignite-src</id>
             <modules>
                 <module>../ignite</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,)</jdk>
-            </activation>
-            <modules>
-                <module>modules/gatling-ext</module>
             </modules>
         </profile>
         <profile>

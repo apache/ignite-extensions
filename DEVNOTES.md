@@ -6,7 +6,7 @@
 
 ### Build Requirements
 
-- JDK 8
+- JDK 11
 - Maven 3.6.3+
 
 ### Compile and install all Extensions
