@@ -27,7 +27,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.TypeMappingImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -180,7 +179,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             null,
             CU.affinityFields(null),
             BinaryConfiguration.DFLT_COMPACT_FOOTER,
-            NullLogger.INSTANCE
+            log
         ) {
             @Override public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered,
                 boolean onlyLocReg, byte platformId) {
