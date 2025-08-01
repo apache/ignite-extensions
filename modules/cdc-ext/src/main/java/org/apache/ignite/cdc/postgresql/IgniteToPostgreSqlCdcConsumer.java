@@ -165,7 +165,7 @@ public class IgniteToPostgreSqlCdcConsumer implements CdcConsumer {
 
         long tablesCreated = applier.applyCacheEvents(filtered, createTables);
 
-        if (tablesCreated > 0 && log.isInfoEnabled())
+        if (createTables && tablesCreated > 0 && log.isInfoEnabled())
             log.info("Cache changes applied [tablesCreatedCnt=" + tablesCreated + ']');
     }
 

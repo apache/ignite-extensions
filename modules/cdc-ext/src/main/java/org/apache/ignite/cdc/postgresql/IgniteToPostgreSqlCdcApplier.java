@@ -142,40 +142,24 @@ public class IgniteToPostgreSqlCdcApplier {
      * @return the total number of events successfully batched and executed
      */
     public long applyEvents(Iterator<CdcEvent> evts) {
-        Connection conn = null;
+        try (Connection conn = dataSrc.getConnection()) {
+            try {
+                // Setting it to true doesn't make each SQL query commit individually - it still commits the entire batch.
+                // We chose to handle commits manually for better control.
+                conn.setAutoCommit(false);
 
-        try {
-            conn = dataSrc.getConnection();
+                return applyEvents(conn, evts);
+            }
+            catch (SQLException e) {
+                conn.rollback();
 
-            // Setting it to true doesn't make each SQL query commit individually - it still commits the entire batch.
-            // We chose to handle commits manually for better control.
-            conn.setAutoCommit(false);
-
-            return applyEvents(conn, evts);
+                throw e;
+            }
         }
         catch (Throwable e) {
             log.error("Error during CDC event application: " + e.getMessage(), e);
 
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                }
-                catch (SQLException rollbackEx) {
-                    log.error("Rollback failed: " + rollbackEx.getMessage(), rollbackEx);
-                }
-            }
-
             throw new IgniteException("Failed to apply CDC events", e);
-        }
-        finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                }
-                catch (SQLException closeEx) {
-                    log.error("Failed to close PostgreSQL connection: " + closeEx.getMessage(), closeEx);
-                }
-            }
         }
     }
 
