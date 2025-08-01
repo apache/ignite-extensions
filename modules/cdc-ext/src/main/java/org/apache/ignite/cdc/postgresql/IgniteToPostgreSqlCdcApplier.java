@@ -17,21 +17,18 @@
 
 package org.apache.ignite.cdc.postgresql;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,58 +43,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFIN
 
 /** */
 public class IgniteToPostgreSqlCdcApplier {
-    /** */
-    public static final String DFLT_SQL_TYPE = "OTHER";
-
-    /** */
-    public static final Map<String, String> JAVA_TO_SQL_TYPES;
-
-    /** */
-    public static final Set<String> SQL_TYPES_WITH_PRECISION_ONLY;
-
-    /** */
-    public static final Set<String> SQL_TYPES_WITH_PRECISION_AND_SCALE;
-
-    static {
-        Map<String, String> javaToSqlTypes = new HashMap<>();
-
-        javaToSqlTypes.put("java.lang.String", "VARCHAR");
-        javaToSqlTypes.put("java.lang.Integer", "INT");
-        javaToSqlTypes.put("int", "INT");
-        javaToSqlTypes.put("java.lang.Long", "BIGINT");
-        javaToSqlTypes.put("long", "BIGINT");
-        javaToSqlTypes.put("java.lang.Boolean", "BOOLEAN");
-        javaToSqlTypes.put("boolean", "BOOLEAN");
-        javaToSqlTypes.put("java.lang.Double", "DOUBLE PRECISION");
-        javaToSqlTypes.put("double", "DOUBLE PRECISION");
-        javaToSqlTypes.put("java.lang.Float", "REAL");
-        javaToSqlTypes.put("float", "REAL");
-        javaToSqlTypes.put("java.math.BigDecimal", "DECIMAL");
-        javaToSqlTypes.put("java.lang.Short", "SMALLINT");
-        javaToSqlTypes.put("short", "SMALLINT");
-        javaToSqlTypes.put("java.lang.Byte", "SMALLINT");
-        javaToSqlTypes.put("byte", "SMALLINT");
-        javaToSqlTypes.put("java.util.UUID", "UUID");
-        javaToSqlTypes.put("[B", "BYTEA");
-        javaToSqlTypes.put("java.lang.Object", "OTHER");
-
-        JAVA_TO_SQL_TYPES = Collections.unmodifiableMap(javaToSqlTypes);
-
-        Set<String> sqlTypesWithPrecisionOnly = new HashSet<>();
-
-        sqlTypesWithPrecisionOnly.add("VARCHAR");
-        sqlTypesWithPrecisionOnly.add("DOUBLE PRECISION");
-
-        SQL_TYPES_WITH_PRECISION_ONLY = Collections.unmodifiableSet(sqlTypesWithPrecisionOnly);
-
-        Set<String> sqlTypesWithPrecisionAndScale = new HashSet<>();
-
-        sqlTypesWithPrecisionAndScale.add("DECIMAL");
-        sqlTypesWithPrecisionAndScale.add("REAL");
-
-        SQL_TYPES_WITH_PRECISION_AND_SCALE = Collections.unmodifiableSet(sqlTypesWithPrecisionAndScale);
-    }
-
     /** */
     private final DataSource dataSrc;
 
@@ -291,7 +236,7 @@ public class IgniteToPostgreSqlCdcApplier {
                 else
                     obj = valObj != null ? valObj.field(field) : evt.value();
 
-                addObject(curPrepStmt, idx, obj);
+                JavaToSqlTypeMapper.setEventFieldValue(curPrepStmt, idx, obj);
 
                 idx++;
             }
@@ -308,46 +253,6 @@ public class IgniteToPostgreSqlCdcApplier {
 
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Sets a value in the PreparedStatement at the given index using the appropriate setter
-     * based on the runtime type of the object.
-     * @param curPrepStmt {@link PreparedStatement}
-     * @param idx value index in {@link PreparedStatement}
-     * @param obj value
-     */
-    private void addObject(PreparedStatement curPrepStmt, int idx, Object obj) throws SQLException {
-        if (obj == null) {
-            curPrepStmt.setObject(idx, null);
-
-            return;
-        }
-
-        if (obj instanceof String)
-            curPrepStmt.setString(idx, (String)obj);
-        else if (obj instanceof Integer)
-            curPrepStmt.setInt(idx, (Integer)obj);
-        else if (obj instanceof Long)
-            curPrepStmt.setLong(idx, (Long)obj);
-        else if (obj instanceof Short)
-            curPrepStmt.setShort(idx, (Short)obj);
-        else if (obj instanceof Byte)
-            curPrepStmt.setByte(idx, (Byte)obj);
-        else if (obj instanceof Boolean)
-            curPrepStmt.setBoolean(idx, (Boolean)obj);
-        else if (obj instanceof Float)
-            curPrepStmt.setFloat(idx, (Float)obj);
-        else if (obj instanceof Double)
-            curPrepStmt.setDouble(idx, (Double)obj);
-        else if (obj instanceof BigDecimal)
-            curPrepStmt.setBigDecimal(idx, (BigDecimal)obj);
-        else if (obj instanceof UUID)
-            curPrepStmt.setObject(idx, obj, Types.OTHER); // PostgreSQL expects UUID as OTHER
-        else if (obj instanceof byte[])
-            curPrepStmt.setBytes(idx, (byte[])obj);
-        else
-            curPrepStmt.setObject(idx, obj);
     }
 
     /**
@@ -445,25 +350,18 @@ public class IgniteToPostgreSqlCdcApplier {
 
         while (iter.hasNext()) {
             field = iter.next();
-            type = JAVA_TO_SQL_TYPES.getOrDefault(field.getValue(), DFLT_SQL_TYPE);
-
-            sql.append(field.getKey()).append(" ").append(type);
 
             precision = entity.getFieldsPrecision().get(field.getKey());
             scale = entity.getFieldsScale().get(field.getKey());
 
-            if (precision != null && precision > 0) {
-                if (SQL_TYPES_WITH_PRECISION_ONLY.contains(type))
-                    sql.append("(").append(precision).append(")");
-                else if (SQL_TYPES_WITH_PRECISION_AND_SCALE.contains(type)) {
-                    sql.append("(").append(precision);
+            if (precision != null && scale != null)
+                type = JavaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
+            else if (precision != null)
+                type = JavaToSqlTypeMapper.renderSqlType(field.getValue(), precision);
+            else
+                type = JavaToSqlTypeMapper.renderSqlType(field.getValue());
 
-                    if (scale != null && scale >= 0)
-                        sql.append(", ").append(scale);
-
-                    sql.append(")");
-                }
-            }
+            sql.append(field.getKey()).append(" ").append(type);
 
             if (iter.hasNext())
                 sql.append(", ");
