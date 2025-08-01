@@ -164,7 +164,33 @@
             <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.zonky.test</groupId>
+            <artifactId>embedded-postgres</artifactId>
+            <version>${embedded.postgres.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>${commons.dbcp2.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.zonky.test.postgres</groupId>
+                <artifactId>embedded-postgres-binaries-bom</artifactId>
+                <version>14.5.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
