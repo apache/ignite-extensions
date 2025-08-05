@@ -281,26 +281,26 @@ public class CdcKafkaReplicationTest extends AbstractReplicationTest {
      * @return Future for Change Data Capture application.
      */
     protected IgniteInternalFuture<?> igniteToKafka(
-            IgniteConfiguration igniteCfg,
-            String topic,
-            String metadataTopic,
-            String cache,
-            Set<String> includeTemplates,
-            Set<String> excludeTemplates,
-            String threadName
+        IgniteConfiguration igniteCfg,
+        String topic,
+        String metadataTopic,
+        String cache,
+        Set<String> includeTemplates,
+        Set<String> excludeTemplates,
+        String threadName
     ) {
         return runAsync(() -> {
             IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
-                    .setTopic(topic)
-                    .setMetadataTopic(metadataTopic)
-                    .setKafkaPartitions(DFLT_PARTS)
-                    .setCaches(Collections.singleton(cache))
-                    .setIncludeTemplates(includeTemplates)
-                    .setExcludeTemplates(excludeTemplates)
-                    .setMaxBatchSize(KEYS_CNT)
-                    .setOnlyPrimary(false)
-                    .setKafkaProperties(kafkaProperties())
-                    .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
+                .setTopic(topic)
+                .setMetadataTopic(metadataTopic)
+                .setKafkaPartitions(DFLT_PARTS)
+                .setCaches(Collections.singleton(cache))
+                .setIncludeTemplates(includeTemplates)
+                .setExcludeTemplates(excludeTemplates)
+                .setMaxBatchSize(KEYS_CNT)
+                .setOnlyPrimary(false)
+                .setKafkaProperties(kafkaProperties())
+                .setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
 
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
