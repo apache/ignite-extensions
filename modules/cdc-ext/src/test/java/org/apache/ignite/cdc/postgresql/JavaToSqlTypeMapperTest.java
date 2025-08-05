@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.NO_NUMERIC_META;
@@ -44,6 +43,12 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTest {
     /** */
     private final JavaToSqlTypeMapper javaToSqlTypeMapper = new JavaToSqlTypeMapper();
+
+    /** */
+    private IgniteEx src;
+
+    /** */
+    private EmbeddedPostgres postgres;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -75,11 +80,19 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
+
+        src = startGrid(0);
+
+        src.cluster().state(ClusterState.ACTIVE);
+
+        postgres = EmbeddedPostgres.builder().start();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        postgres.close();
 
         cleanPersistenceDir();
     }
@@ -87,152 +100,262 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
     /** */
     @Test
     public void javaToPostgreSqlTypesMappingTest() throws Exception {
-        try (IgniteEx src = startGrid(0); EmbeddedPostgres postgres = EmbeddedPostgres.builder().start()) {
-            src.cluster().state(ClusterState.ACTIVE);
+        Set<String> cachesToReplicate = Arrays.stream(JavaToSqlTypeMapper.JavaToSqlType.values())
+            .map(JavaToSqlTypeMapper.JavaToSqlType::javaTypeName)
+            .filter(name -> !name.equals(Object.class.getName()))
+            .map(clsName -> clsName.replace('.', '_').replace('[', '_'))
+            .flatMap(clsName -> Stream.of(
+                clsName,
+                clsName + "_WithPrecision",
+                clsName + "_WithPrecision_WithScale"
+            ))
+            .collect(Collectors.toSet());
 
-            Set<String> supportedTypes = Arrays.stream(JavaToSqlTypeMapper.JavaToSqlType.values())
-                .map(JavaToSqlTypeMapper.JavaToSqlType::javaTypeName)
-                .filter(name -> !name.equals(Object.class.getName()))
-                .map(clsName -> clsName.replace('.', '_').replace('[', '_'))
-                .collect(Collectors.toSet());
+        IgniteInternalFuture<?> fut = startIgniteToPostgreSqlCdcConsumer(
+            src.configuration(),
+            cachesToReplicate,
+            postgres.getPostgresDatabase()
+        );
 
-            Set<String> tableNames = supportedTypes.stream()
-                .flatMap(clsName -> Stream.of(
-                    clsName,
-                    clsName + "_WithPrecision",
-                    clsName + "_WithPrecision_WithScale"
-                ))
-                .collect(Collectors.toSet());
+        createCache("string", null, null);
+        createCache("string", 10, null);
+        createCache("string", 10, 10);
 
-            IgniteInternalFuture<?> fut = startIgniteToPostgreSqlCdcConsumer(
-                src.configuration(),
-                tableNames,
-                postgres.getPostgresDatabase()
-            );
+        createCache(5, null, null);
+        createCache(5, 1, null);
+        createCache(5, 1, 1);
 
-            createCacheAndCheck(src, postgres, "string", null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, "string", 10, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, "string", 10, 10, PRECISION_ONLY);
+        createCache(6L, null, null);
+        createCache(6L, 2, null);
+        createCache(6L, 2, 2);
 
-            createCacheAndCheck(src, postgres, 5, null, null, NO_NUMERIC_META);
+        createCache(true, null, null);
+        createCache(true, 3, null);
+        createCache(true, 3, 3);
 
-            createCacheAndCheck(src, postgres, 6L, null, null, NO_NUMERIC_META);
+        createCache(23.0, null, null);
+        createCache(23.0, 20, null);
+        createCache(23.343, 10, 3);
 
-            createCacheAndCheck(src, postgres, true, null, null, NO_NUMERIC_META);
+        createCache(23.0f, null, null);
+        createCache(23.0f, 10, null);
+        createCache(23.12f, 5, 2);
 
-            createCacheAndCheck(src, postgres, 23.0, null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, 23.0, 20, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, 23.343, 10, 3, PRECISION_AND_SCALE);
+        createCache(new BigDecimal("123.456"), null, null);
+        createCache(new BigDecimal("1234"), 4, null);
+        createCache(new BigDecimal("1.623"), 4, 3);
 
-            createCacheAndCheck(src, postgres, 23.0f, null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, 23.0f, 10, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, 23.12f, 5, 2, PRECISION_AND_SCALE);
+        createCache((short)23, null, null);
+        createCache((short)23, 4, null);
+        createCache((short)23, 4, 4);
 
-            createCacheAndCheck(src, postgres, new BigDecimal("123.456"), null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, new BigDecimal("1234"), 4, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, new BigDecimal("1.623"), 4, 3, PRECISION_AND_SCALE);
+        createCache((byte)33, null, null);
+        createCache((byte)33, 5, null);
+        createCache((byte)33, 5, 5);
 
-            createCacheAndCheck(src, postgres, (short)23, null, null, NO_NUMERIC_META);
+        java.sql.Date sqlDate = new java.sql.Date(new java.util.Date().getTime());
 
-            createCacheAndCheck(src, postgres, (byte)33, null, null, NO_NUMERIC_META);
+        createCache(sqlDate, null, null);
+        createCache(sqlDate, 6, null);
+        createCache(sqlDate, 6, 6);
 
-            createCacheAndCheck(src, postgres, new java.sql.Date(933883200000L), null, null, NO_NUMERIC_META);
+        java.sql.Time sqlTime = new java.sql.Time(933960600000L);
 
-            java.sql.Time sqlTime = new java.sql.Time(933960600000L);
+        createCache(sqlTime, null, null);
+        createCache(sqlTime, 6, null);
+        createCache(sqlTime, 6, 1);
 
-            createCacheAndCheck(src, postgres, sqlTime, null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, sqlTime, 6, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, sqlTime, 6, 1, PRECISION_ONLY);
+        createCache(new java.sql.Timestamp(933960600000L), null, null);
+        createCache(new java.sql.Timestamp(933960600000L), 2, null);
+        createCache(new java.sql.Timestamp(933960612345L), 4, 1);
 
-            createCacheAndCheck(src, postgres, new java.sql.Timestamp(933960600000L), null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, new java.sql.Timestamp(933960600000L), 2, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, new java.sql.Timestamp(933960612345L), 4, 1, PRECISION_ONLY);
+        createCache(new java.util.Date(933960600000L), null, null);
+        createCache(new java.util.Date(933960600000L), 2, null);
+        createCache(new java.util.Date(933960612345L), 4, 1);
 
-            createCacheAndCheck(src, postgres, new java.util.Date(933960600000L), null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, new java.util.Date(933960600000L), 2, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, new java.util.Date(933960612345L), 4, 1, PRECISION_ONLY);
+        UUID uuid = UUID.randomUUID();
 
-            createCacheAndCheck(src, postgres, UUID.randomUUID(), null, null, NO_NUMERIC_META);
+        createCache(uuid, null, null);
+        createCache(uuid, 7, null);
+        createCache(uuid, 7, 7);
 
-            createCacheAndCheck(src, postgres, Period.of(1, 2, 3), null, null, NO_NUMERIC_META);
+        createCache(Period.of(1, 2, 3), null, null);
+        createCache(Period.of(1, 2, 3), 8, null);
+        createCache(Period.of(1, 2, 3), 8, 8);
 
-            createCacheAndCheck(src, postgres, Duration.ofNanos(1123456789), null, null, NO_NUMERIC_META);
+        createCache(Duration.ofNanos(1123456789), null, null);
+        createCache(Duration.ofNanos(1123456789), 9, null);
+        createCache(Duration.ofNanos(1123456789), 9, 9);
 
-            LocalDate locDate = LocalDate.of(1999, 8, 6);
+        LocalDate locDate = LocalDate.of(1999, 8, 6);
 
-            createCacheAndCheck(src, postgres, locDate, null, null, NO_NUMERIC_META);
+        createCache(locDate, null, null);
+        createCache(locDate, 10, null);
+        createCache(locDate, 10, 10);
 
-            LocalTime locTime = LocalTime.of(12, 12, 12);
+        LocalTime locTime = LocalTime.of(12, 12, 12);
 
-            createCacheAndCheck(src, postgres, locTime, null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, locTime, 6, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, locTime, 6, 1, PRECISION_ONLY);
+        createCache(locTime, null, null);
+        createCache(locTime, 6, null);
+        createCache(locTime, 6, 1);
 
-            LocalDateTime locDateTime = LocalDateTime.of(
-                1999, 8, 6,
-                23, 30, 3
-            );
+        LocalDateTime locDateTime = LocalDateTime.of(
+            1999, 8, 6,
+            23, 30, 3
+        );
 
-            createCacheAndCheck(src, postgres, locDateTime, null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, locDateTime, 2, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, locDateTime, 4, 1, PRECISION_ONLY);
+        createCache(locDateTime, null, null);
+        createCache(locDateTime, 2, null);
+        createCache(locDateTime, 4, 1);
 
-            createCacheAndCheck(src, postgres, OffsetTime.now(), null, null, NO_NUMERIC_META);
-            createCacheAndCheck(src, postgres, OffsetTime.now(), 30, null, PRECISION_ONLY);
-            createCacheAndCheck(src, postgres, OffsetTime.now(), 30, 1, PRECISION_ONLY);
+        OffsetTime offsetTime = OffsetTime.now();
 
-            OffsetDateTime dateWithOffset = OffsetDateTime.of(locDateTime, ZoneOffset.ofHours(3));
+        createCache(offsetTime, null, null);
+        createCache(offsetTime, 30, null);
+        createCache(offsetTime, 30, 1);
 
-            createCacheAndCheck(src, postgres, dateWithOffset, null, null, NO_NUMERIC_META);
+        OffsetDateTime dateWithOffset = OffsetDateTime.of(locDateTime, ZoneOffset.ofHours(3));
 
-            createCacheAndCheck(src, postgres, new byte[]{1, 2, 3, 4}, null, null, NO_NUMERIC_META);
+        createCache(dateWithOffset, null, null);
+        createCache(dateWithOffset, 11, null);
+        createCache(dateWithOffset, 11, 11);
 
-            for (String tableName : supportedTypes)
-                assertTrue(waitForCondition(waitForTableSize(postgres, tableName, 1), getTestTimeout()));
+        createCache(new byte[]{1, 2, 3, 4}, null, null);
+        createCache(new byte[]{1, 2, 3, 4}, 12, null);
+        createCache(new byte[]{1, 2, 3, 4}, 12, 12);
 
-            fut.cancel();
+        for (String cache : cachesToReplicate) {
+            assertTrue(waitForCondition(waitForTablesCreatedOnPostgres(postgres, Set.of(cache)), getTestTimeout()));
+            assertTrue(waitForCondition(waitForTableSize(postgres, cache, 1), getTestTimeout()));
         }
+
+        checkCache("string", null, null, NO_NUMERIC_META);
+        checkCache("string", 10, null, PRECISION_ONLY);
+        checkCache("string", 10, 10, PRECISION_ONLY);
+
+        checkCache(5, null, null, NO_NUMERIC_META);
+        checkCache(5, 1, null, NO_NUMERIC_META);
+        checkCache(5, 1, 1, NO_NUMERIC_META);
+
+        checkCache(6L, null, null, NO_NUMERIC_META);
+        checkCache(6L, 2, null, NO_NUMERIC_META);
+        checkCache(6L, 2, 2, NO_NUMERIC_META);
+
+        checkCache(true, null, null, NO_NUMERIC_META);
+        checkCache(true, 3, null, NO_NUMERIC_META);
+        checkCache(true, 3, 3, NO_NUMERIC_META);
+
+        checkCache(23.0, null, null, NO_NUMERIC_META);
+        checkCache(23.0, 20, null, PRECISION_ONLY);
+        checkCache(23.343, 10, 3, PRECISION_AND_SCALE);
+
+        checkCache(23.0f, null, null, NO_NUMERIC_META);
+        checkCache(23.0f, 10, null, PRECISION_ONLY);
+        checkCache(23.12f, 5, 2, PRECISION_AND_SCALE);
+
+        checkCache(new BigDecimal("123.456"), null, null, NO_NUMERIC_META);
+        checkCache(new BigDecimal("1234"), 4, null, PRECISION_ONLY);
+        checkCache(new BigDecimal("1.623"), 4, 3, PRECISION_AND_SCALE);
+
+        checkCache((short)23, null, null, NO_NUMERIC_META);
+        checkCache((short)23, 4, null, NO_NUMERIC_META);
+        checkCache((short)23, 4, 4, NO_NUMERIC_META);
+
+        checkCache((byte)33, null, null, NO_NUMERIC_META);
+        checkCache((byte)33, 5, null, NO_NUMERIC_META);
+        checkCache((byte)33, 5, 5, NO_NUMERIC_META);
+
+        checkCache(sqlDate, null, null, NO_NUMERIC_META);
+        checkCache(sqlDate, 6, null, NO_NUMERIC_META);
+        checkCache(sqlDate, 6, 6, NO_NUMERIC_META);
+
+        checkCache(sqlTime, null, null, NO_NUMERIC_META);
+        checkCache(sqlTime, 6, null, PRECISION_ONLY);
+        checkCache(sqlTime, 6, 1, PRECISION_ONLY);
+
+        checkCache(new java.sql.Timestamp(933960600000L), null, null, NO_NUMERIC_META);
+        checkCache(new java.sql.Timestamp(933960600000L), 2, null, PRECISION_ONLY);
+        checkCache(new java.sql.Timestamp(933960612345L), 4, 1, PRECISION_ONLY);
+
+        checkCache(new java.util.Date(933960600000L), null, null, NO_NUMERIC_META);
+        checkCache(new java.util.Date(933960600000L), 2, null, NO_NUMERIC_META);
+        checkCache(new java.util.Date(933960612345L), 4, 1, NO_NUMERIC_META);
+
+        checkCache(uuid, null, null, NO_NUMERIC_META);
+        checkCache(uuid, 7, null, NO_NUMERIC_META);
+        checkCache(uuid, 7, 7, NO_NUMERIC_META);
+
+        checkCache(Period.of(1, 2, 3), null, null, NO_NUMERIC_META);
+        checkCache(Period.of(1, 2, 3), 8, null, NO_NUMERIC_META);
+        checkCache(Period.of(1, 2, 3), 8, 8, NO_NUMERIC_META);
+
+        checkCache(Duration.ofNanos(1123456789), null, null, NO_NUMERIC_META);
+        checkCache(Duration.ofNanos(1123456789), 9, null, NO_NUMERIC_META);
+        checkCache(Duration.ofNanos(1123456789), 9, 9, NO_NUMERIC_META);
+
+        checkCache(locDate, null, null, NO_NUMERIC_META);
+        checkCache(locDate, 10, null, NO_NUMERIC_META);
+        checkCache(locDate, 10, 10, NO_NUMERIC_META);
+
+        checkCache(locTime, null, null, NO_NUMERIC_META);
+        checkCache(locTime, 6, null, PRECISION_ONLY);
+        checkCache(locTime, 6, 1, PRECISION_ONLY);
+
+        checkCache(locDateTime, null, null, NO_NUMERIC_META);
+        checkCache(locDateTime, 2, null, PRECISION_ONLY);
+        checkCache(locDateTime, 4, 1, PRECISION_ONLY);
+
+        checkCache(offsetTime, null, null, NO_NUMERIC_META);
+        checkCache(offsetTime, 30, null, PRECISION_ONLY);
+        checkCache(offsetTime, 30, 1, PRECISION_ONLY);
+
+        checkCache(dateWithOffset, null, null, NO_NUMERIC_META);
+        checkCache(dateWithOffset, 11, null, NO_NUMERIC_META);
+        checkCache(dateWithOffset, 11, 11, NO_NUMERIC_META);
+
+        checkCache(new byte[]{1, 2, 3, 4}, null, null, NO_NUMERIC_META);
+        checkCache(new byte[]{1, 2, 3, 4}, 12, null, NO_NUMERIC_META);
+        checkCache(new byte[]{1, 2, 3, 4}, 12, 12, NO_NUMERIC_META);
+
+        fut.cancel();
     }
 
     /** */
-    private <V> void createCacheAndCheck(
-        IgniteEx src,
-        EmbeddedPostgres postgres,
-        V val,
-        Integer precision,
-        Integer scale,
-        NumericMeta actualMeta
-    ) throws IgniteInterruptedCheckedException {
-        String tableName = val.getClass().getName().replace('.', '_').replace('[', '_') +
-            (precision != null ? "_WithPrecision" : "") +
-            (scale != null ? "_WithScale" : "");
+    private <V> void createCache(V val, Integer precision, Integer scale) {
+        String tableName = getTableNameFromClass(val.getClass(), precision, scale);
 
         IgniteCache<Integer, V> cache = createCache(src, tableName, val.getClass().getName(), precision, scale);
 
         cache.put(1, val);
+    }
 
-        waitForCondition(waitForTablesCreatedOnPostgres(postgres, Set.of(tableName)), getTestTimeout());
+    /** */
+    private <V> void checkCache(V val, Integer precision, Integer scale, NumericMeta actualMeta) {
+        String tableName = getTableNameFromClass(val.getClass(), precision, scale);
 
-        waitForCondition(waitForTableSize(postgres, tableName, 1), getTestTimeout());
+        selectOnPostgreSqlAndAct(postgres, "SELECT * FROM " + tableName, (res) -> {
+            assertTrue(res.next());
 
-        assertTrue(
-            selectOnPostgreSqlAndAct(postgres, "SELECT * FROM " + tableName, (res) -> {
-                assertTrue(res.next());
+            checkValue(res, val);
 
-                checkValue(res, val);
+            ResultSetMetaData meta = res.getMetaData();
 
-                ResultSetMetaData meta = res.getMetaData();
+            String actTypeName = meta.getColumnTypeName(2);
 
-                String actTypeName = meta.getColumnTypeName(2);
+            checkType(val, actTypeName);
 
-                checkType(val, actTypeName);
+            if (actualMeta != NO_NUMERIC_META)
+                checkValueMeta(meta, val, precision, actualMeta == PRECISION_AND_SCALE ? scale : 0);
 
-                if (actualMeta != NO_NUMERIC_META)
-                    checkValueMeta(meta, val, precision, actualMeta == PRECISION_AND_SCALE ? scale : 0);
+            return true;
+        });
+    }
 
-                return true;
-            })
-        );
+    /** */
+    private String getTableNameFromClass(Class<?> cls, Integer precision, Integer scale) {
+        return cls.getName().replace('.', '_').replace('[', '_') +
+            (precision != null ? "_WithPrecision" : "") +
+            (scale != null ? "_WithScale" : "");
     }
 
     /** */
@@ -255,13 +378,8 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             assert Objects.equals(res.getTimestamp("value").getTime(), ((java.util.Date)val).getTime());
         else if (val instanceof Period)
             assert Objects.equals(actVal, formatPeriod((Period)val));
-        else if (val instanceof Duration) {
-            Duration dur = (Duration)val;
-
-            BigDecimal durVal = BigDecimal.valueOf(dur.getSeconds()).add(BigDecimal.valueOf(dur.getNano(), 9));
-
-            assert Objects.equals(res.getBigDecimal("value"), durVal);
-        }
+        else if (val instanceof Duration)
+            assert Objects.equals(actVal, "00:00:01.123457");
         else if (val instanceof OffsetDateTime)
             assert Objects.equals(res.getObject("value", OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC),
                 ((OffsetDateTime)val).withOffsetSameInstant(ZoneOffset.UTC));
@@ -284,7 +402,8 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         else if (val instanceof OffsetDateTime)
             assert Objects.equals(actTypeName, "timestamptz");
         else
-            assert Objects.equals(actTypeName, javaToSqlTypeMapper.renderSqlType(val.getClass().getName()).toLowerCase());
+            assert Objects.equals(actTypeName,
+                javaToSqlTypeMapper.renderSqlType(val.getClass().getName(), null, null).toLowerCase());
     }
 
     /** */

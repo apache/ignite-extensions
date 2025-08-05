@@ -14,10 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.lang.RunnableX;
+
+import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapper.JavaToSqlType.OBJECT;
 
 /** */
-public class JavaToSqlTypeMapper {
+class JavaToSqlTypeMapper {
     /** */
     private static final int NO_SQL_TYPE = -1;
 
@@ -36,95 +37,58 @@ public class JavaToSqlTypeMapper {
      * @param idx value index in {@link PreparedStatement}
      * @param obj value
      */
-    public void setEventFieldValue(PreparedStatement stmt, Integer idx, Object obj) {
-        if (obj == null) {
-            setSafe(() -> stmt.setNull(idx, Types.NULL));
-
-            return;
-        }
-
-        int types = JAVA_TO_SQL_TYPE_MAP.get(obj.getClass().getName()).types();
-
-        if (types != -1)
-            setSafe(() -> stmt.setObject(idx, obj, types));
-        else if (obj instanceof Duration) {
-            Duration dur = (Duration)obj;
-
-            BigDecimal durVal = BigDecimal.valueOf(dur.getSeconds()).add(BigDecimal.valueOf(dur.getNano(), 9));
-
-            setSafe(() -> stmt.setBigDecimal(idx, durVal));
-        }
-        else if (obj instanceof byte[])
-            setSafe(() -> stmt.setBytes(idx, (byte[])obj));
-        else
-            setSafe(() -> stmt.setObject(idx, obj));
-    }
-
-    /**
-     * Renders the SQL type for a given Java class name, including both precision and scale if supported.
-     *
-     * @param clsName  The fully qualified Java class name (e.g., {@code java.math.BigDecimal}).
-     * @param precision The numeric precision to include in the SQL type declaration.
-     * @param scale     The numeric scale to include in the SQL type declaration.
-     * @return A SQL type string (e.g., {@code DECIMAL (10, 2)}) corresponding to the given class and numeric metadata.
-     *         If the SQL type does not support scale, {@link #renderSqlType(String, int)} is used instead.
-     */
-    public String renderSqlType(String clsName, int precision, int scale) {
-        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.get(clsName);
-
-        if (!type.scale())
-            return renderSqlType(clsName, precision);
-
-        return type.sqlType().replace("?", String.format("(%d, %d)", precision, scale));
-    }
-
-    /**
-     * Renders the SQL type for a given Java class name, including precision if supported.
-     *
-     * @param clsName   The fully qualified Java class name (e.g., {@code java.lang.String}).
-     * @param precision The numeric precision or length to include in the SQL type declaration.
-     * @return A SQL type string (e.g., {@code VARCHAR (255)}) corresponding to the given class and precision.
-     *         If the SQL type does not support precision, {@link #renderSqlType(String)} is used instead.
-     */
-    public String renderSqlType(String clsName, int precision) {
-        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.get(clsName);
-
-        if (!type.precision())
-            return renderSqlType(clsName);
-
-        return type.sqlType().replace("?", String.format("(%d)", precision));
-    }
-
-    /**
-     * Renders the SQL type for a given Java class name without any precision or scale.
-     *
-     * @param clsName The fully qualified Java class name (e.g., {@code java.lang.Integer}).
-     * @return A SQL type string (e.g., {@code INTEGER}, {@code VARCHAR}, or {@code DECIMAL}) with or without
-     * placeholders removed. If the mapped SQL type includes a precision placeholder, it will be removed.
-     */
-    public String renderSqlType(String clsName) {
-        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.get(clsName);
-
-        if (type.precision())
-            return type.sqlType().replace("?", "");
-
-        return type.sqlType();
-    }
-
-    /**
-     * Executes the given operation that may throw an exception, converting any thrown {@link Throwable}
-     * into an {@link IgniteException}.
-     *
-     * @param op the operation to execute, represented as a {@link RunnableX}.
-     * @throws IgniteException if the operation throws any exception.
-     */
-    private void setSafe(RunnableX op) {
+    public void setValue(PreparedStatement stmt, int idx, Object obj) {
         try {
-            op.runx();
+            if (obj == null) {
+                stmt.setNull(idx, Types.NULL);
+
+                return;
+            }
+
+            JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.getOrDefault(obj.getClass().getName(), OBJECT);
+
+            if (type != null && type.typeId() != -1)
+                stmt.setObject(idx, obj, type.typeId());
+            else if (obj instanceof byte[])
+                stmt.setBytes(idx, (byte[])obj);
+            else
+                stmt.setObject(idx, obj);
         }
         catch (Throwable e) {
             throw new IgniteException("Failed to set value for type!", e);
         }
+    }
+
+    /**
+     * Renders the SQL type declaration for a given Java class name based on its mapping,
+     * optionally including precision and scale if the SQL type supports them.
+     *
+     * @param clsName  the fully qualified Java class name used to look up the corresponding SQL type
+     * @param precision optional precision value to include in the SQL type, if supported
+     * @param scale     optional scale value to include in the SQL type, if supported
+     * @return the SQL type string with appropriate precision and scale formatting
+     */
+    public String renderSqlType(String clsName, Integer precision, Integer scale) {
+        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.getOrDefault(clsName, OBJECT);
+
+        if (type.precision()) {
+            if (type.scale()) {
+                if (precision != null && scale != null)
+                    return type.sqlType().replace("?", String.format("(%d, %d)", precision, scale));
+
+                if (precision != null)
+                    return type.sqlType().replace("?", String.format("(%d)", precision));
+
+                return type.sqlType().replace("?", "");
+            }
+
+            if (precision != null)
+                return type.sqlType().replace("?", String.format("(%d)", precision));
+
+            return type.sqlType().replace("?", "");
+        }
+
+        return type.sqlType();
     }
 
     /** */
@@ -175,7 +139,7 @@ public class JavaToSqlTypeMapper {
         PERIOD(Period.class, "INTERVAL", false, false, Types.OTHER),
 
         /** */
-        DURATION(Duration.class, "NUMERIC", false, false, NO_SQL_TYPE),
+        DURATION(Duration.class, "INTERVAL", false, false, Types.OTHER),
 
         /** */
         LOCAL_DATE(LocalDate.class, "DATE", false, false, Types.DATE),
@@ -212,27 +176,27 @@ public class JavaToSqlTypeMapper {
         private final boolean scale;
 
         /** */
-        private final int types;
+        private final int typeId;
 
         /**
          * @param javaTypeName Java type name.
          * @param sqlType Sql type.
          * @param precision Has precision.
          * @param scale Has scale.
-         * @param types {@link Types}
+         * @param typeId {@link Types}
          */
         JavaToSqlType(
             Class<?> javaTypeName,
             String sqlType,
             boolean precision,
             boolean scale,
-            int types
+            int typeId
         ) {
             this.javaTypeName = javaTypeName.getName();
             this.sqlType = sqlType;
             this.precision = precision;
             this.scale = scale;
-            this.types = types;
+            this.typeId = typeId;
         }
 
         /** */
@@ -256,8 +220,8 @@ public class JavaToSqlTypeMapper {
         }
 
         /** */
-        int types() {
-            return types;
+        int typeId() {
+            return typeId;
         }
     }
 }

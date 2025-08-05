@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /** */
-public class IgniteToPostgreSqlCdcApplier {
+class IgniteToPostgreSqlCdcApplier {
     /** */
     private final DataSource dataSrc;
 
@@ -239,7 +239,7 @@ public class IgniteToPostgreSqlCdcApplier {
                 else
                     obj = valObj != null ? valObj.field(field) : evt.value();
 
-                javaToSqlTypeMapper.setEventFieldValue(curPrepStmt, idx, obj);
+                javaToSqlTypeMapper.setValue(curPrepStmt, idx, obj);
 
                 idx++;
             }
@@ -357,12 +357,7 @@ public class IgniteToPostgreSqlCdcApplier {
             precision = entity.getFieldsPrecision().get(field.getKey());
             scale = entity.getFieldsScale().get(field.getKey());
 
-            if (precision != null && scale != null)
-                type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
-            else if (precision != null)
-                type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision);
-            else
-                type = javaToSqlTypeMapper.renderSqlType(field.getValue());
+            type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
 
             sql.append(field.getKey()).append(" ").append(type);
 
