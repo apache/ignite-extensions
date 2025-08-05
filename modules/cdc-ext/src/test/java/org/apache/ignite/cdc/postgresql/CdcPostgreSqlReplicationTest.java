@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.postgres;
+package org.apache.ignite.cdc.postgresql;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -39,7 +39,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
