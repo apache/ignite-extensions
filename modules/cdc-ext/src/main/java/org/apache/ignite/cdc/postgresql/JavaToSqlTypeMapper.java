@@ -3,13 +3,11 @@ package org.apache.ignite.cdc.postgresql;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.Types;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.time.Period;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -19,9 +17,6 @@ import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapper.JavaToSqlType
 
 /** */
 class JavaToSqlTypeMapper {
-    /** */
-    private static final int NO_SQL_TYPE = -1;
-
     /** */
     private static final Map<String, JavaToSqlType> JAVA_TO_SQL_TYPE_MAP = new HashMap<>();
 
@@ -45,12 +40,16 @@ class JavaToSqlTypeMapper {
                 return;
             }
 
+            if (obj instanceof byte[]) {
+                stmt.setBytes(idx, (byte[])obj); // Preferred setter for byte[]
+
+                return;
+            }
+
             JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.getOrDefault(obj.getClass().getName(), OBJECT);
 
-            if (type != null && type.typeId() != -1)
+            if (type != null)
                 stmt.setObject(idx, obj, type.typeId());
-            else if (obj instanceof byte[])
-                stmt.setBytes(idx, (byte[])obj);
             else
                 stmt.setObject(idx, obj);
         }
@@ -136,12 +135,6 @@ class JavaToSqlTypeMapper {
         UUID_TYPE(UUID.class, "UUID", false, false, Types.OTHER),
 
         /** */
-        PERIOD(Period.class, "INTERVAL", false, false, Types.OTHER),
-
-        /** */
-        DURATION(Duration.class, "INTERVAL", false, false, Types.OTHER),
-
-        /** */
         LOCAL_DATE(LocalDate.class, "DATE", false, false, Types.DATE),
 
         /** */
@@ -158,10 +151,10 @@ class JavaToSqlTypeMapper {
             Types.TIMESTAMP_WITH_TIMEZONE),
 
         /** */
-        BYTE_ARRAY(byte[].class, "BYTEA", false, false, NO_SQL_TYPE),
+        BYTE_ARRAY(byte[].class, "BYTEA", false, false, Types.OTHER),
 
         /** */
-        OBJECT(Object.class, "OTHER", false, false, NO_SQL_TYPE);
+        OBJECT(Object.class, "OTHER", false, false, Types.OTHER);
 
         /** */
         private final String javaTypeName;

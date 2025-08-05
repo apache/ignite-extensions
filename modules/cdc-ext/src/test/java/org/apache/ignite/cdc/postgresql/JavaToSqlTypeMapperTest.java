@@ -5,13 +5,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
-import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -179,14 +177,6 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         createCache(uuid, 7, null);
         createCache(uuid, 7, 7);
 
-        createCache(Period.of(1, 2, 3), null, null);
-        createCache(Period.of(1, 2, 3), 8, null);
-        createCache(Period.of(1, 2, 3), 8, 8);
-
-        createCache(Duration.ofNanos(1123456789), null, null);
-        createCache(Duration.ofNanos(1123456789), 9, null);
-        createCache(Duration.ofNanos(1123456789), 9, 9);
-
         LocalDate locDate = LocalDate.of(1999, 8, 6);
 
         createCache(locDate, null, null);
@@ -285,14 +275,6 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         checkCache(uuid, 7, null, NO_NUMERIC_META);
         checkCache(uuid, 7, 7, NO_NUMERIC_META);
 
-        checkCache(Period.of(1, 2, 3), null, null, NO_NUMERIC_META);
-        checkCache(Period.of(1, 2, 3), 8, null, NO_NUMERIC_META);
-        checkCache(Period.of(1, 2, 3), 8, 8, NO_NUMERIC_META);
-
-        checkCache(Duration.ofNanos(1123456789), null, null, NO_NUMERIC_META);
-        checkCache(Duration.ofNanos(1123456789), 9, null, NO_NUMERIC_META);
-        checkCache(Duration.ofNanos(1123456789), 9, 9, NO_NUMERIC_META);
-
         checkCache(locDate, null, null, NO_NUMERIC_META);
         checkCache(locDate, 10, null, NO_NUMERIC_META);
         checkCache(locDate, 10, 10, NO_NUMERIC_META);
@@ -376,10 +358,6 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             assert Objects.equals(res.getTimestamp("value"), Timestamp.valueOf((LocalDateTime)val));
         else if (val.getClass() == java.util.Date.class)
             assert Objects.equals(res.getTimestamp("value").getTime(), ((java.util.Date)val).getTime());
-        else if (val instanceof Period)
-            assert Objects.equals(actVal, formatPeriod((Period)val));
-        else if (val instanceof Duration)
-            assert Objects.equals(actVal, "00:00:01.123457");
         else if (val instanceof OffsetDateTime)
             assert Objects.equals(res.getObject("value", OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC),
                 ((OffsetDateTime)val).withOffsetSameInstant(ZoneOffset.UTC));
@@ -423,22 +401,6 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             assert Objects.equals(actScale, precision);
         else
             assert Objects.equals(actScale, scale);
-    }
-
-    /** */
-    private String formatPeriod(Period p) {
-        StringBuilder sb = new StringBuilder();
-
-        if (p.getYears() != 0)
-            sb.append(p.getYears()).append(" year ");
-
-        if (p.getMonths() != 0)
-            sb.append(p.getMonths()).append(" mons ");
-
-        if (p.getDays() != 0)
-            sb.append(p.getDays()).append(" days");
-
-        return sb.toString().trim();
     }
 
     /** */
