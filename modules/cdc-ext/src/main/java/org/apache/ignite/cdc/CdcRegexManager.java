@@ -35,7 +35,7 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
- * TODO: Add JavaDoc
+ * Contains logic to process user's regexp patterns for CDC.
  */
 public class CdcRegexManager implements CdcRegexMatcher {
 
@@ -57,6 +57,11 @@ public class CdcRegexManager implements CdcRegexMatcher {
     /** Logger. */
     private IgniteLogger log;
 
+    /**
+     *
+     * @param cdcDir Path to Change Data Capture Directory.
+     * @param log Logger.
+     */
     public CdcRegexManager(Path cdcDir, IgniteLogger log) {
         this.cdcDir = cdcDir;
         this.log = log;
