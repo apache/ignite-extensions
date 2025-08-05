@@ -53,6 +53,9 @@ public class IgniteToPostgreSqlCdcApplier {
     private final IgniteLogger log;
 
     /** */
+    private final JavaToSqlTypeMapper javaToSqlTypeMapper = new JavaToSqlTypeMapper();
+
+    /** */
     private final Map<Integer, String> cacheIdToUpsertQry = new HashMap<>();
 
     /** */
@@ -236,7 +239,7 @@ public class IgniteToPostgreSqlCdcApplier {
                 else
                     obj = valObj != null ? valObj.field(field) : evt.value();
 
-                JavaToSqlTypeMapper.setEventFieldValue(curPrepStmt, idx, obj);
+                javaToSqlTypeMapper.setEventFieldValue(curPrepStmt, idx, obj);
 
                 idx++;
             }
@@ -355,11 +358,11 @@ public class IgniteToPostgreSqlCdcApplier {
             scale = entity.getFieldsScale().get(field.getKey());
 
             if (precision != null && scale != null)
-                type = JavaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
+                type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
             else if (precision != null)
-                type = JavaToSqlTypeMapper.renderSqlType(field.getValue(), precision);
+                type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision);
             else
-                type = JavaToSqlTypeMapper.renderSqlType(field.getValue());
+                type = javaToSqlTypeMapper.renderSqlType(field.getValue());
 
             sql.append(field.getKey()).append(" ").append(type);
 

@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapper.toBigDecimal;
 import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.NO_NUMERIC_META;
 import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.PRECISION_AND_SCALE;
 import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.PRECISION_ONLY;
@@ -43,9 +42,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTest {
-    /**
-     * {@inheritDoc}
-     */
+    /** */
+    private final JavaToSqlTypeMapper javaToSqlTypeMapper = new JavaToSqlTypeMapper();
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -63,9 +63,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteToPostgreSqlCdcConsumer getCdcConsumerConfiguration() {
         IgniteToPostgreSqlCdcConsumer cdcCfg = super.getCdcConsumerConfiguration();
 
@@ -74,32 +72,26 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         return cdcCfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         cleanPersistenceDir();
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void javaToPostgreSqlTypesMappingTest() throws Exception {
         try (IgniteEx src = startGrid(0); EmbeddedPostgres postgres = EmbeddedPostgres.builder().start()) {
             src.cluster().state(ClusterState.ACTIVE);
 
             Set<String> supportedTypes = Arrays.stream(JavaToSqlTypeMapper.JavaToSqlType.values())
-                .map(JavaToSqlTypeMapper.JavaToSqlType::getJavaTypeName)
+                .map(JavaToSqlTypeMapper.JavaToSqlType::javaTypeName)
                 .filter(name -> !name.equals(Object.class.getName()))
                 .map(clsName -> clsName.replace('.', '_').replace('[', '_'))
                 .collect(Collectors.toSet());
@@ -178,8 +170,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
 
             LocalDateTime locDateTime = LocalDateTime.of(
                 1999, 8, 6,
-                23, 30, 3,
-                965_615_000
+                23, 30, 3
             );
 
             createCacheAndCheck(src, postgres, locDateTime, null, null, NO_NUMERIC_META);
@@ -203,9 +194,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private <V> void createCacheAndCheck(
         IgniteEx src,
         EmbeddedPostgres postgres,
@@ -213,7 +202,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         Integer precision,
         Integer scale,
         NumericMeta actualMeta
-    ) throws IgniteInterruptedCheckedException, SQLException {
+    ) throws IgniteInterruptedCheckedException {
         String tableName = val.getClass().getName().replace('.', '_').replace('[', '_') +
             (precision != null ? "_WithPrecision" : "") +
             (scale != null ? "_WithScale" : "");
@@ -266,10 +255,16 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             assert Objects.equals(res.getTimestamp("value").getTime(), ((java.util.Date)val).getTime());
         else if (val instanceof Period)
             assert Objects.equals(actVal, formatPeriod((Period)val));
-        else if (val instanceof Duration)
-            assert Objects.equals(res.getBigDecimal("value"), toBigDecimal((Duration)val));
+        else if (val instanceof Duration) {
+            Duration dur = (Duration)val;
+
+            BigDecimal durVal = BigDecimal.valueOf(dur.getSeconds()).add(BigDecimal.valueOf(dur.getNano(), 9));
+
+            assert Objects.equals(res.getBigDecimal("value"), durVal);
+        }
         else if (val instanceof OffsetDateTime)
-            assert Objects.equals(res.getObject("value", OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC), ((OffsetDateTime)val).withOffsetSameInstant(ZoneOffset.UTC));
+            assert Objects.equals(res.getObject("value", OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC),
+                ((OffsetDateTime)val).withOffsetSameInstant(ZoneOffset.UTC));
         else if (val instanceof ZonedDateTime)
             assert Objects.equals(res.getObject("value", ZonedDateTime.class), val);
         else if (val instanceof byte[])
@@ -289,7 +284,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         else if (val instanceof OffsetDateTime)
             assert Objects.equals(actTypeName, "timestamptz");
         else
-            assert Objects.equals(actTypeName, JavaToSqlTypeMapper.renderSqlType(val.getClass().getName()).toLowerCase());
+            assert Objects.equals(actTypeName, javaToSqlTypeMapper.renderSqlType(val.getClass().getName()).toLowerCase());
     }
 
     /** */
@@ -304,7 +299,8 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         else
             assert Objects.equals(actPrec, precision);
 
-        if (val instanceof java.sql.Time || val instanceof java.sql.Timestamp || val instanceof LocalTime || val instanceof LocalDateTime ||  val.getClass() == java.util.Date.class)
+        if (val instanceof java.sql.Time || val instanceof java.sql.Timestamp || val instanceof LocalTime ||
+            val instanceof LocalDateTime || val.getClass() == java.util.Date.class)
             assert Objects.equals(actScale, precision);
         else
             assert Objects.equals(actScale, scale);
@@ -326,9 +322,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
         return sb.toString().trim();
     }
 
-    /**
-     *
-     */
+    /** */
     private <V> IgniteCache<Integer, V> createCache(IgniteEx src, String tableName, String clsName, Integer precision, Integer scale) {
         QueryEntity qryEntity = new QueryEntity()
             .setTableName(tableName)
