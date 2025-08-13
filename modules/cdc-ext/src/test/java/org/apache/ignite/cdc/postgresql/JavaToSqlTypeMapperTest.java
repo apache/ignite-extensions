@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cdc.postgresql;
 
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,15 +29,14 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -32,13 +49,31 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.NO_NUMERIC_META;
-import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.PRECISION_AND_SCALE;
-import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapperTest.NumericMeta.PRECISION_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTest {
+    /** Type mapping. */
+    private static final Map<Class<?>, String> TYPE_MAPPING = Map.of(
+        Byte.class, "int2",
+        Short.class, "int2",
+        Integer.class, "int4",
+        Long.class, "int8",
+        OffsetDateTime.class, "timestamptz"
+    );
+
+    /** */
+    private static final int PRECISION_EXTRA_TIME = 9;
+
+    /** */
+    private static final int PRECISION_EXTRA_DATE_TIME = 23;
+
+    /** */
+    private static final String KEY_COLUMN_NAME = "id";
+
+    /** */
+    private static final String VAL_COLUMN_NAME = "value";
+
     /** */
     private final JavaToSqlTypeMapper javaToSqlTypeMapper = new JavaToSqlTypeMapper();
 
@@ -61,7 +96,6 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             .setDefaultDataRegionConfiguration(dataRegionConfiguration);
 
         cfg.setDataStorageConfiguration(dataStorageConfiguration);
-        cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
     }
@@ -98,16 +132,9 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
     /** */
     @Test
     public void javaToPostgreSqlTypesMappingTest() throws Exception {
-        Set<String> cachesToReplicate = Arrays.stream(JavaToSqlTypeMapper.JavaToSqlType.values())
-            .map(JavaToSqlTypeMapper.JavaToSqlType::javaTypeName)
-            .filter(name -> !name.equals(Object.class.getName()))
-            .map(clsName -> clsName.replace('.', '_').replace('[', '_'))
-            .flatMap(clsName -> Stream.of(
-                clsName,
-                clsName + "_WithPrecision",
-                clsName + "_WithPrecision_WithScale"
-            ))
-            .collect(Collectors.toSet());
+        Set<TestCase> valuesToReplicate = getValuesToReplicate();
+
+        Set<String> cachesToReplicate = valuesToReplicate.stream().map(TestCase::tableName).collect(Collectors.toSet());
 
         IgniteInternalFuture<?> fut = startIgniteToPostgreSqlCdcConsumer(
             src.configuration(),
@@ -115,324 +142,223 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
             postgres.getPostgresDatabase()
         );
 
-        createCache("string", null, null);
-        createCache("string", 10, null);
-        createCache("string", 10, 10);
+        valuesToReplicate.forEach(this::createCacheWithValue);
 
-        createCache(5, null, null);
-        createCache(5, 1, null);
-        createCache(5, 1, 1);
+        assertTrue(waitForCondition(waitForTablesCreatedOnPostgres(postgres, cachesToReplicate), getTestTimeout()));
 
-        createCache(6L, null, null);
-        createCache(6L, 2, null);
-        createCache(6L, 2, 2);
-
-        createCache(true, null, null);
-        createCache(true, 3, null);
-        createCache(true, 3, 3);
-
-        createCache(23.0, null, null);
-        createCache(23.0, 20, null);
-        createCache(23.343, 10, 3);
-
-        createCache(23.0f, null, null);
-        createCache(23.0f, 10, null);
-        createCache(23.12f, 5, 2);
-
-        createCache(new BigDecimal("123.456"), null, null);
-        createCache(new BigDecimal("1234"), 4, null);
-        createCache(new BigDecimal("1.623"), 4, 3);
-
-        createCache((short)23, null, null);
-        createCache((short)23, 4, null);
-        createCache((short)23, 4, 4);
-
-        createCache((byte)33, null, null);
-        createCache((byte)33, 5, null);
-        createCache((byte)33, 5, 5);
-
-        java.sql.Date sqlDate = new java.sql.Date(new java.util.Date().getTime());
-
-        createCache(sqlDate, null, null);
-        createCache(sqlDate, 6, null);
-        createCache(sqlDate, 6, 6);
-
-        java.sql.Time sqlTime = new java.sql.Time(933960600000L);
-
-        createCache(sqlTime, null, null);
-        createCache(sqlTime, 6, null);
-        createCache(sqlTime, 6, 1);
-
-        createCache(new java.sql.Timestamp(933960600000L), null, null);
-        createCache(new java.sql.Timestamp(933960600000L), 2, null);
-        createCache(new java.sql.Timestamp(933960612345L), 4, 1);
-
-        createCache(new java.util.Date(933960600000L), null, null);
-        createCache(new java.util.Date(933960600000L), 2, null);
-        createCache(new java.util.Date(933960612345L), 4, 1);
-
-        UUID uuid = UUID.randomUUID();
-
-        createCache(uuid, null, null);
-        createCache(uuid, 7, null);
-        createCache(uuid, 7, 7);
-
-        LocalDate locDate = LocalDate.of(1999, 8, 6);
-
-        createCache(locDate, null, null);
-        createCache(locDate, 10, null);
-        createCache(locDate, 10, 10);
-
-        LocalTime locTime = LocalTime.of(12, 12, 12);
-
-        createCache(locTime, null, null);
-        createCache(locTime, 6, null);
-        createCache(locTime, 6, 1);
-
-        LocalDateTime locDateTime = LocalDateTime.of(
-            1999, 8, 6,
-            23, 30, 3
-        );
-
-        createCache(locDateTime, null, null);
-        createCache(locDateTime, 2, null);
-        createCache(locDateTime, 4, 1);
-
-        OffsetTime offsetTime = OffsetTime.now();
-
-        createCache(offsetTime, null, null);
-        createCache(offsetTime, 30, null);
-        createCache(offsetTime, 30, 1);
-
-        OffsetDateTime dateWithOffset = OffsetDateTime.of(locDateTime, ZoneOffset.ofHours(3));
-
-        createCache(dateWithOffset, null, null);
-        createCache(dateWithOffset, 11, null);
-        createCache(dateWithOffset, 11, 11);
-
-        createCache(new byte[]{1, 2, 3, 4}, null, null);
-        createCache(new byte[]{1, 2, 3, 4}, 12, null);
-        createCache(new byte[]{1, 2, 3, 4}, 12, 12);
-
-        for (String cache : cachesToReplicate) {
-            assertTrue(waitForCondition(waitForTablesCreatedOnPostgres(postgres, Set.of(cache)), getTestTimeout()));
+        for (String cache : cachesToReplicate)
             assertTrue(waitForCondition(waitForTableSize(postgres, cache, 1), getTestTimeout()));
-        }
 
-        checkCache("string", null, null, NO_NUMERIC_META);
-        checkCache("string", 10, null, PRECISION_ONLY);
-        checkCache("string", 10, 10, PRECISION_ONLY);
-
-        checkCache(5, null, null, NO_NUMERIC_META);
-        checkCache(5, 1, null, NO_NUMERIC_META);
-        checkCache(5, 1, 1, NO_NUMERIC_META);
-
-        checkCache(6L, null, null, NO_NUMERIC_META);
-        checkCache(6L, 2, null, NO_NUMERIC_META);
-        checkCache(6L, 2, 2, NO_NUMERIC_META);
-
-        checkCache(true, null, null, NO_NUMERIC_META);
-        checkCache(true, 3, null, NO_NUMERIC_META);
-        checkCache(true, 3, 3, NO_NUMERIC_META);
-
-        checkCache(23.0, null, null, NO_NUMERIC_META);
-        checkCache(23.0, 20, null, PRECISION_ONLY);
-        checkCache(23.343, 10, 3, PRECISION_AND_SCALE);
-
-        checkCache(23.0f, null, null, NO_NUMERIC_META);
-        checkCache(23.0f, 10, null, PRECISION_ONLY);
-        checkCache(23.12f, 5, 2, PRECISION_AND_SCALE);
-
-        checkCache(new BigDecimal("123.456"), null, null, NO_NUMERIC_META);
-        checkCache(new BigDecimal("1234"), 4, null, PRECISION_ONLY);
-        checkCache(new BigDecimal("1.623"), 4, 3, PRECISION_AND_SCALE);
-
-        checkCache((short)23, null, null, NO_NUMERIC_META);
-        checkCache((short)23, 4, null, NO_NUMERIC_META);
-        checkCache((short)23, 4, 4, NO_NUMERIC_META);
-
-        checkCache((byte)33, null, null, NO_NUMERIC_META);
-        checkCache((byte)33, 5, null, NO_NUMERIC_META);
-        checkCache((byte)33, 5, 5, NO_NUMERIC_META);
-
-        checkCache(sqlDate, null, null, NO_NUMERIC_META);
-        checkCache(sqlDate, 6, null, NO_NUMERIC_META);
-        checkCache(sqlDate, 6, 6, NO_NUMERIC_META);
-
-        checkCache(sqlTime, null, null, NO_NUMERIC_META);
-        checkCache(sqlTime, 6, null, PRECISION_ONLY);
-        checkCache(sqlTime, 6, 1, PRECISION_ONLY);
-
-        checkCache(new java.sql.Timestamp(933960600000L), null, null, NO_NUMERIC_META);
-        checkCache(new java.sql.Timestamp(933960600000L), 2, null, PRECISION_ONLY);
-        checkCache(new java.sql.Timestamp(933960612345L), 4, 1, PRECISION_ONLY);
-
-        checkCache(new java.util.Date(933960600000L), null, null, NO_NUMERIC_META);
-        checkCache(new java.util.Date(933960600000L), 2, null, NO_NUMERIC_META);
-        checkCache(new java.util.Date(933960612345L), 4, 1, NO_NUMERIC_META);
-
-        checkCache(uuid, null, null, NO_NUMERIC_META);
-        checkCache(uuid, 7, null, NO_NUMERIC_META);
-        checkCache(uuid, 7, 7, NO_NUMERIC_META);
-
-        checkCache(locDate, null, null, NO_NUMERIC_META);
-        checkCache(locDate, 10, null, NO_NUMERIC_META);
-        checkCache(locDate, 10, 10, NO_NUMERIC_META);
-
-        checkCache(locTime, null, null, NO_NUMERIC_META);
-        checkCache(locTime, 6, null, PRECISION_ONLY);
-        checkCache(locTime, 6, 1, PRECISION_ONLY);
-
-        checkCache(locDateTime, null, null, NO_NUMERIC_META);
-        checkCache(locDateTime, 2, null, PRECISION_ONLY);
-        checkCache(locDateTime, 4, 1, PRECISION_ONLY);
-
-        checkCache(offsetTime, null, null, NO_NUMERIC_META);
-        checkCache(offsetTime, 30, null, PRECISION_ONLY);
-        checkCache(offsetTime, 30, 1, PRECISION_ONLY);
-
-        checkCache(dateWithOffset, null, null, NO_NUMERIC_META);
-        checkCache(dateWithOffset, 11, null, NO_NUMERIC_META);
-        checkCache(dateWithOffset, 11, 11, NO_NUMERIC_META);
-
-        checkCache(new byte[]{1, 2, 3, 4}, null, null, NO_NUMERIC_META);
-        checkCache(new byte[]{1, 2, 3, 4}, 12, null, NO_NUMERIC_META);
-        checkCache(new byte[]{1, 2, 3, 4}, 12, 12, NO_NUMERIC_META);
+        valuesToReplicate.forEach(this::checkTable);
 
         fut.cancel();
     }
 
     /** */
-    private <V> void createCache(V val, Integer precision, Integer scale) {
-        String tableName = getTableNameFromClass(val.getClass(), precision, scale);
+    private Set<TestCase> getValuesToReplicate() {
+        LocalDateTime locDateTime = LocalDateTime.of(1999, 8, 6, 23, 30, 3);
 
-        IgniteCache<Integer, V> cache = createCache(src, tableName, val.getClass().getName(), precision, scale);
-
-        cache.put(1, val);
+        return Set.of(
+            new TestCase("string"),
+            new TestCase("string", 10),
+            new TestCase(5),
+            new TestCase(6L),
+            new TestCase(true),
+            new TestCase(23.0),
+            new TestCase(23.0, 4),
+            new TestCase(23.343, 10, 3),
+            new TestCase(23.0f),
+            new TestCase(33.0f, 4),
+            new TestCase(23.12f, 5, 2),
+            new TestCase(new BigDecimal("1")),
+            new TestCase(new BigDecimal("323"), 3),
+            new TestCase(new BigDecimal("1.623"), 5, 3),
+            new TestCase((short)23),
+            new TestCase((byte)33),
+            new TestCase(new Time(43830000)),
+            new TestCase(new Time(43830123), 3),
+            new TestCase(new Timestamp(1755000630000L)),
+            new TestCase(new Timestamp(1755000630123L), 3),
+            new TestCase(new Date(933960600000L)),
+            new TestCase(UUID.randomUUID()),
+            new TestCase(LocalDate.of(1999, 8, 6)),
+            new TestCase(LocalTime.of(12, 12, 12)),
+            new TestCase(LocalTime.of(12, 12, 12), 6),
+            new TestCase(locDateTime),
+            new TestCase(locDateTime, 4),
+            new TestCase(OffsetTime.now()),
+            new TestCase(OffsetTime.now(), 30),
+            new TestCase(OffsetDateTime.of(locDateTime, ZoneOffset.ofHours(3))),
+            new TestCase(new byte[]{1, 2, 3, 4})
+        );
     }
 
     /** */
-    private <V> void checkCache(V val, Integer precision, Integer scale, NumericMeta actualMeta) {
-        String tableName = getTableNameFromClass(val.getClass(), precision, scale);
+    private void createCacheWithValue(TestCase testCase) {
+        String clsName = testCase.value().getClass().getName();
 
-        selectOnPostgreSqlAndAct(postgres, "SELECT * FROM " + tableName, (res) -> {
+        QueryEntity qryEntity = new QueryEntity()
+            .setTableName(testCase.tableName())
+            .setKeyFieldName(KEY_COLUMN_NAME)
+            .setValueFieldName(VAL_COLUMN_NAME)
+            .addQueryField(KEY_COLUMN_NAME, Integer.class.getName(), null)
+            .addQueryField(VAL_COLUMN_NAME, clsName, null);
+
+        if (testCase.precision() != null)
+            qryEntity.setFieldsPrecision(Map.of(VAL_COLUMN_NAME, testCase.precision()));
+
+        if (testCase.scale() != null)
+            qryEntity.setFieldsScale(Map.of(VAL_COLUMN_NAME, testCase.scale()));
+
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(qryEntity.getTableName())
+            .setQueryEntities(Collections.singletonList(qryEntity));
+
+        try (IgniteCache<Integer, Object> cache = src.getOrCreateCache(ccfg)) {
+            cache.put(1, testCase.value());
+        }
+    }
+
+    /** */
+    private void checkTable(TestCase testCase) {
+        selectOnPostgreSqlAndAct(postgres, "SELECT * FROM " + testCase.tableName(), (res) -> {
             assertTrue(res.next());
 
-            checkValue(res, val);
+            checkValue(res, testCase.value());
 
             ResultSetMetaData meta = res.getMetaData();
 
             String actTypeName = meta.getColumnTypeName(2);
 
-            checkType(val, actTypeName);
+            checkType(testCase.value(), actTypeName);
 
-            if (actualMeta != NO_NUMERIC_META)
-                checkValueMeta(meta, val, precision, actualMeta == PRECISION_AND_SCALE ? scale : 0);
+            if (testCase.precision() != null)
+                checkValueMeta(meta, testCase.value(), testCase.precision(), testCase.scale());
 
             return true;
         });
     }
 
     /** */
-    private String getTableNameFromClass(Class<?> cls, Integer precision, Integer scale) {
-        return cls.getName().replace('.', '_').replace('[', '_') +
-            (precision != null ? "_WithPrecision" : "") +
-            (scale != null ? "_WithScale" : "");
-    }
-
-    /** */
     private void checkValue(ResultSet res, Object val) throws SQLException {
-        String actVal = res.getString("value");
-
         if (val instanceof Boolean)
-            assert Objects.equals(res.getBoolean("value"), val);
+            assert Objects.equals(res.getBoolean(VAL_COLUMN_NAME), val);
         else if (val instanceof Double)
-            assert Objects.equals(res.getDouble("value"), val);
+            assert Objects.equals(res.getDouble(VAL_COLUMN_NAME), val);
         else if (val instanceof Float)
-            assert Objects.equals(res.getFloat("value"), val);
+            assert Objects.equals(res.getFloat(VAL_COLUMN_NAME), val);
         else if (val instanceof BigDecimal)
-            assert Objects.equals(res.getBigDecimal("value"), val);
-        else if (val instanceof java.sql.Timestamp )
-            assert Objects.equals(res.getTimestamp("value"), val);
+            assert Objects.equals(res.getBigDecimal(VAL_COLUMN_NAME), val);
+        else if (val instanceof Timestamp )
+            assert Objects.equals(res.getTimestamp(VAL_COLUMN_NAME), val);
         else if (val instanceof LocalDateTime)
-            assert Objects.equals(res.getTimestamp("value"), Timestamp.valueOf((LocalDateTime)val));
-        else if (val.getClass() == java.util.Date.class)
-            assert Objects.equals(res.getTimestamp("value").getTime(), ((java.util.Date)val).getTime());
+            assert Objects.equals(res.getTimestamp(VAL_COLUMN_NAME), Timestamp.valueOf((LocalDateTime)val));
+        else if (val instanceof Date)
+            assert Objects.equals(res.getTimestamp(VAL_COLUMN_NAME).getTime(), ((Date)val).getTime());
         else if (val instanceof OffsetDateTime)
-            assert Objects.equals(res.getObject("value", OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC),
+            assert Objects.equals(res.getObject(VAL_COLUMN_NAME, OffsetDateTime.class).withOffsetSameInstant(ZoneOffset.UTC),
                 ((OffsetDateTime)val).withOffsetSameInstant(ZoneOffset.UTC));
-        else if (val instanceof ZonedDateTime)
-            assert Objects.equals(res.getObject("value", ZonedDateTime.class), val);
         else if (val instanceof byte[])
-            assert Arrays.equals(res.getBytes("value"), (byte[])val);
+            assert Arrays.equals(res.getBytes(VAL_COLUMN_NAME), (byte[])val);
         else
-            assert Objects.equals(actVal, val.toString());
+            assert Objects.equals(res.getString(VAL_COLUMN_NAME), val.toString());
     }
 
-    /** */
+    /**
+     * Verifies that the PostgreSQL type name matches the expected mapping for the given Java value.
+     *
+     * @param val          Java value to check.
+     * @param actTypeName  Actual PostgreSQL type name from metadata.
+     */
     private void checkType(Object val, String actTypeName) {
-        if (val instanceof Byte || val instanceof Short)
-            assert Objects.equals(actTypeName, "int2");
-        else if (val instanceof Integer)
-            assert Objects.equals(actTypeName, "int4");
-        else if (val instanceof Long)
-            assert Objects.equals(actTypeName, "int8");
-        else if (val instanceof OffsetDateTime)
-            assert Objects.equals(actTypeName, "timestamptz");
-        else
-            assert Objects.equals(actTypeName,
-                javaToSqlTypeMapper.renderSqlType(val.getClass().getName(), null, null).toLowerCase());
+        String actual = actTypeName.toLowerCase();
+        String expected = TYPE_MAPPING.get(val.getClass());
+
+        if (expected == null) {
+            expected = javaToSqlTypeMapper
+                .renderSqlType(val.getClass().getName(), null, null)
+                .toLowerCase();
+        }
+
+        assert Objects.equals(actual, expected);
     }
 
-    /** */
+    /**
+     * Verifies that the precision and scale reported by {@link ResultSetMetaData}
+     * match the expected values for the given value type.
+     *
+     * @param meta      The result set metadata to check.
+     * @param val       The value whose type determines expected precision/scale.
+     * @param precision The expected base precision (without temporal adjustments).
+     * @param scale     The expected scale, or {@code null} if not applicable.
+     * @throws SQLException If metadata retrieval fails.
+     */
     private void checkValueMeta(ResultSetMetaData meta, Object val, Integer precision, Integer scale) throws SQLException {
-        int actPrec = meta.getPrecision(2);
-        int actScale = meta.getScale(2);
+        int actualPrecision = meta.getPrecision(2);
+        int actualScale = meta.getScale(2);
 
-        if (val instanceof java.sql.Time || val instanceof LocalTime)
-            assert Objects.equals(actPrec, precision + 9);
-        else if (val instanceof java.sql.Timestamp || val instanceof LocalDateTime || val.getClass() == java.util.Date.class)
-            assert Objects.equals(actPrec, precision + 23);
-        else
-            assert Objects.equals(actPrec, precision);
+        int expectedPrecision = precision;
 
-        if (val instanceof java.sql.Time || val instanceof java.sql.Timestamp || val instanceof LocalTime ||
-            val instanceof LocalDateTime || val.getClass() == java.util.Date.class)
-            assert Objects.equals(actScale, precision);
+        if (val instanceof Time || val instanceof LocalTime)
+            expectedPrecision += PRECISION_EXTRA_TIME;
+        else if (val instanceof LocalDateTime || val instanceof Date)
+            expectedPrecision += PRECISION_EXTRA_DATE_TIME;
+
+        assert Objects.equals(actualPrecision, expectedPrecision);
+
+        if (val instanceof LocalTime || val instanceof LocalDateTime || val instanceof Date)
+            assert Objects.equals(actualScale, precision);
         else
-            assert Objects.equals(actScale, scale);
+            assert scale == null || Objects.equals(actualScale, scale);
     }
 
     /** */
-    private <V> IgniteCache<Integer, V> createCache(IgniteEx src, String tableName, String clsName, Integer precision, Integer scale) {
-        QueryEntity qryEntity = new QueryEntity()
-            .setTableName(tableName)
-            .setKeyFieldName("id")
-            .setValueFieldName("value")
-            .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("value", clsName, null);
-
-        if (precision != null)
-            qryEntity.setFieldsPrecision(Map.of("value", precision));
-
-        if (scale != null)
-            qryEntity.setFieldsScale(Map.of("value", scale));
-
-        CacheConfiguration<Integer, V> ccfg = new CacheConfiguration<Integer, V>(qryEntity.getTableName())
-            .setQueryEntities(Collections.singletonList(qryEntity));
-
-        return src.getOrCreateCache(ccfg);
-    }
-
-    /** */
-    public enum NumericMeta {
+    private static class TestCase {
         /** */
-        NO_NUMERIC_META,
+        private final Object val;
 
         /** */
-        PRECISION_ONLY,
+        private Integer precision = null;
 
         /** */
-        PRECISION_AND_SCALE,
+        private Integer scale = null;
+
+        /** */
+        private TestCase(Object val) {
+            this.val = val;
+        }
+
+        /** */
+        private TestCase(Object val, Integer precision) {
+            this.val = val;
+            this.precision = precision;
+        }
+
+        /** */
+        private TestCase(Object val, Integer precision, Integer scale) {
+            this.val = val;
+            this.precision = precision;
+            this.scale = scale;
+        }
+
+        /** */
+        public Object value() {
+            return val;
+        }
+
+        /** */
+        public Integer precision() {
+            return precision;
+        }
+
+        /** */
+        public Integer scale() {
+            return scale;
+        }
+
+        /** */
+        public String tableName() {
+            return val.getClass().getName().replace('.', '_').replace('[', '_')
+                + (precision != null ? '_' + precision : "") + (scale != null ? '_' + scale : "");
+        }
     }
 }

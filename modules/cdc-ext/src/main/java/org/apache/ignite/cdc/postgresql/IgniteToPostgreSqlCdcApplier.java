@@ -272,27 +272,33 @@ class IgniteToPostgreSqlCdcApplier {
         while (evts.hasNext()) {
             evt = evts.next();
 
-            if (evt.queryEntities().size() != 1)
-                throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
+            try {
+                if (evt.queryEntities().size() != 1)
+                    throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
 
-            entity = evt.queryEntities().iterator().next();
+                entity = evt.queryEntities().iterator().next();
 
-            if (createTables)
-                createTableIfNotExists(entity);
+                if (createTables)
+                    createTableIfNotExists(entity);
 
-            cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
+                cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
 
-            cacheIdToDeleteQry.put(evt.cacheId(), getDeleteSqlQry(entity));
+                cacheIdToDeleteQry.put(evt.cacheId(), getDeleteSqlQry(entity));
 
-            cacheIdToPrimaryKeys.put(evt.cacheId(), getPrimaryKeys(entity));
+                cacheIdToPrimaryKeys.put(evt.cacheId(), getPrimaryKeys(entity));
 
-            cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
+                cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
 
-            if (createTables && log.isInfoEnabled())
-                log.info("Cache table created [tableName=" + entity.getTableName() +
-                    ", columns=" + entity.getFields().keySet() + ']');
+                if (createTables && log.isInfoEnabled())
+                    log.info("Cache table created [tableName=" + entity.getTableName() +
+                        ", columns=" + entity.getFields().keySet() + ']');
 
-            cnt++;
+                cnt++;
+            }
+            catch (IgniteException e) {
+                throw new IgniteException("Error occurred while creating PostgreSQL table for CdcCacheEvent [cacheId=" +
+                     evt.cacheId() + "]. Exclude cache from replication or fix the issue: " + e.getMessage(), e);
+            }
         }
 
         return cnt;

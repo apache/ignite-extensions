@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.cdc.postgresql;
 
 import java.math.BigDecimal;
@@ -12,8 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
-
-import static org.apache.ignite.cdc.postgresql.JavaToSqlTypeMapper.JavaToSqlType.OBJECT;
 
 /** */
 class JavaToSqlTypeMapper {
@@ -46,15 +61,17 @@ class JavaToSqlTypeMapper {
                 return;
             }
 
-            JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.getOrDefault(obj.getClass().getName(), OBJECT);
+            JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.get(obj.getClass().getName());
 
             if (type != null)
                 stmt.setObject(idx, obj, type.typeId());
             else
-                stmt.setObject(idx, obj);
+                throw new IgniteException("Java-to-SQL type mapping is not defined for class: "
+                    + obj.getClass().getName());
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to set value for type!", e);
+            throw new IgniteException("Failed to set value to statement [stmt=" + stmt + ", valueType=" +
+                (obj == null ? "null" : obj.getClass().getName()) + ", index=" + idx + ']', e);
         }
     }
 
@@ -68,32 +85,26 @@ class JavaToSqlTypeMapper {
      * @return the SQL type string with appropriate precision and scale formatting
      */
     public String renderSqlType(String clsName, Integer precision, Integer scale) {
-        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.getOrDefault(clsName, OBJECT);
+        JavaToSqlType type = JAVA_TO_SQL_TYPE_MAP.get(clsName);
 
-        if (type.precision()) {
-            if (type.scale()) {
-                if (precision != null && scale != null)
-                    return type.sqlType().replace("?", String.format("(%d, %d)", precision, scale));
+        if (type == null)
+            throw new IgniteException("Java-to-SQL type mapping is not defined for class: " + clsName);
 
-                if (precision != null)
-                    return type.sqlType().replace("?", String.format("(%d)", precision));
+        String sqlType = type.sqlType();
 
-                return type.sqlType().replace("?", "");
-            }
-
-            if (precision != null)
-                return type.sqlType().replace("?", String.format("(%d)", precision));
-
-            return type.sqlType().replace("?", "");
+        if (type.precision() && precision != null) {
+            return type.scale() && scale != null
+                ? String.format("%s(%d, %d)", sqlType, precision, scale)
+                : String.format("%s(%d)", sqlType, precision);
         }
 
-        return type.sqlType();
+        return sqlType;
     }
 
     /** */
     enum JavaToSqlType {
         /** */
-        STRING(String.class, "VARCHAR?", true, false, Types.VARCHAR),
+        STRING(String.class, "VARCHAR", true, false, Types.VARCHAR),
 
         /** */
         INTEGER(Integer.class, "INT", false, false, Types.INTEGER),
@@ -105,13 +116,13 @@ class JavaToSqlTypeMapper {
         BOOLEAN(Boolean.class, "BOOL", false, false, Types.BOOLEAN),
 
         /** */
-        DOUBLE(Double.class, "NUMERIC?", true, true, Types.DOUBLE),
+        DOUBLE(Double.class, "NUMERIC", true, true, Types.DOUBLE),
 
         /** */
-        FLOAT(Float.class, "NUMERIC?", true, true, Types.FLOAT),
+        FLOAT(Float.class, "NUMERIC", true, true, Types.FLOAT),
 
         /** */
-        BIG_DECIMAL(BigDecimal.class, "NUMERIC?", true, true, Types.DECIMAL),
+        BIG_DECIMAL(BigDecimal.class, "NUMERIC", true, true, Types.DECIMAL),
 
         /** */
         SHORT(Short.class, "SMALLINT", false, false, Types.SMALLINT),
@@ -123,13 +134,13 @@ class JavaToSqlTypeMapper {
         SQL_DATE(java.sql.Date.class, "DATE", false, false, Types.DATE),
 
         /** */
-        SQL_TIME(java.sql.Time.class, "TIME?", true, false, Types.TIME),
+        SQL_TIME(java.sql.Time.class, "TIME", true, false, Types.TIME),
 
         /** */
-        SQL_TIMESTAMP(java.sql.Timestamp.class, "TIMESTAMP?", true, false, Types.TIMESTAMP),
+        SQL_TIMESTAMP(java.sql.Timestamp.class, "TIMESTAMP", true, false, Types.TIMESTAMP),
 
         /** */
-        UTIL_DATE(java.util.Date.class, "TIMESTAMP?", true, false, Types.TIMESTAMP),
+        UTIL_DATE(java.util.Date.class, "TIMESTAMP", true, false, Types.TIMESTAMP),
 
         /** */
         UUID_TYPE(UUID.class, "UUID", false, false, Types.OTHER),
@@ -138,23 +149,20 @@ class JavaToSqlTypeMapper {
         LOCAL_DATE(LocalDate.class, "DATE", false, false, Types.DATE),
 
         /** */
-        LOCAL_TIME(LocalTime.class, "TIME?", true, false, Types.TIME),
+        LOCAL_TIME(LocalTime.class, "TIME", true, false, Types.TIME),
 
         /** */
-        LOCAL_DATE_TIME(LocalDateTime.class, "TIMESTAMP?", true, false, Types.TIMESTAMP),
+        LOCAL_DATE_TIME(LocalDateTime.class, "TIMESTAMP", true, false, Types.TIMESTAMP),
 
         /** */
-        OFFSET_TIME(OffsetTime.class, "VARCHAR?", true, false, Types.VARCHAR),
+        OFFSET_TIME(OffsetTime.class, "VARCHAR", true, false, Types.VARCHAR),
 
         /** */
         OFFSET_DATE_TIME(OffsetDateTime.class, "TIMESTAMP WITH TIME ZONE", false, false,
             Types.TIMESTAMP_WITH_TIMEZONE),
 
         /** */
-        BYTE_ARRAY(byte[].class, "BYTEA", false, false, Types.OTHER),
-
-        /** */
-        OBJECT(Object.class, "OTHER", false, false, Types.OTHER);
+        BYTE_ARRAY(byte[].class, "BYTEA", false, false, Types.OTHER);
 
         /** */
         private final String javaTypeName;
@@ -172,20 +180,20 @@ class JavaToSqlTypeMapper {
         private final int typeId;
 
         /**
-         * @param javaTypeName Java type name.
+         * @param javaTypeCls Java type class.
          * @param sqlType Sql type.
          * @param precision Has precision.
          * @param scale Has scale.
          * @param typeId {@link Types}
          */
         JavaToSqlType(
-            Class<?> javaTypeName,
+            Class<?> javaTypeCls,
             String sqlType,
             boolean precision,
             boolean scale,
             int typeId
         ) {
-            this.javaTypeName = javaTypeName.getName();
+            this.javaTypeName = javaTypeCls.getName();
             this.sqlType = sqlType;
             this.precision = precision;
             this.scale = scale;
