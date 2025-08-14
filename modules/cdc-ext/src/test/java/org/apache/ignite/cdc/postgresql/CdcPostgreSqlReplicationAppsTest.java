@@ -1,4 +1,4 @@
-package org.apache.ignite.cdc.postgres;
+package org.apache.ignite.cdc.postgresql;
 
 import java.util.HashMap;
 import java.util.Map;

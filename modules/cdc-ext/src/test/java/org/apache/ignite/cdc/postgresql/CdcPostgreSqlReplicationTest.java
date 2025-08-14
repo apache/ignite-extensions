@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.postgres;
+package org.apache.ignite.cdc.postgresql;
 
+import java.net.URL;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +40,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -56,6 +56,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeTrue;
 
 /** */
 @RunWith(Parameterized.class)
@@ -460,6 +461,23 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
             .addQueryField("val", Integer.class.getName(), null);
 
         testQueryEntityReplicationError(qryOnlyValName);
+    }
+
+    /** */
+    @Test
+    public void testQueryWithUnknownClassMapper() throws IgniteCheckedException {
+        assumeTrue(createTables);
+
+        Class<?> unknownCls = URL.class;
+
+        QueryEntity qryUnknownCls = new QueryEntity()
+            .setTableName("qryKeyValName")
+            .setKeyFieldName("id")
+            .setValueFieldName("name")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", unknownCls.getName(), null);
+
+        testQueryEntityReplicationError(qryUnknownCls);
     }
 
     /** */
