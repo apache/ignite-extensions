@@ -40,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest {
+public abstract class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int BATCH_SIZE = 128;
 
