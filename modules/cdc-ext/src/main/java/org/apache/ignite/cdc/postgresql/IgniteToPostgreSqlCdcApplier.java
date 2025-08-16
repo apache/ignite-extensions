@@ -272,10 +272,10 @@ class IgniteToPostgreSqlCdcApplier {
         while (evts.hasNext()) {
             evt = evts.next();
 
-            try {
-                if (evt.queryEntities().size() != 1)
-                    throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
+            if (evt.queryEntities().size() != 1)
+                throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
 
+            try {
                 entity = evt.queryEntities().iterator().next();
 
                 if (createTables)

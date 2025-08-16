@@ -49,11 +49,7 @@ class JavaToSqlTypeMapper {
      */
     public void setValue(PreparedStatement stmt, int idx, Object obj) {
         try {
-            if (obj == null) {
-                stmt.setNull(idx, Types.NULL);
-
-                return;
-            }
+            assert obj != null;
 
             if (obj instanceof byte[]) {
                 stmt.setBytes(idx, (byte[])obj); // Preferred setter for byte[]
