@@ -19,6 +19,7 @@ package org.apache.ignite.cdc.postgresql;
 
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,9 +66,9 @@ class JavaToSqlTypeMapper {
                 throw new IgniteException("Java-to-SQL type mapping is not defined for class: "
                     + obj.getClass().getName());
         }
-        catch (Throwable e) {
+        catch (SQLException e) {
             throw new IgniteException("Failed to set value to statement [stmt=" + stmt + ", valueType=" +
-                (obj == null ? "null" : obj.getClass().getName()) + ", index=" + idx + ']', e);
+                obj.getClass().getName() + ", index=" + idx + ']', e);
         }
     }
 

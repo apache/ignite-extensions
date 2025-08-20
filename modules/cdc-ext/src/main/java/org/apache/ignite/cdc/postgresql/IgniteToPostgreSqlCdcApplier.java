@@ -123,10 +123,9 @@ class IgniteToPostgreSqlCdcApplier {
         boolean prevOpIsDelete = false;
         
         PreparedStatement curPrepStmt = null;
-        CdcEvent evt;
 
         while (evts.hasNext()) {
-            evt = evts.next();
+            CdcEvent evt = evts.next();
 
             if (log.isDebugEnabled())
                 log.debug("Event received [evt=" + evt + ']');
@@ -223,8 +222,6 @@ class IgniteToPostgreSqlCdcApplier {
                 cacheIdToPrimaryKeys.get(evt.cacheId()).iterator() :
                 cacheIdToFields.get(evt.cacheId()).iterator();
 
-            String field;
-
             BinaryObject keyObj = (evt.key() instanceof BinaryObject) ? (BinaryObject)evt.key() : null;
             BinaryObject valObj = (evt.value() instanceof BinaryObject) ? (BinaryObject)evt.value() : null;
 
@@ -232,7 +229,7 @@ class IgniteToPostgreSqlCdcApplier {
             Object obj;
 
             while (itFields.hasNext()) {
-                field = itFields.next();
+                String field = itFields.next();
 
                 if (cacheIdToPrimaryKeys.get(evt.cacheId()).contains(field))
                     obj = keyObj != null ? keyObj.field(field) : evt.key();
@@ -264,19 +261,16 @@ class IgniteToPostgreSqlCdcApplier {
      * @return Number of applied events.
      */
     public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
-        CdcCacheEvent evt;
-        QueryEntity entity;
-
         long cnt = 0;
 
         while (evts.hasNext()) {
-            evt = evts.next();
+            CdcCacheEvent evt = evts.next();
 
             if (evt.queryEntities().size() != 1)
                 throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
 
             try {
-                entity = evt.queryEntities().iterator().next();
+                QueryEntity entity = evt.queryEntities().iterator().next();
 
                 if (createTables)
                     createTableIfNotExists(entity);
@@ -296,7 +290,7 @@ class IgniteToPostgreSqlCdcApplier {
                 cnt++;
             }
             catch (IgniteException e) {
-                throw new IgniteException("Error occurred while creating PostgreSQL table for CdcCacheEvent [cacheId=" +
+                throw new IgniteException("Error occurred while preparing SQL statements for CdcCacheEvent [cacheId=" +
                      evt.cacheId() + "]. Exclude cache from replication or fix the issue: " + e.getMessage(), e);
             }
         }
@@ -351,19 +345,13 @@ class IgniteToPostgreSqlCdcApplier {
     private void addFieldsAndTypes(QueryEntity entity, StringBuilder sql) {
         Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
 
-        Map.Entry<String, String> field;
-        String type;
-
-        Integer precision;
-        Integer scale;
-
         while (iter.hasNext()) {
-            field = iter.next();
+            Map.Entry<String, String> field = iter.next();
 
-            precision = entity.getFieldsPrecision().get(field.getKey());
-            scale = entity.getFieldsScale().get(field.getKey());
+            Integer precision = entity.getFieldsPrecision().get(field.getKey());
+            Integer scale = entity.getFieldsScale().get(field.getKey());
 
-            type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
+            String type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
 
             sql.append(field.getKey()).append(" ").append(type);
 
@@ -426,10 +414,9 @@ class IgniteToPostgreSqlCdcApplier {
      */
     private void addFields(QueryEntity entity, StringBuilder sql) {
         Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
-        Map.Entry<String, String> field;
 
         while (iter.hasNext()) {
-            field = iter.next();
+            Map.Entry<String, String> field = iter.next();
 
             sql.append(field.getKey());
 
@@ -449,12 +436,10 @@ class IgniteToPostgreSqlCdcApplier {
 
         Iterator<String> itAllFields = F.concat(false, "version", entity.getFields().keySet()).iterator();
 
-        String field;
-
         boolean first = true;
 
         while (itAllFields.hasNext()) {
-            field = itAllFields.next();
+            String field = itAllFields.next();
 
             if (primaryFields.contains(field))
                 continue;
@@ -490,10 +475,9 @@ class IgniteToPostgreSqlCdcApplier {
         StringBuilder deleteQry = new StringBuilder("DELETE FROM ").append(entity.getTableName()).append(" WHERE (");
 
         Iterator<String> itKeys = getPrimaryKeys(entity).iterator();
-        String key;
 
         while (itKeys.hasNext()) {
-            key = itKeys.next();
+            String key = itKeys.next();
 
             deleteQry.append(key).append(" = ?");
 
