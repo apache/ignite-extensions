@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cdc.postgres;
+package org.apache.ignite.cdc.postgresql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,18 +29,18 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.CdcConfiguration;
-import org.apache.ignite.cdc.postgresql.IgniteToPostgreSqlCdcConsumer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest {
+public abstract class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int BATCH_SIZE = 128;
 
@@ -62,6 +62,24 @@ public class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbstractTest
             PreparedStatement stmt = conn.prepareStatement(qry);
 
             return stmt.executeQuery();
+        }
+        catch (SQLException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    protected boolean selectOnPostgreSqlAndAct(
+        EmbeddedPostgres postgres,
+        String qry,
+        ThrowableFunction<Boolean, ResultSet, SQLException> action
+    ) {
+        try (Connection conn = postgres.getPostgresDatabase().getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(qry);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return action.apply(rs);
+            }
         }
         catch (SQLException e) {
             throw new IgniteException(e);

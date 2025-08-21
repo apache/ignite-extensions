@@ -17,21 +17,18 @@
 
 package org.apache.ignite.cdc.postgresql;
 
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,59 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UNDEFINED_CACHE_ID;
 
 /** */
-public class IgniteToPostgreSqlCdcApplier {
-    /** */
-    public static final String DFLT_SQL_TYPE = "OTHER";
-
-    /** */
-    public static final Map<String, String> JAVA_TO_SQL_TYPES;
-
-    /** */
-    public static final Set<String> SQL_TYPES_WITH_PRECISION_ONLY;
-
-    /** */
-    public static final Set<String> SQL_TYPES_WITH_PRECISION_AND_SCALE;
-
-    static {
-        Map<String, String> javaToSqlTypes = new HashMap<>();
-
-        javaToSqlTypes.put("java.lang.String", "VARCHAR");
-        javaToSqlTypes.put("java.lang.Integer", "INT");
-        javaToSqlTypes.put("int", "INT");
-        javaToSqlTypes.put("java.lang.Long", "BIGINT");
-        javaToSqlTypes.put("long", "BIGINT");
-        javaToSqlTypes.put("java.lang.Boolean", "BOOLEAN");
-        javaToSqlTypes.put("boolean", "BOOLEAN");
-        javaToSqlTypes.put("java.lang.Double", "DOUBLE PRECISION");
-        javaToSqlTypes.put("double", "DOUBLE PRECISION");
-        javaToSqlTypes.put("java.lang.Float", "REAL");
-        javaToSqlTypes.put("float", "REAL");
-        javaToSqlTypes.put("java.math.BigDecimal", "DECIMAL");
-        javaToSqlTypes.put("java.lang.Short", "SMALLINT");
-        javaToSqlTypes.put("short", "SMALLINT");
-        javaToSqlTypes.put("java.lang.Byte", "SMALLINT");
-        javaToSqlTypes.put("byte", "SMALLINT");
-        javaToSqlTypes.put("java.util.UUID", "UUID");
-        javaToSqlTypes.put("[B", "BYTEA");
-        javaToSqlTypes.put("java.lang.Object", "OTHER");
-
-        JAVA_TO_SQL_TYPES = Collections.unmodifiableMap(javaToSqlTypes);
-
-        Set<String> sqlTypesWithPrecisionOnly = new HashSet<>();
-
-        sqlTypesWithPrecisionOnly.add("VARCHAR");
-        sqlTypesWithPrecisionOnly.add("DOUBLE PRECISION");
-
-        SQL_TYPES_WITH_PRECISION_ONLY = Collections.unmodifiableSet(sqlTypesWithPrecisionOnly);
-
-        Set<String> sqlTypesWithPrecisionAndScale = new HashSet<>();
-
-        sqlTypesWithPrecisionAndScale.add("DECIMAL");
-        sqlTypesWithPrecisionAndScale.add("REAL");
-
-        SQL_TYPES_WITH_PRECISION_AND_SCALE = Collections.unmodifiableSet(sqlTypesWithPrecisionAndScale);
-    }
-
+class IgniteToPostgreSqlCdcApplier {
     /** */
     private final DataSource dataSrc;
 
@@ -106,6 +51,9 @@ public class IgniteToPostgreSqlCdcApplier {
 
     /** */
     private final IgniteLogger log;
+
+    /** */
+    private final JavaToSqlTypeMapper javaToSqlTypeMapper = new JavaToSqlTypeMapper();
 
     /** */
     private final Map<Integer, String> cacheIdToUpsertQry = new HashMap<>();
@@ -175,10 +123,9 @@ public class IgniteToPostgreSqlCdcApplier {
         boolean prevOpIsDelete = false;
         
         PreparedStatement curPrepStmt = null;
-        CdcEvent evt;
 
         while (evts.hasNext()) {
-            evt = evts.next();
+            CdcEvent evt = evts.next();
 
             if (log.isDebugEnabled())
                 log.debug("Event received [evt=" + evt + ']');
@@ -275,8 +222,6 @@ public class IgniteToPostgreSqlCdcApplier {
                 cacheIdToPrimaryKeys.get(evt.cacheId()).iterator() :
                 cacheIdToFields.get(evt.cacheId()).iterator();
 
-            String field;
-
             BinaryObject keyObj = (evt.key() instanceof BinaryObject) ? (BinaryObject)evt.key() : null;
             BinaryObject valObj = (evt.value() instanceof BinaryObject) ? (BinaryObject)evt.value() : null;
 
@@ -284,14 +229,14 @@ public class IgniteToPostgreSqlCdcApplier {
             Object obj;
 
             while (itFields.hasNext()) {
-                field = itFields.next();
+                String field = itFields.next();
 
                 if (cacheIdToPrimaryKeys.get(evt.cacheId()).contains(field))
                     obj = keyObj != null ? keyObj.field(field) : evt.key();
                 else
                     obj = valObj != null ? valObj.field(field) : evt.value();
 
-                addObject(curPrepStmt, idx, obj);
+                javaToSqlTypeMapper.setValue(curPrepStmt, idx, obj);
 
                 idx++;
             }
@@ -311,80 +256,43 @@ public class IgniteToPostgreSqlCdcApplier {
     }
 
     /**
-     * Sets a value in the PreparedStatement at the given index using the appropriate setter
-     * based on the runtime type of the object.
-     * @param curPrepStmt {@link PreparedStatement}
-     * @param idx value index in {@link PreparedStatement}
-     * @param obj value
-     */
-    private void addObject(PreparedStatement curPrepStmt, int idx, Object obj) throws SQLException {
-        if (obj == null) {
-            curPrepStmt.setObject(idx, null);
-
-            return;
-        }
-
-        if (obj instanceof String)
-            curPrepStmt.setString(idx, (String)obj);
-        else if (obj instanceof Integer)
-            curPrepStmt.setInt(idx, (Integer)obj);
-        else if (obj instanceof Long)
-            curPrepStmt.setLong(idx, (Long)obj);
-        else if (obj instanceof Short)
-            curPrepStmt.setShort(idx, (Short)obj);
-        else if (obj instanceof Byte)
-            curPrepStmt.setByte(idx, (Byte)obj);
-        else if (obj instanceof Boolean)
-            curPrepStmt.setBoolean(idx, (Boolean)obj);
-        else if (obj instanceof Float)
-            curPrepStmt.setFloat(idx, (Float)obj);
-        else if (obj instanceof Double)
-            curPrepStmt.setDouble(idx, (Double)obj);
-        else if (obj instanceof BigDecimal)
-            curPrepStmt.setBigDecimal(idx, (BigDecimal)obj);
-        else if (obj instanceof UUID)
-            curPrepStmt.setObject(idx, obj, Types.OTHER); // PostgreSQL expects UUID as OTHER
-        else if (obj instanceof byte[])
-            curPrepStmt.setBytes(idx, (byte[])obj);
-        else
-            curPrepStmt.setObject(idx, obj);
-    }
-
-    /**
      * @param evts an {@link Iterator} of {@link CdcCacheEvent} objects to apply
      * @param createTables tables creation flag. If true - attempt to create tables will be made.
      * @return Number of applied events.
      */
     public long applyCacheEvents(Iterator<CdcCacheEvent> evts, boolean createTables) {
-        CdcCacheEvent evt;
-        QueryEntity entity;
-
         long cnt = 0;
 
         while (evts.hasNext()) {
-            evt = evts.next();
+            CdcCacheEvent evt = evts.next();
 
             if (evt.queryEntities().size() != 1)
                 throw new IgniteException("There should be exactly 1 QueryEntity for cacheId: " + evt.cacheId());
 
-            entity = evt.queryEntities().iterator().next();
+            try {
+                QueryEntity entity = evt.queryEntities().iterator().next();
 
-            if (createTables)
-                createTableIfNotExists(entity);
+                if (createTables)
+                    createTableIfNotExists(entity);
 
-            cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
+                cacheIdToUpsertQry.put(evt.cacheId(), getUpsertSqlQry(entity));
 
-            cacheIdToDeleteQry.put(evt.cacheId(), getDeleteSqlQry(entity));
+                cacheIdToDeleteQry.put(evt.cacheId(), getDeleteSqlQry(entity));
 
-            cacheIdToPrimaryKeys.put(evt.cacheId(), getPrimaryKeys(entity));
+                cacheIdToPrimaryKeys.put(evt.cacheId(), getPrimaryKeys(entity));
 
-            cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
+                cacheIdToFields.put(evt.cacheId(), entity.getFields().keySet());
 
-            if (createTables && log.isInfoEnabled())
-                log.info("Cache table created [tableName=" + entity.getTableName() +
-                    ", columns=" + entity.getFields().keySet() + ']');
+                if (createTables && log.isInfoEnabled())
+                    log.info("Cache table created [tableName=" + entity.getTableName() +
+                        ", columns=" + entity.getFields().keySet() + ']');
 
-            cnt++;
+                cnt++;
+            }
+            catch (IgniteException e) {
+                throw new IgniteException("Error occurred while preparing SQL statements for CdcCacheEvent [cacheId=" +
+                     evt.cacheId() + "]. Exclude cache from replication or fix the issue: " + e.getMessage(), e);
+            }
         }
 
         return cnt;
@@ -437,33 +345,15 @@ public class IgniteToPostgreSqlCdcApplier {
     private void addFieldsAndTypes(QueryEntity entity, StringBuilder sql) {
         Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
 
-        Map.Entry<String, String> field;
-        String type;
-
-        Integer precision;
-        Integer scale;
-
         while (iter.hasNext()) {
-            field = iter.next();
-            type = JAVA_TO_SQL_TYPES.getOrDefault(field.getValue(), DFLT_SQL_TYPE);
+            Map.Entry<String, String> field = iter.next();
+
+            Integer precision = entity.getFieldsPrecision().get(field.getKey());
+            Integer scale = entity.getFieldsScale().get(field.getKey());
+
+            String type = javaToSqlTypeMapper.renderSqlType(field.getValue(), precision, scale);
 
             sql.append(field.getKey()).append(" ").append(type);
-
-            precision = entity.getFieldsPrecision().get(field.getKey());
-            scale = entity.getFieldsScale().get(field.getKey());
-
-            if (precision != null && precision > 0) {
-                if (SQL_TYPES_WITH_PRECISION_ONLY.contains(type))
-                    sql.append("(").append(precision).append(")");
-                else if (SQL_TYPES_WITH_PRECISION_AND_SCALE.contains(type)) {
-                    sql.append("(").append(precision);
-
-                    if (scale != null && scale >= 0)
-                        sql.append(", ").append(scale);
-
-                    sql.append(")");
-                }
-            }
 
             if (iter.hasNext())
                 sql.append(", ");
@@ -524,10 +414,9 @@ public class IgniteToPostgreSqlCdcApplier {
      */
     private void addFields(QueryEntity entity, StringBuilder sql) {
         Iterator<Map.Entry<String, String>> iter = entity.getFields().entrySet().iterator();
-        Map.Entry<String, String> field;
 
         while (iter.hasNext()) {
-            field = iter.next();
+            Map.Entry<String, String> field = iter.next();
 
             sql.append(field.getKey());
 
@@ -547,12 +436,10 @@ public class IgniteToPostgreSqlCdcApplier {
 
         Iterator<String> itAllFields = F.concat(false, "version", entity.getFields().keySet()).iterator();
 
-        String field;
-
         boolean first = true;
 
         while (itAllFields.hasNext()) {
-            field = itAllFields.next();
+            String field = itAllFields.next();
 
             if (primaryFields.contains(field))
                 continue;
@@ -588,10 +475,9 @@ public class IgniteToPostgreSqlCdcApplier {
         StringBuilder deleteQry = new StringBuilder("DELETE FROM ").append(entity.getTableName()).append(" WHERE (");
 
         Iterator<String> itKeys = getPrimaryKeys(entity).iterator();
-        String key;
 
         while (itKeys.hasNext()) {
-            key = itKeys.next();
+            String key = itKeys.next();
 
             deleteQry.append(key).append(" = ?");
 
