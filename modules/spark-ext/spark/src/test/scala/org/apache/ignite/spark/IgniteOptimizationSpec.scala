@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
+import org.apache.ignite.internal.util.CommonUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, checkOptimizationResult, enclose}
 import org.apache.ignite.spark.IgniteDataFrameSettings.{FORMAT_IGNITE, OPTION_TABLE}
 import org.apache.spark.sql.functions.lit

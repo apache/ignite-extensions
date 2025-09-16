@@ -18,15 +18,15 @@
 package org.apache.ignite.spark
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
+import org.apache.ignite.internal.util.CommonUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec.{PERSON_TBL_NAME, PERSON_TBL_NAME_2, TEST_CONFIG_FILE}
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.sqlTableInfo
 import org.apache.spark.sql.SaveMode.{Append, Ignore, Overwrite}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
-import org.apache.spark.sql.functions._
 import org.scalatestplus.junit.JUnitRunner
 
 /**

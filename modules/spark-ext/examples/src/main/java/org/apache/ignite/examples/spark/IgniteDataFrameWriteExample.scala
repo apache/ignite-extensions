@@ -17,17 +17,17 @@
 
 package org.apache.ignite.examples.spark
 
-import java.lang.{Long => JLong, String => JString}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
-import org.apache.ignite.{Ignite, Ignition}
-import org.apache.spark.sql.{SaveMode, SparkSession}
+import org.apache.ignite.internal.util.CommonUtils.gridClassLoader
 import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.ignite.{Ignite, Ignition}
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
+import java.lang.{Long => JLong, String => JString}
 import scala.collection.JavaConversions._
 
 /**

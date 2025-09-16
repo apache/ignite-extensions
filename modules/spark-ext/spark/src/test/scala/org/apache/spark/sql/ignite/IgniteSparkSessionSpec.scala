@@ -18,7 +18,7 @@
 package org.apache.spark.sql.ignite
 
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils.gridClassLoader
+import org.apache.ignite.internal.util.CommonUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG_FILE, enclose}
 import org.junit.runner.RunWith

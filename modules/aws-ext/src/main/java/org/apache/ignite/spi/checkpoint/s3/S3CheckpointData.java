@@ -19,6 +19,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 
 import java.io.IOException;
 import java.io.InputStream;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -91,10 +92,10 @@ class S3CheckpointData {
         byte[] bytes = new byte[4 + state.length + 8 + 4 + keyBytes.length];
 
         U.intToBytes(state.length, bytes, 0);
-        U.arrayCopy(state, 0, bytes, 4, state.length);
+        GridUnsafe.arrayCopy(state, 0, bytes, 4, state.length);
         U.longToBytes(expTime, bytes, 4 + state.length);
         U.intToBytes(keyBytes.length, bytes, 4 + state.length + 8);
-        U.arrayCopy(keyBytes, 0, bytes, 4 + state.length + 8 + 4, keyBytes.length);
+        GridUnsafe.arrayCopy(keyBytes, 0, bytes, 4 + state.length + 8 + 4, keyBytes.length);
 
         return bytes;
     }

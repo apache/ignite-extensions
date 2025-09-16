@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.lang.Boolean
 import java.sql.Timestamp
 import java.util.Date
 

@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -104,7 +104,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
             "org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml";
 
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller marsh = Marshallers.jdk();
 
     /** Init guard. */
     @GridToStringExclude

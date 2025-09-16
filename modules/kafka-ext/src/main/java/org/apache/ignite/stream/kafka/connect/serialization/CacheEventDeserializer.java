@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -31,7 +32,7 @@ import org.apache.kafka.common.serialization.Deserializer;
  */
 public class CacheEventDeserializer implements Deserializer<CacheEvent> {
     /** Marshaller. */
-    private static final Marshaller marsh = new JdkMarshaller();
+    private static final Marshaller marsh = Marshallers.jdk();
 
     /** {@inheritDoc} */
     @Override public void configure(Map<String, ?> map, boolean b) {

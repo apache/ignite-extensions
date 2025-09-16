@@ -101,6 +101,7 @@ public class SymmetricKeyEncryptionService implements EncryptionService {
     /**
      * @param key Cipher Key.
      * @param encMode Enc mode see {@link Cipher#ENCRYPT_MODE}, {@link Cipher#DECRYPT_MODE}, etc.
+     * @return Cipher.
      */
     public static Cipher createCipher(Key key, int encMode) {
         if (key == null)

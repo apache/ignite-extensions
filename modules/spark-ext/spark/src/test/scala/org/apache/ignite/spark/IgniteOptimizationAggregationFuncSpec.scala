@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Double => JDouble, Long => JLong}
-
-import java.lang.{Double => JDouble, Long => JLong}
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
@@ -27,6 +24,8 @@ import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, TEST_CONFIG
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
+
+import java.lang.{Double => JDouble, Long => JLong}
 
 /**
   */
