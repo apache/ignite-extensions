@@ -17,12 +17,10 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Long => JLong}
-
 import org.apache.ignite.IgniteException
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils.{gridClassLoader, resolveIgnitePath}
+import org.apache.ignite.internal.util.CommonUtils.gridClassLoader
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.ignite.IgniteSparkSession
@@ -30,7 +28,8 @@ import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.scalatestplus.junit.JUnitRunner
-import org.apache.spark.sql.ignite.IgniteSparkSession
+
+import java.lang.{Long => JLong}
 
 /**
   * Tests to check Spark Catalog implementation.

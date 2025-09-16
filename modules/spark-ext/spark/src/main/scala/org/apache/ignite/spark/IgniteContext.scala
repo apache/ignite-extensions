@@ -20,12 +20,12 @@ package org.apache.ignite.spark
 import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils
-import IgniteContext.setIgniteHome
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.SparkContext
+import org.apache.ignite.internal.util.CommonUtils
+import org.apache.ignite.spark.IgniteContext.setIgniteHome
 import org.apache.log4j.Logger
+import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.SQLContext
 
 /**
  * Ignite context.
@@ -41,7 +41,7 @@ class IgniteContext(
     ) extends Serializable {
     private val cfgClo = new Once(cfgF)
 
-    private val igniteHome = IgniteUtils.getIgniteHome
+    private val igniteHome = CommonUtils.getIgniteHome
 
     if (!standalone) {
         Logging.log.warn("Embedded mode is deprecated and will be discontinued. Consider using standalone mode instead.")
@@ -192,14 +192,14 @@ object IgniteContext {
         new IgniteContext(sparkContext, cfgF, standalone)
 
     def setIgniteHome(igniteHome: String): Unit = {
-        val home = IgniteUtils.getIgniteHome
+        val home = CommonUtils.getIgniteHome
 
         if (home == null && igniteHome != null) {
             Logging.log.info("Setting IGNITE_HOME from driver not as it is not available on this worker: " + igniteHome)
 
-            IgniteUtils.nullifyHomeDirectory()
+            CommonUtils.nullifyHomeDirectory()
 
-            System.setProperty(IgniteSystemProperties.IGNITE_HOME, igniteHome)
+            System.setProperty(IgniteCommonsSystemProperties.IGNITE_HOME, igniteHome)
         }
     }
 }

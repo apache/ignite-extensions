@@ -20,7 +20,7 @@ package org.apache.ignite.spark.impl
 import org.apache.ignite.IgniteException
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.util.{CommonUtils, IgniteUtils}
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.QueryHelper.{createTable, dropTable, ensureCreateTableOptions, saveTable}
@@ -218,7 +218,7 @@ class IgniteRelationProvider extends RelationProvider
       * @return IgniteContext.
       */
     private def igniteContext(params: Map[String, String], sqlCtx: SQLContext): IgniteContext = {
-        val igniteHome = IgniteUtils.getIgniteHome
+        val igniteHome = CommonUtils.getIgniteHome
 
         def configProvider: () ⇒ IgniteConfiguration = {
             if (params.contains(OPTION_CONFIG_FILE))
