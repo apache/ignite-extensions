@@ -59,6 +59,7 @@
         <module>modules/ssh-ext</module>
         <module>modules/ml-ext</module>
         <module>modules/gatling-ext</module>
+        <module>modules/mdc-segmentation-protection-ext</module>
     </modules>
 
     <profiles>
