@@ -159,7 +159,7 @@ public class KafkaToIgniteMetrics {
             }
         };
 
-        mreg = new MetricRegistryImpl(metricName("cdc", "applier"), null, null, log);
+        mreg = new MetricRegistryImpl(metricName("cdc", "applier"), null, null, null, log);
 
         mregMgr = new SingleMetricRegistryManager(mreg);
 
