@@ -179,8 +179,8 @@ public class PerformanceStatisticsPrinterTest {
         createStatistics(writer -> {
             writer.cacheStart(0, "cache");
             writer.cacheOperation(CACHE_GET, 0, 0, 0);
-            writer.transaction(GridIntList.asList(0), 0, 0, true);
-            writer.transaction(GridIntList.asList(0), 0, 0, false);
+            writer.transaction(new GridIntList(new int[] {0}), 0, 0, true);
+            writer.transaction(new GridIntList(new int[] {0}), 0, 0, false);
             writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, 0, 0, true);
             writer.queryReads(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, 0, 0);
             writer.queryProperty(GridCacheQueryType.SQL_FIELDS, NODE_ID, 0, "name", "val");
@@ -234,8 +234,8 @@ public class PerformanceStatisticsPrinterTest {
         createStatistics(writer -> {
             for (long startTime : new long[] {startTime1, startTime2}) {
                 writer.cacheOperation(CACHE_GET, 0, startTime, 0);
-                writer.transaction(GridIntList.asList(0), startTime, 0, true);
-                writer.transaction(GridIntList.asList(0), startTime, 0, false);
+                writer.transaction(new GridIntList(new int[] {0}), startTime, 0, true);
+                writer.transaction(new GridIntList(new int[] {0}), startTime, 0, false);
                 writer.query(GridCacheQueryType.SQL_FIELDS, "query", 0, startTime, 0, true);
                 writer.task(new IgniteUuid(NODE_ID, 0), "", startTime, 0, 0);
                 writer.job(new IgniteUuid(NODE_ID, 0), 0, startTime, 0, true);
@@ -300,8 +300,8 @@ public class PerformanceStatisticsPrinterTest {
             for (String cache : new String[] {cache1, cache2}) {
                 writer.cacheStart(CU.cacheId(cache), cache);
                 writer.cacheOperation(CACHE_GET, CU.cacheId(cache), 0, 0);
-                writer.transaction(GridIntList.asList(CU.cacheId(cache)), 0, 0, true);
-                writer.transaction(GridIntList.asList(CU.cacheId(cache)), 0, 0, false);
+                writer.transaction(new GridIntList(new int[] {CU.cacheId(cache)}), 0, 0, true);
+                writer.transaction(new GridIntList(new int[] {CU.cacheId(cache)}), 0, 0, false);
             }
         });
 
