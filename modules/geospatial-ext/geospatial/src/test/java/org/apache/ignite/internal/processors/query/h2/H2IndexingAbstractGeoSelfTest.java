@@ -175,7 +175,7 @@ public abstract class H2IndexingAbstractGeoSelfTest extends GridCommonAbstractTe
 
             // Process indexes dynamically.
             for (QueryIndex idx : idxs) {
-                QueryEntity normalEntity = QueryUtils.normalizeQueryEntity(grid(0).context(), entity, ccfg.isSqlEscapeAll());
+                QueryEntity normalEntity = QueryUtils.normalizeQueryEntity(grid(0).context().recoveryMode(), entity, ccfg.isSqlEscapeAll());
 
                 createDynamicIndex(crtIgn.cache(name), normalEntity, idx);
             }
