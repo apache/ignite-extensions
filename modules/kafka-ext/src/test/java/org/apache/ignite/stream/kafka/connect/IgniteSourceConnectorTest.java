@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,8 +42,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.utils.SystemTime;
-import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -103,13 +103,17 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         Map<String, String> props = makeWorkerProps();
         WorkerConfig workerCfg = new StandaloneConfig(props);
 
-        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
+        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore() {
+            @Override public Set<Map<String, Object>> connectorPartitions(String s) {
+                return Set.of();
+            }
+        };
         offBackingStore.configure(workerCfg);
 
         AllConnectorClientConfigOverridePolicy allConnectorClientCfgOverridePlc
             = new AllConnectorClientConfigOverridePolicy();
 
-        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore,
+        worker = new Worker(WORKER_ID, Time.SYSTEM, new Plugins(props), workerCfg, offBackingStore,
             allConnectorClientCfgOverridePlc);
         worker.start();
 
@@ -142,7 +146,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEventsInjectedIntoKafkaWithoutFilter() throws Exception {
-        Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
+        Map<String, String> srcProps = makeSourceProps(String.join(",", TOPICS));
 
         srcProps.remove(IgniteSourceConstants.CACHE_FILTER_CLASS);
 
@@ -156,7 +160,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEventsInjectedIntoKafka() throws Exception {
-        doTest(makeSourceProps(Utils.join(TOPICS, ",")), true);
+        doTest(makeSourceProps(String.join(",", TOPICS)), true);
     }
 
     /**

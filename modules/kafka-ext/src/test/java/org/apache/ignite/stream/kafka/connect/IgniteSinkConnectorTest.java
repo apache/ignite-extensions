@@ -35,8 +35,7 @@ import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.utils.SystemTime;
-import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -106,7 +105,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         AllConnectorClientConfigOverridePolicy allConnectorClientCfgOverridePlc
             = new AllConnectorClientConfigOverridePolicy();
 
-        worker = new Worker(WORKER_ID, new SystemTime(), new Plugins(props), workerCfg, offBackingStore,
+        worker = new Worker(WORKER_ID, Time.SYSTEM, new Plugins(props), workerCfg, offBackingStore,
             allConnectorClientCfgOverridePlc);
         worker.start();
 
@@ -145,7 +144,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSinkPutsWithoutTransformation() throws Exception {
-        Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
+        Map<String, String> sinkProps = makeSinkProps(String.join(",", TOPICS));
 
         sinkProps.remove(IgniteSinkConstants.SINGLE_TUPLE_EXTRACTOR_CLASS);
 
@@ -157,7 +156,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSinkPutsWithTransformation() throws Exception {
-        testSinkPuts(makeSinkProps(Utils.join(TOPICS, ",")), true);
+        testSinkPuts(makeSinkProps(String.join(",", TOPICS)), true);
     }
 
     /**
