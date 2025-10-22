@@ -22,12 +22,11 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 
 /** */
 public class MultiDcTopologyState implements DiscoveryEventListener {
     /** */
-    private static final String LEADER_DC_KEY = "leaderDc";
+    private static final String MAIN_DC_KEY = "mainDc";
 
     /** */
     private final AtomicBoolean awaitingJoin = new AtomicBoolean(true);
@@ -39,10 +38,10 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
     private final IgniteLogger log;
 
     /** */
-    private volatile String leaderDcId;
+    private volatile String mainDcId;
 
     /** */
-    MultiDcTopologyState(IgniteLogger log) {
+    public MultiDcTopologyState(IgniteLogger log) {
         this.log = log;
     }
 
@@ -59,20 +58,20 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
             new DistributedMetastorageLifecycleListener() {
                 @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                     ctx.closure().runLocalSafe(() -> {
-                        String locNodeDcId = (String)ctx.nodeAttribute(ATTR_DATA_CENTER_ID);
+                        String locNodeDcId = ctx.discovery().localNode().dataCenterId();
 
                         try {
-                            boolean leaderDcInitialized = metastorage.compareAndSet(LEADER_DC_KEY, null, locNodeDcId);
+                            boolean mainDcInitialized = metastorage.compareAndSet(MAIN_DC_KEY, null, locNodeDcId);
 
-                            if (leaderDcInitialized)
-                                setLeaderDcId(locNodeDcId);
+                            if (mainDcInitialized)
+                                setMainDcId(locNodeDcId);
                             else {
-                                String leaderDc = metastorage.read(LEADER_DC_KEY);
-                                setLeaderDcId(leaderDc);
+                                String mainDc = metastorage.read(MAIN_DC_KEY);
+                                setMainDcId(mainDc);
                             }
                         }
                         catch (IgniteCheckedException e) {
-                            log.error("Failed to set leader DC", e);
+                            log.error("Failed to set main DC ID", e);
                         }
                     }, true);
                 }
@@ -80,12 +79,12 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
         );
 
         ctx.distributedMetastorage().listen(
-            (key) -> key.equals(LEADER_DC_KEY),
+            (key) -> key.equals(MAIN_DC_KEY),
             (key, oldVal, newVal) -> {
                 if (oldVal == null || oldVal.equals(newVal))
                     return;
 
-                setLeaderDcId((String)newVal);
+                setMainDcId((String)newVal);
             });
 
         ctx.discovery().localJoinFuture().listen(this::onLocalJoinEvent);
@@ -96,8 +95,6 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
      */
     private void onLocalJoinEvent(IgniteInternalFuture<DiscoveryLocalJoinData> fut) {
         if (fut.error() == null) {
-            awaitingJoin.set(false);
-
             List<ClusterNode> allNodes = null;
 
             try {
@@ -109,11 +106,13 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
             if (allNodes != null) {
                 Collection<String> allDcIds = allNodes.stream()
                     .filter(n -> !n.isClient())
-                    .map(n -> (String)n.attribute(ATTR_DATA_CENTER_ID))
+                    .map(ClusterNode::dataCenterId)
                     .collect(Collectors.toCollection(ArrayList<String>::new));
 
                 initTopology(allDcIds);
             }
+
+            awaitingJoin.set(false);
         }
     }
 
@@ -122,12 +121,14 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
         if (awaitingJoin.get())
             return true;
 
-        return topMap.get(leaderDcId) != null && topMap.get(leaderDcId) != 0;
+        return topMap.get(mainDcId) != null && topMap.get(mainDcId) != 0;
     }
 
     /** */
-    void setLeaderDcId(String leaderDcId) {
-        this.leaderDcId = leaderDcId;
+    void setMainDcId(String mainDcId) {
+        log.info("mainDcId: " + mainDcId);
+
+        this.mainDcId = mainDcId;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +136,7 @@ public class MultiDcTopologyState implements DiscoveryEventListener {
         if (evt.eventNode().isClient())
             return;
 
-        String nodeDcId = evt.eventNode().attribute(ATTR_DATA_CENTER_ID);
+        String nodeDcId = evt.eventNode().dataCenterId();
 
         switch (evt.type()) {
             case EVT_NODE_JOINED:

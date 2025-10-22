@@ -1,6 +1,7 @@
 package org.apache.ignite.plugin.mdc;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -8,7 +9,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.datacenter.SystemPropertyDataCenterResolver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -28,8 +28,6 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPluginProviders(new SegmentationProtectionPluginProvider());
-        cfg.setDataCenterResolver(new SystemPropertyDataCenterResolver());
-        cfg.setSegmentCheckFrequency(2_500);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -41,15 +39,20 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return super.optimize(cfg).setIncludeProperties((String[])null);
+    }
+
     /** */
     @Test
-    public void testCacheOperationsAreBlockedOnFollower() throws Exception {
+    public void testCacheOperationsAreBlockedOnSecondary() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc0");
 
-        // dc0 is considered leader as it is started first
+        // dc0 is considered main as it is started first.
         startGrid(0);
 
-        // Calculation of topology validity doesn't consider client nodes
+        // Calculation of topology validity doesn't consider client nodes.
         startClientGrid("clientDc0");
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc1");
@@ -81,10 +84,10 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testResetFollowerToLeader() throws Exception {
+    public void testPromoteSecondaryToMain() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc0");
 
-        // dc0 is considered leader as it is started first
+        // dc0 is considered main as it is starts first
         startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc1");
@@ -106,7 +109,7 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
             // No-op.
         }
 
-        assertTrue(dc1Ig.context().distributedMetastorage().compareAndSet("leaderDc", "dc0", "dc1"));
+        assertTrue(dc1Ig.context().distributedMetastorage().compareAndSet("mainDc", "dc0", "dc1"));
 
         startClientGrid("clientGridDc1");
 
@@ -120,10 +123,10 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCacheOperationsAreNotBlockedOnLeaderNodes() throws Exception {
+    public void testCacheOperationsAreNotBlockedOnNodesFromMainDc() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc0");
 
-        // dc0 is considered leader as it is started first
+        // dc0 is considered main as it is starts first
         IgniteEx dc0Ig = startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "dc1");
@@ -154,7 +157,7 @@ public class MdcSegmentationBasicTest extends GridCommonAbstractTest {
     /** */
     public IgniteCache<Object, Object> createCache(IgniteEx grid) {
         return grid.createCache(new CacheConfiguration<>()
-            .setName("cache0")
+            .setName(DEFAULT_CACHE_NAME)
             .setBackups(1)
             .setWriteSynchronizationMode(FULL_SYNC));
     }

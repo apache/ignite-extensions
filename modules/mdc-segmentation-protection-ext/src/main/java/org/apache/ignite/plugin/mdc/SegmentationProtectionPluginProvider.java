@@ -3,6 +3,7 @@ package org.apache.ignite.plugin.mdc;
 import java.io.Serializable;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -26,7 +27,10 @@ public class SegmentationProtectionPluginProvider implements PluginProvider<Plug
     private static final String MDC_SEGMENTATION_PROTECTION_PLUGIN_VERSION = "1.0.0";
 
     /** */
-    private boolean topValidatorEnabled = true;
+    private GridKernalContext kCtx;
+
+    /** */
+    private IgniteLogger log;
 
     /** */
     private volatile TopologyValidatorImpl topValidator;
@@ -34,11 +38,6 @@ public class SegmentationProtectionPluginProvider implements PluginProvider<Plug
     /** */
     public SegmentationProtectionPluginProvider() {
 
-    }
-
-    /** */
-    public SegmentationProtectionPluginProvider(boolean topValidatorEnabled) {
-        this.topValidatorEnabled = topValidatorEnabled;
     }
 
     /** {@inheritDoc} */
@@ -85,9 +84,13 @@ public class SegmentationProtectionPluginProvider implements PluginProvider<Plug
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-        MultiDcTopologyState topState = new MultiDcTopologyState(ctx.log(MultiDcTopologyState.class));
+        this.kCtx = ((IgniteEx)ctx.grid()).context();
 
-        topState.init(((IgniteEx)ctx.grid()).context());
+        log = ctx.log(getClass());
+
+        MultiDcTopologyState topState = new MultiDcTopologyState(log);
+
+        topState.init(kCtx);
 
         topValidator.setTopologyState(topState);
     }
@@ -99,7 +102,8 @@ public class SegmentationProtectionPluginProvider implements PluginProvider<Plug
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() throws IgniteCheckedException {
-        // No-op.
+        if (!kCtx.clientNode() && kCtx.discovery().localNode().dataCenterId() == null)
+            throw new IgniteCheckedException("Data center id is not set");
     }
 
     /** {@inheritDoc} */
