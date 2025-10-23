@@ -132,7 +132,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
         src.cluster().state(ClusterState.ACTIVE);
 
         // Do not create directory implicitly in /tmp due to possible cleanup problems.
-        File pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", false, true);
+        File pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", false, false);
 
         postgres = EmbeddedPostgres.builder()
             .setOverrideWorkingDirectory(pgDir)
