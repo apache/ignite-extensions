@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.postgresql;
 
+import java.io.File;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -129,7 +131,12 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
 
         src.cluster().state(ClusterState.ACTIVE);
 
-        postgres = EmbeddedPostgres.builder().start();
+        // Do not create directory implicitly in /tmp due to possible cleanup problems.
+        File pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", false, true);
+
+        postgres = EmbeddedPostgres.builder()
+            .setOverrideWorkingDirectory(pgDir)
+            .start();
     }
 
     /** {@inheritDoc} */
