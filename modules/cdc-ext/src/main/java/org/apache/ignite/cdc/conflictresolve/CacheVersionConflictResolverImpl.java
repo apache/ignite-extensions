@@ -125,6 +125,9 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
+        if (oldEntry.value(ctx) == null && newEntry.value(ctx) != null)
+            return true;
+
         if (oldEntry.dataCenterId() == newEntry.dataCenterId()) {
             int cmp = newEntry.version().compareTo(oldEntry.version());
 
@@ -179,6 +182,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
         Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
 
+        boolean oldExpired = oldEntry.value(ctx) == null && newEntry.value(ctx) != null;
+
         if (oldVal != null)
             oldVal = debugValue(oldVal);
 
@@ -190,6 +195,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             ", oldVer=" + oldEntry.version() +
             ", newVer=" + newEntry.version() +
             ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
+            ", isOldExpired=" + oldExpired +
             ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
             ", old=" + oldVal +
             ", new=" + newVal +

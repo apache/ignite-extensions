@@ -24,6 +24,10 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
@@ -47,6 +51,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -288,18 +293,59 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         assertFalse(lsnr.check());
     }
 
+    /** Test conflict resolution during old entry expiration. */
+    @Test
+    public void testConflictWithExpiryPolicy() throws Exception {
+        String key = key("UpdateClusterUpdateReorder", otherClusterId);
+
+        LogListener lsnr = LogListener.matches("isOldExpired=true").build();
+
+        listeningLog.registerListener(lsnr);
+
+        Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
+
+        try {
+            CreatedExpiryPolicy plc = new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, 3000));
+
+            put(key, plc);
+
+            doSleep(3000);
+
+            // Put just after expiration.
+            putConflict(key, 2, true, plc);
+
+            putConflict(key, 3, true, plc);
+
+            put(key, plc);
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
+
+            listeningLog.clearListeners();
+        }
+    }
+
     /** */
     private void put(String key) {
+        put(key, null);
+    }
+
+    /** */
+    private void put(String key, @Nullable ExpiryPolicy plc) {
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(key);
+        IgniteCache<String, ConflictResolvableTestData> cache0 = plc != null ? cache.withExpiryPolicy(plc) : cache;
 
-        cache.put(key, newVal);
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache0.getEntry(key);
 
-        CacheEntry<String, ConflictResolvableTestData> newEntry = cache.getEntry(key);
+        cache0.put(key, newVal);
+
+        CacheEntry<String, ConflictResolvableTestData> newEntry = cache0.getEntry(key);
 
         assertNull(((CacheEntryVersion)newEntry.version()).otherClusterVersion());
-        assertEquals(newVal, cache.get(key));
+        assertEquals(newVal, cache0.get(key));
 
         if (oldEntry != null)
             assertTrue(((CacheEntryVersion)oldEntry.version()).order() < ((CacheEntryVersion)newEntry.version()).order());
@@ -311,22 +357,38 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     }
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
+    private void putConflict(String k, long order, boolean success, @Nullable ExpiryPolicy plc) throws IgniteCheckedException {
+        putConflict(k, new GridCacheVersion(1, order, 1, otherClusterId), success, plc);
+    }
+
+    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
-        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
+        putConflict(k, newVer, success, null);
+    }
+
+    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
+    private void putConflict(String k, GridCacheVersion newVer, boolean success, @Nullable ExpiryPolicy plc) throws IgniteCheckedException {
+        IgniteCache<String, ConflictResolvableTestData> cache0 = plc != null ? cache.withExpiryPolicy(plc) : cache;
+        IgniteInternalCache<BinaryObject, BinaryObject> cachex0 = plc != null ? cachex.withExpiryPolicy(plc) : cachex;
+
+        CacheEntry<String, ConflictResolvableTestData> oldEntry = cache0.getEntry(k);
         ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
-        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
+        KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex0.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
 
-        cachex.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
+        cachex0.putAllConflict(singletonMap(key, new GridCacheDrInfo(val, newVer)));
 
         if (success) {
-            assertEquals(newVer, ((GridCacheVersion)cache.getEntry(k).version()).conflictVersion());
-            assertEquals(newVal, cache.get(k));
+            CacheEntry<String, ConflictResolvableTestData> newEntry = cache0.getEntry(k);
+
+            assertNotNull(newEntry);
+            assertEquals(newVer, ((GridCacheVersion)newEntry.version()).conflictVersion());
+            assertEquals(newVal, cache0.get(k));
         }
         else if (oldEntry != null) {
-            assertEquals(oldEntry.getValue(), cache.get(k));
-            assertEquals(oldEntry.version(), cache.getEntry(k).version());
+            assertEquals(oldEntry.getValue(), cache0.get(k));
+            assertEquals(oldEntry.version(), cache0.getEntry(k).version());
         }
     }
 
