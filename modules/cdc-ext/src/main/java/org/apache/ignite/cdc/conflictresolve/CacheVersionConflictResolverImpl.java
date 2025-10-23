@@ -125,6 +125,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (oldEntry.isStartVersion()) // Entry absent (new entry).
             return true;
 
+        // Old entry has expired.
         if (oldEntry.value(ctx) == null && newEntry.value(ctx) != null)
             return true;
 
