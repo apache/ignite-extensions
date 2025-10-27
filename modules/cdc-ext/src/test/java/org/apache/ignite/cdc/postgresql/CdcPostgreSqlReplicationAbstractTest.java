@@ -52,11 +52,11 @@ public abstract class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbs
     protected static final int KEYS_CNT = 1024;
 
     /** Embedded Postgres working directory. */
-    protected static File pgDir;
+    private static File pgDir;
 
     /** {@inheritDoc} */
-    @Override protected void beforeFirstTest() throws Exception {
-        super.beforeFirstTest();
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
         // Clean up and set PG working directory in order to overcome possible inconsistent cleanup of '/tmp'.
         pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", true, false);
