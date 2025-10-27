@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc.postgresql;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import javax.sql.DataSource;
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -46,6 +50,36 @@ public abstract class CdcPostgreSqlReplicationAbstractTest extends GridCommonAbs
 
     /** */
     protected static final int KEYS_CNT = 1024;
+
+    /** Embedded Postgres working directory. */
+    protected static File pgDir;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeFirstTest() throws Exception {
+        super.beforeFirstTest();
+
+        // Clean up and set PG working directory in order to overcome possible inconsistent cleanup of '/tmp'.
+        pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", true, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        U.delete(pgDir);
+    }
+
+    /** */
+    protected EmbeddedPostgres initPostgres() throws IgniteCheckedException, IOException {
+        // Clean up and set PG data directory in order to overcome possible inconsistent cleanup of '/tmp'.
+        File pgDataDir = U.resolveWorkDirectory(pgDir.getAbsolutePath(), "data", true, false);
+
+        return EmbeddedPostgres.builder()
+            .setOverrideWorkingDirectory(pgDir)
+            .setDataDirectory(pgDataDir)
+            .setCleanDataDirectory(true)
+            .start();
+    }
 
     /** */
     protected void executeOnIgnite(IgniteEx src, String sqlText, Object... args) {

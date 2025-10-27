@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc.postgresql;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -48,7 +47,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -119,12 +117,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
 
         src.cluster().state(ClusterState.ACTIVE);
 
-        // Do not create directory implicitly in /tmp due to possible cleanup problems.
-        File pgDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "embedded-pg", false, false);
-
-        postgres = EmbeddedPostgres.builder()
-            .setOverrideWorkingDirectory(pgDir)
-            .start();
+        postgres = initPostgres();
     }
 
     /** {@inheritDoc} */
