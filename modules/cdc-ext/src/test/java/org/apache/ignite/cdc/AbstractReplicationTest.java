@@ -42,6 +42,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverPluginProvider;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -69,7 +70,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -114,6 +119,9 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter(3)
     public int backups;
+
+    /** Listening test logger. */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "clientType={0}, atomicity={1}, mode={2}, backupCnt={3}")
@@ -213,6 +221,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                 .setWalForceArchiveTimeout(5_000);
 
             cfg.setConsistentId(igniteInstanceName);
+
+            cfg.setGridLogger(listeningLog);
         }
 
         return cfg;
@@ -220,6 +230,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        listeningLog.clearListeners();
+
         cleanPersistenceDir();
 
         cdcs.clear();
@@ -557,6 +569,49 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             ));
         }
         finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
+    /** */
+    @Test
+    public void testConflictResolveWithExpiryPolicy() throws Exception {
+        LogListener listener = LogListener.matches("Conflict can't be resolved, update ignored").build();
+
+        listeningLog.registerListener(listener);
+
+        int millis = 10000;
+
+        Factory<? extends ExpiryPolicy> factory = () -> new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, millis));
+
+        IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], ACTIVE_ACTIVE_CACHE, factory);
+
+        IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], ACTIVE_ACTIVE_CACHE, factory);
+
+        List<IgniteInternalFuture<?>> futs = startActiveActiveCdc();
+
+        try {
+            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
+
+            log.warning(">>>>>> Put new entries in the source cluster");
+            IntStream.range(0, KEYS_CNT).forEach(i -> srcCache.put(i, ConflictResolvableTestData.create()));
+
+            log.warning(">>>>>> Waiting for last entry in the destination cluster");
+            assertTrue(waitForCondition(() -> destCache.containsKey(KEYS_CNT - 1), getTestTimeout()));
+
+            doSleep(millis);
+
+            log.warning(">>>>>> Put updated entries in the destination cluster");
+            IntStream.range(0, KEYS_CNT).forEach(i -> destCache.put(i, ConflictResolvableTestData.create()));
+
+            doSleep(millis);
+
+            assertFalse("Unresolved conflicts found", listener.check());
+        }
+        finally {
+            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
+
             for (IgniteInternalFuture<?> fut : futs)
                 fut.cancel();
         }
