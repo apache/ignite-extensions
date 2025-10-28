@@ -129,7 +129,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
 
         src.cluster().state(ClusterState.ACTIVE);
 
-        postgres = EmbeddedPostgres.builder().start();
+        postgres = initPostgres();
     }
 
     /** {@inheritDoc} */

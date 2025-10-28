@@ -117,7 +117,7 @@ public class JavaToSqlTypeMapperTest extends CdcPostgreSqlReplicationAbstractTes
 
         src.cluster().state(ClusterState.ACTIVE);
 
-        postgres = EmbeddedPostgres.builder().start();
+        postgres = initPostgres();
     }
 
     /** {@inheritDoc} */
