@@ -37,7 +37,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 /**
  * Contains logic to process user's regexp patterns for CDC.
  */
-public class CdcRegexManager implements CdcRegexMatcher {
+public class CdcRegexManager {
 
     /** File with saved names of caches added by cache masks. */
     private static final String SAVED_CACHES_FILE = "caches";
@@ -67,8 +67,13 @@ public class CdcRegexManager implements CdcRegexMatcher {
         this.log = log;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean match(String cacheName) {
+    /**
+     * Finds and processes match between cache name and user's regexp patterns.
+     *
+     * @param cacheName Cache name.
+     * @return True if cache name matches user's regexp patterns.
+     */
+    public boolean match(String cacheName) {
         return matchAndSave(cacheName);
     }
 
