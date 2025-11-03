@@ -599,7 +599,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
             IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
 
         //Start CDC with only 'active-active-cache' in 'caches' property of CDC config
-        List<IgniteInternalFuture<?>> futs = startActiveActiveCdcWithFilters(includeTemplates, excludeTemplates);
+        List<IgniteInternalFuture<?>> futs = startActiveActiveCdcWithFilters(REGEX_INCLUDE_PATTERN, REGEX_EXCLUDE_PATTERN);
 
         try {
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
@@ -628,8 +628,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         Set<String> excludeTemplates = new HashSet<>(Arrays.asList(REGEX_EXCLUDE_PATTERN));
 
         //Start CDC with only 'active-active-cache' in 'caches' property of CDC config
-        List<IgniteInternalFuture<?>> futs = startActivePassiveCdcWithFilters(ACTIVE_PASSIVE_CACHE,
-            includeTemplates, excludeTemplates);
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdcWithFilters(ACTIVE_PASSIVE_CACHE, REGEX_INCLUDE_PATTERN,
+            REGEX_EXCLUDE_PATTERN);
 
         try {
             createCache(destCluster[0], ACTIVE_PASSIVE_CACHE);
@@ -797,15 +797,15 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
     /** */
     protected abstract List<IgniteInternalFuture<?>> startActivePassiveCdcWithFilters(String cache,
-                                                                                      Set<String> includeTemplates,
-                                                                                      Set<String> excludeTemplates);
+                                                                                      String includeTemplate,
+                                                                                      String excludeTemplate);
 
     /** */
     protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
 
     /** */
-    protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(Set<String> includeTemplates,
-                                                                                     Set<String> excludeTemplates);
+    protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(String includeTemplate,
+                                                                                     String excludeTemplate);
 
     /** */
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);

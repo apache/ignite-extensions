@@ -18,7 +18,6 @@
 package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -86,11 +85,11 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     private Collection<String> caches;
 
-    /** Include regex templates for cache names. */
-    private Set<String> includeTemplates = new HashSet<>();
+    /** Include regex template for cache names. */
+    private String includeTemplate;
 
-    /** Exclude regex templates for cache names. */
-    private Set<String> excludeTemplates = new HashSet<>();
+    /** Exclude regex template for cache names. */
+    private String excludeTemplate;
 
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
@@ -185,29 +184,29 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /**
      * @return Include regex templates
      */
-    public Set<String> getIncludeTemplates() {
-        return includeTemplates;
+    public String getIncludeTemplate() {
+        return includeTemplate;
     }
 
     /**
-     * @param includeTemplates Include regex templates
+     * @param includeTemplate Include regex templates
      */
-    public void setIncludeTemplates(Set<String> includeTemplates) {
-        this.includeTemplates = includeTemplates;
+    public void setIncludeTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
     }
 
     /**
      * @return Exclude regex templates
      */
-    public Set<String> getExcludeTemplates() {
-        return excludeTemplates;
+    public String getExcludeTemplate() {
+        return excludeTemplate;
     }
 
     /**
-     * @param excludeTemplates Exclude regex templates
+     * @param excludeTemplate Exclude regex templates
      */
-    public void setExcludeTemplates(Set<String> excludeTemplates) {
-        this.excludeTemplates = excludeTemplates;
+    public void setExcludeTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
     }
 
     /** @return The maximum time to complete Kafka related requests, in milliseconds. */
