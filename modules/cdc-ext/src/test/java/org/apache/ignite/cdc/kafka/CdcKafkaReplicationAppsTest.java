@@ -114,8 +114,8 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         String topic,
         String metadataTopic,
         String cache,
-        Set<String> includeTemplates,
-        Set<String> excludeTemplates,
+        String includeTemplate,
+        String excludeTemplate,
         String threadName
     ) {
         Map<String, String> params = new HashMap<>();
@@ -144,8 +144,8 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteEx[] dest,
         int partFrom,
         int partTo,
-        Set<String> includeTemplates,
-        Set<String> excludeTemplates,
+        String includeTemplate,
+        String excludeTemplate,
         String threadName
     ) {
         Map<String, String> params = new HashMap<>();
