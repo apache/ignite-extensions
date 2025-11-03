@@ -64,7 +64,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
     private static final String REGEX_INCLUDE_PATTERN = "regex.*";
 
     /** */
-    private Set<String> includeTemplates;
+    private String includeTemplates;
 
     /** */
     private static final int KEYS_CNT = 1000;
@@ -96,14 +96,13 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
      *
      * @param srcCfg Ignite source node configuration.
      * @param cache Cache name to stream to Ignite2Ignite.
-     * @param includeTemplates Include cache templates.
+     * @param includeTemplate Include cache templates.
      * @param excludeTemplates Exclude cache templates.
      * @return Future for Change Data Capture application.
      */
     private IgniteInternalFuture<?> startCdc(IgniteConfiguration srcCfg,
                                              String cache,
-                                             Set<String> includeTemplates,
-                                             Set<String> excludeTemplates) {
+                                             String includeTemplate) {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
@@ -114,8 +113,8 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
-            streamer.setIncludeTemplates(includeTemplates);
-            streamer.setExcludeTemplates(excludeTemplates);
+            streamer.setIncludeTemplate(includeTemplate);
+            streamer.setExcludeTemplate("");
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
@@ -135,8 +134,6 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
         discoPort += DFLT_PORT_RANGE + 1;
 
         dest = startGrid(getConfiguration("dest-cluster"));
-
-        includeTemplates = new HashSet<>(Arrays.asList(REGEX_INCLUDE_PATTERN));
     }
 
     /** {@inheritDoc} */
@@ -204,7 +201,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
         dest.cluster().state(ClusterState.ACTIVE);
 
         //Start CDC only with 'test-cache' in config and cache masks (regex filters)
-        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, includeTemplates, Collections.emptySet());
+        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN);
 
         IgniteCache<Integer, Integer> srcCache = src.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(REGEX_MATCHING_CACHE)
@@ -219,7 +216,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
         cdc.cancel();
 
         //Restart CDC
-        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, includeTemplates, Collections.emptySet());
+        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN);
 
         try {
             runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));

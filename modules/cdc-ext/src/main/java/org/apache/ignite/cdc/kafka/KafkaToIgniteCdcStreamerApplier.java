@@ -108,11 +108,11 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Caches ids to read. */
     private final Set<Integer> caches;
 
-    /** Include regex templates for cache names. */
-    private final Set<String> includeTemplates;
+    /** Include regex template for cache names. */
+    private final String includeTemplate;
 
-    /** Exclude regex templates for cache names. */
-    private final Set<String> excludeTemplates;
+    /** Exclude regex template for cache names. */
+    private final String excludeTemplate;
 
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
@@ -180,8 +180,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
         this.metrics = metrics;
         this.streamer = streamer;
-        this.includeTemplates = streamerCfg.getIncludeTemplates();
-        this.excludeTemplates = streamerCfg.getExcludeTemplates();
+        this.includeTemplate = streamerCfg.getIncludeTemplate();
+        this.excludeTemplate = streamerCfg.getExcludeTemplate();
     }
 
     /** {@inheritDoc} */
@@ -307,13 +307,9 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return True if cache name match include patterns and don't match exclude patterns.
      */
     private boolean matchesFilters(String cacheName) {
-        boolean matchesInclude = includeTemplates.stream()
-            .map(Pattern::compile)
-            .anyMatch(pattern -> pattern.matcher(cacheName).matches());
+        boolean matchesInclude = Pattern.compile(includeTemplate).matcher(cacheName).matches();
 
-        boolean notMatchesExclude = excludeTemplates.stream()
-            .map(Pattern::compile)
-            .noneMatch(pattern -> pattern.matcher(cacheName).matches());
+        boolean notMatchesExclude = Pattern.compile(excludeTemplate).matcher(cacheName).matches();
 
         return matchesInclude && notMatchesExclude;
     }
