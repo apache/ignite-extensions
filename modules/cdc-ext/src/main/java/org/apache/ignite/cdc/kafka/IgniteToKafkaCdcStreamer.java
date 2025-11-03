@@ -20,7 +20,6 @@ package org.apache.ignite.cdc.kafka;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -154,11 +153,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** Regexp manager. */
     private CdcRegexManager regexManager;
 
-    /** Include regex templates for cache names. */
-    private Set<String> includeTemplates = new HashSet<>();
+    /** Include regex template for cache names. */
+    private String includeTemplate;
 
-    /** Exclude regex templates for cache names. */
-    private Set<String> excludeTemplates = new HashSet<>();
+    /** Exclude regex template for cache names. */
+    private String excludeTemplate;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -351,7 +350,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
             .map(CU::cacheId)
             .collect(Collectors.toSet());
 
-        regexManager.compileRegexp(includeTemplates, excludeTemplates);
+        regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
         regexManager.getSavedCaches().stream()
                 .map(CU::cacheId)
@@ -464,25 +463,25 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets include regex patterns that participate in CDC.
+     * Sets include regex pattern that participate in CDC.
      *
-     * @param includeTemplates Include regex templates.
+     * @param includeTemplate Include regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setIncludeTemplates(Set<String> includeTemplates) {
-        this.includeTemplates = includeTemplates;
+    public IgniteToKafkaCdcStreamer setIncludeTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
 
         return this;
     }
 
     /**
-     * Sets exclude regex patterns that participate in CDC.
+     * Sets exclude regex pattern that participate in CDC.
      *
-     * @param excludeTemplates Exclude regex templates
+     * @param excludeTemplate Exclude regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setExcludeTemplates(Set<String> excludeTemplates) {
-        this.excludeTemplates = excludeTemplates;
+    public IgniteToKafkaCdcStreamer setExcludeTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
 
         return this;
     }

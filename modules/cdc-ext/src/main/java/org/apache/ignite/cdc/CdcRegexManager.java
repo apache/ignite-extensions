@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -48,11 +47,11 @@ public class CdcRegexManager {
     /** CDC directory path. */
     private final Path cdcDir;
 
-    /** Include regex patterns for cache names. */
-    private Set<Pattern> includeFilters;
+    /** Include regex pattern for cache names. */
+    private Pattern includeFilter;
 
-    /** Exclude regex patterns for cache names. */
-    private Set<Pattern> excludeFilters;
+    /** Exclude regex pattern for cache names. */
+    private Pattern excludeFilter;
 
     /** Logger. */
     private IgniteLogger log;
@@ -127,33 +126,23 @@ public class CdcRegexManager {
      * Matches cache name with compiled regex patterns.
      *
      * @param cacheName Cache name.
-     * @return True if cache name matches include patterns and doesn't match exclude patterns.
+     * @return True if cache name matches include pattern and doesn't match exclude pattern.
      */
     private boolean matchesFilters(String cacheName) {
-        boolean matchesInclude = includeFilters.stream()
-            .anyMatch(pattern -> pattern.matcher(cacheName).matches());
-
-        boolean notMatchesExclude = excludeFilters.stream()
-            .noneMatch(pattern -> pattern.matcher(cacheName).matches());
-
-        return matchesInclude && notMatchesExclude;
+        return includeFilter.matcher(cacheName).matches() && excludeFilter.matcher(cacheName).matches();
     }
 
     /**
      * Compiles regex patterns from user templates.
      *
-     * @param includeTemplates Include regex templates.
-     * @param excludeTemplates Exclude regex templates.
+     * @param includeTemplate Include regex template.
+     * @param excludeTemplate Exclude regex template.
      * @throws PatternSyntaxException If the template's syntax is invalid
      */
-    public void compileRegexp(Set<String> includeTemplates, Set<String> excludeTemplates) {
-        includeFilters = includeTemplates.stream()
-            .map(Pattern::compile)
-            .collect(Collectors.toSet());
+    public void compileRegexp(String includeTemplate, String excludeTemplate) {
+        includeFilter = Pattern.compile(includeTemplate);
 
-        excludeFilters = excludeTemplates.stream()
-            .map(Pattern::compile)
-            .collect(Collectors.toSet());
+        excludeFilter = Pattern.compile(excludeTemplate);
     }
 
     /**
