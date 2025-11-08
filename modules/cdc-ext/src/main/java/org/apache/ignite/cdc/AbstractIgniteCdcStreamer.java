@@ -70,6 +70,9 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last applied event to destination cluster";
 
+    /** */
+    public static final String DFLT_REGEXP = "";
+
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
@@ -80,10 +83,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     private CdcRegexManager regexManager;
 
     /** Include regex template for cache names. */
-    private String includeTemplate;
+    private String includeTemplate = DFLT_REGEXP;
 
     /** Exclude regex template for cache names. */
-    private String excludeTemplate;
+    private String excludeTemplate = DFLT_REGEXP;
 
     /** Cache IDs. */
     protected Set<Integer> cachesIds;
@@ -275,7 +278,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets include regex pattern that participate in CDC.
+     * Sets include regex pattern that participates in CDC.
      *
      * @param includeTemplate Include regex template
      * @return {@code this} for chaining.
@@ -287,7 +290,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets exclude regex pattern that participate in CDC.
+     * Sets exclude regex pattern that participates in CDC.
      *
      * @param excludeTemplate Exclude regex template
      * @return {@code this} for chaining.
