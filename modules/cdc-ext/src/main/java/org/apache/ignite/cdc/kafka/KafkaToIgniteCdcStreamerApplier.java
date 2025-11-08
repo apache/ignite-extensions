@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -304,14 +305,20 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * Matches cache name with compiled regex patterns.
      *
      * @param cacheName Cache name.
-     * @return True if cache name match include patterns and don't match exclude patterns.
+     * @return True if cache name matches include pattern and doesn't match exclude pattern.
+     * @throws IgniteException If the template's syntax is invalid
      */
     private boolean matchesFilters(String cacheName) {
-        boolean matchesInclude = Pattern.compile(includeTemplate).matcher(cacheName).matches();
+        try {
+            boolean matchesInclude = Pattern.compile(includeTemplate).matcher(cacheName).matches();
 
-        boolean notMatchesExclude = Pattern.compile(excludeTemplate).matcher(cacheName).matches();
+            boolean matchesExclude = Pattern.compile(excludeTemplate).matcher(cacheName).matches();
 
-        return matchesInclude && notMatchesExclude;
+            return matchesInclude && !matchesExclude;
+        }
+        catch (PatternSyntaxException e) {
+            throw new IgniteException("Invalid cache regexp template.", e);
+        }
     }
 
     /**
