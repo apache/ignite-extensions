@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -213,8 +212,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             cfgPlugin1.setClusterId(clusterId);
             cfgPlugin1.setCaches(new HashSet<>(Arrays.asList(ACTIVE_PASSIVE_CACHE, ACTIVE_ACTIVE_CACHE)));
-            cfgPlugin1.setIncludeTemplates(new HashSet<>(Arrays.asList(REGEX_INCLUDE_PATTERN)));
-            cfgPlugin1.setExcludeTemplates(new HashSet<>(Arrays.asList(REGEX_EXCLUDE_PATTERN)));
+            cfgPlugin1.setIncludeTemplate(REGEX_INCLUDE_PATTERN);
+            cfgPlugin1.setExcludeTemplate(REGEX_EXCLUDE_PATTERN);
             cfgPlugin1.setConflictResolveField("reqId");
 
             cfg.setPluginProviders(cfgPlugin1);
@@ -581,9 +580,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
      * Active/Active mode means changes made in both clusters. */
     @Test
     public void testActiveActiveReplicationWithRegexFilters() throws Exception {
-        Set<String> includeTemplates = new HashSet<>(Arrays.asList(REGEX_INCLUDE_PATTERN));
-        Set<String> excludeTemplates = new HashSet<>(Arrays.asList(REGEX_EXCLUDE_PATTERN));
-
         createCache(srcCluster[0], ACTIVE_ACTIVE_CACHE);
         createCache(destCluster[0], ACTIVE_ACTIVE_CACHE);
 
@@ -624,9 +620,6 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
      * Active/Passive mode means changes made only in one cluster. */
     @Test
     public void testActivePassiveReplicationWithRegexFilters() throws Exception {
-        Set<String> includeTemplates = new HashSet<>(Arrays.asList(REGEX_INCLUDE_PATTERN));
-        Set<String> excludeTemplates = new HashSet<>(Arrays.asList(REGEX_EXCLUDE_PATTERN));
-
         //Start CDC with only 'active-active-cache' in 'caches' property of CDC config
         List<IgniteInternalFuture<?>> futs = startActivePassiveCdcWithFilters(ACTIVE_PASSIVE_CACHE, REGEX_INCLUDE_PATTERN,
             REGEX_EXCLUDE_PATTERN);
