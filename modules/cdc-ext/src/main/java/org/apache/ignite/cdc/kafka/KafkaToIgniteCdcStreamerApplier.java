@@ -27,11 +27,15 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -42,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -104,6 +109,12 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** Caches ids to read. */
     private final Set<Integer> caches;
 
+    /** Include regex template for cache names. */
+    private final String includeTemplate;
+
+    /** Exclude regex template for cache names. */
+    private final String excludeTemplate;
+
     /** The maximum time to complete Kafka related requests, in milliseconds. */
     private final long kafkaReqTimeout;
 
@@ -128,6 +139,9 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     /** CDC kafka to ignite metrics */
     private final KafkaToIgniteMetrics metrics;
 
+    /** Instance of KafkaToIgniteCdcStreamer */
+    private final AbstractKafkaToIgniteCdcStreamer streamer;
+
     /**
      * @param applierSupplier Cdc events applier supplier.
      * @param log Logger.
@@ -139,6 +153,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @param metaUpdr Metadata updater.
      * @param stopped Stopped flag.
      * @param metrics CDC Kafka to Ignite metrics.
+     * @param streamer Instance of KafkaToIgniteCdcStreamer
      */
     public KafkaToIgniteCdcStreamerApplier(
         Supplier<AbstractCdcEventsApplier> applierSupplier,
@@ -150,7 +165,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         Set<Integer> caches,
         KafkaToIgniteMetadataUpdater metaUpdr,
         AtomicBoolean stopped,
-        KafkaToIgniteMetrics metrics
+        KafkaToIgniteMetrics metrics,
+        AbstractKafkaToIgniteCdcStreamer streamer
     ) {
         this.applierSupplier = applierSupplier;
         this.kafkaProps = kafkaProps;
@@ -164,6 +180,9 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.stopped = stopped;
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
         this.metrics = metrics;
+        this.streamer = streamer;
+        this.includeTemplate = streamerCfg.getIncludeTemplate();
+        this.excludeTemplate = streamerCfg.getExcludeTemplate();
     }
 
     /** {@inheritDoc} */
@@ -260,7 +279,46 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
 
         metrics.incrementReceivedEvents();
 
-        return F.isEmpty(caches) || caches.contains(rec.key());
+        return F.isEmpty(caches) || caches.contains(rec.key()) || matchesRegexTemplates(rec.key());
+    }
+
+    /**
+     * Gets caches names from CDC client and finds match
+     * between cache id and user's regex templates.
+     *
+     * @param key Cache id.
+     * @return True if match is found.
+     */
+    private boolean matchesRegexTemplates(Integer key) {
+        Optional<String> cache = streamer.getCaches().stream()
+            .filter(name -> CU.cacheId(name) == key)
+            .findAny();
+
+        Optional<String> matchedCache = cache.filter(this::matchesFilters);
+
+        matchedCache.ifPresent(c -> caches.add(CU.cacheId(c)));
+
+        return matchedCache.isPresent();
+    }
+
+    /**
+     * Matches cache name with compiled regex patterns.
+     *
+     * @param cacheName Cache name.
+     * @return True if cache name matches include pattern and doesn't match exclude pattern.
+     * @throws IgniteException If the template's syntax is invalid
+     */
+    private boolean matchesFilters(String cacheName) {
+        try {
+            boolean matchesInclude = Pattern.compile(includeTemplate).matcher(cacheName).matches();
+
+            boolean matchesExclude = Pattern.compile(excludeTemplate).matcher(cacheName).matches();
+
+            return matchesInclude && !matchesExclude;
+        }
+        catch (PatternSyntaxException e) {
+            throw new IgniteException("Invalid cache regexp template.", e);
+        }
     }
 
     /**
