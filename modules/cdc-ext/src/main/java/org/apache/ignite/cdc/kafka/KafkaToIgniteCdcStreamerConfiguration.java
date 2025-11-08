@@ -19,7 +19,6 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -182,28 +181,28 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     }
 
     /**
-     * @return Include regex templates
+     * @return Include regex template.
      */
     public String getIncludeTemplate() {
         return includeTemplate;
     }
 
     /**
-     * @param includeTemplate Include regex templates
+     * @param includeTemplate Include regex template.
      */
     public void setIncludeTemplate(String includeTemplate) {
         this.includeTemplate = includeTemplate;
     }
 
     /**
-     * @return Exclude regex templates
+     * @return Exclude regex template
      */
     public String getExcludeTemplate() {
         return excludeTemplate;
     }
 
     /**
-     * @param excludeTemplate Exclude regex templates
+     * @param excludeTemplate Exclude regex template.
      */
     public void setExcludeTemplate(String excludeTemplate) {
         this.excludeTemplate = excludeTemplate;

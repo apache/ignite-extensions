@@ -20,7 +20,6 @@ package org.apache.ignite.cdc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
@@ -46,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
-        return startActivePassiveCdcWithFilters(cache, null, null);
+        return startActivePassiveCdcWithFilters(cache, "", "");
     }
 
     /** {@inheritDoc} */
@@ -64,7 +63,7 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
-        return startActiveActiveCdcWithFilters(null, null);
+        return startActiveActiveCdcWithFilters("", "");
     }
 
     /** {@inheritDoc} */
@@ -101,8 +100,8 @@ public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
      * @param destCfg Ignite destination cluster configuration.
      * @param dest Ignite destination cluster.
      * @param cache Cache name to stream to kafka.
-     * @param includeTemplate Include regex templates for cache names.
-     * @param excludeTemplate Exclude regex templates for cache names.
+     * @param includeTemplate Include regex template for cache names.
+     * @param excludeTemplate Exclude regex template for cache names.
      * @param threadName Thread to run CDC instance.
      * @return Future for Change Data Capture application.
      */
