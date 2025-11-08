@@ -116,6 +116,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** Count of metadata markers sent description. */
     public static final String MARKERS_SENT_CNT_DESC = "Count of metadata markers sent to Kafka";
 
+    /** */
+    public static final String DFLT_REGEXP = "";
+
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
@@ -154,10 +157,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     private CdcRegexManager regexManager;
 
     /** Include regex template for cache names. */
-    private String includeTemplate;
+    private String includeTemplate = DFLT_REGEXP;
 
     /** Exclude regex template for cache names. */
-    private String excludeTemplate;
+    private String excludeTemplate = DFLT_REGEXP;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -463,7 +466,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets include regex pattern that participate in CDC.
+     * Sets include regex pattern that participates in CDC.
      *
      * @param includeTemplate Include regex template.
      * @return {@code this} for chaining.
@@ -475,7 +478,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets exclude regex pattern that participate in CDC.
+     * Sets exclude regex pattern that participates in CDC.
      *
      * @param excludeTemplate Exclude regex template.
      * @return {@code this} for chaining.

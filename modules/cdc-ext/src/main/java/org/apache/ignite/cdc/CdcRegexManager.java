@@ -129,7 +129,7 @@ public class CdcRegexManager {
      * @return True if cache name matches include pattern and doesn't match exclude pattern.
      */
     private boolean matchesFilters(String cacheName) {
-        return includeFilter.matcher(cacheName).matches() && excludeFilter.matcher(cacheName).matches();
+        return includeFilter.matcher(cacheName).matches() && !excludeFilter.matcher(cacheName).matches();
     }
 
     /**
@@ -137,12 +137,17 @@ public class CdcRegexManager {
      *
      * @param includeTemplate Include regex template.
      * @param excludeTemplate Exclude regex template.
-     * @throws PatternSyntaxException If the template's syntax is invalid
+     * @throws IgniteException If the template's syntax is invalid
      */
     public void compileRegexp(String includeTemplate, String excludeTemplate) {
-        includeFilter = Pattern.compile(includeTemplate);
+        try {
+            includeFilter = Pattern.compile(includeTemplate);
 
-        excludeFilter = Pattern.compile(excludeTemplate);
+            excludeFilter = Pattern.compile(excludeTemplate);
+        }
+        catch (PatternSyntaxException e) {
+            throw new IgniteException("Invalid cache regexp template.", e);
+        }
     }
 
     /**

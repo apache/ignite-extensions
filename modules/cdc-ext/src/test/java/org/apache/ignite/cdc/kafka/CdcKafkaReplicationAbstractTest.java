@@ -96,7 +96,7 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
-        return startActivePassiveCdcWithFilters(cache, null, null);
+        return startActivePassiveCdcWithFilters(cache, "", "");
     }
 
     /** {@inheritDoc} */
@@ -141,7 +141,7 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
 
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActiveActiveCdc() {
-        return startActiveActiveCdcWithFilters(null, null);
+        return startActiveActiveCdcWithFilters("", "");
     }
 
     /** {@inheritDoc} */
@@ -278,8 +278,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
      * @param topic Kafka topic name.
      * @param metadataTopic Metadata topic name.
      * @param cache Cache name to stream to kafka.
-     * @param includeTemplate Include regex templates for cache names.
-     * @param excludeTemplate Exclude regex templates for cache names.
+     * @param includeTemplate Include regex template for cache names.
+     * @param excludeTemplate Exclude regex template for cache names.
      * @return Future for Change Data Capture application.
      */
     protected IgniteInternalFuture<?> igniteToKafka(
@@ -321,8 +321,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
      * @param cacheName Cache name.
      * @param igniteCfg Ignite configuration.
      * @param dest Destination Ignite cluster.
-     * @param includeTemplate Include regex templates for cache names.
-     * @param excludeTemplate Exclude regex templates for cache names.
+     * @param includeTemplate Include regex template for cache names.
+     * @param excludeTemplate Exclude regex template for cache names.
      * @return Future for runed {@link KafkaToIgniteCdcStreamer}.
      */
     protected IgniteInternalFuture<?> kafkaToIgnite(

@@ -1,9 +1,6 @@
 package org.apache.ignite.cdc;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.IntStream;
 
 import org.apache.ignite.IgniteCache;
@@ -34,7 +31,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class RegexFiltersTest extends GridCommonAbstractTest {
+public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteEx src;
@@ -61,10 +58,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
     private static final String REGEX_MATCHING_CACHE = "regex-cache";
 
     /** */
-    private static final String REGEX_INCLUDE_PATTERN = "regex.*";
-
-    /** */
-    private String includeTemplates;
+    private static final String REGEX_PATTERN = "regex.*";
 
     /** */
     private static final int KEYS_CNT = 1000;
@@ -96,8 +90,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
      *
      * @param srcCfg Ignite source node configuration.
      * @param cache Cache name to stream to Ignite2Ignite.
-     * @param includeTemplate Include cache templates.
-     * @param excludeTemplates Exclude cache templates.
+     * @param includeTemplate Include cache template.
      * @return Future for Change Data Capture application.
      */
     private IgniteInternalFuture<?> startCdc(IgniteConfiguration srcCfg,
@@ -114,7 +107,6 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
             streamer.setIncludeTemplate(includeTemplate);
-            streamer.setExcludeTemplate("");
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
@@ -201,7 +193,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
         dest.cluster().state(ClusterState.ACTIVE);
 
         //Start CDC only with 'test-cache' in config and cache masks (regex filters)
-        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN);
+        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, REGEX_PATTERN);
 
         IgniteCache<Integer, Integer> srcCache = src.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(REGEX_MATCHING_CACHE)
@@ -216,7 +208,7 @@ public class RegexFiltersTest extends GridCommonAbstractTest {
         cdc.cancel();
 
         //Restart CDC
-        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN);
+        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, REGEX_PATTERN);
 
         try {
             runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));
