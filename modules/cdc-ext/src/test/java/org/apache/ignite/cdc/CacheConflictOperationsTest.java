@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
@@ -44,9 +45,11 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -134,6 +137,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
             cachex = client.cachex(DEFAULT_CACHE_NAME);
         }
+
+        listeningLog.clearListeners();
     }
 
     /** {@inheritDoc} */
@@ -259,21 +264,39 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, 5, conflictResolveField() != null);
     }
 
-    /** Test switching debug log level for ConflictResolver during runtime */
+    /** Test switching debug log level for ConflictResolver during runtime. */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testResolveDebug() throws Exception {
+        testResolveDebug(true);
+    }
+
+    /**
+     * Test switching debug log level for ConflictResolver during runtime.
+     * Sensitive data should be hidden.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    public void testResolveDebugExcludeSensitive() throws Exception {
+        testResolveDebug(false);
+    }
+
+    /** */
+    private void testResolveDebug(boolean includeSensitive) throws IgniteCheckedException {
         String key = key("UpdateClusterUpdateReorder", otherClusterId);
 
-        LogListener lsnr = LogListener.matches("isUseNew").build();
+        String expKeyStr = includeSensitive ? key : "[sensitiveKeyHash=" + key.hashCode() + "]";
+
+        LogListener lsnr = LogListener.matches("isUseNew [key=" + expKeyStr).build();
 
         listeningLog.registerListener(lsnr);
 
         Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
 
         try {
-            putConflict(key, 1, true);
+            assertFalse(lsnr.check());
 
-            putConflict(key, 1, false);
+            put(key);
 
             assertTrue(lsnr.check());
         }
@@ -283,9 +306,57 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         lsnr.reset();
 
-        putConflict(key, 1, false);
+        put(key);
 
         assertFalse(lsnr.check());
+    }
+
+    /** Test log of resolving error. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    public void testResolveError() throws Exception {
+        testResolveError("TestErrorLoggingINCLUDE", true);
+    }
+
+    /** Test log of resolving error with hidden sensitive data. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
+    public void testResolveErrorExcludeSensitive() throws Exception {
+        testResolveError("TestErrorLoggingEXCLUDE", false);
+    }
+
+    /** */
+    private void testResolveError(String keyVal, boolean includeSensitive) throws IgniteCheckedException {
+        Assume.assumeTrue("Should not run with enabled field", conflictResolveField() == null);
+
+        String key = key(keyVal, otherClusterId);
+
+        String expKeyStr = includeSensitive ? key : "[sensitiveKeyHash=" + key.hashCode() + "]";
+
+        LogListener warnLsnr = LogListener.matches("Field-based conflicts resolving is not enabled: key=" +
+            expKeyStr).build();
+
+        LogListener errLsnr = LogListener.matches("Conflict can't be resolved, update ignored " +
+            "[key=" + expKeyStr + ", fromCluster=" + otherClusterId + ", toCluster=" + SECOND_CLUSTER_ID + "]").build();
+
+        listeningLog.registerListener(warnLsnr);
+        listeningLog.registerListener(errLsnr);
+
+        Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
+
+        try {
+            put(key);
+            assertFalse(warnLsnr.check());
+            assertFalse(errLsnr.check());
+
+            putConflict(key, 1, false);
+
+            assertTrue(warnLsnr.check());
+            assertTrue(errLsnr.check());
+        }
+        finally {
+            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
+        }
     }
 
     /** */
