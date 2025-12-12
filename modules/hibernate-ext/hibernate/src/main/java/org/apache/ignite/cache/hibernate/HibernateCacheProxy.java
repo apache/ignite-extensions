@@ -101,6 +101,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache withSkipReadThrough() {
+        return delegate.get().withSkipReadThrough();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         return delegate.get().isEmpty();
     }
