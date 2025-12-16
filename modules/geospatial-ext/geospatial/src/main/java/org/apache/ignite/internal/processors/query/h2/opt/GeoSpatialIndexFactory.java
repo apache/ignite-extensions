@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexFactory;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -46,13 +45,10 @@ public class GeoSpatialIndexFactory implements IndexFactory {
             if (keyDefs.size() > 1)
                 throw DbException.getUnsupportedException("can only do one column");
 
-            if ((keyDefs.get(0).order().sortOrder() == SortOrder.DESC))
+            if (!keyDefs.get(0).ascending())
                 throw DbException.getUnsupportedException("cannot do descending");
 
-            if (keyDefs.get(0).order().nullsOrder() != null)
-                throw DbException.getUnsupportedException("cannot do nulls ordering");
-
-            if (keyDefs.get(0).idxType() != IndexKeyType.GEOMETRY)
+            if (keyDefs.get(0).indexKeyType() != IndexKeyType.GEOMETRY)
                 throw DbException.getUnsupportedException("spatial index on non-geometry column");
 
             return new GeoSpatialIndexImpl(cctx, def);
