@@ -196,7 +196,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         if (obj instanceof BinaryObject)
             return Objects.toString(obj);
 
-        return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveKeyHash=" + Objects.hashCode(obj) + ']';
+        return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveDataHash=" + Objects.hashCode(obj) + ']';
     }
 
     /** */

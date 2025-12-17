@@ -285,7 +285,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private void testResolveDebug(boolean includeSensitive) throws IgniteCheckedException {
         String key = key("UpdateClusterUpdateReorder", otherClusterId);
 
-        String expKeyStr = includeSensitive ? key : "[sensitiveKeyHash=" + key.hashCode() + "]";
+        String expKeyStr = includeSensitive ? key : "[sensitiveDataHash=" + key.hashCode() + "]";
 
         LogListener lsnr = LogListener.matches("isUseNew [key=" + expKeyStr).build();
 
@@ -331,7 +331,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         String key = key(keyVal, otherClusterId);
 
-        String expKeyStr = includeSensitive ? key : "[sensitiveKeyHash=" + key.hashCode() + "]";
+        String expKeyStr = includeSensitive ? key : "[sensitiveDataHash=" + key.hashCode() + "]";
 
         LogListener warnLsnr = LogListener.matches("Field-based conflicts resolving is not enabled: key=" +
             expKeyStr).build();
