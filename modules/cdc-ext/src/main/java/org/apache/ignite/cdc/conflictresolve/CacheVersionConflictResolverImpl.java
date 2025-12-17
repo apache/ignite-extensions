@@ -232,7 +232,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
     private Object debugValue(String keyStr, Object val) {
         try {
-            return value(val);
+            return safeToString(value(val));
         }
         catch (Exception e) {
             log.error("Can't resolve field value " +

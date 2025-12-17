@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -288,27 +289,48 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         String expKeyStr = includeSensitive ? key : "[sensitiveDataHash=" + key.hashCode() + "]";
 
         LogListener lsnr = LogListener.matches("isUseNew [key=" + expKeyStr).build();
-
         listeningLog.registerListener(lsnr);
+
+        LogListener resolveFieldLsnr = LogListener.matches(newValueString(includeSensitive)).build();
+        listeningLog.registerListener(resolveFieldLsnr);
 
         Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
 
         try {
             assertFalse(lsnr.check());
+            assertFalse(resolveFieldLsnr.check());
 
             put(key);
 
             assertTrue(lsnr.check());
+            assertTrue(resolveFieldLsnr.check());
         }
         finally {
             Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
         }
 
         lsnr.reset();
+        resolveFieldLsnr.reset();
 
         put(key);
 
         assertFalse(lsnr.check());
+        assertFalse(resolveFieldLsnr.check());
+    }
+
+    /** Gets expected conflict resolvable field output in log. */
+    private String newValueString(boolean includeSensitive) {
+        String newValExpStr = null;
+
+        if (conflictResolveField() != null) {
+            // Incremented in ConflictResolvableTestData#create during put.
+            long expReqId = ConflictResolvableTestData.REQUEST_ID.get() + 1;
+
+            newValExpStr = includeSensitive ? String.valueOf(expReqId) : "[sensitiveDataHash=" +
+                Objects.hashCode(expReqId);
+        }
+
+        return "newFieldVal=" + newValExpStr;
     }
 
     /** Test log of resolving error. */
