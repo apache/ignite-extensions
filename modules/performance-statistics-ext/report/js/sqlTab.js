@@ -21,7 +21,7 @@ $('#sqlStatisticsTable').bootstrapTable({
     columns: [{
         field: 'text',
         title: 'Query text',
-	    class: 'preformatted-text',
+        class: 'preformatted-text',
         sortable: true
     }, {
         field: 'count',
@@ -85,7 +85,7 @@ $('#topSlowSqlTable').bootstrapTable({
     columns: [{
         field: 'text',
         title: 'Query text',
-	    class: 'preformatted-text',
+        class: 'preformatted-text',
         sortable: true
     }, {
         field: 'duration',
@@ -180,7 +180,7 @@ function buildPropertiesSubTable($el, properties) {
         }, {
             field: 'value',
             title: 'Property value',
-    	    class: 'preformatted-text',
+            class: 'preformatted-text',
             sortable: true
         }, {
             field: 'count',
