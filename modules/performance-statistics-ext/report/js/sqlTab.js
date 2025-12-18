@@ -21,6 +21,7 @@ $('#sqlStatisticsTable').bootstrapTable({
     columns: [{
         field: 'text',
         title: 'Query text',
+	    class: 'preformatted-text',
         sortable: true
     }, {
         field: 'count',
@@ -41,6 +42,10 @@ $('#sqlStatisticsTable').bootstrapTable({
     }, {
         field: 'failures',
         title: 'Failures count',
+        sortable: true
+    }, {
+        field: 'avg',
+        title: 'Avg. time',
         sortable: true
     }],
     data: prepareSqlTableData(),
@@ -66,7 +71,8 @@ function prepareSqlTableData() {
             "physicalReads": sqlData["physicalReads"],
             "failures": sqlData["failures"],
             "properties": sqlData["properties"],
-            "rows": sqlData["rows"]
+            "rows": sqlData["rows"],
+            "avg": (sqlData["duration"] / sqlData["count"]).toFixed(3)
         });
     });
 
@@ -79,6 +85,7 @@ $('#topSlowSqlTable').bootstrapTable({
     columns: [{
         field: 'text',
         title: 'Query text',
+	    class: 'preformatted-text',
         sortable: true
     }, {
         field: 'duration',
@@ -173,6 +180,7 @@ function buildPropertiesSubTable($el, properties) {
         }, {
             field: 'value',
             title: 'Property value',
+    	    class: 'preformatted-text',
             sortable: true
         }, {
             field: 'count',
