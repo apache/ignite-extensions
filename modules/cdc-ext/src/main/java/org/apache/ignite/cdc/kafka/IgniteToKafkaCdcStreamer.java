@@ -336,7 +336,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, Path cdcDir) {
+    @Override public void start(MetricRegistry reg, Path cdcDir, List<String> cacheNames) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -354,6 +354,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
             .collect(Collectors.toSet());
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
+
+        regexManager.match(cacheNames);
 
         regexManager.getSavedCaches().stream()
                 .map(CU::cacheId)
