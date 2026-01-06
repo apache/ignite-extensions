@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -73,13 +74,23 @@ public class CdcRegexManager {
      * @return True if cache name matches user's regexp patterns.
      */
     public boolean match(String cacheName) {
-        return matchAndSave(cacheName);
+        return matchAndSave(Collections.singletonList(cacheName));
     }
 
     /**
-     * Get actual list of names of caches added by regex templates from cache list file.
-     * Caches that added to replication through regex templates during the work of CDC application,
-     * are saved to file so they can be restored after application restart.
+     * Finds and processes match between a set of cache names and user's regexp patterns.
+     *
+     * @param cacheNames Cache names.
+     * @return True if cache name matches user's regexp patterns.
+     */
+    public boolean match(List<String> cacheNames) {
+        return matchAndSave(cacheNames);
+    }
+
+    /**
+     * Get actual list of names of caches added by regex templates from cache list file.<br/>
+     * All new caches started during the work of CDC application are saved to file so they can be added to CDC later if
+     * appropriate regex filter is set.
      *
      * @return Caches names list.
      */
@@ -95,31 +106,34 @@ public class CdcRegexManager {
     }
 
     /**
-     * Finds match between cache name and user's regex templates.
-     * If match is found, saves cache name to file.
+     * Finds match between caches names and user's regex templates and saves cache name to a file.
      *
-     * @param cacheName Cache name.
+     * @param cacheNames Cache names.
      * @return True if cache name matches user's regexp patterns.
      */
-    private boolean matchAndSave(String cacheName) {
-        if (matchesFilters(cacheName)) {
-            try {
-                List<String> caches = loadCaches();
+    private boolean matchAndSave(List<String> cacheNames) {
+        try {
+            List<String> caches = loadCaches();
 
-                caches.add(cacheName);
+            caches.addAll(cacheNames);
 
-                save(caches);
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
-
-            if (log.isInfoEnabled())
-                log.info("Cache has been added to replication [cacheName=" + cacheName + "]");
-
-            return true;
+            save(caches);
         }
-        return false;
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+
+        List<String> matchingCaches = cacheNames.stream()
+            .filter(this::matchesFilters)
+            .collect(Collectors.toList());
+
+        if (matchingCaches.isEmpty())
+            return false;
+
+        if (log.isInfoEnabled())
+            log.info("Cache(s) has been added to replication [cacheNames=" + matchingCaches + "]");
+
+        return true;
     }
 
     /**
