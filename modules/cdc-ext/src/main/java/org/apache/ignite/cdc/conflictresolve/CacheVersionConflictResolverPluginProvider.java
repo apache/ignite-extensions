@@ -20,6 +20,10 @@ package org.apache.ignite.cdc.conflictresolve;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
@@ -41,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * @see CacheVersionConflictResolver
  */
 public class CacheVersionConflictResolverPluginProvider<C extends PluginConfiguration> implements PluginProvider<C> {
+    /** */
+    public static final String DFLT_REGEXP = "";
+
     /** Cluster id. */
     private byte clusterId;
 
@@ -64,6 +71,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** Custom conflict resolver. */
     private CacheVersionConflictResolver resolver;
+
+    /** Include regex templates for cache names. */
+    private String includeTemplate = DFLT_REGEXP;
+
+    /** Exclude regex templates for cache names. */
+    private String excludeTemplate = DFLT_REGEXP;
 
     /** Log. */
     private IgniteLogger log;
@@ -98,7 +111,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
-        if (caches.contains(cacheName)) {
+        if (caches.contains(cacheName) || matchesFilters(cacheName)) {
             log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
@@ -144,6 +157,16 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
         this.resolver = resolver;
     }
 
+    /** @param includeTemplate Include regex template */
+    public void setIncludeTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
+    }
+
+    /** @param excludeTemplate Exclude regex template */
+    public void setExcludeTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
+    }
+
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
         ((IgniteEx)ctx.grid()).context().cache().context().versions().dataCenterId(clusterId);
@@ -177,5 +200,25 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** {@inheritDoc} */
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
+    }
+
+    /**
+     * Matches cache name with compiled regex patterns.
+     *
+     * @param cacheName Cache name.
+     * @return True if cache name matches include pattern and doesn't match exclude pattern.
+     * @throws IgniteException If the template's syntax is invalid
+     */
+    private boolean matchesFilters(String cacheName) {
+        try {
+            boolean matchesInclude = Pattern.compile(includeTemplate).matcher(cacheName).matches();
+
+            boolean matchesExclude = Pattern.compile(excludeTemplate).matcher(cacheName).matches();
+
+            return matchesInclude && !matchesExclude;
+        }
+        catch (PatternSyntaxException e) {
+            throw new IgniteException("Invalid cache regexp template.", e);
+        }
     }
 }
