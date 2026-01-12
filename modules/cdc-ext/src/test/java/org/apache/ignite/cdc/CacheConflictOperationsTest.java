@@ -269,7 +269,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testResolveDebug() throws Exception {
-        testResolveDebug(true);
+        checkResolveDebug(true);
     }
 
     /**
@@ -279,12 +279,12 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testResolveDebugExcludeSensitive() throws Exception {
-        testResolveDebug(false);
+        checkResolveDebug(false);
     }
 
     /** */
-    private void testResolveDebug(boolean includeSensitive) throws IgniteCheckedException {
-        String key = key("UpdateClusterUpdateReorder", otherClusterId);
+    private void checkResolveDebug(boolean includeSensitive) {
+        String key = key("test-debug-key", otherClusterId);
 
         String expKeyStr = includeSensitive ? key : "[sensitiveDataHash=" + key.hashCode() + "]";
 
@@ -330,25 +330,25 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
                 Objects.hashCode(expReqId);
         }
 
-        return "newFieldVal=" + newValExpStr;
+        return "newField=" + newValExpStr;
     }
 
     /** Test log of resolving error. */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testResolveError() throws Exception {
-        testResolveError("TestErrorLoggingINCLUDE", true);
+        checkResolveError("test-non-sensitive-key", true);
     }
 
     /** Test log of resolving error with hidden sensitive data. */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
     public void testResolveErrorExcludeSensitive() throws Exception {
-        testResolveError("TestErrorLoggingEXCLUDE", false);
+        checkResolveError("test-sensitive-key", false);
     }
 
     /** */
-    private void testResolveError(String keyVal, boolean includeSensitive) throws IgniteCheckedException {
+    private void checkResolveError(String keyVal, boolean includeSensitive) throws IgniteCheckedException {
         Assume.assumeTrue("Should not run with enabled field", conflictResolveField() == null);
 
         String key = key(keyVal, otherClusterId);
