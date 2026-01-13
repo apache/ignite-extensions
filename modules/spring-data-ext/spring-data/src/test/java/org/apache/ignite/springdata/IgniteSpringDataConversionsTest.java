@@ -18,6 +18,7 @@
 package org.apache.ignite.springdata;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.CustomConvertersApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
@@ -59,6 +60,23 @@ public class IgniteSpringDataConversionsTest extends GridCommonAbstractTest {
         Person person = new Person("some_name", "some_surname", LocalDateTime.now());
 
         assertNull(savePerson(person).getCreatedAt());
+    }
+
+    /**  */
+    @Test
+    public void testConvertionForNullable() {
+        init(ApplicationConfiguration.class);
+
+        Person person = new Person("some_name", null, LocalDateTime.now());
+        int id = 1;
+
+        assertEquals(person, repo.save(id, person));
+        assertTrue(repo.existsById(id));
+
+        List<Person> rows = repo.queryWithRowToEntityConversion();
+
+        assertEquals(1, rows.size());
+        assertEquals(person, rows.get(0));
     }
 
     /**
