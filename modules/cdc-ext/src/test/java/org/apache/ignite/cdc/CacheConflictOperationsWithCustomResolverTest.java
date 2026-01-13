@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictR
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /** Cache conflict operations test with a custom resolver. */
@@ -53,9 +54,30 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
     /** {@inheritDoc} */
     @Test
+    @Ignore("LwwConflictResolver does not have logging.")
     @Override public void testResolveDebug() throws Exception {
-        // LWW strategy resolves conflicts in unexpected way at versioned resolve test.
-        GridTestUtils.assertThrows(log, super::testResolveDebug, AssertionError.class, "");
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("LwwConflictResolver does not have logging.")
+    @Override public void testResolveDebugExcludeSensitive() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("LwwConflictResolver does not have logging.")
+    @Override public void testResolveError() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("LwwConflictResolver does not have logging.")
+    @Override public void testResolveErrorExcludeSensitive() throws Exception {
+        // No-op.
     }
 
     /**

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc.conflictresolve;
 
+import java.util.Objects;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -113,7 +115,6 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param <V> Key type.
      * @return {@code True} is should use new entry.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
@@ -147,26 +148,55 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     return value(oldVal).compareTo(value(newVal)) < 0;
                 }
                 catch (Exception e) {
-                    log.error(
-                        "Error while resolving replication conflict. [field=" + conflictResolveField + ", key=" + newEntry.key() + ']',
-                        e
-                    );
+                    log.error("Error during field-based conflicts resolving " +
+                            "[key=" + safeKeyToString(newEntry) +
+                            ", field=" + conflictResolveField + ']',
+                        e);
                 }
             }
+            else {
+                log.warning(
+                    "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
+                        "[key=" + safeKeyToString(newEntry) +
+                        ", oldValIsNull=" + (oldVal == null) +
+                        ", newValIsNull=" + (newVal == null) + ']');
+            }
         }
+        else
+            log.warning("Field-based conflicts resolving is not enabled: key=" + safeKeyToString(newEntry));
 
         log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
-            "[key=" + newEntry.key() + ", fromCluster=" + newEntry.dataCenterId() + ", toCluster=" + oldEntry.dataCenterId() + ']');
+            "[key=" + safeKeyToString(newEntry) +
+            ", fromCluster=" + newEntry.dataCenterId() +
+            ", toCluster=" + oldEntry.dataCenterId() + ']');
 
         // Ignoring update.
         return false;
     }
 
     /** @return Conflict resolve field value. */
-    protected Comparable value(Object val) {
+    protected <T> Comparable<T> value(Object val) {
         return (val instanceof BinaryObject)
             ? ((BinaryObject)val).field(conflictResolveField)
             : U.field(val, conflictResolveField);
+    }
+
+    /** @return Sensitive-safe string representation of an entry key. */
+    private static <K, V> String safeKeyToString(GridCacheVersionedEntryEx<K, V> entry) {
+        return safeToString(entry.key());
+    }
+
+    /**
+     * @param obj Object.
+     *
+     * @return Sensitive-safe string representation of an object.
+     * @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
+     */
+    private static String safeToString(Object obj) {
+        if (obj instanceof BinaryObject)
+            return Objects.toString(obj);
+
+        return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveDataHash=" + Objects.hashCode(obj) + ']';
     }
 
     /** */
@@ -179,32 +209,39 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
         Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
 
+        String keyStr = safeKeyToString(newEntry);
+
         if (oldVal != null)
-            oldVal = debugValue(oldVal);
+            oldVal = debugValue(keyStr, oldVal);
 
         if (newVal != null)
-            newVal = debugValue(newVal);
+            newVal = debugValue(keyStr, newVal);
 
-        log.debug("isUseNew[" +
-            "start=" + oldEntry.isStartVersion() +
+        log.debug("isUseNew [" +
+            "key=" + keyStr +
+            ", start=" + oldEntry.isStartVersion() +
             ", oldVer=" + oldEntry.version() +
             ", newVer=" + newEntry.version() +
             ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
             ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
-            ", old=" + oldVal +
-            ", new=" + newVal +
+            ", oldResolveField=" + oldVal +
+            ", newResolveField=" + newVal +
             ", res=" + useNew + ']');
     }
 
     /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
-    private Object debugValue(Object val) {
+    private Object debugValue(String keyStr, Object val) {
         try {
-            return value(val);
+            return safeToString(value(val));
         }
         catch (Exception e) {
-            log.debug("Can't resolve field value [field=" + conflictResolveField + ", val=" + val + ']');
+            log.error("Can't resolve field value " +
+                    "[key=" + keyStr +
+                    ", field=" + conflictResolveField +
+                    ", val=" + safeToString(val) + ']',
+                e);
 
-            return val;
+            return null;
         }
     }
 
