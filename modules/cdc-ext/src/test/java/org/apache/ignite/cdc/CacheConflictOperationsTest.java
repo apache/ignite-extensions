@@ -330,7 +330,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
                 Objects.hashCode(expReqId);
         }
 
-        return "newField=" + newValExpStr;
+        return "newResolveField=" + newValExpStr;
     }
 
     /** Test log of resolving error. */
@@ -364,21 +364,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         listeningLog.registerListener(warnLsnr);
         listeningLog.registerListener(errLsnr);
 
-        Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.DEBUG);
+        put(key);
+        assertFalse(warnLsnr.check());
+        assertFalse(errLsnr.check());
 
-        try {
-            put(key);
-            assertFalse(warnLsnr.check());
-            assertFalse(errLsnr.check());
+        putConflict(key, 1, false);
 
-            putConflict(key, 1, false);
-
-            assertTrue(warnLsnr.check());
-            assertTrue(errLsnr.check());
-        }
-        finally {
-            Configurator.setLevel(CacheVersionConflictResolverImpl.class.getName(), Level.INFO);
-        }
+        assertTrue(warnLsnr.check());
+        assertTrue(errLsnr.check());
     }
 
     /** */

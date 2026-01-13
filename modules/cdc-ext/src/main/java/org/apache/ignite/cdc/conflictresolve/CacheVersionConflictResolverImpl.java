@@ -224,8 +224,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             ", newVer=" + newEntry.version() +
             ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
             ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
-            ", oldField=" + oldVal +
-            ", newField=" + newVal +
+            ", oldResolveField=" + oldVal +
+            ", newResolveField=" + newVal +
             ", res=" + useNew + ']');
     }
 
