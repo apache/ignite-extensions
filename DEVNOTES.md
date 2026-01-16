@@ -71,11 +71,11 @@ of the Apache Software Foundation release process for better understanding the w
    git push origin release/ignite-aws-ext-1.0.0
    ```
 
-- Update Extension parent reference version and the extension module version using the `scripts/update-versions.sh`.
+- Update Extension parent reference version and the extension module version using the `scripts/vote_\[git\]_update_versions.sh`.
 
    ```shell
-   # Usage: scripts/update-versions.sh [<ignite-parent-version>] <module-path> <module-release-version>
-   scripts/update-versions.sh [2.13.0] modules/asw-ext/ 1.0.0
+   # Usage: scripts/vote_\[git\]_update_versions.sh [<ignite-parent-version>] <module-path> <module-release-version>
+   scripts/vote_\[git\]_update_versions.sh [2.13.0] modules/asw-ext/ 1.0.0
    ```
   
 - Run the [Extension Prepare Release Candidate][7] GitHub Action using the release branch as job source 
