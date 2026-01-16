@@ -27,6 +27,8 @@
     <bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean">
         <property name="configuration">
             <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+                <property name="localHost" value="127.0.0.1"/>
+
                 <property name="peerClassLoadingEnabled" value="true"/>
                 <property name="igniteInstanceName" value="testGrid"/>
 

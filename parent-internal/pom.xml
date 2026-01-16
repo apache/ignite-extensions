@@ -35,13 +35,14 @@
     <version>1</version>
 
     <properties>
-        <spring-boot.version>3.2.12</spring-boot.version>
-        <spring.data.version>3.2.12</spring.data.version>
-        <spring61.version>6.1.15</spring61.version>
+        <spring-boot.version>3.5.9</spring-boot.version>
+        <spring.data.version>3.5.7</spring.data.version>
+        <spring6.version>6.2.15</spring6.version>
         <activemq.version>5.12.0</activemq.version>
         <aspectj.version>1.8.13</aspectj.version>
         <embedded.postgres.version>2.0.3</embedded.postgres.version>
         <commons.dbcp2.version>2.13.0</commons.dbcp2.version>
+        <commons.lang3.version>3.20.0</commons.lang3.version>
 
         <!--
             NOTE: The dependency versions below must be changed in the release branch up to
