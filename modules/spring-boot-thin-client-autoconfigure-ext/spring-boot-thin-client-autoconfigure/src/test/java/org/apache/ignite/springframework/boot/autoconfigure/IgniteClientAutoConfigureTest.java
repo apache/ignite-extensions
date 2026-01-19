@@ -38,7 +38,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests {@link IgniteClientAutoConfiguration} feature. */
 @ExtendWith(SpringExtension.class)
@@ -81,7 +80,7 @@ public class IgniteClientAutoConfigureTest {
 
     /** Tests that Ignite node start without explicit configuration. */
     @Test
-    public void testIgniteClientStarts() throws Exception {
+    public void testIgniteClientStarts() {
         contextRunner
             .withPropertyValues("ignite-client.addresses=" + DEFAULT_ADDR)
             .run(this::checkContext);
@@ -89,7 +88,7 @@ public class IgniteClientAutoConfigureTest {
 
     /** Tests that Ignite node will use configuration provided in {@link BeanFactory}. */
     @Test
-    public void testIgniteClientUseProvidedConfiguration() throws Exception {
+    public void testIgniteClientUseProvidedConfiguration() {
         contextRunner
             .withBean(ClientConfiguration.class, () -> new ClientConfiguration().setAddresses(DEFAULT_ADDR))
             .run(this::checkContext);
@@ -97,7 +96,7 @@ public class IgniteClientAutoConfigureTest {
 
     /** Tests that Spring will use {@link IgniteClientConfigurer} to customize {@link ClientConfiguration}. */
     @Test
-    public void testIgniteClientConfigurer() throws Exception {
+    public void testIgniteClientConfigurer() {
         contextRunner
             .withBean(IgniteClientConfigurer.class, () -> cfg -> cfg.setAddresses(DEFAULT_ADDR))
             .run(this::checkContext);
@@ -108,7 +107,7 @@ public class IgniteClientAutoConfigureTest {
      * provided by {@link IgniteClientConfigurer}.
      */
     @Test
-    public void testApplicationPropertiesOverridesConfigurer() throws Exception {
+    public void testApplicationPropertiesOverridesConfigurer() {
         contextRunner
             .withPropertyValues("ignite-client.addresses=" + DEFAULT_ADDR)
             .withBean(IgniteClientConfigurer.class,
@@ -130,6 +129,7 @@ public class IgniteClientAutoConfigureTest {
 
         IgniteClient cli = context.getBean(IgniteClient.class);
 
-        assertTrue(CACHES.containsAll(cli.cacheNames()));
+        assertThat(cli.cacheNames())
+            .containsExactlyInAnyOrderElementsOf(CACHES);
     }
 }
