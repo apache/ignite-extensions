@@ -69,19 +69,19 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring61.version}</version>
+            <version>${spring6.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
-            <version>${spring61.version}</version>
+            <version>${spring6.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
-            <version>${spring61.version}</version>
+            <version>${spring6.version}</version>
         </dependency>
 
         <dependency>

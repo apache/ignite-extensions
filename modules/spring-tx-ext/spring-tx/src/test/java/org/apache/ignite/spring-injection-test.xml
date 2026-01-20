@@ -38,6 +38,12 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="txSerializableEnabled" value="false"/>
+            </bean>
+        </property>
+
         <property name="igniteInstanceName" value="springInjectionTest"/>
     </bean>
 </beans>
