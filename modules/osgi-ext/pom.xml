@@ -41,6 +41,7 @@
 
     <modules>
         <module>osgi</module>
+        <module>osgi-blueprint</module>
         <module>osgi-karaf</module>
     </modules>
 
