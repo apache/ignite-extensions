@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.performancestatistics;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -62,6 +65,7 @@ import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -256,8 +260,10 @@ public class PerformanceStatisticsReportSelfTest {
 
     /** */
     @Test
-    public void testSystemViewHandler() {
-        SystemViewHandler sysViewHnd = new SystemViewHandler();
+    public void testSystemViewHandler() throws IOException {
+        Path outDir = Files.createTempDirectory("sys-view-test");
+
+        SystemViewHandler sysViewHnd = new SystemViewHandler(outDir);
 
         int nodesNumber = 10;
         int viewsNumber = 10;
@@ -278,22 +284,32 @@ public class PerformanceStatisticsReportSelfTest {
             }
         }
 
-        JsonNode res = sysViewHnd.results().get("systemView");
+        JsonNode res = sysViewHnd.results().get("systemViewMeta");
+        assertNotNull(res);
 
-        for (int id = 0; id < nodesNumber; id++) {
-            UUID nodeId = new UUID(0, id);
+        for (int i = 0; i < viewsNumber; i++) {
+            Path viewDir = outDir.resolve("view" + i);
 
-            JsonNode nodeRes = res.get(nodeId.toString());
+            JsonNode meta = MAPPER.readTree(viewDir.resolve("meta.json").toFile());
 
-            for (int i = 0; i < viewsNumber; i++) {
-                ObjectNode view = (ObjectNode)nodeRes.get("view" + i);
+            ArrayNode schemaNode = (ArrayNode)meta.get("columns");
 
-                ArrayNode schemaNode = (ArrayNode)view.get("schema");
+            assertEquals(schema.get(0), schemaNode.get(0).asText());
+            assertEquals(schema.get(1), schemaNode.get(1).asText());
 
-                assertEquals(schemaNode.get(0).asText(), schema.get(0));
-                assertEquals(schemaNode.get(1).asText(), schema.get(1));
+            ObjectNode nodesNode = (ObjectNode)meta.get("nodes");
 
-                ArrayNode rowNode = (ArrayNode)view.get("data").get(0);
+            for (int id = 0; id < nodesNumber; id++) {
+                UUID nodeId = new UUID(0, id);
+                String nodeIdStr = nodeId.toString();
+
+                assertEquals(1, nodesNode.get(nodeIdStr).asInt());
+
+                Path chunkPath = viewDir.resolve(nodeIdStr).resolve("chunk-000000.json");
+
+                JsonNode chunk = MAPPER.readTree(chunkPath.toFile());
+
+                ArrayNode rowNode = (ArrayNode)chunk.get("rows").get(0);
 
                 assertEquals(Integer.toString(i), rowNode.get(0).asText());
                 assertEquals(Integer.toString(i), rowNode.get(1).asText());

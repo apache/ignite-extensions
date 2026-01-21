@@ -18,45 +18,117 @@
 const sysViewSearchNodesSelect = $('#sysViewSearchNodes');
 const searchViewsSelect = $('#searchViews');
 
-function generateColumns(viewName, nodeId) {
-    const keys = [];
-
-    if (nodeId === "total")
-        keys.push("viewNodeId");
-
-    const hasSchema = Object.values(REPORT_DATA['systemView']).some(nodeData => {
-        if (nodeData[viewName]) {
-            keys.push(...nodeData[viewName]['schema']);
-            return true;
-        }
-        return false;
-    });
-
-    if (!hasSchema)
-        return null;
-
-    return keys.map((key, index) => ({
-        field: index,
-        title: key,
-        sortable: true
-    }));
+function getSystemViewMeta(viewName) {
+    return `data/system-views/${viewName}/meta.json`;
 }
 
-function generateRows(viewName, nodeId) {
-    if (nodeId !== "total") {
-        const view = REPORT_DATA['systemView'][nodeId][viewName];
-        if (view)
-            return view['data'];
+function getSystemViewChunk(viewName, nodeId, chunkIdx) {
+    const chunkName = String(chunkIdx).padStart(6, '0');
+    return `data/system-views/${viewName}/${nodeId}/chunk-${chunkName}.json`;
+}
 
-        return [];
-    }
-
-    return Object.entries(REPORT_DATA['systemView']).flatMap(([nodeId, nodeData]) => {
-        if (!nodeData[viewName])
-            return [];
-
-        return nodeData[viewName]['data'].map(row => [nodeId, ...row]);
+function loadSystemViewMeta(viewName) {
+    return $.getJSON(getSystemViewMeta(viewName)).then(meta => {
+        meta.nodeOrder = Object.keys(meta.nodes).sort();
+        meta.totalCount = meta.nodeOrder.reduce((sum, nodeId) => sum + Number(meta.nodes[nodeId]), 0);
+        meta.totalSegments = buildTotalSegments(meta);
+        return meta;
     });
+}
+
+function loadSystemViewChunk(viewName, nodeId, chunkIdx) {
+    return $.getJSON(getSystemViewChunk(viewName, nodeId, chunkIdx)).then(chunk => {
+        const rows = (chunk && Array.isArray(chunk.rows)) ? chunk.rows : [];
+
+        return rows;
+    });
+}
+
+function buildTotalSegments(meta) {
+    let offset = 0;
+
+    return meta.nodeOrder.map(nodeId => {
+        const count = Number(meta.nodes[nodeId]);
+        const start = offset;
+        const end = offset + count;
+
+        offset = end;
+
+        return { nodeId, start, end };
+    }).filter(segment => segment.end > segment.start);
+}
+
+function fetchRowsForRange(viewName, nodeId, meta, start, end) {
+    if (end <= start)
+        return Promise.resolve([]);
+
+    const chunkSize = meta.chunkSize;
+    const startChunk = Math.floor(start / chunkSize);
+    const endChunk = Math.floor((end - 1) / chunkSize);
+    const chunkRequests = [];
+
+    for (let idx = startChunk; idx <= endChunk; idx++)
+        chunkRequests.push(loadSystemViewChunk(viewName, nodeId, idx));
+
+    return Promise.all(chunkRequests).then(chunks => {
+        const rows = [];
+
+        chunks.forEach((chunkRows, index) => {
+            const chunkIdx = startChunk + index;
+            const chunkStart = chunkIdx * chunkSize;
+            const sliceStart = Math.max(start, chunkStart) - chunkStart;
+            const sliceEnd = Math.min(end, chunkStart + chunkRows.length) - chunkStart;
+
+            if (sliceEnd > sliceStart)
+                rows.push(...chunkRows.slice(sliceStart, sliceEnd));
+        });
+
+        return rows;
+    });
+}
+
+function fetchTotalRows(viewName, meta, start, end) {
+    if (end <= start)
+        return Promise.resolve([]);
+
+    const requests = [];
+
+    meta.totalSegments.forEach(segment => {
+        if (end <= segment.start || start >= segment.end)
+            return;
+
+        const localStart = Math.max(start, segment.start) - segment.start;
+        const localEnd = Math.min(end, segment.end) - segment.start;
+
+        requests.push({ nodeId: segment.nodeId, localStart, localEnd });
+    });
+
+    return Promise.all(requests.map(req => {
+        return fetchRowsForRange(viewName, req.nodeId, meta, req.localStart, req.localEnd)
+            .then(rows => rows.map(row => [req.nodeId, ...row]));
+    })).then(chunks => chunks.flat());
+}
+
+function generateColumns(meta, nodeId) {
+    if (!meta || !Array.isArray(meta.columns) || meta.columns.length === 0)
+        return [];
+
+    const columns = [];
+
+    if (nodeId === "total")
+        columns.push({ field: 0, title: "nodeId", sortable: false });
+
+    meta.columns.forEach((key, index) => {
+        const field = nodeId === "total" ? index + 1 : index;
+
+        columns.push({
+            field: field,
+            title: key,
+            sortable: false
+        });
+    });
+
+    return columns;
 }
 
 function drawSystemViewsTable() {
@@ -66,22 +138,55 @@ function drawSystemViewsTable() {
     const nodeId = sysViewSearchNodesSelect.val();
     const viewName = searchViewsSelect.val();
 
-    const columns = generateColumns(viewName, nodeId);
-    const rows = generateRows(viewName, nodeId);
+    loadSystemViewMeta(viewName).then(viewMeta => {
+        const columns = generateColumns(viewMeta, nodeId);
+        const table = getOrCreateSystemViewTable(div);
+        const totalRows = nodeId === "total" ? viewMeta.totalCount : viewMeta.nodes[nodeId];
 
-    const table = document.createElement('table');
+        $(table).bootstrapTable({
+            formatNoMatches: () => `The "${viewName}" system view is empty on node "${nodeId}".`,
+            pagination: true,
+            sidePagination: "server",
+            search: false,
+            columns: columns,
+            sortOrder: 'desc',
+            ajax: function (params) {
+                const limit = params.data.limit;
+                const offset = params.data.offset;
+                const end = Math.min(offset + limit, totalRows);
 
-    table.id = 'systemViewTable';
-    div.appendChild(table);
+                if (totalRows === 0) {
+                    params.success({total: 0, rows: []});
+                    return;
+                }
 
-    $(table).bootstrapTable({
-        formatNoMatches: () => `The "${viewName}" system view is empty on node "${nodeId}".`,
-        pagination: true,
-        search: true,
-        columns: columns,
-        data: rows,
-        sortOrder: 'desc'
+                const loader = nodeId === "total"
+                    ? fetchTotalRows(viewName, viewMeta, offset, end)
+                    : fetchRowsForRange(viewName, nodeId, viewMeta, offset, end);
+
+                loader.then(rows => {
+                    console.log('[systemView] Loaded rows', {viewName, nodeId, count: rows.length});
+                    params.success({total: totalRows, rows: rows});
+                }).catch(err => {
+                    console.error('[systemView] Failed to load rows', viewName, nodeId, err);
+                    params.error(err);
+                });
+            }
+        });
     });
+}
+
+function getOrCreateSystemViewTable(div) {
+    let table = document.getElementById('systemViewTable');
+
+    if (!table) {
+        div.innerHTML = "";
+        table = document.createElement('table');
+        table.id = 'systemViewTable';
+        div.appendChild(table);
+    }
+
+    return table;
 }
 
 buildSelectNodesSystemView(sysViewSearchNodesSelect, drawSystemViewsTable);
