@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
@@ -169,7 +169,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void onTypes(Iterator<BinaryType> types) {
         types.forEachRemaining(t -> {
-            BinaryMetadata meta = ((BinaryTypeImpl)t).metadata();
+            BinaryMetadata meta = BinaryUtils.binaryMetadataFromType(t);
 
             registerBinaryMeta(binaryContext(), log, meta);
 
