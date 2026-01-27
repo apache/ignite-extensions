@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc.kafka;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -30,14 +31,16 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cdc.CdcCacheEvent;
-import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.CdcRegexManager;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.cdc.CdcConsumerEx;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -76,7 +79,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToKafkaCdcStreamer implements CdcConsumer {
+public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String EVTS_SENT_CNT = "EventsCount";
 
@@ -113,6 +116,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Count of metadata markers sent description. */
     public static final String MARKERS_SENT_CNT_DESC = "Count of metadata markers sent to Kafka";
 
+    /** */
+    public static final String DFLT_REGEXP = "";
+
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
@@ -146,6 +152,15 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** Cache names. */
     private Collection<String> caches;
+
+    /** Regexp manager. */
+    private CdcRegexManager regexManager;
+
+    /** Include regex template for cache names. */
+    private String includeTemplate = DFLT_REGEXP;
+
+    /** Exclude regex template for cache names. */
+    private String excludeTemplate = DFLT_REGEXP;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -246,15 +261,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
         cacheEvents.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
+            matchWithRegex(e.configuration().getName());
         });
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
-        });
+        caches.forEachRemaining(regexManager::deleteRegexpCacheIfPresent);
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
@@ -319,6 +332,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry reg) {
+        //No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(MetricRegistry reg, Path cdcDir, List<String> cacheNames) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -329,9 +347,19 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
+        regexManager = new CdcRegexManager(cdcDir, log);
+
         cachesIds = caches.stream()
             .map(CU::cacheId)
             .collect(Collectors.toSet());
+
+        regexManager.compileRegexp(includeTemplate, excludeTemplate);
+
+        regexManager.match(cacheNames);
+
+        regexManager.getSavedCaches().stream()
+                .map(CU::cacheId)
+                .forEach(cachesIds::add);
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -379,6 +407,19 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     }
 
     /**
+     * Finds a match between the cache name and user regex templates.
+     * If a match is found, adds the cache to replication.
+     *
+     * @param cacheName Cache name.
+     */
+    private void matchWithRegex(String cacheName) {
+        int cacheId = CU.cacheId(cacheName);
+
+        if (!cachesIds.contains(cacheId) && regexManager.match(cacheName))
+            cachesIds.add(cacheId);
+    }
+
+    /**
      * Sets topic that is used to send data to Kafka.
      *
      * @param evtTopic Kafka topic.
@@ -422,6 +463,30 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
         this.caches = caches;
+
+        return this;
+    }
+
+    /**
+     * Sets include regex pattern that participates in CDC.
+     *
+     * @param includeTemplate Include regex template.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setIncludeTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
+
+        return this;
+    }
+
+    /**
+     * Sets exclude regex pattern that participates in CDC.
+     *
+     * @param excludeTemplate Exclude regex template.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setExcludeTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
 
         return this;
     }

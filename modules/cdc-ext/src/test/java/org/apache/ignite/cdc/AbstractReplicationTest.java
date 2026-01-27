@@ -147,6 +147,18 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     public static final String IGNORED_CACHE = "ignored-cache";
 
     /** */
+    public static final String REGEX_INCLUDE_TEMPLATE_CACHE = "cdc_on_cache";
+
+    /** */
+    public static final String REGEX_EXCLUDE_TEMPLATE_CACHE = "cdc_on_excluded_cache";
+
+    /** */
+    public static final String REGEX_INCLUDE_PATTERN = "cdc_on.*";
+
+    /** */
+    public static final String REGEX_EXCLUDE_PATTERN = "cdc_on_excluded.*";
+
+    /** */
     public static final byte SRC_CLUSTER_ID = 1;
 
     /** */
@@ -200,6 +212,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             cfgPlugin1.setClusterId(clusterId);
             cfgPlugin1.setCaches(new HashSet<>(Arrays.asList(ACTIVE_PASSIVE_CACHE, ACTIVE_ACTIVE_CACHE)));
+            cfgPlugin1.setIncludeTemplate(REGEX_INCLUDE_PATTERN);
+            cfgPlugin1.setExcludeTemplate(REGEX_EXCLUDE_PATTERN);
             cfgPlugin1.setConflictResolveField("reqId");
 
             cfg.setPluginProviders(cfgPlugin1);
@@ -562,6 +576,92 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Check that caches matching regex filters in config, are added to CDC after its creation.
+     * Active/Active mode means changes made in both clusters. */
+    @Test
+    public void testActiveActiveReplicationWithRegexFilters() throws Exception {
+        createCache(srcCluster[0], ACTIVE_ACTIVE_CACHE);
+        createCache(destCluster[0], ACTIVE_ACTIVE_CACHE);
+
+        IgniteCache<Integer, ConflictResolvableTestData> srcCache = createCache(srcCluster[0], REGEX_INCLUDE_TEMPLATE_CACHE);
+        IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], REGEX_INCLUDE_TEMPLATE_CACHE);
+
+        // Even keys goes to src cluster.
+        runAsync(generateData(REGEX_INCLUDE_TEMPLATE_CACHE, srcCluster[srcCluster.length - 1],
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 == 0)));
+
+        // Odd keys goes to dest cluster.
+        runAsync(generateData(REGEX_INCLUDE_TEMPLATE_CACHE, destCluster[destCluster.length - 1],
+            IntStream.range(0, KEYS_CNT).filter(i -> i % 2 != 0)));
+
+        //Start CDC with only 'active-active-cache' in 'caches' property of CDC config
+        List<IgniteInternalFuture<?>> futs = startActiveActiveCdcWithFilters(REGEX_INCLUDE_PATTERN, REGEX_EXCLUDE_PATTERN);
+
+        try {
+            waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
+
+            runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 == 0).forEach(srcCache::remove));
+            runAsync(() -> IntStream.range(0, KEYS_CNT).filter(j -> j % 2 != 0).forEach(destCache::remove));
+
+            waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
+
+            //Shouldn't add to the replication, otherwise CDC will throw an error
+            runAsync(generateData(REGEX_EXCLUDE_TEMPLATE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+
+            assertFalse(destCluster[0].cacheNames().contains(REGEX_EXCLUDE_TEMPLATE_CACHE));
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
+    /** Check that caches matching regex filters in config, are added to CDC after its creation.
+     * Active/Passive mode means changes made only in one cluster. */
+    @Test
+    public void testActivePassiveReplicationWithRegexFilters() throws Exception {
+        //Start CDC with only 'active-active-cache' in 'caches' property of CDC config
+        List<IgniteInternalFuture<?>> futs = startActivePassiveCdcWithFilters(ACTIVE_PASSIVE_CACHE, REGEX_INCLUDE_PATTERN,
+            REGEX_EXCLUDE_PATTERN);
+
+        try {
+            createCache(destCluster[0], ACTIVE_PASSIVE_CACHE);
+
+            IgniteCache<Integer, ConflictResolvableTestData> destCache = createCache(destCluster[0], REGEX_INCLUDE_TEMPLATE_CACHE);
+
+            // Updates for "ignored-cache" should be ignored because of CDC consume configuration.
+            runAsync(generateData(IGNORED_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+            runAsync(generateData(REGEX_INCLUDE_TEMPLATE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+
+            IgniteCache<Integer, ConflictResolvableTestData> srcCache =
+                createCache(srcCluster[srcCluster.length - 1], REGEX_INCLUDE_TEMPLATE_CACHE);
+
+            waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, futs);
+
+            checkMetricsCount(KEYS_CNT);
+            checkMetrics();
+
+            IntStream.range(0, KEYS_CNT).forEach(srcCache::remove);
+
+            waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.REMOVED, futs);
+
+            checkMetrics();
+
+            assertFalse(destCluster[0].cacheNames().contains(IGNORED_CACHE));
+
+            checkMetricsCount(2 * KEYS_CNT);
+
+            //Shouldn't add to the replication, otherwise CDC will throw an error
+            runAsync(generateData(REGEX_EXCLUDE_TEMPLATE_CACHE, srcCluster[srcCluster.length - 1], IntStream.range(0, KEYS_CNT)));
+
+            assertFalse(destCluster[0].cacheNames().contains(REGEX_EXCLUDE_TEMPLATE_CACHE));
+        }
+        finally {
+            for (IgniteInternalFuture<?> fut : futs)
+                fut.cancel();
+        }
+    }
+
     /** */
     public Runnable generateData(String cacheName, IgniteEx ign, IntStream keys) {
         return () -> {
@@ -689,7 +789,16 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     protected abstract List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache);
 
     /** */
+    protected abstract List<IgniteInternalFuture<?>> startActivePassiveCdcWithFilters(String cache,
+                                                                                      String includeTemplate,
+                                                                                      String excludeTemplate);
+
+    /** */
     protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdc();
+
+    /** */
+    protected abstract List<IgniteInternalFuture<?>> startActiveActiveCdcWithFilters(String includeTemplate,
+                                                                                     String excludeTemplate);
 
     /** */
     protected abstract void checkConsumerMetrics(Function<String, Long> longMetric);

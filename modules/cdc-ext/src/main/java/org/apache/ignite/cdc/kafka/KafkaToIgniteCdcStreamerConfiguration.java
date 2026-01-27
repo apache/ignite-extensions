@@ -19,6 +19,7 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.Collection;
 import java.util.Map;
+
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -82,6 +83,12 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      * Cache names to process.
      */
     private Collection<String> caches;
+
+    /** Include regex template for cache names. */
+    private String includeTemplate;
+
+    /** Exclude regex template for cache names. */
+    private String excludeTemplate;
 
     /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
@@ -171,6 +178,34 @@ public class KafkaToIgniteCdcStreamerConfiguration {
      */
     public void setCaches(Collection<String> caches) {
         this.caches = caches;
+    }
+
+    /**
+     * @return Include regex template.
+     */
+    public String getIncludeTemplate() {
+        return includeTemplate;
+    }
+
+    /**
+     * @param includeTemplate Include regex template.
+     */
+    public void setIncludeTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
+    }
+
+    /**
+     * @return Exclude regex template
+     */
+    public String getExcludeTemplate() {
+        return excludeTemplate;
+    }
+
+    /**
+     * @param excludeTemplate Exclude regex template.
+     */
+    public void setExcludeTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
     }
 
     /** @return The maximum time to complete Kafka related requests, in milliseconds. */
