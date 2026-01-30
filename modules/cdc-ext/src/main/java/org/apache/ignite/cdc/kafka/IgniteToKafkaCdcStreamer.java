@@ -267,7 +267,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(regexManager::deleteRegexpCacheIfPresent);
+        caches.forEachRemaining(cachesIds::remove);
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
@@ -347,7 +347,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        regexManager = new CdcRegexManager(cdcDir, log);
+        regexManager = new CdcRegexManager();
 
         cachesIds = caches.stream()
             .map(CU::cacheId)
@@ -355,11 +355,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
-        regexManager.match(cacheNames);
-
-        regexManager.getSavedCaches().stream()
-                .map(CU::cacheId)
-                .forEach(cachesIds::add);
+        cacheNames.stream()
+            .filter(regexManager::matchesFilters)
+            .map(CU::cacheId)
+            .forEach(cachesIds::add);
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -415,7 +414,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     private void matchWithRegex(String cacheName) {
         int cacheId = CU.cacheId(cacheName);
 
-        if (!cachesIds.contains(cacheId) && regexManager.match(cacheName))
+        if (!cachesIds.contains(cacheId) && regexManager.matchesFilters(cacheName))
             cachesIds.add(cacheId);
     }
 
