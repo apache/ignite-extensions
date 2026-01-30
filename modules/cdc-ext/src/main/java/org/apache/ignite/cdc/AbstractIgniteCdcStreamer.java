@@ -123,7 +123,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     @Override public void start(MetricRegistry reg, Path cdcDir, List<String> cacheNames) {
         A.notEmpty(caches, "caches");
 
-        regexManager = new CdcRegexManager(cdcDir, log);
+        regexManager = new CdcRegexManager();
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
@@ -132,9 +132,8 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
-        regexManager.match(cacheNames);
-
-        regexManager.getSavedCaches().stream()
+        cacheNames.stream()
+            .filter(regexManager::matchesFilters)
             .map(CU::cacheId)
             .forEach(cachesIds::add);
 
@@ -188,13 +187,13 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     private void matchWithRegex(String cacheName) {
         int cacheId = CU.cacheId(cacheName);
 
-        if (!cachesIds.contains(cacheId) && regexManager.match(cacheName))
+        if (!cachesIds.contains(cacheId) && regexManager.matchesFilters(cacheName))
             cachesIds.add(cacheId);
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(regexManager::deleteRegexpCacheIfPresent);
+        caches.forEachRemaining(cachesIds::remove);
     }
 
     /** {@inheritDoc} */
