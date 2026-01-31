@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -336,7 +335,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, Path cdcDir, List<String> cacheNames) {
+    @Override public void start(MetricRegistry reg, List<String> cacheNames) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -472,7 +471,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @param includeTemplate Include regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setIncludeTemplate(String includeTemplate) {
+    public IgniteToKafkaCdcStreamer setIncludeCacheTemplate(String includeTemplate) {
         this.includeTemplate = includeTemplate;
 
         return this;
@@ -484,7 +483,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @param excludeTemplate Exclude regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setExcludeTemplate(String excludeTemplate) {
+    public IgniteToKafkaCdcStreamer setExcludeCacheTemplate(String excludeTemplate) {
         this.excludeTemplate = excludeTemplate;
 
         return this;

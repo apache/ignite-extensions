@@ -212,8 +212,8 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
 
             cfgPlugin1.setClusterId(clusterId);
             cfgPlugin1.setCaches(new HashSet<>(Arrays.asList(ACTIVE_PASSIVE_CACHE, ACTIVE_ACTIVE_CACHE)));
-            cfgPlugin1.setIncludeTemplate(REGEX_INCLUDE_PATTERN);
-            cfgPlugin1.setExcludeTemplate(REGEX_EXCLUDE_PATTERN);
+            cfgPlugin1.setIncludeCacheTemplate(REGEX_INCLUDE_PATTERN);
+            cfgPlugin1.setExcludeCacheTemplate(REGEX_EXCLUDE_PATTERN);
             cfgPlugin1.setConflictResolveField("reqId");
 
             cfg.setPluginProviders(cfgPlugin1);

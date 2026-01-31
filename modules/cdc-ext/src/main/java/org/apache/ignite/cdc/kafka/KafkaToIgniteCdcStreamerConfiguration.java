@@ -183,28 +183,28 @@ public class KafkaToIgniteCdcStreamerConfiguration {
     /**
      * @return Include regex template.
      */
-    public String getIncludeTemplate() {
+    public String getIncludeCacheTemplate() {
         return includeTemplate;
     }
 
     /**
      * @param includeTemplate Include regex template.
      */
-    public void setIncludeTemplate(String includeTemplate) {
+    public void setIncludeCacheTemplate(String includeTemplate) {
         this.includeTemplate = includeTemplate;
     }
 
     /**
      * @return Exclude regex template
      */
-    public String getExcludeTemplate() {
+    public String getExcludeCacheTemplate() {
         return excludeTemplate;
     }
 
     /**
      * @param excludeTemplate Exclude regex template.
      */
-    public void setExcludeTemplate(String excludeTemplate) {
+    public void setExcludeCacheTemplate(String excludeTemplate) {
         this.excludeTemplate = excludeTemplate;
     }
 

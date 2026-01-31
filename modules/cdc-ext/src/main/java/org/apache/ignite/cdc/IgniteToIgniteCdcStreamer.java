@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import org.apache.ignite.IgniteException;
@@ -62,8 +61,8 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer impleme
     private volatile boolean alive = true;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg, Path cdcDir, List<String> cacheNames) {
-        super.start(mreg, cdcDir, cacheNames);
+    @Override public void start(MetricRegistry mreg, List<String> cacheNames) {
+        super.start(mreg, cacheNames);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');
