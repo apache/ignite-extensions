@@ -294,8 +294,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
                 .setMetadataTopic(metadataTopic)
                 .setKafkaPartitions(DFLT_PARTS)
                 .setCaches(Collections.singleton(cache))
-                .setIncludeTemplate(includeTemplate)
-                .setExcludeTemplate(excludeTemplate)
+                .setIncludeCacheTemplate(includeTemplate)
+                .setExcludeCacheTemplate(excludeTemplate)
                 .setMaxBatchSize(KEYS_CNT)
                 .setOnlyPrimary(false)
                 .setKafkaProperties(kafkaProperties())
@@ -341,8 +341,8 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
         cfg.setThreadCount((toPart - fromPart) / 2);
 
         cfg.setCaches(Collections.singletonList(cacheName));
-        cfg.setIncludeTemplate(includeTemplate);
-        cfg.setExcludeTemplate(excludeTemplate);
+        cfg.setIncludeCacheTemplate(includeTemplate);
+        cfg.setExcludeCacheTemplate(excludeTemplate);
         cfg.setTopic(topic);
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);

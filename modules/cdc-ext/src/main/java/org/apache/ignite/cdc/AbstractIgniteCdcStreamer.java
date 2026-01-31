@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -120,7 +119,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, Path cdcDir, List<String> cacheNames) {
+    @Override public void start(MetricRegistry reg, List<String> cacheNames) {
         A.notEmpty(caches, "caches");
 
         regexManager = new CdcRegexManager();
@@ -285,7 +284,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
      * @param includeTemplate Include regex template
      * @return {@code this} for chaining.
      */
-    public AbstractIgniteCdcStreamer setIncludeTemplate(String includeTemplate) {
+    public AbstractIgniteCdcStreamer setIncludeCacheTemplate(String includeTemplate) {
         this.includeTemplate = includeTemplate;
 
         return this;
@@ -297,7 +296,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
      * @param excludeTemplate Exclude regex template
      * @return {@code this} for chaining.
      */
-    public AbstractIgniteCdcStreamer setExcludeTemplate(String excludeTemplate) {
+    public AbstractIgniteCdcStreamer setExcludeCacheTemplate(String excludeTemplate) {
         this.excludeTemplate = excludeTemplate;
 
         return this;

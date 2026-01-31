@@ -181,8 +181,8 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
         this.log = log.getLogger(KafkaToIgniteCdcStreamerApplier.class);
         this.metrics = metrics;
         this.streamer = streamer;
-        this.includeTemplate = streamerCfg.getIncludeTemplate();
-        this.excludeTemplate = streamerCfg.getExcludeTemplate();
+        this.includeTemplate = streamerCfg.getIncludeCacheTemplate();
+        this.excludeTemplate = streamerCfg.getExcludeCacheTemplate();
     }
 
     /** {@inheritDoc} */
