@@ -124,15 +124,15 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
         return runAsync(() -> {
             CdcConfiguration cdcCfg = new CdcConfiguration();
 
-             streamer = new TestI2IClientCdcStreamer()
+            streamer = new TestI2IClientCdcStreamer()
                 .setDestinationClientConfiguration(new ClientConfiguration()
                 .setAddresses(F.first(dest.localNode().addresses()) + ":"
                     + dest.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT)));
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
-            streamer.setIncludeTemplate(includeTemplate);
-            streamer.setExcludeTemplate(excludeTemplate);
+            streamer.setIncludeCacheTemplate(includeTemplate);
+            streamer.setExcludeCacheTemplate(excludeTemplate);
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
@@ -316,7 +316,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> srcCache.size() == KEYS_CNT, getTestTimeout()));
 
-        TestI2IClientCdcStreamer strmr = (TestI2IClientCdcStreamer) streamer;
+        TestI2IClientCdcStreamer strmr = (TestI2IClientCdcStreamer)streamer;
 
         assertEquals(1, strmr.getCacheIds().size());
 
@@ -327,6 +327,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class TestI2IClientCdcStreamer extends IgniteToIgniteClientCdcStreamer {
+        /** */
         public Set<Integer> getCacheIds() {
             return cachesIds;
         }

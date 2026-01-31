@@ -158,12 +158,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     }
 
     /** @param includeTemplate Include regex template */
-    public void setIncludeTemplate(String includeTemplate) {
+    public void setIncludeCacheTemplate(String includeTemplate) {
         this.includeTemplate = includeTemplate;
     }
 
     /** @param excludeTemplate Exclude regex template */
-    public void setExcludeTemplate(String excludeTemplate) {
+    public void setExcludeCacheTemplate(String excludeTemplate) {
         this.excludeTemplate = excludeTemplate;
     }
 
