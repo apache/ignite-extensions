@@ -57,7 +57,7 @@ public class CdcRegexManager {
             excludeFilter = Pattern.compile(excludeTemplate);
         }
         catch (PatternSyntaxException e) {
-            throw new IgniteException("Invalid cache regexp template.", e);
+            throw new IgniteException("Invalid cache regexp template", e);
         }
     }
 }

@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cdc.thin.IgniteToIgniteClientCdcStreamer;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -75,6 +76,8 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final String REGEX_EXCLUDE_PATTERN = "forbidden.*";
+
+    private static final String INVALID_PATTERN = "[aaaaaaaaaaaaa";
 
     /** */
     private static final int KEYS_CNT = 1000;
@@ -321,6 +324,26 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
         assertEquals(1, strmr.getCacheIds().size());
 
         assertTrue(strmr.getCacheIds().contains(TEST_CACHE.hashCode()));
+
+        cdc.cancel();
+    }
+
+    /**
+     * Test checks that CDC won't start if invalid cache regexp is set.
+     */
+    @Test
+    public void testInvalidRegex() throws Exception {
+        src.cluster().state(ClusterState.ACTIVE);
+
+        dest.cluster().state(ClusterState.ACTIVE);
+
+        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, INVALID_PATTERN, "");
+
+        waitForCondition(() -> cdc.error() != null, getTestTimeout());
+
+        assertEquals(IgniteException.class, cdc.error().getClass());
+
+        assertEquals("Invalid cache regexp template", cdc.error().getMessage());
 
         cdc.cancel();
     }
