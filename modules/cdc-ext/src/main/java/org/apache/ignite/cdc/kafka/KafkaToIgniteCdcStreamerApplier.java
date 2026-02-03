@@ -317,7 +317,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
             return matchesInclude && !matchesExclude;
         }
         catch (PatternSyntaxException e) {
-            throw new IgniteException("Invalid cache regexp template.", e);
+            throw new IgniteException("Invalid cache regexp template", e);
         }
     }
 
