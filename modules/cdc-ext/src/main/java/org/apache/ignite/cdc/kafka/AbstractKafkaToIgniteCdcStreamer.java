@@ -19,11 +19,11 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.AbstractCdcEventsApplier;
@@ -152,13 +152,13 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
     protected void runAppliers() {
         AtomicBoolean stopped = new AtomicBoolean();
 
-        Set<Integer> caches = new HashSet<>();
+        Set<Integer> caches = null;
 
         if (!F.isEmpty(streamerCfg.getCaches())) {
             checkCaches(streamerCfg.getCaches());
 
-            streamerCfg.getCaches().stream()
-                .map(CU::cacheId).forEach(caches::add);
+            caches = streamerCfg.getCaches().stream()
+                .map(CU::cacheId).collect(Collectors.toSet());
         }
 
         KafkaToIgniteMetadataUpdater metaUpdr = new KafkaToIgniteMetadataUpdater(
@@ -181,8 +181,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
                 caches,
                 metaUpdr,
                 stopped,
-                metrics,
-                this
+                metrics
             );
 
             addAndStart("applier-thread-" + cntr++, applier);
@@ -252,13 +251,6 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** Checks that configured caches exist in a destination cluster. */
     protected abstract void checkCaches(Collection<String> caches);
-
-    /**
-     * Get cache names from client.
-     *
-     * @return Cache names.
-     * */
-    protected abstract Collection<String> getCaches();
 
     /** */
     private void ackAsciiLogo(IgniteLogger log) {

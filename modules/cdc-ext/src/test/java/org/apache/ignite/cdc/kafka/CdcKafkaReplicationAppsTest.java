@@ -143,8 +143,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
         IgniteEx[] dest,
         int partFrom,
         int partTo,
-        String includeTemplate,
-        String excludeTemplate,
+        boolean withRegexp,
         String threadName
     ) {
         Map<String, String> params = new HashMap<>();
@@ -169,7 +168,9 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
             params.put(DISCO_PORT_RANGE, Integer.toString(discoPort + DFLT_PORT_RANGE));
         }
 
-        params.put(REPLICATED_CACHE, cacheName);
+        if (!withRegexp)
+            params.put(REPLICATED_CACHE, cacheName);
+
         params.put(TOPIC, topic);
         params.put(METADATA_TOPIC, metadataTopic);
         params.put(PROPS_PATH, kafkaPropsPath);

@@ -125,9 +125,4 @@ public class KafkaToIgniteClientCdcStreamer extends AbstractKafkaToIgniteCdcStre
 
         caches.forEach(name -> A.ensure(clusterCaches.contains(name), name + " not exists!"));
     }
-
-    /** {@inheritDoc} */
-    @Override protected Collection<String> getCaches() {
-        return client.cacheNames();
-    }
 }
