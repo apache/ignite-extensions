@@ -19,6 +19,7 @@ package org.apache.ignite.ml.common;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.runner.RunWith;
@@ -28,7 +29,7 @@ import org.junit.runners.Parameterized;
  * Basic fields and methods for the trainer tests.
  */
 @RunWith(Parameterized.class)
-public class TrainerTest {
+public abstract class AbstractTrainerTest {
     /** Number of parts to be tested. */
     private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 13};
 
@@ -1176,7 +1177,7 @@ public class TrainerTest {
      * @return Cache mock.
      */
     protected Map<Integer, double[]> getCacheMock(double[][] vals) {
-        Map<Integer, double[]> cacheMock = new HashMap<>();
+        Map<Integer, double[]> cacheMock = new LinkedHashMap<>();
 
         for (int i = 0; i < vals.length; i++) {
             double[] row = vals[i];

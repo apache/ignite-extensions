@@ -19,7 +19,7 @@ package org.apache.ignite.ml.knn;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
-public class KNNRegressionTest extends TrainerTest {
+public class KNNRegressionTest extends AbstractTrainerTest {
     /** */
     @Test
     public void testSimpleRegressionWithOneNeighbour() {
