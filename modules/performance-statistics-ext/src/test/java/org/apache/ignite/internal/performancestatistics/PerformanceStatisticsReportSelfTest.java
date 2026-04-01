@@ -22,8 +22,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.cache.Cache;
+import javax.cache.configuration.FactoryBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -36,6 +39,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTaskAdapter;
@@ -54,18 +58,21 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.lang.System.exit;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.junits.GridAbstractTest.LOCAL_IP_FINDER;
+import static org.apache.ignite.testframework.junits.GridAbstractTest.doSleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -76,6 +83,9 @@ import static org.junit.Assert.assertTrue;
 public class PerformanceStatisticsReportSelfTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
+
+    /** Cache with test third-party cache store. */
+    private static final String STORE_CACHE_NAME = "storeCache";
 
     /** @throws Exception If failed. */
     @Test
@@ -96,6 +106,11 @@ public class PerformanceStatisticsReportSelfTest {
                     .setKeyType(Integer.class.getName())
                     .setValueType(Integer.class.getName()))));
 
+            IgniteCache<Object, Object> storeCache = client.createCache(new CacheConfiguration<>(STORE_CACHE_NAME)
+                .setCacheStoreFactory(FactoryBuilder.factoryOf(TestStore.class))
+                .setReadThrough(true)
+                .setWriteThrough(true));
+
             cache.put(0, 0);
             cache.put(1, 1);
             cache.get(1);
@@ -114,6 +129,24 @@ public class PerformanceStatisticsReportSelfTest {
 
             cachex.putAllConflict(singletonMap(keyConfl, new GridCacheDrInfo(valConfl, confl)));
             cachex.removeAllConflict(singletonMap(keyConfl, confl));
+
+            for (int i = 0; i < 100; i++) {
+                storeCache.put(i, i);
+
+                if (i % 2 == 0) {
+                    storeCache.get(i);
+                    storeCache.getAll(Set.of(-i, -i - 1));
+                    storeCache.loadCache(null);
+                }
+
+                if (i % 3 == 0)
+                    storeCache.putAll(Map.of(i, i, i + 1, i + 1));
+
+                if (i % 5 == 0) {
+                    storeCache.remove(i);
+                    storeCache.removeAll(Set.of(i, i + 1));
+                }
+            }
 
             client.compute().run(() -> {
                 // No-op.
@@ -314,6 +347,31 @@ public class PerformanceStatisticsReportSelfTest {
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List list) throws IgniteException {
             return null;
+        }
+    }
+
+    /** Test delayed cache store. */
+    public static class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object load(Object key) {
+            doSleep(10);
+
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+            doSleep(10);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            doSleep(10);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            doSleep(10);
         }
     }
 }
