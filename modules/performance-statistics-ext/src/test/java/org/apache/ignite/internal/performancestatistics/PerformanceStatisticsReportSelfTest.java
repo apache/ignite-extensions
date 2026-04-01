@@ -201,7 +201,6 @@ public class PerformanceStatisticsReportSelfTest {
             assertTrue(idx.exists());
             assertTrue(dataDir.exists());
             assertTrue(dataJs.exists());
-            exit(0);
         }
         finally {
             U.delete(new File(U.defaultWorkDirectory()));
