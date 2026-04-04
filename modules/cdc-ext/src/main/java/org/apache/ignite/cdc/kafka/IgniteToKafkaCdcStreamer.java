@@ -115,9 +115,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** Count of metadata markers sent description. */
     public static final String MARKERS_SENT_CNT_DESC = "Count of metadata markers sent to Kafka";
 
-    /** */
-    public static final String DFLT_REGEXP = "";
-
     /** Default value for the flag that indicates whether entries only from primary nodes should be handled. */
     public static final boolean DFLT_IS_ONLY_PRIMARY = false;
 
@@ -156,10 +153,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     private CdcRegexManager regexManager;
 
     /** Include regex template for cache names. */
-    private String includeTemplate = DFLT_REGEXP;
+    private String includeTemplate;
 
     /** Exclude regex template for cache names. */
-    private String excludeTemplate = DFLT_REGEXP;
+    private String excludeTemplate;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -346,7 +343,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        regexManager = new CdcRegexManager();
+        regexManager = new CdcRegexManager(log);
 
         cachesIds = caches.stream()
             .map(CU::cacheId)
