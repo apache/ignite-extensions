@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 
 /**
  * Contains logic to process user's regexp patterns for CDC.
@@ -33,6 +34,17 @@ public class CdcRegexManager {
     /** Exclude regex pattern for cache names. */
     private Pattern excludeFilter;
 
+    /** Logger. */
+    private IgniteLogger log;
+
+    /**
+     *
+     * @param log Logger.
+     */
+    public CdcRegexManager(IgniteLogger log) {
+        this.log = log;
+    }
+
     /**
      * Matches cache name with compiled regex patterns.
      *
@@ -40,6 +52,13 @@ public class CdcRegexManager {
      * @return True if cache name matches include pattern and doesn't match exclude pattern.
      */
     public boolean matchesFilters(String cacheName) {
+        if (includeFilter.matcher(cacheName).matches() && excludeFilter.matcher(cacheName).matches()) {
+            log.warning("Cache name matches both include and exclude regexp templates. Will ignore to prevent " +
+                    "ambiguity [cacheName=" + cacheName + ", includeTemplate=" + includeFilter + ", excludeTemplate=" +
+                    excludeFilter + "]");
+
+            return false;
+        }
         return includeFilter.matcher(cacheName).matches() && !excludeFilter.matcher(cacheName).matches();
     }
 
@@ -52,9 +71,9 @@ public class CdcRegexManager {
      */
     public void compileRegexp(String includeTemplate, String excludeTemplate) {
         try {
-            includeFilter = Pattern.compile(includeTemplate);
+            includeFilter = includeTemplate != null ? Pattern.compile(includeTemplate) : Pattern.compile("");
 
-            excludeFilter = Pattern.compile(excludeTemplate);
+            excludeFilter = excludeTemplate != null ? Pattern.compile(excludeTemplate) : Pattern.compile("");
         }
         catch (PatternSyntaxException e) {
             throw new IgniteException("Invalid cache regexp template", e);

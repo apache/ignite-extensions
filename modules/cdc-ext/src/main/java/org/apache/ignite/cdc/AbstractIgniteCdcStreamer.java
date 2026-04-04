@@ -70,9 +70,6 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String LAST_EVT_SENT_TIME_DESC = "Timestamp of last applied event to destination cluster";
 
-    /** */
-    public static final String DFLT_REGEXP = "";
-
     /** Handle only primary entry flag. */
     private boolean onlyPrimary = DFLT_IS_ONLY_PRIMARY;
 
@@ -83,10 +80,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     private CdcRegexManager regexManager;
 
     /** Include regex template for cache names. */
-    private String includeTemplate = DFLT_REGEXP;
+    private String includeTemplate;
 
     /** Exclude regex template for cache names. */
-    private String excludeTemplate = DFLT_REGEXP;
+    private String excludeTemplate;
 
     /** Cache IDs. */
     protected Set<Integer> cachesIds;
@@ -122,7 +119,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     @Override public void start(MetricRegistry reg, List<String> cacheNames) {
         A.notEmpty(caches, "caches");
 
-        regexManager = new CdcRegexManager();
+        regexManager = new CdcRegexManager(log);
 
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
