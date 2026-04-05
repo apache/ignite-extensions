@@ -54,8 +54,8 @@ public class CdcRegexManager {
     public boolean matchesFilters(String cacheName) {
         if (includeFilter.matcher(cacheName).matches() && excludeFilter.matcher(cacheName).matches()) {
             log.warning("Cache name matches both include and exclude regexp templates. Will ignore to prevent " +
-                    "ambiguity [cacheName=" + cacheName + ", includeTemplate=" + includeFilter + ", excludeTemplate=" +
-                    excludeFilter + "]");
+                "ambiguity [cacheName=" + cacheName + ", includeTemplate=" + includeFilter + ", excludeTemplate=" +
+                excludeFilter + "]");
 
             return false;
         }
