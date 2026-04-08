@@ -329,9 +329,32 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
         dest.cluster().state(ClusterState.ACTIVE);
 
-        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, "", REGEX_EXCLUDE_PATTERN);
+        doTestCdcExclude(src.configuration(), TEST_CACHE, "", REGEX_EXCLUDE_PATTERN, REGEX_EXCLUDED_CACHE);
+    }
 
-        IgniteCache<Integer, Integer> srcCache = getCache(src, REGEX_EXCLUDED_CACHE);
+    /**
+     * Test checks whether caches matching both regex filters are excluded from CDC.
+     */
+    @Test
+    public void testCacheNameMatchesBothPatterns() throws Exception {
+        src.cluster().state(ClusterState.ACTIVE);
+
+        dest.cluster().state(ClusterState.ACTIVE);
+
+        doTestCdcExclude(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN, REGEX_INCLUDE_PATTERN, REGEX_MATCHING_CACHE_1);
+    }
+
+    /** */
+    private void doTestCdcExclude(
+        IgniteConfiguration srcCfg,
+        String cache,
+        String includeTemplate,
+        String excludeTemplate,
+        String excludedCache
+    ) throws Exception {
+        IgniteInternalFuture<?> cdc = startCdc(srcCfg, cache, includeTemplate, excludeTemplate);
+
+        IgniteCache<Integer, Integer> srcCache = getCache(src, excludedCache);
 
         runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));
 
