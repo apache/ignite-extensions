@@ -46,6 +46,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
 
 /**
  * Handler to print performance statistics operations.
@@ -83,6 +84,27 @@ public class PrintHandler implements PerformanceStatisticsHandler {
         this.to = to;
         this.cacheIds = cacheIds;
         this.sysViewGenerator = MAPPER.getFactory().createGenerator(this.ps);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void version(UUID nodeId, @Nullable String ignVer) {
+        if (skip(VERSION) || cacheIds != null)
+            return;
+
+        ps.print("{\"op\":\"" + VERSION);
+        ps.print("\",\"nodeId\":\"");
+        ps.print(nodeId);
+        ps.print("\",\"igniteVersion\":");
+
+        if (ignVer == null)
+            ps.print("null");
+        else {
+            ps.print('"');
+            printEscaped(ps, ignVer);
+            ps.print('"');
+        }
+
+        ps.println("}");
     }
 
     /** {@inheritDoc} */

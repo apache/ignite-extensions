@@ -54,6 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
@@ -69,6 +70,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.VERSION;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -191,10 +193,11 @@ public class PerformanceStatisticsPrinterTest {
             writer.pagesWriteThrottle(0, 0);
         });
 
-        List<OperationType> expOps = F.asList(CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
+        List<OperationType> expOps = F.asList(VERSION, CACHE_START, CACHE_GET, TX_COMMIT, TX_ROLLBACK, QUERY, QUERY_READS,
             QUERY_PROPERTY, QUERY_ROWS, TASK, JOB, CHECKPOINT, PAGES_WRITE_THROTTLE);
 
         checkOperationFilter(null, expOps);
+        checkOperationFilter(F.asList(VERSION), F.asList(VERSION));
         checkOperationFilter(F.asList(CACHE_START), F.asList(CACHE_START));
         checkOperationFilter(F.asList(TASK, JOB), F.asList(TASK, JOB));
         checkOperationFilter(F.asList(CACHE_PUT), Collections.emptyList());
