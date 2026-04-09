@@ -19,6 +19,7 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -347,7 +348,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
 
         cachesIds = caches.stream()
             .map(CU::cacheId)
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(HashSet::new));
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
