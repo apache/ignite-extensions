@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -124,7 +125,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
         cachesIds = caches.stream()
             .mapToInt(CU::cacheId)
             .boxed()
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(HashSet::new));
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
