@@ -53,13 +53,14 @@ public class CdcRegexManager {
      */
     public boolean matchesFilters(String cacheName) {
         if (includeFilter.matcher(cacheName).matches() && excludeFilter.matcher(cacheName).matches()) {
-            log.warning("Cache name matches both include and exclude regexp templates. Will ignore to prevent " +
-                "ambiguity [cacheName=" + cacheName + ", includeTemplate=" + includeFilter + ", excludeTemplate=" +
-                excludeFilter + "]");
+            if (log.isInfoEnabled())
+                log.info("Cache name matches both include and exclude regexp templates. Will except this cache from " +
+                    "replication [cacheName=" + cacheName + ", includeTemplate=" + includeFilter + ", excludeTemplate=" +
+                    excludeFilter + "]");
 
             return false;
         }
-        return includeFilter.matcher(cacheName).matches() && !excludeFilter.matcher(cacheName).matches();
+        return includeFilter.matcher(cacheName).matches();
     }
 
     /**
