@@ -54,6 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.waitForStatisticsEnabled;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_PUT;
@@ -154,6 +155,8 @@ public class PerformanceStatisticsPrinterTest {
 
             ign.context().performanceStatistics().startCollectStatistics();
 
+            waitForStatisticsEnabled(true);
+
             myCache.put("key", 1);
 
             myCache.query(new ScanQuery<>((key, val) -> true)).getAll();
@@ -163,6 +166,8 @@ public class PerformanceStatisticsPrinterTest {
             assertTrue("Performance statistics writer did not finish.", waitForCondition(lsnr::check, TIMEOUT));
 
             ign.context().performanceStatistics().stopCollectStatistics();
+
+            waitForStatisticsEnabled(false);
         }
 
         List<OperationType> expOps = F.asList(CACHE_START, CACHE_START, QUERY_PROPERTY, QUERY_PROPERTY, QUERY);
