@@ -32,7 +32,7 @@
     </parent>
 
     <properties>
-        <kafka.version>3.9.1</kafka.version>
+        <kafka.version>3.9.2</kafka.version>
     </properties>
 
     <artifactId>ignite-cdc-ext</artifactId>
