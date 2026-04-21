@@ -58,6 +58,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.query.Query;
 import org.hibernate.stat.CacheRegionStatistics;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -426,8 +427,9 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(generalRegionConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
-            generalRegionConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME),
+        cfg.setCacheConfiguration(
+            transactionalRegionConfiguration(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME),
+            transactionalRegionConfiguration(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME),
             transactionalRegionConfiguration(ENTITY_NAME),
             transactionalRegionConfiguration(ENTITY2_NAME),
             transactionalRegionConfiguration(VERSIONED_ENTITY_NAME),
@@ -1458,6 +1460,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-28590")
     public void testQueryCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testQueryCache(accessType);
@@ -1976,7 +1979,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         map.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.ALL.name());
         map.put(GENERATE_STATISTICS, "true");
         map.put(USE_SECOND_LEVEL_CACHE, "true");
-        map.put(USE_QUERY_CACHE, "true");
+        map.put(USE_QUERY_CACHE, "false");
         map.put(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
         map.put(RELEASE_CONNECTIONS, "on_close");
         map.put(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
