@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.List;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
@@ -59,8 +61,8 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer impleme
     private volatile boolean alive = true;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
-        super.start(mreg);
+    @Override public void start(MetricRegistry mreg, List<String> cacheNames) {
+        super.start(mreg, cacheNames);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [cacheIds=" + cachesIds + ']');

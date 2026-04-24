@@ -20,7 +20,9 @@ package org.apache.ignite.cdc.conflictresolve;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cdc.CdcRegexManager;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
@@ -65,6 +67,15 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Custom conflict resolver. */
     private CacheVersionConflictResolver resolver;
 
+    /** Regexp manager. */
+    private CdcRegexManager regexManager;
+
+    /** Include regex templates for cache names. */
+    private String includeTemplate;
+
+    /** Exclude regex templates for cache names. */
+    private String excludeTemplate;
+
     /** Log. */
     private IgniteLogger log;
 
@@ -92,13 +103,15 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId, resolver);
+        this.regexManager = new CdcRegexManager(log);
+        regexManager.compileRegexp(includeTemplate, excludeTemplate);
     }
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
-        if (caches.contains(cacheName)) {
+        if (caches.contains(cacheName) || regexManager.matchesFilters(cacheName)) {
             log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
@@ -142,6 +155,16 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** @param resolver Conflict resolver. */
     public void setConflictResolver(CacheVersionConflictResolver resolver) {
         this.resolver = resolver;
+    }
+
+    /** @param includeTemplate Include regex template */
+    public void setIncludeCacheTemplate(String includeTemplate) {
+        this.includeTemplate = includeTemplate;
+    }
+
+    /** @param excludeTemplate Exclude regex template */
+    public void setExcludeCacheTemplate(String excludeTemplate) {
+        this.excludeTemplate = excludeTemplate;
     }
 
     /** {@inheritDoc} */

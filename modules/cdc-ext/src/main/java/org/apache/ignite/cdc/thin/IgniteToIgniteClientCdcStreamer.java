@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cdc.thin;
 
+import java.util.List;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
@@ -66,8 +68,8 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     private long aliveCheckTimeout = DFLT_ALIVE_CHECK_TIMEOUT;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg) {
-        super.start(mreg);
+    @Override public void start(MetricRegistry mreg, List<String> cacheNames) {
+        super.start(mreg, cacheNames);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesIds + ']');
