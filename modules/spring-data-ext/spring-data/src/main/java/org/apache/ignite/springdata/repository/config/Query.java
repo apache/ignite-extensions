@@ -107,25 +107,6 @@ public @interface Query {
     boolean distributedJoins() default false;
 
     /**
-     * Sets lazy query execution flag.
-     * <p>
-     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and
-     * medium result sets this provides optimal performance and minimize duration of internal database locks, thus
-     * increasing concurrency.
-     * <p>
-     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
-     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
-     * consumption at the cost of moderate performance hit.
-     * <p>
-     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
-     * <p>
-     * Only applicable to SqlFieldsQuery
-     *
-     * @return {@code True} if flag is set.
-     */
-    boolean lazy() default false;
-
-    /**
      * Sets whether this query should be executed on local node only.
      *
      * @return {@code True} if local flag is set.
