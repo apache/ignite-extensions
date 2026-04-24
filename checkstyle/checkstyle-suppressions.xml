@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionXpathFilter Experimental Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
+<suppressions>
+    <suppress checks="LineLength"
+              files="classnames\.properties"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]internal[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]test[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]tests[\\/]"/>
+
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]ml[\\/]"/>
+
+    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
+              files=".*"/>
+
+    <suppress-xpath checks="AnnotationOnSameLine"
+                    query="//ANNOTATION[.//IDENT[not(@text='Override')]]"/>
+</suppressions>
