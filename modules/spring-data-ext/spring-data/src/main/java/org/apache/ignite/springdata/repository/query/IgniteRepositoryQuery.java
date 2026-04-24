@@ -153,7 +153,7 @@ import static org.apache.ignite.springdata.repository.support.IgniteRepositoryFa
  * repo.searchUserByEmailWithQueryTuning("user@mail.com", onlyTunning);
  *
  * DynamicQueryConfig withDynamicQuery = new DynamicQueryConfig().value("SELECT * from #{#entityName} where
- *     country = ?#{[0] and city = ?#{[1]}").setForceFieldsQuery(true).setLazy(true).setCollocated(true);
+ *     country = ?#{[0] and city = ?#{[1]}").setForceFieldsQuery(true).setCollocated(true);
  * repo.searchUsersByCityWithDynamicQuery("Spain", "Madrid", withDynamicQuery, new PageRequest(0, 100));
  *
  * </pre>
@@ -777,7 +777,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
                 sqlFieldsQry.setCollocated(config.collocated());
                 sqlFieldsQry.setDistributedJoins(config.distributedJoins());
                 sqlFieldsQry.setEnforceJoinOrder(config.enforceJoinOrder());
-                sqlFieldsQry.setLazy(config.lazy());
                 sqlFieldsQry.setLocal(config.local());
 
                 if (config.parts() != null && config.parts().length > 0)

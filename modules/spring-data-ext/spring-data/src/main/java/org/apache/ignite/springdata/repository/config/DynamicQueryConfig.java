@@ -54,9 +54,6 @@ public class DynamicQueryConfig {
     private boolean distributedJoins;
 
     /** */
-    private boolean lazy;
-
-    /** */
     private boolean local;
 
     /** */
@@ -79,7 +76,6 @@ public class DynamicQueryConfig {
             cfg.timeout = queryConfiguration.timeout();
             cfg.enforceJoinOrder = queryConfiguration.enforceJoinOrder();
             cfg.distributedJoins = queryConfiguration.distributedJoins();
-            cfg.lazy = queryConfiguration.lazy();
             cfg.parts = queryConfiguration.parts();
             cfg.local = queryConfiguration.local();
             cfg.limit = queryConfiguration.limit();
@@ -171,27 +167,6 @@ public class DynamicQueryConfig {
      */
     public boolean distributedJoins() {
         return distributedJoins;
-    }
-
-    /**
-     * Sets lazy query execution flag.
-     * <p>
-     * By default Ignite attempts to fetch the whole query result set to memory and send it to the client. For small and
-     * medium result sets this provides optimal performance and minimize duration of internal database locks, thus
-     * increasing concurrency.
-     * <p>
-     * If result set is too big to fit in available memory this could lead to excessive GC pauses and even
-     * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
-     * consumption at the cost of moderate performance hit.
-     * <p>
-     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
-     * <p>
-     * Only applicable to SqlFieldsQuery
-     *
-     * @return the boolean
-     */
-    public boolean lazy() {
-        return lazy;
     }
 
     /**
@@ -300,17 +275,6 @@ public class DynamicQueryConfig {
      */
     public DynamicQueryConfig setDistributedJoins(boolean distributedJoins) {
         this.distributedJoins = distributedJoins;
-        return this;
-    }
-
-    /**
-     * Sets lazy.
-     *
-     * @param lazy the lazy
-     * @return this for chaining
-     */
-    public DynamicQueryConfig setLazy(boolean lazy) {
-        this.lazy = lazy;
         return this;
     }
 
