@@ -106,6 +106,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache<Object, Object> withApplicationAttributes(Map<String, String> attrs) {
+        return delegate.get().withApplicationAttributes(attrs);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         return delegate.get().isEmpty();
     }
