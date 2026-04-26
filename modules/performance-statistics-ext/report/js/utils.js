@@ -89,17 +89,14 @@ function buildSelectNodes(el, onSelect) {
 function buildSelectNodesSystemView(el, onSelect) {
     el.append('<option data-content="<b>All nodes</b>" value="total"/>');
 
-    Object.keys(REPORT_DATA['systemView']).forEach(nodeId =>
-        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>'));
+    REPORT_DATA.systemViewMeta.nodes.forEach(nodeId => el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>'));
 
     el.on('changed.bs.select', onSelect);
 }
 
 /** Builds bootstrap-select for system views. */
 function buildSelectSystemViews(el, onSelect) {
-    const views = new Set(Object.values(REPORT_DATA['systemView']).flatMap(nodeData => Object.keys(nodeData)));
-
-    views.forEach(view => el.append('<option data-content="' + view + '" value="' + view + '"/>'));
+    REPORT_DATA.systemViewMeta.views.forEach(view => el.append('<option data-content="' + view + '" value="' + view + '"/>'));
 
     el.on('changed.bs.select', onSelect);
 }

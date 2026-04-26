@@ -120,7 +120,7 @@ public class PerformanceStatisticsReportBuilder {
             new TransactionsHandler(),
             new ComputeHandler(),
             new ClusterInfoHandler(),
-            new SystemViewHandler()
+            new SystemViewHandler(new File(resDir, "data/system-views").toPath())
         };
 
         new FilePerformanceStatisticsReader(handlers).read(Collections.singletonList(new File(filesDir)));
