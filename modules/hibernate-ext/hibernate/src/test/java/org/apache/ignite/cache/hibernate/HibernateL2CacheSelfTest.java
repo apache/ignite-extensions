@@ -444,30 +444,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param regionName Region name.
-     * @return Cache configuration for {@link IgniteGeneralDataRegion}.
-     */
-    private CacheConfiguration generalRegionConfiguration(String regionName) {
-        CacheConfiguration cfg = new CacheConfiguration();
-
-        cfg.setName(regionName);
-
-        cfg.setCacheMode(PARTITIONED);
-
-        cfg.setAtomicityMode(ATOMIC);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setBackups(1);
-
-        cfg.setStatisticsEnabled(true);
-
-        //cfg.setAffinity(new RendezvousAffinityFunction(false, 10));
-
-        return cfg;
-    }
-
-    /**
-     * @param regionName Region name.
      * @return Transactional Cache configuration
      */
     protected CacheConfiguration transactionalRegionConfiguration(String regionName) {
