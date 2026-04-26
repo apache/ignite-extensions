@@ -20,7 +20,7 @@ package org.apache.ignite.ml.svm;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * Tests for {@link SVMLinearClassificationTrainer}.
  */
-public class SVMBinaryTrainerTest extends TrainerTest {
+public class SVMBinaryTrainerTest extends AbstractTrainerTest {
     /**
      * Test trainer on classification model y = x.
      */

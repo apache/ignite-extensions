@@ -20,7 +20,7 @@ package org.apache.ignite.ml.selection.scoring.evaluator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link Evaluator}.
  */
-public class BinaryClassificationEvaluatorTest extends TrainerTest {
+public class BinaryClassificationEvaluatorTest extends AbstractTrainerTest {
     /**
      * Test evaluator and trainer on classification model y = x.
      */

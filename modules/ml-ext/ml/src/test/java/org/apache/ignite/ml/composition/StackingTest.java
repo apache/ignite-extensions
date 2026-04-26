@@ -20,7 +20,7 @@ package org.apache.ignite.ml.composition;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.composition.stacking.StackedModel;
 import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests stacked trainers.
  */
-public class StackingTest extends TrainerTest {
+public class StackingTest extends AbstractTrainerTest {
     /** Rule to check exceptions. */
     @Rule
     public ExpectedException thrown = ExpectedException.none();

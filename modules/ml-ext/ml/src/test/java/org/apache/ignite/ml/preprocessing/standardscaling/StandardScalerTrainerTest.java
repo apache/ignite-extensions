@@ -20,7 +20,7 @@ package org.apache.ignite.ml.preprocessing.standardscaling;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link StandardScalerTrainer}.
  */
-public class StandardScalerTrainerTest extends TrainerTest {
+public class StandardScalerTrainerTest extends AbstractTrainerTest {
     /** Data. */
     private DatasetBuilder<Integer, Vector> datasetBuilder;
 

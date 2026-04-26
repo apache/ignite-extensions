@@ -20,7 +20,7 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.junit.Test;
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link LinearRegressionLSQRTrainer}.
  */
-public class LinearRegressionLSQRTrainerTest extends TrainerTest {
+public class LinearRegressionLSQRTrainerTest extends AbstractTrainerTest {
     /**
      * Tests {@code fit()} method on a simple small dataset.
      */
