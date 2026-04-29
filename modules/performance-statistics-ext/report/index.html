@@ -18,7 +18,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#563d7c">
 
     <title>Ignite performance statistics report</title>
@@ -29,10 +29,10 @@
     <!-- Bootstrap table. -->
     <link rel="stylesheet" href="libs/bootstrap-table.min.css">
 
-    <!-- Bootstrap select. -->
-    <link rel="stylesheet" href="libs/bootstrap-select.min.css">
+    <!-- Bootstrap select (use-bootstrap-select). -->
+    <link rel="stylesheet" href="libs/use-bootstrap-select.min.css">
 
-    <!-- Font Awesome Free 5.13.0 -->
+    <!-- Font Awesome Free 5.15.4 -->
     <link rel="stylesheet" href="libs/fontawesome/css/all.min.css">
 
     <!-- Favicons. -->
@@ -42,7 +42,7 @@
 </head>
 <body>
 <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Ignite performance statistics report</a>
+    <a class="navbar-brand col-sm-3 col-md-2 me-0" href="#">Ignite performance statistics report</a>
 </nav>
 
 <div class="container-fluid">
@@ -51,42 +51,42 @@
             <div class="sidebar-sticky">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link active" data-toggle="tab" href="#clusterInfoTab" role="tab"
+                        <a class="nav-link active" data-bs-toggle="tab" href="#clusterInfoTab" role="tab"
                            aria-selected="true">Cluster info</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#cacheOperationsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#cacheOperationsTab" role="tab"
                            aria-selected="false">Cache operations</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#txOperationsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#txOperationsTab" role="tab"
                            aria-selected="false">Transactions</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#sqlStatisticsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#sqlStatisticsTab" role="tab"
                            aria-selected="false">SQL queries</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#scanStatisticsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#scanStatisticsTab" role="tab"
                            aria-selected="false">Scan queries</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#indexQueryStatisticsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#indexQueryStatisticsTab" role="tab"
                            aria-selected="false">Index queries</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#computeStatisticsTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#computeStatisticsTab" role="tab"
                            aria-selected="false">Tasks and jobs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#systemViewTab" role="tab"
+                        <a class="nav-link" data-bs-toggle="tab" href="#systemViewTab" role="tab"
                            aria-selected="false">System views</a>
                     </li>
                 </ul>
             </div>
         </nav>
 
-        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+        <main role="main" class="col-md-9 ms-sm-auto col-lg-10 px-4">
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="clusterInfoTab" role="tabpanel">
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -103,8 +103,10 @@
                         <h1 class="h2">Cache operations statistics</h1>
                     </div>
 
-                    <select id="searchCaches" class="selectpicker" data-live-search="true"></select>
-                    <select id="searchNodes" class="selectpicker" data-live-search="true"></select>
+                    <div class="d-flex gap-2 mb-3" style="max-width: 50%;">
+                        <select id="searchCaches" class="form-select" data-searchable="true"></select>
+                        <select id="searchNodes" class="form-select" data-searchable="true"></select>
+                    </div>
 
                     <div id="operationsCharts"></div>
                 </div>
@@ -113,8 +115,10 @@
                         <h1 class="h2">Transactions statistics</h1>
                     </div>
 
-                    <select id="txSearchCaches" class="selectpicker" data-live-search="true"></select>
-                    <select id="txSearchNodes" class="selectpicker" data-live-search="true"></select>
+                    <div class="d-flex gap-2 mb-3" style="max-width: 50%;">
+                        <select id="txSearchCaches" class="form-select" data-searchable="true"></select>
+                        <select id="txSearchNodes" class="form-select" data-searchable="true"></select>
+                    </div>
 
                     <div id="txCharts"></div>
                 </div>
@@ -158,8 +162,10 @@
                     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                         <h1 class="h2">System views</h1>
                     </div>
-                       <select id="sysViewSearchNodes" class="selectpicker" data-live-search="true"></select>
-                    <select id="searchViews" class="selectpicker" data-live-search="true"></select>
+                    <div class="d-flex gap-2 mb-3" style="max-width: 50%;">
+                        <select id="sysViewSearchNodes" class="form-select" data-searchable="true"></select>
+                        <select id="searchViews" class="form-select" data-searchable="true"></select>
+                    </div>
 
                     <div id="systemViewTableDiv"></div>
                 </div>
@@ -168,10 +174,11 @@
     </div>
 </div>
 
-<!-- Bootstrap JS, Popper.js, and jQuery. -->
-<script src="libs/jquery-3.6.1.min.js"></script>
-<script src="libs/popper.min.js"></script>
-<script src="libs/bootstrap.min.js"></script>
+<!-- jQuery. -->
+<script src="libs/jquery-4.0.0.min.js"></script>
+
+<!-- Bootstrap JS (includes Popper.js). -->
+<script src="libs/bootstrap.bundle.min.js"></script>
 
 <!-- Bootstrap table. -->
 <script src="libs/bootstrap-table.min.js"></script>
@@ -185,8 +192,8 @@
 <!-- Chart JS. -->
 <script src="libs/Chart.min.js"></script>
 
-<!-- Bootstrap select. -->
-<script src="libs/bootstrap-select.min.js"></script>
+<!-- Bootstrap select (use-bootstrap-select). -->
+<script src="libs/use-bootstrap-select.min.js"></script>
 
 <!-- Report data. -->
 <script type="text/javascript" src="data/data.json.js"></script>

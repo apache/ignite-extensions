@@ -54,9 +54,9 @@ function sortByKeyAsc(array, key) {
     });
 }
 
-/** Builds bootstrap-select for caches. */
+/** Builds select for caches. */
 function buildSelectCaches(el, onSelect) {
-    el.append('<option data-content="<b>All caches</b>" value="total"/>');
+    el.append('<option value="total">All caches</option>');
 
     var caches = REPORT_DATA.clusterInfo.caches;
 
@@ -66,40 +66,44 @@ function buildSelectCaches(el, onSelect) {
     $.each(caches, function (idx, cache) {
         var name = cache.name === undefined || cache.name == null ? cache.id : cache.name;
 
-        el.append('<option data-content="' + name + '" value="' + cache.id + '"/>');
+        el.append('<option value="' + cache.id + '">' + name + '</option>');
     });
 
-    el.on('changed.bs.select', onSelect);
+    UseBootstrapSelect.getOrCreateInstance(el[0]);
+    el.on('change', onSelect);
 }
 
-/** Builds bootstrap-select for nodes. */
+/** Builds select for nodes. */
 function buildSelectNodes(el, onSelect) {
-    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+    el.append('<option value="total">All nodes</option>');
 
     var nodes = REPORT_DATA.clusterInfo.nodes;
 
     $.each(nodes, (nodeId, node) => {
-        el.append('<option data-content="' + node.id + '" value="' + node.id + '"/>');
+        el.append('<option value="' + node.id + '">' + node.id + '</option>');
     });
 
-    el.on('changed.bs.select', onSelect);
+    UseBootstrapSelect.getOrCreateInstance(el[0]);
+    el.on('change', onSelect);
 }
 
-/** Builds bootstrap-select for nodes in system view tab. */
+/** Builds select for nodes in system view tab. */
 function buildSelectNodesSystemView(el, onSelect) {
-    el.append('<option data-content="<b>All nodes</b>" value="total"/>');
+    el.append('<option value="total">All nodes</option>');
 
     Object.keys(REPORT_DATA['systemView']).forEach(nodeId =>
-        el.append('<option data-content="' + nodeId + '" value="' + nodeId + '"/>'));
+        el.append('<option value="' + nodeId + '">' + nodeId + '</option>'));
 
-    el.on('changed.bs.select', onSelect);
+    UseBootstrapSelect.getOrCreateInstance(el[0]);
+    el.on('change', onSelect);
 }
 
-/** Builds bootstrap-select for system views. */
+/** Builds select for system views. */
 function buildSelectSystemViews(el, onSelect) {
     const views = new Set(Object.values(REPORT_DATA['systemView']).flatMap(nodeData => Object.keys(nodeData)));
 
-    views.forEach(view => el.append('<option data-content="' + view + '" value="' + view + '"/>'));
+    views.forEach(view => el.append('<option value="' + view + '">' + view + '</option>'));
 
-    el.on('changed.bs.select', onSelect);
+    UseBootstrapSelect.getOrCreateInstance(el[0]);
+    el.on('change', onSelect);
 }
