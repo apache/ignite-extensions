@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent</artifactId>
-        <version>2.18.0-SNAPSHOT</version>
+        <version>2.19.0-SNAPSHOT</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
@@ -39,7 +39,7 @@
         <spring.data.version>3.5.7</spring.data.version>
         <spring6.version>6.2.15</spring6.version>
         <activemq.version>5.12.0</activemq.version>
-        <aspectj.version>1.8.13</aspectj.version>
+        <aspectj.version>1.9.21</aspectj.version>
         <embedded.postgres.version>2.0.3</embedded.postgres.version>
         <commons.dbcp2.version>2.13.0</commons.dbcp2.version>
         <commons.lang3.version>3.20.0</commons.lang3.version>
@@ -114,6 +114,14 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <suppressionsLocation>${maven.multiModuleProjectDirectory}/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <inherited>false</inherited>
                 <configuration>
@@ -131,6 +139,84 @@
                         <phase/>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <!-- Do not bring ignite logic -->
+                <inherited>false</inherited>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <argLine>
+                        --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
+                        --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+                        --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
+                        --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
+                        --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                        --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+                        --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+                        --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+                        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
+                        --add-opens=java.base/java.io=ALL-UNNAMED
+                        --add-opens=java.base/java.net=ALL-UNNAMED
+                        --add-opens=java.base/java.nio=ALL-UNNAMED
+                        --add-opens=java.base/java.security.cert=ALL-UNNAMED
+                        --add-opens=java.base/java.util=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                        --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                        --add-opens=java.base/java.time=ALL-UNNAMED
+                        --add-opens=java.base/sun.security.ssl=ALL-UNNAMED
+                        --add-opens=java.base/sun.security.x509=ALL-UNNAMED
+                        --add-opens=java.base/sun.net.util=ALL-UNNAMED
+                        --add-opens=java.sql/java.sql=ALL-UNNAMED
+                        --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                        --add-opens=java.base/java.text=ALL-UNNAMED
+                        --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
+                    </argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArgs>
+                        <jvmArg>--add-opens=java.base/jdk.internal.access=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.net=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.nio=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.security.cert=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.util.concurrent=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.lang.invoke=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.time=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.security.ssl=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.security.x509=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.net.util=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.sql/java.sql=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.lang.reflect=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.text=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.desktop/java.awt.font=ALL-UNNAMED</jvmArg>
+                    </jvmArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -202,97 +288,6 @@
                             <appendFilename>true</appendFilename>
                             <excludeMainArtifact>true</excludeMainArtifact>
                             <failIfNoFiles>false</failIfNoFiles>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>java-11+</id>
-            <activation>
-                <jdk>[11,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.source>11</maven.compiler.source>
-                <maven.compiler.target>11</maven.compiler.target>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <!-- Do not bring ignite logic -->
-                        <inherited>false</inherited>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <forkCount>1</forkCount>
-                            <argLine>
-                                --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
-                                --add-opens=java.base/jdk.internal.loader=ALL-UNNAMED
-                                --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
-                                --add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-                                --add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-                                --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-                                --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-                                --add-opens=java.base/java.io=ALL-UNNAMED
-                                --add-opens=java.base/java.net=ALL-UNNAMED
-                                --add-opens=java.base/java.nio=ALL-UNNAMED
-                                --add-opens=java.base/java.security.cert=ALL-UNNAMED
-                                --add-opens=java.base/java.util=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
-                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
-                                --add-opens=java.base/java.lang=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-                                --add-opens=java.base/java.time=ALL-UNNAMED
-                                --add-opens=java.base/sun.security.ssl=ALL-UNNAMED
-                                --add-opens=java.base/sun.security.x509=ALL-UNNAMED
-                                --add-opens=java.base/sun.net.util=ALL-UNNAMED
-                                --add-opens=java.sql/java.sql=ALL-UNNAMED
-                                --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-                                --add-opens=java.base/java.text=ALL-UNNAMED
-                                --add-opens=java.desktop/java.awt.font=ALL-UNNAMED
-                            </argLine>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>io.gatling</groupId>
-                        <artifactId>gatling-maven-plugin</artifactId>
-                        <configuration>
-                            <jvmArgs>
-                                <jvmArg>--add-opens=java.base/jdk.internal.access=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.net=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.nio=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.security.cert=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.util=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.util.concurrent=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.lang.invoke=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.time=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/sun.security.ssl=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/sun.security.x509=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/sun.net.util=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.sql/java.sql=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.lang.reflect=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.base/java.text=ALL-UNNAMED</jvmArg>
-                                <jvmArg>--add-opens=java.desktop/java.awt.font=ALL-UNNAMED</jvmArg>
-                            </jvmArgs>
                         </configuration>
                     </plugin>
                 </plugins>
