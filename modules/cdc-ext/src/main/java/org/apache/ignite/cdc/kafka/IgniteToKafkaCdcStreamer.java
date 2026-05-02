@@ -333,7 +333,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, List<String> cacheNames) {
+    @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -352,10 +352,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
-        cacheNames.stream()
-            .filter(regexManager::matchesFilters)
-            .map(CU::cacheId)
-            .forEach(cachesIds::add);
+        cacheEvents.forEachRemaining(evt -> {
+            String cacheName = evt.configuration().getName();
+
+            if (regexManager.matchesFilters(cacheName))
+                cachesIds.add(CU.cacheId(cacheName));
+        });
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
