@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -117,7 +116,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, List<String> cacheNames) {
+    @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
         A.notEmpty(caches, "caches");
 
         regexManager = new CdcRegexManager(log);
@@ -129,10 +128,12 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
 
         regexManager.compileRegexp(includeTemplate, excludeTemplate);
 
-        cacheNames.stream()
-            .filter(regexManager::matchesFilters)
-            .map(CU::cacheId)
-            .forEach(cachesIds::add);
+        cacheEvents.forEachRemaining(evt -> {
+            String cacheName = evt.configuration().getName();
+
+            if (regexManager.matchesFilters(cacheName))
+                cachesIds.add(CU.cacheId(cacheName));
+        });
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 
