@@ -17,10 +17,11 @@
 
 package org.apache.ignite.cdc.thin;
 
-import java.util.List;
+import java.util.Iterator;
 
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cdc.AbstractIgniteCdcStreamer;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamer;
 import org.apache.ignite.client.ClientException;
@@ -68,8 +69,8 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     private long aliveCheckTimeout = DFLT_ALIVE_CHECK_TIMEOUT;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg, List<String> cacheNames) {
-        super.start(mreg, cacheNames);
+    @Override public void start(MetricRegistry mreg, Iterator<CdcCacheEvent> cacheEvents) {
+        super.start(mreg, cacheEvents);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesIds + ']');
