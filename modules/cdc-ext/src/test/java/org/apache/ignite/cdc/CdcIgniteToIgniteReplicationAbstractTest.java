@@ -133,8 +133,8 @@ public abstract class CdcIgniteToIgniteReplicationAbstractTest extends AbstractR
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
-            streamer.setIncludeCacheTemplate(includeTemplate);
-            streamer.setExcludeCacheTemplate(excludeTemplate);
+            streamer.setIncludeCachesRegex(includeTemplate);
+            streamer.setExcludeCachesRegex(excludeTemplate);
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
