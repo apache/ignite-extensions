@@ -73,7 +73,7 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
         super.start(mreg, cacheEvents);
 
         if (log.isInfoEnabled())
-            log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesIds + ']');
+            log.info("Ignite To Ignite Client Streamer [cacheIds=" + cachesPredicate.getCacheIds() + ']');
 
         A.notNull(destClientCfg, "Destination thin client configuration");
 

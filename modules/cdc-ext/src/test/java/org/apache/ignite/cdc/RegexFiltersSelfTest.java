@@ -152,8 +152,8 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
             streamer.setMaxBatchSize(KEYS_CNT);
             streamer.setCaches(Collections.singleton(cache));
-            streamer.setIncludeCacheTemplate(includeTemplate);
-            streamer.setExcludeCacheTemplate(excludeTemplate);
+            streamer.setIncludeCachesRegex(includeTemplate);
+            streamer.setExcludeCachesRegex(excludeTemplate);
 
             cdcCfg.setConsumer(streamer);
             cdcCfg.setMetricExporterSpi(new JmxMetricExporterSpi());
@@ -304,7 +304,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
         final String NEW_REGEX_PATTERN = REGEX_INCLUDE_PATTERN + "|my-cache.*";
 
         //Restart CDC with the new regexp config
-        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, NEW_REGEX_PATTERN, " ");
+        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, NEW_REGEX_PATTERN, "");
 
         try {
             runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));
@@ -393,7 +393,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
     private static class TestI2IClientCdcStreamer extends IgniteToIgniteClientCdcStreamer {
         /** */
         public Set<Integer> getCacheIds() {
-            return cachesIds;
+            return cachesPredicate.getCacheIds();
         }
     }
 }

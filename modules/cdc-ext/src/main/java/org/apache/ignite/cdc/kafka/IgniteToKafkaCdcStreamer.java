@@ -19,24 +19,21 @@ package org.apache.ignite.cdc.kafka;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CachesPredicate;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcEvent;
-import org.apache.ignite.cdc.CdcRegexManager;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
@@ -47,7 +44,6 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
@@ -144,20 +140,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** Kafka properties. */
     private Properties kafkaProps;
 
-    /** Cache IDs. */
-    private Set<Integer> cachesIds;
-
     /** Cache names. */
     private Collection<String> caches;
 
-    /** Regexp manager. */
-    private CdcRegexManager regexManager;
-
-    /** Include regex template for cache names. */
-    private String includeTemplate;
-
-    /** Exclude regex template for cache names. */
-    private String excludeTemplate;
+    /** Caches predicate. */
+    protected CachesPredicate cachesPredicate = new CachesPredicate();
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -209,7 +196,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
                 return false;
             }
 
-            if (!cachesIds.contains(evt.cacheId())) {
+            if (!cachesPredicate.test(evt.cacheId())) {
                 if (log.isDebugEnabled())
                     log.debug("Event skipped because of cacheId [evt=" + evt + ']');
 
@@ -258,13 +245,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
         cacheEvents.forEachRemaining(e -> {
-            matchWithRegex(e.configuration().getName());
+            cachesPredicate.onCacheEvent(e.configuration().getName());
         });
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(cachesIds::remove);
+        caches.forEachRemaining(cachesPredicate::onCacheDestroy);
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
@@ -344,19 +331,10 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        regexManager = new CdcRegexManager(log);
-
-        cachesIds = caches.stream()
-            .map(CU::cacheId)
-            .collect(Collectors.toCollection(HashSet::new));
-
-        regexManager.compileRegexp(includeTemplate, excludeTemplate);
+        cachesPredicate.setCaches(caches);
 
         cacheEvents.forEachRemaining(evt -> {
-            String cacheName = evt.configuration().getName();
-
-            if (regexManager.matchesFilters(cacheName))
-                cachesIds.add(CU.cacheId(cacheName));
+            cachesPredicate.onCacheEvent(evt.configuration().getName());
         });
 
         try {
@@ -367,7 +345,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
                     "topic=" + evtTopic +
                     ", metadataTopic = " + metadataTopic +
                     ", onlyPrimary=" + onlyPrimary +
-                    ", cacheIds=" + cachesIds + ']'
+                    ", cacheIds=" + cachesPredicate.getCacheIds() + ']'
                 );
             }
         }
@@ -402,19 +380,6 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         this.onlyPrimary = onlyPrimary;
 
         return this;
-    }
-
-    /**
-     * Finds a match between the cache name and user regex templates.
-     * If a match is found, adds the cache to replication.
-     *
-     * @param cacheName Cache name.
-     */
-    private void matchWithRegex(String cacheName) {
-        int cacheId = CU.cacheId(cacheName);
-
-        if (!cachesIds.contains(cacheId) && regexManager.matchesFilters(cacheName))
-            cachesIds.add(cacheId);
     }
 
     /**
@@ -468,11 +433,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /**
      * Sets include regex pattern that participates in CDC.
      *
-     * @param includeTemplate Include regex template.
+     * @param includeRegex Include regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setIncludeCacheTemplate(String includeTemplate) {
-        this.includeTemplate = includeTemplate;
+    public IgniteToKafkaCdcStreamer setIncludeCachesRegex(String includeRegex) {
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
 
         return this;
     }
@@ -480,11 +445,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /**
      * Sets exclude regex pattern that participates in CDC.
      *
-     * @param excludeTemplate Exclude regex template.
+     * @param excludeRegex Exclude regex template.
      * @return {@code this} for chaining.
      */
-    public IgniteToKafkaCdcStreamer setExcludeCacheTemplate(String excludeTemplate) {
-        this.excludeTemplate = excludeTemplate;
+    public IgniteToKafkaCdcStreamer setExcludeCachesRegex(String excludeRegex) {
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         return this;
     }

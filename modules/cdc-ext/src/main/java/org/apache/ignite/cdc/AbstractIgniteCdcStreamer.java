@@ -17,10 +17,8 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -34,7 +32,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -76,17 +73,8 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     /** Cache names. */
     private Set<String> caches;
 
-    /** Regexp manager. */
-    private CdcRegexManager regexManager;
-
-    /** Include regex template for cache names. */
-    private String includeTemplate;
-
-    /** Exclude regex template for cache names. */
-    private String excludeTemplate;
-
-    /** Cache IDs. */
-    protected Set<Integer> cachesIds;
+    /** Caches predicate. */
+    protected CachesPredicate cachesPredicate = new CachesPredicate();
 
     /** Maximum batch size. */
     protected int maxBatchSize;
@@ -119,20 +107,10 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
         A.notEmpty(caches, "caches");
 
-        regexManager = new CdcRegexManager(log);
-
-        cachesIds = caches.stream()
-            .mapToInt(CU::cacheId)
-            .boxed()
-            .collect(Collectors.toCollection(HashSet::new));
-
-        regexManager.compileRegexp(includeTemplate, excludeTemplate);
+        cachesPredicate.setCaches(caches);
 
         cacheEvents.forEachRemaining(evt -> {
-            String cacheName = evt.configuration().getName();
-
-            if (regexManager.matchesFilters(cacheName))
-                cachesIds.add(CU.cacheId(cacheName));
+            cachesPredicate.onCacheEvent(evt.configuration().getName());
         });
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
@@ -151,7 +129,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
                 F.identity(),
                 true,
                 evt -> !onlyPrimary || evt.primary(),
-                evt -> F.isEmpty(cachesIds) || cachesIds.contains(evt.cacheId()),
+                evt -> cachesPredicate.test(evt.cacheId()),
                 evt -> evt.version().otherClusterVersion() == null));
 
             if (msgsSnt > 0) {
@@ -172,26 +150,13 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
         cacheEvents.forEachRemaining(e -> {
-            matchWithRegex(e.configuration().getName());
+            cachesPredicate.onCacheEvent(e.configuration().getName());
         });
-    }
-
-    /**
-     * Finds match between cache name and user's regex templates.
-     * If match is found, adds this cache's id to id's list.
-     *
-     * @param cacheName Cache name.
-     */
-    private void matchWithRegex(String cacheName) {
-        int cacheId = CU.cacheId(cacheName);
-
-        if (!cachesIds.contains(cacheId) && regexManager.matchesFilters(cacheName))
-            cachesIds.add(cacheId);
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(cachesIds::remove);
+        caches.forEachRemaining(cachesPredicate::onCacheDestroy);
     }
 
     /** {@inheritDoc} */
@@ -278,25 +243,25 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     }
 
     /**
-     * Sets include regex pattern that participates in CDC.
+     * Sets include regex pattern for caches participating in CDC.
      *
-     * @param includeTemplate Include regex template
+     * @param includeRegex Include regex string
      * @return {@code this} for chaining.
      */
-    public AbstractIgniteCdcStreamer setIncludeCacheTemplate(String includeTemplate) {
-        this.includeTemplate = includeTemplate;
+    public AbstractIgniteCdcStreamer setIncludeCachesRegex(String includeRegex) {
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
 
         return this;
     }
 
     /**
-     * Sets exclude regex pattern that participates in CDC.
+     * Sets exclude regex pattern for caches participating in CDC.
      *
-     * @param excludeTemplate Exclude regex template
+     * @param excludeRegex Exclude regex string
      * @return {@code this} for chaining.
      */
-    public AbstractIgniteCdcStreamer setExcludeCacheTemplate(String excludeTemplate) {
-        this.excludeTemplate = excludeTemplate;
+    public AbstractIgniteCdcStreamer setExcludeCachesRegex(String excludeRegex) {
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         return this;
     }
