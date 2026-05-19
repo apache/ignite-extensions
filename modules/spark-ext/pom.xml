@@ -34,10 +34,11 @@
     <version>4.0.0-SNAPSHOT</version>
 
     <properties>
-        <scala.library.version>2.12.16</scala.library.version>
-        <scala.test.version>3.2.12</scala.test.version>
-        <spark.version>3.5.6</spark.version>
-        <spark.jackson.version>2.15.4</spark.jackson.version>
+        <scala.library.version>2.12.21</scala.library.version>
+        <scala.test.version>3.2.20</scala.test.version>
+        <spark.version>3.5.8</spark.version>
+        <spark.jackson.version>2.21.1</spark.jackson.version>
+        <spark.jackson.annotations.version>2.21</spark.jackson.annotations.version>
     </properties>
 
     <modules>
@@ -68,11 +69,20 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>4.8.0</version>
+                <version>4.9.10</version>
                 <executions>
                     <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
                         <goals>
+                            <goal>add-source</goal>
                             <goal>compile</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
                             <goal>testCompile</goal>
                         </goals>
                     </execution>
