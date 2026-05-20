@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.CountersHistogram;
+
+import static org.apache.commons.math3.util.Precision.EPSILON;
 
 /**
  * Class contains implementation of splitting point finding algorithm based on Gini metric (see
@@ -104,6 +107,8 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
         double bestImpurity = Double.POSITIVE_INFINITY;
         double bestSplitVal = Double.NEGATIVE_INFINITY;
         int bestBucketId = -1;
+        double bestGain = 0;
+        double nodeImpurity = 0;
 
         List<TreeMap<Integer, Double>> countersDistribPerCls = hists.stream()
             .map(ObjectHistogram::computeDistributionFunction)
@@ -112,6 +117,16 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
         double[] totalSampleCntPerLb = countersDistribPerCls.stream()
             .mapToDouble(x -> x.isEmpty() ? 0.0 : x.lastEntry().getValue())
             .toArray();
+
+        double totalSampleCnt = Arrays.stream(totalSampleCntPerLb).sum();
+
+        for (int lbId = 0; lbId < lblMapping.size(); lbId++) {
+            double lblProbability = totalSampleCntPerLb[lbId] / totalSampleCnt;
+            nodeImpurity += (lblProbability * (1 - lblProbability));
+        }
+
+        if (nodeImpurity < EPSILON)
+            return Optional.empty();
 
         Map<Integer, Double> lastLeftValues = new HashMap<>();
         for (int i = 0; i < lblMapping.size(); i++)
@@ -140,24 +155,35 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
                 //count of samples with label [corresponding lblId] to the left of bucket
                 Double toLeftCnt = countersDistribPerCls.get(lbId).getOrDefault(bucketId, lastLeftValues.get(lbId));
 
-                if (toLeftCnt > 0)
-                    leftImpurity += Math.pow(toLeftCnt, 2) / totalToleftCnt;
+                if (toLeftCnt > 0) {
+                    double lblLeftProbability = toLeftCnt / totalToleftCnt;
+                    leftImpurity += (lblLeftProbability * (1 - lblLeftProbability));
+                }
 
                 //number of samples to the right of bucket = total samples count - toLeftCnt
                 double toRightCnt = totalSampleCntPerLb[lbId] - toLeftCnt;
-                if (toRightCnt > 0)
-                    rightImpurity += (Math.pow(toRightCnt, 2)) / totalToRightCnt;
+
+                if (toRightCnt > 0) {
+                    double lblRightProbability = toRightCnt / totalToRightCnt;
+                    rightImpurity += (lblRightProbability * (1 - lblRightProbability));
+                }
             }
 
-            double impurityInBucket = -(leftImpurity + rightImpurity);
-            if (impurityInBucket <= bestImpurity) {
-                bestImpurity = impurityInBucket;
+            double leftWeight = totalToleftCnt / (totalToleftCnt + totalToRightCnt);
+            double rightWeight = totalToRightCnt / (totalToleftCnt + totalToRightCnt);
+
+            double weightedSplitImpurity = leftImpurity * leftWeight + rightImpurity * rightWeight;
+
+            double gain = nodeImpurity - weightedSplitImpurity;
+
+            if (gain > bestGain) {
                 bestSplitVal = bucketMeta.bucketIdToValue(bucketId);
                 bestBucketId = bucketId;
+                bestGain = gain;
             }
         }
 
-        return checkAndReturnSplitValue(bestBucketId, bestSplitVal, bestImpurity);
+        return checkAndReturnSplitValue(bestBucketId, bestSplitVal, bestGain, bestImpurity);
     }
 
     /** {@inheritDoc} */
