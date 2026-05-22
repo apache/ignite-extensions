@@ -331,11 +331,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
+        cachesPredicate.setLog(log);
+
         cachesPredicate.setCaches(caches);
 
-        cacheEvents.forEachRemaining(evt -> {
-            cachesPredicate.onCacheEvent(evt.configuration().getName());
-        });
+        cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
