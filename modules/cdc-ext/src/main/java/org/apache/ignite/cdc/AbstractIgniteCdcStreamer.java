@@ -107,11 +107,11 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
         A.notEmpty(caches, "caches");
 
+        cachesPredicate.setLog(log);
+
         cachesPredicate.setCaches(caches);
 
-        cacheEvents.forEachRemaining(evt -> {
-            cachesPredicate.onCacheEvent(evt.configuration().getName());
-        });
+        cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
         MetricRegistryImpl mreg = (MetricRegistryImpl)reg;
 

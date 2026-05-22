@@ -28,6 +28,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -50,6 +51,9 @@ public class CachesPredicate implements Predicate<Integer> {
 
     /** Cache regex IDs. */
     private final Set<Integer> cacheRegexIds = new ConcurrentSkipListSet<>();
+
+    /** Logger. */
+    private IgniteLogger log;
 
     /**
      * Sets cache ids of caches participating in CDC.
@@ -92,6 +96,13 @@ public class CachesPredicate implements Predicate<Integer> {
         }
     }
 
+    /**
+     * @param log Logger.
+     */
+    public void setLog(IgniteLogger log) {
+        this.log = log;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean test(Integer cacheId) {
         return cacheIds.contains(cacheId) || cacheRegexIds.contains(cacheId);
@@ -107,8 +118,12 @@ public class CachesPredicate implements Predicate<Integer> {
         if (excludePtrn.matcher(cacheName).matches())
             return false;
 
-        if (includePtrn.matcher(cacheName).matches())
+        if (includePtrn.matcher(cacheName).matches() && !cacheRegexIds.contains(CU.cacheId(cacheName))) {
             cacheRegexIds.add(CU.cacheId(cacheName));
+
+            if (log.isInfoEnabled())
+                log.info("Cache [cacheName=" + cacheName + "] has been added to the replication");
+        }
 
         return true;
     }
@@ -119,6 +134,9 @@ public class CachesPredicate implements Predicate<Integer> {
      * */
     public void onCacheDestroy(int cacheId) {
         cacheRegexIds.remove(cacheId);
+
+        if (log.isInfoEnabled())
+            log.info("Cache [cacheId=" + cacheId + "] has been removed from the replication");
     }
 
     /**

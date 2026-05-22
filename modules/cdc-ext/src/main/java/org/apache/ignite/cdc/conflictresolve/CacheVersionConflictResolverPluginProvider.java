@@ -97,6 +97,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId, resolver);
+        cachesPredicate.setLog(log);
     }
 
     /** {@inheritDoc} */
