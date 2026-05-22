@@ -22,29 +22,28 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CachesPredicate;
 import org.apache.ignite.cdc.CdcCacheEvent;
-import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.cdc.CdcConsumerEx;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
@@ -76,7 +75,7 @@ import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_
  * @see KafkaToIgniteClientCdcStreamer
  * @see CacheVersionConflictResolverImpl
  */
-public class IgniteToKafkaCdcStreamer implements CdcConsumer {
+public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** */
     public static final String EVTS_SENT_CNT = "EventsCount";
 
@@ -141,11 +140,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** Kafka properties. */
     private Properties kafkaProps;
 
-    /** Cache IDs. */
-    private Set<Integer> cachesIds;
-
     /** Cache names. */
     private Collection<String> caches;
+
+    /** Caches predicate. */
+    protected CachesPredicate cachesPredicate = new CachesPredicate();
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -197,7 +196,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                 return false;
             }
 
-            if (!cachesIds.contains(evt.cacheId())) {
+            if (!cachesPredicate.test(evt.cacheId())) {
                 if (log.isDebugEnabled())
                     log.debug("Event skipped because of cacheId [evt=" + evt + ']');
 
@@ -246,15 +245,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     /** {@inheritDoc} */
     @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
         cacheEvents.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
+            cachesPredicate.onCacheEvent(e.configuration().getName());
         });
     }
 
     /** {@inheritDoc} */
     @Override public void onCacheDestroy(Iterator<Integer> caches) {
-        caches.forEachRemaining(e -> {
-            // Just skip. Handle of cache events not supported.
-        });
+        caches.forEachRemaining(cachesPredicate::onCacheDestroy);
     }
 
     /** Send marker(meta need to be updated) record to each partition of events topic. */
@@ -319,6 +316,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry reg) {
+        //No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
@@ -329,9 +331,11 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        cachesIds = caches.stream()
-            .map(CU::cacheId)
-            .collect(Collectors.toSet());
+        cachesPredicate.setLog(log);
+
+        cachesPredicate.setCaches(caches);
+
+        cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -341,7 +345,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
                     "topic=" + evtTopic +
                     ", metadataTopic = " + metadataTopic +
                     ", onlyPrimary=" + onlyPrimary +
-                    ", cacheIds=" + cachesIds + ']'
+                    ", cacheIds=" + cachesPredicate.getCacheIds() + ']'
                 );
             }
         }
@@ -422,6 +426,30 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
         this.caches = caches;
+
+        return this;
+    }
+
+    /**
+     * Sets include regex pattern that participates in CDC.
+     *
+     * @param includeRegex Include regex template.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setIncludeCachesRegex(String includeRegex) {
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+
+        return this;
+    }
+
+    /**
+     * Sets exclude regex pattern that participates in CDC.
+     *
+     * @param excludeRegex Exclude regex template.
+     * @return {@code this} for chaining.
+     */
+    public IgniteToKafkaCdcStreamer setExcludeCachesRegex(String excludeRegex) {
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         return this;
     }
