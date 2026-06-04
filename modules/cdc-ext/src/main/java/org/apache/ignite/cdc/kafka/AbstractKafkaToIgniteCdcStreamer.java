@@ -42,8 +42,8 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 
 import static org.apache.ignite.internal.IgniteKernal.NL;
 import static org.apache.ignite.internal.IgniteKernal.SITE;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
@@ -254,7 +254,7 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
     /** */
     private void ackAsciiLogo(IgniteLogger log) {
-        String ver = "ver. " + ACK_VER_STR;
+        String ver = "ver. " + VER;
 
         if (log.isInfoEnabled()) {
             log.info(NL + NL +
