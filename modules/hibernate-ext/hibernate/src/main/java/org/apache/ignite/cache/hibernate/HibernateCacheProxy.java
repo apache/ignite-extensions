@@ -96,8 +96,8 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalCache setSkipStore(boolean skipStore) {
-        return delegate.get().setSkipStore(skipStore);
+    @Override public IgniteInternalCache<Object, Object> withSkipStore() {
+        return delegate.get().withSkipStore();
     }
 
     /** {@inheritDoc} */
@@ -597,6 +597,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withExpiryPolicy(ExpiryPolicy plc) {
         return delegate.get().withExpiryPolicy(plc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalCache<Object, Object> withKeepBinaryInInterceptor() {
+        return delegate.get().withKeepBinaryInInterceptor();
     }
 
     /** {@inheritDoc} */
