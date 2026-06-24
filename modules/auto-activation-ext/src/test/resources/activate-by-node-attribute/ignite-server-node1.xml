@@ -1,0 +1,114 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+  <bean abstract="false" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!-- Настройка региона -->
+    <property name="dataStorageConfiguration">
+      <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+        <property name="defaultDataRegionConfiguration">
+          <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+            <property name="initialSize" value="#{10 * 1024 * 1024}"/>
+            <property name="maxSize" value="#{15 * 1024 * 1024}"/>
+            <property name="name"                       value="default"/>
+            <property name="persistenceEnabled"         value="true"/>
+            <property name="metricsEnabled"             value="true"/>
+            <property name="pageReplacementMode"        value="SEGMENTED_LRU"/>
+          </bean>
+        </property>
+        <property name="walSegmentSize" value="#{2 * 1024 * 1024}" />
+        <property name="walSegments" value="10" />
+      </bean>
+    </property>
+
+    <!-- Другие свойства. -->
+    <property name="consistentId" value="cell-1_node-1"/>
+    <property name="igniteInstanceName" value="cell-1_node-1"/>
+
+    <!-- Настройка кеша -->
+    <property name="cacheConfiguration">
+      <list>
+        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+          <property name="cacheMode" value="PARTITIONED"/>
+          <property name="affinity">
+            <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+              <property name="partitions" value="32"/>
+              <property name="affinityBackupFilter">
+                <bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter">
+                  <constructor-arg value="CELL"/>
+                </bean>
+              </property>
+            </bean>
+          </property>
+          <property name="name" value="default"/>
+          <property name="atomicityMode" value="ATOMIC"/>
+          <property name="backups" value="1"/>
+        </bean>
+      </list>
+    </property>
+
+    <!-- Конфигурация TCP Discovery SPI -->
+    <property name="discoverySpi">
+      <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+        <property name="ipFinder">
+          <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+            <property name="addresses">
+              <list>
+                <value>127.0.0.1:47500..47600</value>
+              </list>
+            </property>
+          </bean>
+        </property>
+      </bean>
+    </property>
+
+    <property name="clientConnectorConfiguration">
+      <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+        <property  name="threadPoolSize"  value="128" />
+        <property  name="thinClientEnabled"  value="true" />
+        <property name="thinClientConfiguration">
+          <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+            <property  name="maxActiveComputeTasksPerConnection"  value="1000" />
+          </bean>
+        </property>
+      </bean>
+    </property>
+
+    <!-- Разделение на ячейки -->
+    <property name="userAttributes">
+      <map>
+        <entry key="CELL" value="CELL_1"/>
+      </map>
+    </property>
+
+    <property name="connectorConfiguration" ref="ignConnectorConfiguration"/>
+
+    <property name="pluginProviders">
+      <bean class="opt.apache.ignite.activation.AutoActivationPluginProvider">
+        <constructor-arg name="condition" ref="condition" />
+      </bean>
+    </property>
+  </bean>
+
+  <bean id="condition" class="opt.apache.ignite.activation.ActivateByNodeAttribute">
+    <constructor-arg name="attributeName" value="CELL"/>
+    <constructor-arg name="requiredValues">
+      <util:set>
+        <value>CELL_1</value>
+        <value>CELL_2</value>
+      </util:set>
+    </constructor-arg>
+  </bean>
+
+  <bean id="ignConnectorConfiguration" class="org.apache.ignite.configuration.ConnectorConfiguration">
+    <!-- property name="host"          value="0.0.0.0"/-->
+    <property name="port"          value="10900"/>
+    <property name="idleTimeout"   value="180000"/>
+  </bean>
+
+</beans>
