@@ -122,7 +122,7 @@ public class CachesPredicate implements Predicate<Integer> {
             cacheRegexIds.add(CU.cacheId(cacheName));
 
             if (log.isInfoEnabled())
-                log.info("Cache [cacheName=" + cacheName + "] has been added to the replication");
+                log.info("Cache [cacheName=" + cacheName + "] has been added to CDC");
         }
 
         return true;
@@ -136,7 +136,7 @@ public class CachesPredicate implements Predicate<Integer> {
         cacheRegexIds.remove(cacheId);
 
         if (log.isInfoEnabled())
-            log.info("Cache [cacheId=" + cacheId + "] has been removed from the replication");
+            log.info("Cache [cacheId=" + cacheId + "] has been removed from CDC");
     }
 
     /**
