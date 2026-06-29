@@ -56,14 +56,24 @@ public class CachesPredicate implements Predicate<Integer> {
     private IgniteLogger log;
 
     /**
+     * @param log Logger
+     */
+    public CachesPredicate(IgniteLogger log) {
+        this.log = log;
+    }
+
+    /**
      * Sets cache ids of caches participating in CDC.
      * @param caches Cache names.
      */
     public void setCaches(Collection<String> caches) {
-        cacheIds = caches.stream()
-            .mapToInt(CU::cacheId)
-            .boxed()
-            .collect(Collectors.toCollection(HashSet::new));
+        if (caches == null)
+            cacheIds = new HashSet<>();
+        else
+            cacheIds = caches.stream()
+                .mapToInt(CU::cacheId)
+                .boxed()
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     /**
@@ -94,13 +104,6 @@ public class CachesPredicate implements Predicate<Integer> {
         catch (PatternSyntaxException e) {
             throw new IgniteException("Invalid cache regexp template", e);
         }
-    }
-
-    /**
-     * @param log Logger.
-     */
-    public void setLog(IgniteLogger log) {
-        this.log = log;
     }
 
     /** {@inheritDoc} */

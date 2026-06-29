@@ -68,7 +68,13 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     private CacheVersionConflictResolver resolver;
 
     /** Caches predicate. */
-    protected CachesPredicate cachesPredicate = new CachesPredicate();
+    protected CachesPredicate cachesPredicate;
+
+    /** Include regex template */
+    private String includeRegex;
+
+    /** Exclude regex template */
+    private String excludeRegex;
 
     /** Log. */
     private IgniteLogger log;
@@ -97,14 +103,16 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId, resolver);
-        cachesPredicate.setLog(log);
+        cachesPredicate = new CachesPredicate(log);
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
     }
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
-        if (caches.contains(cacheName) || cachesPredicate.onCacheEvent(cacheName)) {
+        if ((caches != null && caches.contains(cacheName)) || cachesPredicate.onCacheEvent(cacheName)) {
             log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
@@ -152,12 +160,12 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** @param includeRegex Include regex template */
     public void setIncludeCachesRegex(String includeRegex) {
-        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+        this.includeRegex = includeRegex;
     }
 
     /** @param excludeRegex Exclude regex template */
     public void setExcludeCachesRegex(String excludeRegex) {
-        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
+        this.excludeRegex = excludeRegex;
     }
 
     /** {@inheritDoc} */

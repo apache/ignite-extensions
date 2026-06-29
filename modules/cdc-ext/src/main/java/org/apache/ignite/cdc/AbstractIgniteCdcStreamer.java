@@ -74,7 +74,13 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
     private Set<String> caches;
 
     /** Caches predicate. */
-    protected CachesPredicate cachesPredicate = new CachesPredicate();
+    protected CachesPredicate cachesPredicate;
+
+    /** Include regex template */
+    private String includeRegex;
+
+    /** Exclude regex template */
+    private String excludeRegex;
 
     /** Maximum batch size. */
     protected int maxBatchSize;
@@ -105,11 +111,16 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
 
     /** {@inheritDoc} */
     @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
-        A.notEmpty(caches, "caches");
+        if (includeRegex == null)
+            A.notEmpty(caches, "caches");
 
-        cachesPredicate.setLog(log);
+        cachesPredicate = new CachesPredicate(log);
 
         cachesPredicate.setCaches(caches);
+
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
@@ -249,7 +260,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
      * @return {@code this} for chaining.
      */
     public AbstractIgniteCdcStreamer setIncludeCachesRegex(String includeRegex) {
-        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+        this.includeRegex = includeRegex;
 
         return this;
     }
@@ -261,7 +272,7 @@ public abstract class AbstractIgniteCdcStreamer implements CdcConsumerEx {
      * @return {@code this} for chaining.
      */
     public AbstractIgniteCdcStreamer setExcludeCachesRegex(String excludeRegex) {
-        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
+        this.excludeRegex = excludeRegex;
 
         return this;
     }
