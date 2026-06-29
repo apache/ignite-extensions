@@ -144,7 +144,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     private Collection<String> caches;
 
     /** Caches predicate. */
-    protected CachesPredicate cachesPredicate = new CachesPredicate();
+    protected CachesPredicate cachesPredicate;
+
+    /** Include regex template */
+    private String includeRegex;
+
+    /** Exclude regex template */
+    private String excludeRegex;
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -324,16 +330,21 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
-        A.notEmpty(caches, "caches");
+        if (includeRegex == null)
+            A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
 
-        cachesPredicate.setLog(log);
+        cachesPredicate = new CachesPredicate(log);
 
         cachesPredicate.setCaches(caches);
+
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
@@ -437,7 +448,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setIncludeCachesRegex(String includeRegex) {
-        cachesPredicate.setIncludeCacheTemplate(includeRegex);
+        this.includeRegex = includeRegex;
 
         return this;
     }
@@ -449,7 +460,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setExcludeCachesRegex(String excludeRegex) {
-        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
+        this.excludeRegex = excludeRegex;
 
         return this;
     }
