@@ -54,7 +54,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Tests for kafka replication.
  */
-public class CdcKafkaReplicationTest extends AbstractReplicationTest {
+public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicationTest {
     /** */
     public static final String SRC_DEST_TOPIC = "source-dest";
 

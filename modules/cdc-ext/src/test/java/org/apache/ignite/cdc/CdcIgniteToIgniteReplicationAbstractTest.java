@@ -42,7 +42,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class CdcIgniteToIgniteReplicationTest extends AbstractReplicationTest {
+public abstract class CdcIgniteToIgniteReplicationAbstractTest extends AbstractReplicationTest {
     /** {@inheritDoc} */
     @Override protected List<IgniteInternalFuture<?>> startActivePassiveCdc(String cache) {
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
