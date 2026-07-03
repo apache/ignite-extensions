@@ -103,7 +103,7 @@ public class CdcPostgreSqlReplicationTest extends CdcPostgreSqlReplicationAbstra
             .setCdcEnabled(true);
 
         DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
-            .setWalForceArchiveTimeout(5_000)
+            .setWalForceArchiveTimeout(1_000)
             .setDefaultDataRegionConfiguration(dataRegionConfiguration);
 
         cfg.setDataStorageConfiguration(dataStorageConfiguration);
