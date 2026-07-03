@@ -179,7 +179,7 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             null,
             CU.affinityFields(null),
             BinaryConfiguration.DFLT_COMPACT_FOOTER,
-            CU::affinityFieldName,
+            BinaryUtils::affinityFieldName,
             log
         ) {
             @Override public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered,

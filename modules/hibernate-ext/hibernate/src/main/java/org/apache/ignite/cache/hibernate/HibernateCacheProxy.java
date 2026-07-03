@@ -440,6 +440,32 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean lockTxEntry(CacheEntry<Object, Object> entry, long waitTimeout) throws IgniteCheckedException {
+        return delegate.get().lockTxEntry(entry, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockTxEntries(
+        Collection<CacheEntry<Object, Object>> entries,
+        long waitTimeout
+    ) throws IgniteCheckedException {
+        return delegate.get().lockTxEntries(entries, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<Object, Object> entry, long waitTimeout) {
+        return delegate.get().lockTxEntryAsync(entry, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntriesAsync(
+        Collection<CacheEntry<Object, Object>> entries,
+        long waitTimeout
+    ) {
+        return delegate.get().lockTxEntriesAsync(entries, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public void unlock(Object key) throws IgniteCheckedException {
         delegate.get().unlock(keyTransformer.transform(key));
     }
