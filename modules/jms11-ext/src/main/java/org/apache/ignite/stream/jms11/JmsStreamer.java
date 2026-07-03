@@ -521,8 +521,8 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
             }
 
             executor.execute(new Runnable() {
-                @Override @SuppressWarnings("unchecked")
-                public void run() {
+                @SuppressWarnings("unchecked")
+                @Override public void run() {
                     processMessage((T)message);
                     if (batched) {
                         // batch completion may be handled by timer only

@@ -135,8 +135,7 @@ class StringQuery implements DeclaredQuery {
 
     // See org.springframework.data.jpa.repository.query.DeclaredQuery#getAlias()
     /** {@inheritDoc} */
-    @Override @Nullable
-    public String getAlias() {
+    @Nullable @Override public String getAlias() {
         return alias;
     }
 
