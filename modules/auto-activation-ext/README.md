@@ -1,6 +1,5 @@
 Apache Ignite Auto Activation Plugin
 ------------------------------------
-
 Apache Ignite Auto Activation plugin enables cluster activation at startup, subject to configured conditions.
 
 Plugin skip cluster activation in any of next cases:
@@ -30,10 +29,14 @@ If you are using Maven to manage dependencies of your project, you can add Auto 
 dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
+```xml
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                        http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>your.project</artifactId>
     ...
     <dependencies>
         ...
@@ -46,13 +49,13 @@ interested in):
     </dependencies>
     ...
 </project>
-
+```
 
 Usage
 -----------------------------------
 
 To enable cluster auto activation add next properties to your ignite-server.xml configurations
-
+```
 <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
     <property name="pluginProviders">
         <bean class="opt.apache.ignite.activation.AutoActivationPluginProvider">
@@ -60,9 +63,9 @@ To enable cluster auto activation add next properties to your ignite-server.xml 
         </bean>
     </property>
 </bean>
-
+```
 where "condition" can be one of the following beans:
-
+```
 <bean id="condition" class="opt.apache.ignite.activation.ActivateByConsistentID">
     <constructor-arg name="requiredNodes">
         <util:set>
@@ -71,9 +74,9 @@ where "condition" can be one of the following beans:
         </util:set>
     </constructor-arg>
 </bean>
-
+```
 or
-
+```
 <bean id="condition" class="opt.apache.ignite.activation.ActivateByNodeAttribute">
     <constructor-arg name="attributeName" value="ATTR"/>
     <constructor-arg name="requiredValues">
@@ -83,3 +86,4 @@ or
         </util:set>
     </constructor-arg>
 </bean>
+```

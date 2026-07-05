@@ -8,7 +8,7 @@
         http://www.springframework.org/schema/util/spring-util.xsd">
   <bean abstract="false" class="org.apache.ignite.configuration.IgniteConfiguration">
 
-    <!-- Настройка региона -->
+    <!-- Region configuration -->
     <property name="dataStorageConfiguration">
       <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
         <property name="defaultDataRegionConfiguration">
@@ -26,11 +26,11 @@
       </bean>
     </property>
 
-    <!-- Другие свойства. -->
+    <!-- Other properties -->
     <property name="consistentId" value="cell-1_node-2"/>
     <property name="igniteInstanceName" value="cell-1_node-2"/>
 
-    <!-- Настройка кеша -->
+    <!-- Cache configuration -->
     <property name="cacheConfiguration">
       <list>
         <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -52,7 +52,7 @@
       </list>
     </property>
 
-    <!-- Конфигурация TCP Discovery SPI -->
+    <!-- TCP Discovery SPI configuration -->
     <property name="discoverySpi">
       <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
         <property name="ipFinder">
@@ -79,7 +79,7 @@
       </bean>
     </property>
 
-    <!-- Разделение на ячейки -->
+    <!-- Cell partitioning -->
     <property name="userAttributes">
       <map>
         <entry key="CELL" value="CELL_1"/>
@@ -106,7 +106,6 @@
   </bean>
 
   <bean id="ignConnectorConfiguration" class="org.apache.ignite.configuration.ConnectorConfiguration">
-    <!-- property name="host"          value="0.0.0.0"/-->
     <property name="port"          value="10900"/>
     <property name="idleTimeout"   value="180000"/>
   </bean>

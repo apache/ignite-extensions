@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package opt.apache.ignite.activation;
 
 import java.io.Serializable;
@@ -81,12 +98,12 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext pc) {
-        // do nothing
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean bln) {
-        // do nothing
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -95,27 +112,34 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
         IgniteCluster cluster = grid.cluster();
 
         if (cluster.state() == ClusterState.ACTIVE) {
-            if (logger.isInfoEnabled()) logger.info("Auto activation skipped - cluster already activated");
+            if (logger.isInfoEnabled())
+                logger.info("Auto activation skipped - cluster already activated");
+
             return;
         }
 
         if (cluster.currentBaselineTopology() != null) {
-            if (logger.isInfoEnabled()) logger.info("Auto activation skipped - baseline is not empty");
+            if (logger.isInfoEnabled())
+                logger.info("Auto activation skipped - baseline is not empty");
+
             return;
         }
 
         if (condition.apply(cluster.nodes())) {
-            if (logger.isInfoEnabled()) logger.info("Auto activation plugin set cluster state ACTIVE - activation condition meet");
+            if (logger.isInfoEnabled())
+                logger.info("Auto activation plugin set cluster state ACTIVE - activation condition meet");
+
             cluster.state(ClusterState.ACTIVE);
         }
         else {
-            if (logger.isInfoEnabled()) logger.info("Auto activation skipped - activation condition not meet");
+            if (logger.isInfoEnabled())
+                logger.info("Auto activation skipped - activation condition not meet");
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean bln) {
-        // do nothing
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -125,11 +149,11 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
 
     /** {@inheritDoc} */
     @Override public void receiveDiscoveryData(UUID uuid, Serializable srlzbl) {
-        // do nothing
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode cn) throws PluginValidationException {
-        // do nothing
+        // No-op.
     }
 }
