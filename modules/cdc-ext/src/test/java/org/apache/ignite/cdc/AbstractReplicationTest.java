@@ -75,7 +75,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -99,38 +98,32 @@ import static org.junit.Assume.assumeTrue;
 /** */
 @RunWith(Parameterized.class)
 public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
-    /** Client type to connect to a destination cluster. */
-    @Parameterized.Parameter
-    public ClientType clientType;
+    /** Client type to connect to a destination cluster. Initialized in the concrete subclass constructor. */
+    protected ClientType clientType;
 
-    /** Cache atomicity mode. */
-    @Parameterized.Parameter(1)
-    public CacheAtomicityMode atomicity;
+    /** Cache atomicity mode. Initialized in the concrete subclass constructor. */
+    protected CacheAtomicityMode atomicity;
 
     /** Cache replication mode. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter
     public CacheMode mode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(1)
     public int backups;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "clientType={0}, atomicity={1}, mode={2}, backupCnt={3}")
-    public static Collection<?> parameters() {
+    @Parameterized.Parameters(name = "mode={0}, backupCnt={1}")
+    public static Collection<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
-        for (ClientType clientType : ClientType.values()) {
-            for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL)) {
-                for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
-                    for (int backups = 0; backups < 2; backups++) {
-                        // backupCount ignored for REPLICATED caches.
-                        if (backups > 0 && mode == REPLICATED)
-                            continue;
+        for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
+            for (int backups = 0; backups < 2; backups++) {
+                // backupCount ignored for REPLICATED caches.
+                if (backups > 0 && mode == REPLICATED)
+                    continue;
 
-                        params.add(new Object[] {clientType, atomicity, mode, backups});
-                    }
-                }
+                params.add(new Object[] {mode, backups});
             }
         }
 
@@ -820,7 +813,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     }
 
     /** Client type to connect to a destination cluster. */
-    protected enum ClientType {
+    public enum ClientType {
         /** Client node. */
         CLIENT_NODE,
 

@@ -8,7 +8,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAppsTest.prepareConfig;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAppsAbstractTest.prepareConfig;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** PostgreSql CDC test with .xml configuration. */

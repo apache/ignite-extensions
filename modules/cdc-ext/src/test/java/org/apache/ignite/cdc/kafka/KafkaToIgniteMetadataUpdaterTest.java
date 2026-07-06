@@ -36,12 +36,12 @@ import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractReplicationTest.ACTIVE_PASSIVE_CACHE;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.DFLT_PARTS;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.SRC_DEST_META_TOPIC;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.SRC_DEST_TOPIC;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.initKafka;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.kafkaProperties;
-import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationTest.removeKafkaTopicsAndWait;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.DFLT_PARTS;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.SRC_DEST_META_TOPIC;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.SRC_DEST_TOPIC;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.initKafka;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.kafkaProperties;
+import static org.apache.ignite.cdc.kafka.CdcKafkaReplicationAbstractTest.removeKafkaTopicsAndWait;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_CONSUMER_POLL_TIMEOUT;
 import static org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration.DFLT_KAFKA_REQ_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
