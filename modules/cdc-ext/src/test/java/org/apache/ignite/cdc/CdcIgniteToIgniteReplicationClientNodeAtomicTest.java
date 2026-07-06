@@ -21,6 +21,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
 
 /** {@link CdcIgniteToIgniteReplicationAbstractTest} for the {@code CLIENT_NODE} client type and {@code ATOMIC} caches. */
-@ParamsSlice(clientType = CLIENT_NODE, atomicity = ATOMIC)
 public class CdcIgniteToIgniteReplicationClientNodeAtomicTest extends CdcIgniteToIgniteReplicationAbstractTest {
+    /** */
+    public CdcIgniteToIgniteReplicationClientNodeAtomicTest() {
+        clientType = CLIENT_NODE;
+        atomicity = ATOMIC;
+    }
 }

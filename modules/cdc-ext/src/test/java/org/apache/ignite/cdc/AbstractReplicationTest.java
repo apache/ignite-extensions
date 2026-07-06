@@ -96,32 +96,31 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
 
 /** */
-@RunWith(ParamsSliceRunner.class)
+@RunWith(Parameterized.class)
 public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
-    /** Client type to connect to a destination cluster. */
-    @Parameterized.Parameter
-    public ClientType clientType;
+    /** Client type to connect to a destination cluster. Fixed by the concrete subclass constructor. */
+    protected ClientType clientType;
 
-    /** Cache atomicity mode. */
-    @Parameterized.Parameter(1)
-    public CacheAtomicityMode atomicity;
+    /** Cache atomicity mode. Fixed by the concrete subclass constructor. */
+    protected CacheAtomicityMode atomicity;
 
     /** Cache replication mode. */
-    @Parameterized.Parameter(2)
+    @Parameterized.Parameter
     public CacheMode mode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameterized.Parameter(1)
     public int backups;
 
     /**
-     * Concrete subclasses run a single (clientType, atomicity) slice of the parameters matrix (declared via
-     * {@link ParamsSlice}, interpreted by {@link ParamsSliceRunner}) to keep class execution time small enough
-     * for TeamCity Parallel Tests to balance test batches.
+     * Concrete subclasses fix {@code clientType} and {@code atomicity} in constructors and run a single slice of
+     * the parameters matrix to keep class execution time small enough for TeamCity Parallel Tests to balance
+     * test batches.
      *
-     * @return Test parameters for the given client type and cache atomicity mode.
+     * @return Test parameters.
      */
-    protected static Collection<Object[]> parameters(ClientType clientType, CacheAtomicityMode atomicity) {
+    @Parameterized.Parameters(name = "mode={0}, backupCnt={1}")
+    public static Collection<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED)) {
@@ -130,7 +129,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
                 if (backups > 0 && mode == REPLICATED)
                     continue;
 
-                params.add(new Object[] {clientType, atomicity, mode, backups});
+                params.add(new Object[] {mode, backups});
             }
         }
 

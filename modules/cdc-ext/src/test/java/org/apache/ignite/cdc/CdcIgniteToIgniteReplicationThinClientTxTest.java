@@ -21,6 +21,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.THIN_CLIENT;
 
 /** {@link CdcIgniteToIgniteReplicationAbstractTest} for the {@code THIN_CLIENT} client type and {@code TRANSACTIONAL} caches. */
-@ParamsSlice(clientType = THIN_CLIENT, atomicity = TRANSACTIONAL)
 public class CdcIgniteToIgniteReplicationThinClientTxTest extends CdcIgniteToIgniteReplicationAbstractTest {
+    /** */
+    public CdcIgniteToIgniteReplicationThinClientTxTest() {
+        clientType = THIN_CLIENT;
+        atomicity = TRANSACTIONAL;
+    }
 }

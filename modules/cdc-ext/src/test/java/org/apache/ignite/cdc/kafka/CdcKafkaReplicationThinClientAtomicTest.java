@@ -17,12 +17,14 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import org.apache.ignite.cdc.ParamsSlice;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.THIN_CLIENT;
 
 /** {@link CdcKafkaReplicationAbstractTest} for the {@code THIN_CLIENT} client type and {@code ATOMIC} caches. */
-@ParamsSlice(clientType = THIN_CLIENT, atomicity = ATOMIC)
 public class CdcKafkaReplicationThinClientAtomicTest extends CdcKafkaReplicationAbstractTest {
+    /** */
+    public CdcKafkaReplicationThinClientAtomicTest() {
+        clientType = THIN_CLIENT;
+        atomicity = ATOMIC;
+    }
 }

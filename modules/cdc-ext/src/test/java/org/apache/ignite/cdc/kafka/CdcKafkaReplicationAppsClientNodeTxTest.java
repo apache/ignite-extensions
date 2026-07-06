@@ -17,12 +17,14 @@
 
 package org.apache.ignite.cdc.kafka;
 
-import org.apache.ignite.cdc.ParamsSlice;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
 
 /** {@link CdcKafkaReplicationAppsAbstractTest} for the {@code CLIENT_NODE} client type and {@code TRANSACTIONAL} caches. */
-@ParamsSlice(clientType = CLIENT_NODE, atomicity = TRANSACTIONAL)
 public class CdcKafkaReplicationAppsClientNodeTxTest extends CdcKafkaReplicationAppsAbstractTest {
+    /** */
+    public CdcKafkaReplicationAppsClientNodeTxTest() {
+        clientType = CLIENT_NODE;
+        atomicity = TRANSACTIONAL;
+    }
 }

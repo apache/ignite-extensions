@@ -21,6 +21,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cdc.AbstractReplicationTest.ClientType.CLIENT_NODE;
 
 /** {@link CdcIgniteToIgniteReplicationAbstractTest} for the {@code CLIENT_NODE} client type and {@code TRANSACTIONAL} caches. */
-@ParamsSlice(clientType = CLIENT_NODE, atomicity = TRANSACTIONAL)
 public class CdcIgniteToIgniteReplicationClientNodeTxTest extends CdcIgniteToIgniteReplicationAbstractTest {
+    /** */
+    public CdcIgniteToIgniteReplicationClientNodeTxTest() {
+        clientType = CLIENT_NODE;
+        atomicity = TRANSACTIONAL;
+    }
 }
