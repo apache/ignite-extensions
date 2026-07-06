@@ -98,10 +98,10 @@ import static org.junit.Assume.assumeTrue;
 /** */
 @RunWith(Parameterized.class)
 public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
-    /** Client type to connect to a destination cluster. Fixed by the concrete subclass constructor. */
+    /** Client type to connect to a destination cluster. Initialized in the concrete subclass constructor. */
     protected ClientType clientType;
 
-    /** Cache atomicity mode. Fixed by the concrete subclass constructor. */
+    /** Cache atomicity mode. Initialized in the concrete subclass constructor. */
     protected CacheAtomicityMode atomicity;
 
     /** Cache replication mode. */
@@ -112,13 +112,7 @@ public abstract class AbstractReplicationTest extends GridCommonAbstractTest {
     @Parameterized.Parameter(1)
     public int backups;
 
-    /**
-     * Concrete subclasses fix {@code clientType} and {@code atomicity} in constructors and run a single slice of
-     * the parameters matrix to keep class execution time small enough for TeamCity Parallel Tests to balance
-     * test batches.
-     *
-     * @return Test parameters.
-     */
+    /** @return Test parameters. */
     @Parameterized.Parameters(name = "mode={0}, backupCnt={1}")
     public static Collection<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
