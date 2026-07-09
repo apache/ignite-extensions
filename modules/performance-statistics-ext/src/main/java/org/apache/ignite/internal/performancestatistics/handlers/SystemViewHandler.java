@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.performancestatistics.handlers;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -28,58 +38,217 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import static org.apache.ignite.internal.performancestatistics.util.Utils.MAPPER;
 
 /**
- * Builds JSON with system view tables.
- * <p>
- * Example:
- * <pre>
- * {
- *    $nodeId: {
- *      $systemViewTable:
- *        schema: [ $column1, $column2 ],
- *        data:[
- *          [ $value1, $value2 ],
- *          [ $value3, $value4 ]
- *        ]
- *    }
- * }
- * </pre>
+ * Writes system view tables into chunked JSON files.
  */
 public class SystemViewHandler implements IgnitePerformanceStatisticsHandler {
+    /** Number of rows per chunk. */
+    private static final int CHUNK_SIZE = 2_000;
+
+    /** Base directory for system view data. */
+    private final Path baseDir;
+
+    /** Per-view state in traversal order. */
+    private final Map<String, ViewState> views = new HashMap<>();
+
+    /** Current view being written. */
+    private ViewState currentView;
+
+    /** All node IDs seen in system views. */
+    private final Set<String> nodeIds = new HashSet<>();
+
     /** */
-    private final ObjectNode resNode = MAPPER.createObjectNode();
+    public SystemViewHandler(Path baseDir) throws IOException {
+        this.baseDir = baseDir;
+        Files.createDirectories(baseDir);
+    }
 
     /** {@inheritDoc} */
     @Override public void systemView(UUID nodeId, String viewName, List<String> schema, List<Object> data) {
-        JsonNode gridNode = resNode.get(nodeId.toString());
+        String nodeIdStr = nodeId.toString();
 
-        if (gridNode == null) {
-            gridNode = MAPPER.createObjectNode();
-            resNode.set(nodeId.toString(), gridNode);
+        nodeIds.add(nodeIdStr);
+
+        try {
+            if (currentView == null || !currentView.name.equals(viewName)) {
+                if (currentView != null)
+                    currentView.finishCurrentNode();
+
+                currentView = views.get(viewName);
+
+                if (currentView == null) {
+                    currentView = new ViewState(viewName, schema);
+                    views.put(viewName, currentView);
+                }
+            }
+
+            currentView.addRow(nodeIdStr, data);
         }
-
-        JsonNode viewNode = gridNode.get(viewName);
-
-        if (viewNode == null) {
-            viewNode = MAPPER.createObjectNode();
-            ((ObjectNode)gridNode).set(viewName, viewNode);
-
-            ArrayNode schemaNode = MAPPER.createArrayNode();
-            schema.forEach(schemaNode::add);
-            ((ObjectNode)viewNode).set("schema", schemaNode);
-
-            ArrayNode dataNode = MAPPER.createArrayNode();
-            ((ObjectNode)viewNode).set("data", dataNode);
+        catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        ArrayNode dataNode = (ArrayNode)viewNode.get("data");
-
-        ArrayNode rowNode = MAPPER.createArrayNode();
-        data.forEach(attr -> rowNode.add(String.valueOf(attr)));
-        dataNode.add(rowNode);
     }
 
     /** {@inheritDoc} */
     @Override public Map<String, JsonNode> results() {
-        return Collections.singletonMap("systemView", resNode);
+        try {
+            for (ViewState view : views.values())
+                view.finish();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        ObjectNode meta = MAPPER.createObjectNode();
+
+        ArrayNode viewsNode = meta.putArray("views");
+        views.values().forEach(state -> viewsNode.add(state.name));
+
+        ArrayNode nodesNode = meta.putArray("nodes");
+        nodeIds.forEach(nodesNode::add);
+
+        return Collections.singletonMap("systemViewMeta", meta);
+    }
+
+    /** Holds state for a single view of every node. */
+    private class ViewState {
+        /** */
+        private final String name;
+
+        /** */
+        private final List<String> schema;
+
+        /** */
+        private final Path viewDir;
+
+        /** */
+        private final Map<String, Integer> nodeRowCounts = new TreeMap<>();
+
+        /** */
+        private String currentNodeId;
+
+        /** */
+        private NodeState currentNode;
+
+        /** */
+        private ViewState(String viewName, List<String> schema) throws IOException {
+            this.name = viewName;
+            this.schema = schema;
+            this.viewDir = baseDir.resolve(viewName);
+
+            Files.createDirectories(viewDir);
+        }
+
+        /** */
+        public void addRow(String nodeId, List<Object> data) throws IOException {
+            if (currentNode == null || !nodeId.equals(currentNodeId)) {
+                finishCurrentNode();
+                currentNodeId = nodeId;
+                currentNode = new NodeState(viewDir.resolve(nodeId));
+            }
+
+            currentNode.addRow(data);
+        }
+
+        /** */
+        public void finish() throws IOException {
+            finishCurrentNode();
+
+            ObjectNode meta = MAPPER.createObjectNode();
+            meta.put("chunkSize", CHUNK_SIZE);
+
+            ArrayNode columnsNode = meta.putArray("columns");
+            schema.forEach(columnsNode::add);
+
+            ObjectNode nodesNode = meta.putObject("nodes");
+            nodeRowCounts.forEach(nodesNode::put);
+
+            Path metaFile = viewDir.resolve("meta.json");
+            MAPPER.writerWithDefaultPrettyPrinter().writeValue(new File(metaFile.toString()), meta);
+        }
+
+        /** */
+        private void finishCurrentNode() throws IOException {
+            if (currentNode == null)
+                return;
+
+            currentNode.closeChunk();
+
+            nodeRowCounts.put(currentNodeId, currentNode.rowCount);
+
+            currentNode = null;
+            currentNodeId = null;
+        }
+    }
+
+    /** */
+    private static class NodeState {
+        /** */
+        private final Path nodeDir;
+
+        /** */
+        private int chunkIdx;
+
+        /** */
+        private int chunkRowCount;
+
+        /** */
+        private int rowCount;
+
+        /** */
+        private JsonGenerator generator;
+
+        /** */
+        private NodeState(Path nodeDir) throws IOException {
+            this.nodeDir = nodeDir;
+            Files.createDirectories(nodeDir);
+        }
+
+        /** */
+        public void addRow(List<Object> data) {
+            try {
+                ensureChunk();
+
+                generator.writeStartArray();
+                for (Object attr : data)
+                    generator.writeString(String.valueOf(attr));
+                generator.writeEndArray();
+
+                chunkRowCount++;
+                rowCount++;
+
+                if (chunkRowCount >= CHUNK_SIZE)
+                    closeChunk();
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        /** */
+        public void ensureChunk() throws IOException {
+            if (generator != null)
+                return;
+
+            Path chunkFile = nodeDir.resolve(String.format("chunk-%06d.json", chunkIdx));
+
+            generator = MAPPER.getFactory().createGenerator(Files.newBufferedWriter(chunkFile));
+
+            generator.writeStartObject();
+            generator.writeArrayFieldStart("rows");
+        }
+
+        /** */
+        public void closeChunk() throws IOException {
+            if (generator == null)
+                return;
+
+            generator.writeEndArray();
+            generator.writeEndObject();
+            generator.close();
+
+            generator = null;
+            chunkRowCount = 0;
+            chunkIdx++;
+        }
     }
 }
