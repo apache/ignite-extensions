@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -140,17 +141,8 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     /** Kafka properties. */
     private Properties kafkaProps;
 
-    /** Cache names. */
-    private Collection<String> caches;
-
     /** Caches predicate. */
-    protected CachesPredicate cachesPredicate;
-
-    /** Include regex template */
-    private String includeRegex;
-
-    /** Exclude regex template */
-    private String excludeRegex;
+    protected final CachesPredicate cachesPredicate = new CachesPredicate();
 
     /** Max batch size. */
     private int maxBatchSz = DFLT_MAX_BATCH_SIZE;
@@ -330,23 +322,13 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
-        if (includeRegex == null)
-            A.notEmpty(caches, "caches");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
+        cachesPredicate.init(log, cacheEvents);
+
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
-
-        cachesPredicate = new CachesPredicate(log);
-
-        cachesPredicate.setCaches(caches);
-
-        cachesPredicate.setIncludeCacheTemplate(includeRegex);
-
-        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
-
-        cacheEvents.forEachRemaining(evt -> cachesPredicate.onCacheEvent(evt.configuration().getName()));
 
         try {
             producer = new KafkaProducer<>(kafkaProps);
@@ -356,7 +338,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
                     "topic=" + evtTopic +
                     ", metadataTopic = " + metadataTopic +
                     ", onlyPrimary=" + onlyPrimary +
-                    ", cacheIds=" + cachesPredicate.getCacheIds() + ']'
+                    ", caches=" + cachesPredicate + ']'
                 );
             }
         }
@@ -436,7 +418,7 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @return {@code this} for chaining.
      */
     public IgniteToKafkaCdcStreamer setCaches(Collection<String> caches) {
-        this.caches = caches;
+        cachesPredicate.setCaches(caches);
 
         return this;
     }
@@ -447,8 +429,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @param includeRegex Include regex template.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteToKafkaCdcStreamer setIncludeCachesRegex(String includeRegex) {
-        this.includeRegex = includeRegex;
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
 
         return this;
     }
@@ -459,8 +442,9 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
      * @param excludeRegex Exclude regex template.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public IgniteToKafkaCdcStreamer setExcludeCachesRegex(String excludeRegex) {
-        this.excludeRegex = excludeRegex;
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
 
         return this;
     }

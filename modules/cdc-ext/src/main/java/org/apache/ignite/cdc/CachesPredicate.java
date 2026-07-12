@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -26,9 +27,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -40,6 +41,15 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  * </ol>
  */
 public class CachesPredicate implements Predicate<Integer> {
+    /** Cache names. */
+    private Collection<String> caches;
+
+    /** Include regex template */
+    private String includeRegex;
+
+    /** Exclude regex template */
+    private String excludeRegex;
+
     /** Include regex pattern for cache names. */
     private Pattern includePtrn;
 
@@ -55,11 +65,29 @@ public class CachesPredicate implements Predicate<Integer> {
     /** Logger. */
     private IgniteLogger log;
 
-    /**
-     * @param log Logger
-     */
-    public CachesPredicate(IgniteLogger log) {
+    /** */
+    public void init(IgniteLogger log, Iterator<CdcCacheEvent> cacheEvents) {
         this.log = log;
+
+        if (includeRegex == null)
+            A.notEmpty(caches, "caches");
+
+        cacheIds = caches == null
+            ? Collections.emptySet()
+            : caches.stream()
+                .mapToInt(CU::cacheId)
+                .boxed()
+                .collect(Collectors.toCollection(HashSet::new));
+
+        try {
+            includePtrn = includeRegex != null ? Pattern.compile(includeRegex) : null;
+            excludePtrn = excludeRegex != null ? Pattern.compile(excludeRegex) : null;
+        }
+        catch (PatternSyntaxException e) {
+            throw new IgniteException("Invalid cache regexp template", e);
+        }
+
+        cacheEvents.forEachRemaining(evt -> onCacheEvent(evt.configuration().getName()));
     }
 
     /**
@@ -67,43 +95,27 @@ public class CachesPredicate implements Predicate<Integer> {
      * @param caches Cache names.
      */
     public void setCaches(Collection<String> caches) {
-        if (caches == null)
-            cacheIds = new HashSet<>();
-        else
-            cacheIds = caches.stream()
-                .mapToInt(CU::cacheId)
-                .boxed()
-                .collect(Collectors.toCollection(HashSet::new));
+        this.caches = caches;
     }
 
     /**
      * Sets include regex pattern for caches participating in CDC.
      *
-     * @param includeRegex Include regex string
-     * @throws IgniteException If the template's syntax is invalid
+     * @param includeRegex Include regex string.
+     * @throws IgniteException If the template's syntax is invalid.
      */
     public void setIncludeCacheTemplate(String includeRegex) {
-        try {
-            includePtrn = includeRegex != null ? Pattern.compile(includeRegex) : Pattern.compile("");
-        }
-        catch (PatternSyntaxException e) {
-            throw new IgniteException("Invalid cache regexp template", e);
-        }
+        this.includeRegex = includeRegex;
     }
 
     /**
      * Sets exclude regex pattern for caches participating in CDC.
      *
-     * @param excludeRegex Exclude regex string
-     * @throws IgniteException If the template's syntax is invalid
+     * @param excludeRegex Exclude regex string.
+     * @throws IgniteException If the template's syntax is invalid.
      */
     public void setExcludeCacheTemplate(String excludeRegex) {
-        try {
-            excludePtrn = excludeRegex != null ? Pattern.compile(excludeRegex) : Pattern.compile("");
-        }
-        catch (PatternSyntaxException e) {
-            throw new IgniteException("Invalid cache regexp template", e);
-        }
+        this.excludeRegex = excludeRegex;
     }
 
     /** {@inheritDoc} */
@@ -112,44 +124,56 @@ public class CachesPredicate implements Predicate<Integer> {
     }
 
     /**
-     * Matches cache name with compiled regex patterns.
+     * @param cacheName Cache name.
+     * @return {@code True} if the cache is configured explicitly or matches the regex filters.
+     */
+    public boolean matches(String cacheName) {
+        return cacheIds.contains(CU.cacheId(cacheName)) || matchesRegex(cacheName);
+    }
+
+    /**
+     * Cache start event listener.
      *
      * @param cacheName Cache name.
-     * @return True if cache name matches include pattern and doesn't match exclude pattern.
      */
-    public boolean onCacheEvent(String cacheName) {
-        if (excludePtrn.matcher(cacheName).matches())
-            return false;
+    public void onCacheEvent(String cacheName) {
+        if (!cacheIds.contains(CU.cacheId(cacheName)) && matchesRegex(cacheName)) {
+            boolean added = cacheRegexIds.add(CU.cacheId(cacheName));
 
-        if (includePtrn.matcher(cacheName).matches() && !cacheRegexIds.contains(CU.cacheId(cacheName))) {
-            cacheRegexIds.add(CU.cacheId(cacheName));
-
-            if (log.isInfoEnabled())
-                log.info("Cache [cacheName=" + cacheName + "] has been added to CDC");
+            if (added && log.isInfoEnabled())
+                log.info("Cache matched CDC regex filter [cacheName=" + cacheName + ']');
         }
-
-        return true;
     }
 
-    /**
-     * Removes destroyed cache from replication.
-     * @param cacheId Cache id.
-     * */
+    /** */
     public void onCacheDestroy(int cacheId) {
-        cacheRegexIds.remove(cacheId);
+        boolean removed = cacheRegexIds.remove(cacheId);
 
-        if (log.isInfoEnabled())
-            log.info("Cache [cacheId=" + cacheId + "] has been removed from CDC");
+        if (removed && log.isInfoEnabled())
+            log.info("Destroyed cache removed from CDC regex filter [cacheId=" + cacheId + ']');
     }
 
-    /**
-     * @return {@link Set} of cache ids participating in CDC.
-     */
+    /** @return {@link Set} of cache IDs participating in CDC. */
+    // TODO Remove.
     public Set<Integer> getCacheIds() {
         Set<Integer> cacheIds = new HashSet<>(this.cacheIds) ;
 
         cacheIds.addAll(cacheRegexIds);
 
         return cacheIds;
+    }
+
+    /** */
+    private boolean matchesRegex(String cacheName) {
+        if (excludePtrn != null && excludePtrn.matcher(cacheName).matches())
+            return false;
+
+        return includePtrn != null && includePtrn.matcher(cacheName).matches();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "CachesPredicate [caches=" + caches + ", includeRegex=" + includeRegex +
+            ", " + "excludeRegex=" + excludeRegex + ']';
     }
 }

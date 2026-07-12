@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc.conflictresolve;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ import org.apache.ignite.cdc.CachesPredicate;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -46,9 +48,6 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     /** Cluster id. */
     private byte clusterId;
 
-    /** Cache names. */
-    private Set<String> caches;
-
     /** Plugin name. */
     private String name = "Cache version conflict resolver";
 
@@ -68,13 +67,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     private CacheVersionConflictResolver resolver;
 
     /** Caches predicate. */
-    protected CachesPredicate cachesPredicate;
-
-    /** Include regex template */
-    private String includeRegex;
-
-    /** Exclude regex template */
-    private String excludeRegex;
+    protected final CachesPredicate cachesPredicate = new CachesPredicate();
 
     /** Log. */
     private IgniteLogger log;
@@ -86,7 +79,8 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return name + " [clusterId=" + clusterId + ", conflictResolveField=" + conflictResolveField + ", caches=" + caches + ']';
+        return name + " [clusterId=" + clusterId + ", conflictResolveField=" + conflictResolveField
+            + ", caches=" + cachesPredicate + ']';
     }
 
     /** {@inheritDoc} */
@@ -103,16 +97,15 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         this.log = ctx.log(CacheVersionConflictResolverPluginProvider.class);
         this.provider = new CacheVersionConflictResolverCachePluginProvider<>(conflictResolveField, clusterId, resolver);
-        cachesPredicate = new CachesPredicate(log);
-        cachesPredicate.setIncludeCacheTemplate(includeRegex);
-        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
+
+        cachesPredicate.init(log, Collections.emptyIterator());
     }
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
         String cacheName = ctx.igniteCacheConfiguration().getName();
 
-        if ((caches != null && caches.contains(cacheName)) || cachesPredicate.onCacheEvent(cacheName)) {
+        if (cachesPredicate.matches(cacheName)) {
             log.info("ConflictResolver provider set for cache [cacheName=" + cacheName + ']');
 
             return provider;
@@ -140,7 +133,7 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
 
     /** @param caches Caches to replicate. */
     public void setCaches(Set<String> caches) {
-        this.caches = caches;
+        cachesPredicate.setCaches(caches);
     }
 
     /** @param conflictResolveField Field to resolve conflicts. */
@@ -159,13 +152,15 @@ public class CacheVersionConflictResolverPluginProvider<C extends PluginConfigur
     }
 
     /** @param includeRegex Include regex template */
+    @IgniteExperimental
     public void setIncludeCachesRegex(String includeRegex) {
-        this.includeRegex = includeRegex;
+        cachesPredicate.setIncludeCacheTemplate(includeRegex);
     }
 
     /** @param excludeRegex Exclude regex template */
+    @IgniteExperimental
     public void setExcludeCachesRegex(String excludeRegex) {
-        this.excludeRegex = excludeRegex;
+        cachesPredicate.setExcludeCacheTemplate(excludeRegex);
     }
 
     /** {@inheritDoc} */
