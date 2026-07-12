@@ -65,7 +65,7 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer impleme
         super.start(mreg, cacheEvents);
 
         if (log.isInfoEnabled())
-            log.info("Ignite To Ignite Streamer [cacheIds=" + cachesPredicate.getCacheIds() + ']');
+            log.info("Ignite To Ignite Streamer [caches=" + cachesPredicate + ']');
 
         A.notNull(destIgniteCfg, "Destination Ignite configuration.");
 
