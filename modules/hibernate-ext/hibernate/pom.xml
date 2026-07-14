@@ -37,6 +37,10 @@
 
     <url>https://ignite.apache.org</url>
 
+    <properties>
+        <h2.version>2.3.232</h2.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>

@@ -34,7 +34,7 @@ import jakarta.persistence.Table;
 public class CacheHibernateBlobStoreEntry {
     /** Key (use concrete key type in production). */
     @Id
-    @Column(length = 65535)
+    @Column(name = "entry_key", length = 65535)
     private byte[] key;
 
     /** Value (use concrete value type in production). */
