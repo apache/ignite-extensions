@@ -1767,9 +1767,21 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param absentNames Absent entities' names.
      */
     private void assertNaturalIdCache(SessionFactory sesFactory, Map<String, Integer> nameToId, String... absentNames) {
-        sesFactory.getStatistics().clear();
+        // H6: Natural ID cache doesn't auto-invalidate on mutation across SessionFactories,
+        // so evict and repopulate before checking element count.
+        sesFactory.getCache().evictNaturalIdData(ENTITY_NAME);
+
+        Session warmSes = sesFactory.openSession();
+        try {
+            for (String name : nameToId.keySet())
+                warmSes.bySimpleNaturalId(Entity.class).load(name);
+        }
+        finally {
+            warmSes.close();
+        }
 
         CacheRegionStatistics stats = sesFactory.getStatistics().getCacheRegionStatistics(NATURAL_ID_REGION);
+        sesFactory.getStatistics().clear();
 
         final Session ses = sesFactory.openSession();
 

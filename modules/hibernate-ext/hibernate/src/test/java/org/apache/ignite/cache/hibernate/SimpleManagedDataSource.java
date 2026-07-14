@@ -24,13 +24,10 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import javax.sql.XAConnection;
 import javax.sql.XADataSource;
-import javax.transaction.xa.XAResource;
 import jakarta.transaction.RollbackException;
 import jakarta.transaction.Synchronization;
 import jakarta.transaction.SystemException;
@@ -38,20 +35,20 @@ import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionManager;
 
 /**
- * Minimal managed data source that enlists XA connections in the current JTA transaction.
- * Uses {@code jakarta.transaction} API (compatible with Narayana).
+ * Minimal managed data source that enlists XA connections in the current JTA transaction
+ * ({@code jakarta.transaction} API, compatible with Narayana).
  * <p>
- * Wraps an {@link XADataSource} and automatically enlists/delist the XA resource
- * on {@code getConnection()} / transaction completion.
+ * Wraps an {@link XADataSource} and automatically enlists the XA resource on {@code getConnection()}
+ * and closes the XA connection on transaction completion or proxy {@code close()}.
  */
 public class SimpleManagedDataSource implements DataSource {
-    /** Underlying XA data source. */
+    /** */
     private final XADataSource xaDataSrc;
 
-    /** Transaction manager for enlist/delist. */
+    /** */
     private final TransactionManager transactionMgr;
 
-    /** Default auto-commit setting. */
+    /** */
     private boolean dfltAutoCommit = false;
 
     /** Sets the default auto-commit mode for connections. */
@@ -59,12 +56,9 @@ public class SimpleManagedDataSource implements DataSource {
         this.dfltAutoCommit = dfltAutoCommit;
     }
 
-    /** Tracks open XA connections keyed by wrapped connection identity. */
-    private final ConcurrentMap<Object, XAConnection> xaConnections = new ConcurrentHashMap<>();
-
     /**
-     * @param xaDataSrc The underlying XA data source.
-     * @param transactionMgr The JTA transaction manager ({@code jakarta.transaction}).
+     * @param xaDataSrc Data source.
+     * @param transactionMgr Transaction manager.
      */
     public SimpleManagedDataSource(XADataSource xaDataSrc, TransactionManager transactionMgr) {
         this.xaDataSrc = xaDataSrc;
@@ -77,54 +71,44 @@ public class SimpleManagedDataSource implements DataSource {
     }
 
     /** {@inheritDoc} */
-    @Override public Connection getConnection(String username, String password) throws SQLException {
-        XAConnection xaConn;
-        try {
-            xaConn = username != null ? xaDataSrc.getXAConnection(username, password) : xaDataSrc.getXAConnection();
-        } catch (Exception e) {
-            throw new SQLException("Failed to get XA connection", e);
-        }
+    @Override public Connection getConnection(String username, String pwd) throws SQLException {
+        XAConnection xaConn = openXaConnection(username, pwd);
 
         Connection conn = xaConn.getConnection();
         conn.setAutoCommit(dfltAutoCommit);
 
-        // Enlist XA resource in current transaction.
-        Transaction tx;
-        try {
-            tx = transactionMgr.getTransaction();
-        } catch (SystemException e) {
-            try { xaConn.close(); } catch (SQLException ignore) {}
-            throw new SQLException("Failed to get current transaction", e);
-        }
+        Transaction tx = currentTransaction();
 
         if (tx != null) {
             try {
                 tx.enlistResource(xaConn.getXAResource());
-            } catch (Exception e) {
-                try { xaConn.close(); } catch (SQLException ignore) {}
+            }
+            catch (Exception e) {
+                closeQuietly(xaConn);
+
                 throw new SQLException("Failed to enlist XA resource", e);
             }
 
-            // On transaction completion, delist the resource and close XA connection.
             try {
-                tx.registerSynchronization(new DelistSynchronization(xaConn.getXAResource(), xaConn));
+                tx.registerSynchronization(new Synchronization() {
+                    /** {@inheritDoc} */
+                    @Override public void beforeCompletion() {
+                        // No-op.
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void afterCompletion(int status) {
+                        closeQuietly(xaConn);
+                    }
+                });
             }
             catch (RollbackException | SystemException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        // Use a marker object as key so the proxy identity maps to the right XA connection.
-        Object key = new Object();
-        xaConnections.put(key, xaConn);
-
-        @SuppressWarnings("unchecked")
-        Connection proxy = (Connection) Proxy.newProxyInstance(
-                Connection.class.getClassLoader(),
-                new Class<?>[]{Connection.class},
-                new ManagedConnectionInvocationHandler(conn, key, xaConnections));
-
-        return proxy;
+        return (Connection)Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[]{Connection.class},
+            new CloseHandler(conn, xaConn));
     }
 
     /** {@inheritDoc} */
@@ -144,12 +128,12 @@ public class SimpleManagedDataSource implements DataSource {
 
     /** {@inheritDoc} */
     @Override public void setLogWriter(PrintWriter out) {
-        // no-op
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void setLoginTimeout(int seconds) {
-        // no-op
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -162,84 +146,82 @@ public class SimpleManagedDataSource implements DataSource {
         throw new SQLFeatureNotSupportedException("Unsupported");
     }
 
-    /**
-     * Synchronization that delists the XA resource and closes the XA connection
-     * after transaction completion.
-     */
-    private static final class DelistSynchronization implements Synchronization {
-        private final XAResource xaResource;
-        private final XAConnection xaConnection;
-
-        DelistSynchronization(XAResource xaResource, XAConnection xaConnection) {
-            this.xaResource = xaResource;
-            this.xaConnection = xaConnection;
+    /** */
+    private XAConnection openXaConnection(String username, String pwd) throws SQLException {
+        try {
+            return username != null ? xaDataSrc.getXAConnection(username, pwd) : xaDataSrc.getXAConnection();
         }
-
-        @Override
-        public void beforeCompletion() {
-            // nothing needed here - the TM handles XA protocol
+        catch (Exception e) {
+            throw new SQLException("Failed to get XA connection", e);
         }
+    }
 
-        @Override
-        public void afterCompletion(int status) {
-            try {
-                xaConnection.close();
-            } catch (SQLException ignore) {
-                // ignore
-            }
+    /** */
+    private Transaction currentTransaction() throws SQLException {
+        try {
+            return transactionMgr.getTransaction();
+        }
+        catch (SystemException e) {
+            throw new SQLException("Failed to get current transaction", e);
+        }
+    }
+
+    /** */
+    private static void closeQuietly(XAConnection xaConn) {
+        try {
+            xaConn.close();
+        }
+        catch (SQLException ignore) {
+            // No-op.
         }
     }
 
     /**
      * Invocation handler that delegates all calls to the real connection,
-     * but cleans up the XA connection on {@code close()}.
+     * but closes the XA connection on {@code close()} if it hasn't been closed already.
      */
-    private static final class ManagedConnectionInvocationHandler implements InvocationHandler {
+    private static final class CloseHandler implements InvocationHandler {
         /** */
         private final Connection delegate;
 
         /** */
-        private final Object xaKey;
+        private XAConnection xaConn;
 
-        /** */
-        private final ConcurrentMap<Object, XAConnection> xaConnections;
-
-        /** */
-        ManagedConnectionInvocationHandler(Connection delegate, Object xaKey,
-                                          ConcurrentMap<Object, XAConnection> xaConnections) {
+        /**
+         * @param delegate Delegate.
+         * @param xaConn Connection.
+         */
+        CloseHandler(Connection delegate, XAConnection xaConn) {
             this.delegate = delegate;
-            this.xaKey = xaKey;
-            this.xaConnections = xaConnections;
+            this.xaConn = xaConn;
         }
 
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             if ("close".equals(method.getName()) && method.getParameterCount() == 0) {
-                XAConnection xaConn = xaConnections.remove(xaKey);
+                XAConnection xa = xaConn;
+                xaConn = null; // prevent double close
 
-                if (xaConn != null) {
-                    try {
-                        xaConn.close();
-                    }
-                    catch (SQLException ignore) {
-                        // already closed by DelistSynchronization if transaction completed
-                    }
-                }
+                if (xa != null)
+                    closeQuietly(xa);
 
                 return null;
             }
 
-            if ("equals".equals(method.getName())) {
-                if (args[0] == delegate) return Boolean.TRUE;
+            switch (method.getName()) {
+                case "equals" -> {
+                    if (args[0] == delegate)
+                        return Boolean.TRUE;
 
-                return Proxy.isProxyClass(args[0].getClass()) && Proxy.getInvocationHandler(args[0]) == this;
+                    return Proxy.isProxyClass(args[0].getClass()) && Proxy.getInvocationHandler(args[0]) == this;
+                }
+                case "hashCode" -> {
+                    return System.identityHashCode(delegate);
+                }
+                case "getClass" -> {
+                    return delegate.getClass();
+                }
             }
-
-            if ("hashCode".equals(method.getName()))
-                return System.identityHashCode(delegate);
-
-            if ("getClass".equals(method.getName()))
-                return delegate.getClass();
 
             return method.invoke(delegate, args);
         }
