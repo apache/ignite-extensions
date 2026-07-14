@@ -18,10 +18,10 @@
 package org.apache.ignite.cache.hibernate;
 
 import java.util.Collections;
-import javax.cache.configuration.Factory;
 import jakarta.transaction.Synchronization;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.UserTransaction;
+import javax.cache.configuration.Factory;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
 import org.apache.ignite.configuration.CacheConfiguration;
