@@ -23,15 +23,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.OptimisticLockException;
-import javax.persistence.PersistenceException;
-import javax.persistence.SharedCacheMode;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PersistenceException;
+import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -42,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.jdbc.JdbcSQLException;
 import org.hibernate.ObjectNotFoundException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -53,7 +57,6 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.query.Query;
@@ -73,12 +76,11 @@ import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.Environment.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.Environment.GENERATE_STATISTICS;
 import static org.hibernate.cfg.Environment.HBM2DDL_AUTO;
-import static org.hibernate.cfg.Environment.RELEASE_CONNECTIONS;
 import static org.hibernate.cfg.Environment.USE_QUERY_CACHE;
 import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
+import static org.hibernate.cfg.JdbcSettings.CONNECTION_HANDLING;
 
 /**
- *
  * Tests Hibernate L2 cache.
  */
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
@@ -123,7 +125,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * First Hibernate test entity.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @NaturalIdCache
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     public static class Entity {
@@ -185,7 +187,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         /**
          * @return Children.
          */
-        @OneToMany(cascade = javax.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
+        @OneToMany(cascade = jakarta.persistence.CascadeType.ALL, fetch = FetchType.LAZY)
         @JoinColumn(name = "ENTITY_ID")
         public Collection<ChildEntity> getChildren() {
             return children;
@@ -202,7 +204,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * Second Hibernate test entity.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @NaturalIdCache
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     public static class Entity2 {
@@ -265,7 +267,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * Hibernate child entity referenced by {@link Entity}.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings("PublicInnerClass")
     public static class ChildEntity {
         /** */
@@ -305,7 +307,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * Hibernate entity referencing {@link Entity}.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings("PublicInnerClass")
     public static class ParentEntity {
         /** */
@@ -364,7 +366,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /**
      * Hibernate entity.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     public static class VersionedEntity {
         /** */
@@ -404,7 +406,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         /**
          * @return Version.
          */
-        @javax.persistence.Version
+        @jakarta.persistence.Version
         public long getVersion() {
             return ver;
         }
@@ -574,7 +576,10 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             ses = sesFactory1.openSession();
 
             try {
-                List<Entity> list = ses.createCriteria(ENTITY_NAME).list();
+                CriteriaQuery<Entity> cq = ses.getCriteriaBuilder().createQuery(Entity.class);
+                cq.from(Entity.class);
+
+                List<Entity> list = ses.createQuery(cq).getResultList();
 
                 assertEquals(idToChildCnt.size(), list.size());
 
@@ -947,7 +952,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1239,7 +1244,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1332,7 +1337,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1366,7 +1371,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1411,7 +1416,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1439,7 +1444,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(ConstraintViolationException.class, e.getCause().getClass());
+                assertEquals(JdbcSQLException.class, e.getCause().getClass());
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1738,17 +1743,17 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
             // Test evictAll method.
 
-            sesFactory2.getCache().evictEntityRegion(ENTITY_NAME);
+            sesFactory2.getCache().evictEntityData(ENTITY_NAME);
 
             assertEquals(0, stats1.getElementCountInMemory());
             assertEquals(0, stats2.getElementCountInMemory());
 
-            sesFactory2.getCache().evictNaturalIdRegion(ENTITY_NAME);
+            sesFactory2.getCache().evictNaturalIdData(ENTITY_NAME);
 
             assertEquals(0, idStats1.getElementCountInMemory());
             assertEquals(0, idStats2.getElementCountInMemory());
 
-            sesFactory2.getCache().evictCollectionRegion(CHILD_COLLECTION_REGION);
+            sesFactory2.getCache().evictCollectionData(CHILD_COLLECTION_REGION);
 
             assertEquals(0, colStats1.getElementCountInMemory());
             assertEquals(0, colStats2.getElementCountInMemory());
@@ -1981,7 +1986,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         map.put(USE_SECOND_LEVEL_CACHE, "true");
         map.put(USE_QUERY_CACHE, "false");
         map.put(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
-        map.put(RELEASE_CONNECTIONS, "on_close");
+        map.put(CONNECTION_HANDLING, "DELAYED_ACQUISITION_AND_HOLD");
         map.put(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
         map.put(DFLT_ACCESS_TYPE_PROPERTY, dfltAccessType);
 

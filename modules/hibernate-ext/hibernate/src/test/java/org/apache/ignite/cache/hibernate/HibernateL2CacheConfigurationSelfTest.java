@@ -22,12 +22,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import javax.cache.Cache;
-import javax.persistence.Cacheable;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -52,9 +52,9 @@ import static org.hibernate.cache.spi.RegionFactory.DEFAULT_UPDATE_TIMESTAMPS_RE
 import static org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY;
 import static org.hibernate.cfg.AvailableSettings.GENERATE_STATISTICS;
 import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
-import static org.hibernate.cfg.AvailableSettings.RELEASE_CONNECTIONS;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
+import static org.hibernate.cfg.JdbcSettings.CONNECTION_HANDLING;
 
 /**
  * Tests Hibernate L2 cache configuration.
@@ -154,7 +154,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
 
-        cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
+        cfg.setProperty(CONNECTION_HANDLING, "DELAYED_ACQUISITION_AND_HOLD");
 
         cfg.setProperty(HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
 
@@ -302,7 +302,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Test Hibernate entity1.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -330,7 +330,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Test Hibernate entity2.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -358,7 +358,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Test Hibernate entity3.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -386,7 +386,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     /**
      * Test Hibernate entity4.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
