@@ -27,16 +27,16 @@
         <property name="show_sql">true</property>
 
         <!-- Database connection settings (private in-memory database). -->
-        <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
+        <!-- H2 1.x: create table via INIT to avoid hbm2ddl.auto=update (sequence metadata extraction fails on H2 1.x). -->
+        <property name="connection.url">
+            jdbc:h2:mem:example;DB_CLOSE_DELAY=-1;INIT=CREATE TABLE IF NOT EXISTS ENTRIES (key VARBINARY PRIMARY KEY, val VARBINARY)
+        </property>
 
-        <!-- Only validate the database schema on startup in production mode. -->
-        <property name="hbm2ddl.auto">update</property>
+        <!-- H2 1.x: 'start_value' column missing in INFORMATION_SCHEMA.SEQUENCES — disable schema migration. -->
+        <property name="hbm2ddl.auto">validate</property>
 
         <!-- H2 dialect. -->
         <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
-
-        <!-- Disable implicit sequence extraction — H2 1.x lacks 'start_value' column. -->
-        <property name="hibernate.id.db_structure_naming_strategy">none</property>
 
         <!-- Mappings. -->
         <mapping resource="org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml"/>
