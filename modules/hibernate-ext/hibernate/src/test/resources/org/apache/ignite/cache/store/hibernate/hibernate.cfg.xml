@@ -32,8 +32,8 @@
             jdbc:h2:mem:example;DB_CLOSE_DELAY=-1;INIT=CREATE TABLE IF NOT EXISTS ENTRIES (key VARBINARY PRIMARY KEY, val VARBINARY)
         </property>
 
-        <!-- H2 1.x: 'start_value' column missing in INFORMATION_SCHEMA.SEQUENCES — disable schema migration. -->
-        <property name="hbm2ddl.auto">validate</property>
+        <!-- H2 1.x: disable all schema management to avoid sequence metadata extraction ('start_value' missing). -->
+        <property name="hbm2ddl.auto">none</property>
 
         <!-- H2 dialect. -->
         <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
