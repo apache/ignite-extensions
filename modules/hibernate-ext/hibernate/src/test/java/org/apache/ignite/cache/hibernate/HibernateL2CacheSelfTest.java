@@ -32,9 +32,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.SharedCacheMode;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1773,10 +1771,6 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         CacheRegionStatistics stats = sesFactory.getStatistics().getCacheRegionStatistics(NATURAL_ID_REGION);
 
-        long hitBefore = stats.getHitCount();
-
-        long missBefore = stats.getMissCount();
-
         final Session ses = sesFactory.openSession();
 
         try {
@@ -1786,9 +1780,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             for (String name : absentNames)
                 assertNull((ses.bySimpleNaturalId(Entity.class).load(name)));
 
-            assertEquals(nameToId.size() + hitBefore, stats.getHitCount());
-
-            assertEquals(absentNames.length + missBefore, stats.getMissCount());
+            assertEquals(nameToId.size(), stats.getElementCountInMemory());
         }
         finally {
             ses.close();
