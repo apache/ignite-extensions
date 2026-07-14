@@ -35,6 +35,9 @@
         <!-- H2 dialect. -->
         <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>
 
+        <!-- Disable implicit sequence extraction — H2 1.x lacks 'start_value' column. -->
+        <property name="hibernate.id.db_structure_naming_strategy">none</property>
+
         <!-- Mappings. -->
         <mapping resource="org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml"/>
     </session-factory>

@@ -950,7 +950,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1242,7 +1242,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1335,7 +1335,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1369,7 +1369,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1414,7 +1414,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1442,7 +1442,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
                 fail("Commit must fail.");
             }
             catch (PersistenceException e) {
-                assertEquals(JdbcSQLException.class, e.getCause().getClass());
+                assertSqlException(e);
                 log.info("Expected exception: " + e);
 
                 tx.rollback();
@@ -1995,5 +1995,12 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         map.put(DFLT_ACCESS_TYPE_PROPERTY, dfltAccessType);
 
         return map;
+    }
+
+    /** */
+    private void assertSqlException(PersistenceException e) {
+        Throwable cause = e.getCause();
+
+        assertTrue("Expected JdbcSQLException, got: " + cause.getClass(), cause instanceof JdbcSQLException);
     }
 }
