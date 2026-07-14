@@ -24,7 +24,7 @@
 
 <hibernate-mapping package="org.apache.ignite.examples.datagrid.store" default-access="field">
     <class name="org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreEntry" table="ENTRIES">
-        <id name="key" column="key"/>
+        <id name="key"/>
 
         <property name="val"/>
     </class>
