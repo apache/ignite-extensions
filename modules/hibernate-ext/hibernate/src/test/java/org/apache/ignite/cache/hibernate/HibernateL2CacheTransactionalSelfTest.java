@@ -87,6 +87,7 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
         super.afterTestsStopped();
 
         txMgr = null;
+        userTx = null;
     }
 
     /** {@inheritDoc} */

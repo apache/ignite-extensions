@@ -205,6 +205,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void close() throws HibernateException {
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -239,7 +240,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -254,7 +255,7 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Set<String> getDefinedFetchProfileNames() {
-            return Set.of();
+            return null;
         }
 
         /** {@inheritDoc} */

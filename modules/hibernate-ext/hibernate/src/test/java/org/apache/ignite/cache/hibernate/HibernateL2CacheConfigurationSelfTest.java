@@ -55,6 +55,7 @@ import static org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO;
 import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
 import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 import static org.hibernate.cfg.JdbcSettings.CONNECTION_HANDLING;
+import static org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_HOLD;
 
 /**
  * Tests Hibernate L2 cache configuration.
@@ -154,7 +155,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
 
-        cfg.setProperty(CONNECTION_HANDLING, "DELAYED_ACQUISITION_AND_HOLD");
+        cfg.setProperty(CONNECTION_HANDLING, DELAYED_ACQUISITION_AND_HOLD.name());
 
         cfg.setProperty(HibernateAccessStrategyFactory.IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
 

@@ -59,6 +59,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.query.Query;
 import org.hibernate.stat.CacheRegionStatistics;
+import org.hibernate.stat.Statistics;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -77,6 +78,7 @@ import static org.hibernate.cfg.Environment.HBM2DDL_AUTO;
 import static org.hibernate.cfg.Environment.USE_QUERY_CACHE;
 import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
 import static org.hibernate.cfg.JdbcSettings.CONNECTION_HANDLING;
+import static org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_HOLD;
 
 /**
  * Tests Hibernate L2 cache.
@@ -1767,21 +1769,15 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param absentNames Absent entities' names.
      */
     private void assertNaturalIdCache(SessionFactory sesFactory, Map<String, Integer> nameToId, String... absentNames) {
-        // H6: Natural ID cache doesn't auto-invalidate on mutation across SessionFactories,
-        // so evict and repopulate before checking element count.
-        sesFactory.getCache().evictNaturalIdData(ENTITY_NAME);
+        Statistics statistics = sesFactory.getStatistics();
 
-        Session warmSes = sesFactory.openSession();
-        try {
-            for (String name : nameToId.keySet())
-                warmSes.bySimpleNaturalId(Entity.class).load(name);
-        }
-        finally {
-            warmSes.close();
-        }
+        statistics.clear();
 
-        CacheRegionStatistics stats = sesFactory.getStatistics().getCacheRegionStatistics(NATURAL_ID_REGION);
-        sesFactory.getStatistics().clear();
+        CacheRegionStatistics stats = statistics.getCacheRegionStatistics(NATURAL_ID_REGION);
+
+        long hitBefore = stats.getHitCount();
+
+        long missBefore = stats.getMissCount();
 
         final Session ses = sesFactory.openSession();
 
@@ -1792,7 +1788,9 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             for (String name : absentNames)
                 assertNull((ses.bySimpleNaturalId(Entity.class).load(name)));
 
-            assertEquals(nameToId.size(), stats.getElementCountInMemory());
+            assertEquals(nameToId.size() + hitBefore, stats.getHitCount());
+
+            assertEquals(absentNames.length + missBefore, stats.getMissCount());
         }
         finally {
             ses.close();
@@ -1990,7 +1988,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
         map.put(USE_SECOND_LEVEL_CACHE, "true");
         map.put(USE_QUERY_CACHE, "false");
         map.put(CACHE_REGION_FACTORY, HibernateRegionFactory.class.getName());
-        map.put(CONNECTION_HANDLING, "DELAYED_ACQUISITION_AND_HOLD");
+        map.put(CONNECTION_HANDLING, DELAYED_ACQUISITION_AND_HOLD.name());
         map.put(IGNITE_INSTANCE_NAME_PROPERTY, igniteInstanceName);
         map.put(DFLT_ACCESS_TYPE_PROPERTY, dfltAccessType);
 
