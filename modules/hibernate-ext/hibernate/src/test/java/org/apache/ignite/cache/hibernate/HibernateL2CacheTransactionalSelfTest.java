@@ -18,11 +18,12 @@
 package org.apache.ignite.cache.hibernate;
 
 import java.util.Collections;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.UserTransaction;
 import javax.cache.configuration.Factory;
-import javax.transaction.Synchronization;
-import javax.transaction.TransactionManager;
-import javax.transaction.UserTransaction;
-import org.apache.commons.dbcp.managed.BasicManagedDataSource;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
+import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.h2.jdbcx.JdbcDataSource;
@@ -35,8 +36,6 @@ import org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatfor
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.jotm.Jotm;
-import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 /**
  *
@@ -45,24 +44,25 @@ import org.objectweb.jotm.rmi.RmiLocalConfiguration;
  */
 public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfTest {
     /** */
-    private static Jotm jotm;
+    private static TransactionManager txMgr;
 
-    /**
-     */
+    /** */
+    private static UserTransaction userTx;
+
+    /** */
     private static class TestJtaPlatform extends AbstractJtaPlatform {
         /** {@inheritDoc} */
         @Override protected TransactionManager locateTransactionManager() {
-            return jotm.getTransactionManager();
+            return txMgr;
         }
 
         /** {@inheritDoc} */
         @Override protected UserTransaction locateUserTransaction() {
-            return jotm.getUserTransaction();
+            return userTx;
         }
     }
 
-    /**
-     */
+    /** */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTmFactory implements Factory<TransactionManager> {
         /** */
@@ -70,13 +70,14 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
         /** {@inheritDoc} */
         @Override public TransactionManager create() {
-            return jotm.getTransactionManager();
+            return txMgr;
         }
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        jotm = new Jotm(true, false, new RmiLocalConfiguration());
+        txMgr = new TransactionManagerImple();
+        userTx = new UserTransactionImple();
 
         super.beforeTestsStarted();
     }
@@ -85,10 +86,8 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        if (jotm != null)
-            jotm.stop();
-
-        jotm = null;
+        txMgr = null;
+        userTx = null;
     }
 
     /** {@inheritDoc} */
@@ -116,17 +115,11 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
         DatasourceConnectionProviderImpl connProvider = new DatasourceConnectionProviderImpl();
 
-        BasicManagedDataSource dataSrc = new BasicManagedDataSource(); // JTA-aware data source.
-
-        dataSrc.setTransactionManager(jotm.getTransactionManager());
-
-        dataSrc.setDefaultAutoCommit(false);
-
         JdbcDataSource h2DataSrc = new JdbcDataSource();
-
         h2DataSrc.setURL(CONNECTION_URL);
 
-        dataSrc.setXaDataSourceInstance(h2DataSrc);
+        SimpleManagedDataSource dataSrc = new SimpleManagedDataSource(h2DataSrc, txMgr); // JTA-aware data source (jakarta.transaction).
+        dataSrc.setDefaultAutoCommit(false);
 
         connProvider.setDataSource(dataSrc);
 

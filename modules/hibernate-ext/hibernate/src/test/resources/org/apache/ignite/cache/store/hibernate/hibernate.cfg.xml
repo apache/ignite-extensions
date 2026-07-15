@@ -27,10 +27,13 @@
         <property name="show_sql">true</property>
 
         <!-- Database connection settings (private in-memory database). -->
-        <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
+        <!-- H2 1.x: create table via INIT to avoid hbm2ddl.auto=update (sequence metadata extraction fails on H2 1.x). -->
+        <property name="connection.url">
+            jdbc:h2:mem:example;DB_CLOSE_DELAY=-1;INIT=CREATE TABLE IF NOT EXISTS ENTRIES (key VARBINARY PRIMARY KEY, val VARBINARY)
+        </property>
 
-        <!-- Only validate the database schema on startup in production mode. -->
-        <property name="hbm2ddl.auto">update</property>
+        <!-- H2 1.x: disable all schema management to avoid sequence metadata extraction ('start_value' missing). -->
+        <property name="hbm2ddl.auto">none</property>
 
         <!-- H2 dialect. -->
         <property name="hibernate.dialect">org.hibernate.dialect.H2Dialect</property>

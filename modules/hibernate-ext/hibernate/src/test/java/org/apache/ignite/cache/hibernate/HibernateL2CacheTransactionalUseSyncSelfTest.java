@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.hibernate;
 
-import javax.transaction.Synchronization;
+import jakarta.transaction.Synchronization;
 
 /**
  * Tests Hibernate L2 cache with TRANSACTIONAL access mode and {@link Synchronization}

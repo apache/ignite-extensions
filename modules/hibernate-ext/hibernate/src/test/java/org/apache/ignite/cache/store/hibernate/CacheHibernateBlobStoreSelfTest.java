@@ -50,7 +50,7 @@ public class CacheHibernateBlobStoreSelfTest extends
 
         try {
             s.createQuery("delete from " + CacheHibernateBlobStoreEntry.class.getSimpleName())
-                    .setFlushMode(FlushMode.ALWAYS).executeUpdate();
+                    .setHibernateFlushMode(FlushMode.ALWAYS).executeUpdate();
 
             Transaction hTx = s.getTransaction();
 
@@ -67,11 +67,9 @@ public class CacheHibernateBlobStoreSelfTest extends
         return new CacheHibernateBlobStore<>();
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testConfigurationByUrl() throws Exception {
+    public void testConfigurationByUrl() {
         URL url = U.resolveIgniteUrl(CacheHibernateStoreFactorySelfTest.MODULE_PATH +
             "/src/test/resources/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
@@ -101,15 +99,12 @@ public class CacheHibernateBlobStoreSelfTest extends
         store.load("key");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testConfigurationByResource() throws Exception {
+    public void testConfigurationByResource() {
         store.setHibernateConfigurationPath("/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
         // Store will be implicitly initialized.
         store.load("key");
     }
-
 }

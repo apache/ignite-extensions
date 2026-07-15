@@ -20,9 +20,10 @@ package org.apache.ignite.cache.hibernate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Id;
+import jakarta.persistence.criteria.CriteriaQuery;
 import javax.cache.Cache;
-import javax.persistence.Cacheable;
-import javax.persistence.Id;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -40,6 +41,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
+import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -240,12 +242,20 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
         Session ses = sesFactory.openSession();
 
         try {
-            List<Entity1> list1 = ses.createCriteria(ENTITY1_NAME).list();
+            HibernateCriteriaBuilder cb = ses.getCriteriaBuilder();
+
+            CriteriaQuery<Entity1> cq1 = cb.createQuery(Entity1.class);
+            cq1.from(Entity1.class);
+
+            List<Entity1> list1 = ses.createQuery(cq1).getResultList();
 
             for (Entity1 e1 : list1)
                 assertNotNull(e1.getName());
 
-            List<Entity2> list2 = ses.createCriteria(ENTITY2_NAME).list();
+            CriteriaQuery<Entity2> cq2 = cb.createQuery(Entity2.class);
+            cq2.from(Entity2.class);
+
+            List<Entity2> list2 = ses.createQuery(cq2).getResultList();
 
             for (Entity2 e2 : list2)
                 assertNotNull(e2.getName());
@@ -322,7 +332,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity1.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     public static class Entity1 {
@@ -381,7 +391,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity2.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     public static class Entity2 {
@@ -440,7 +450,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity3.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     public static class Entity3 {
@@ -499,7 +509,7 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity4.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @SuppressWarnings({"PublicInnerClass", "UnnecessaryFullyQualifiedName"})
     @Cacheable
     public static class Entity4 {
