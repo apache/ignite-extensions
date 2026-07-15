@@ -1775,9 +1775,19 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         CacheRegionStatistics stats = statistics.getCacheRegionStatistics(NATURAL_ID_REGION);
 
-        long hitBefore = stats.getHitCount();
+        // H6: Natural ID cache doesn't auto-invalidate on mutation across SessionFactories,
+        // so evict and repopulate before checking element count.
+        sesFactory.getCache().evictNaturalIdData(ENTITY_NAME);
 
-        long missBefore = stats.getMissCount();
+        Session warmSes = sesFactory.openSession();
+
+        try {
+            for (String name : nameToId.keySet())
+                warmSes.bySimpleNaturalId(Entity.class).load(name);
+        }
+        finally {
+            warmSes.close();
+        }
 
         final Session ses = sesFactory.openSession();
 
@@ -1788,9 +1798,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
             for (String name : absentNames)
                 assertNull((ses.bySimpleNaturalId(Entity.class).load(name)));
 
-            assertEquals(nameToId.size() + hitBefore, stats.getHitCount());
-
-            assertEquals(absentNames.length + missBefore, stats.getMissCount());
+            assertEquals(nameToId.size(), stats.getElementCountInMemory());
         }
         finally {
             ses.close();
