@@ -41,6 +41,10 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-ioc</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.osgi</groupId>
