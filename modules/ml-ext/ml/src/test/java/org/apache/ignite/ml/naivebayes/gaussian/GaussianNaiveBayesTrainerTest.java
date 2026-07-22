@@ -20,7 +20,7 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -32,7 +32,7 @@ import org.junit.Test;
 /**
  * Tests for {@link GaussianNaiveBayesTrainer}.
  */
-public class GaussianNaiveBayesTrainerTest extends TrainerTest {
+public class GaussianNaiveBayesTrainerTest extends AbstractTrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 

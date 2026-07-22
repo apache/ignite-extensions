@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 /**
  * Tests for {@link EncoderTrainer}.
  */
-public class EncoderTrainerTest extends TrainerTest {
+public class EncoderTrainerTest extends AbstractTrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnStringCategorialFeatures() {

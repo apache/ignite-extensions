@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link KMeansTrainer}.
  */
-public class KMeansTrainerTest extends TrainerTest {
+public class KMeansTrainerTest extends AbstractTrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 

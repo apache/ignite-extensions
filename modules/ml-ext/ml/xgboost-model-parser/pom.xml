@@ -25,7 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <antlr.version>4.7.1</antlr.version>
+        <antlr.version>4.13.2</antlr.version>
     </properties>
 
     <parent>
@@ -69,6 +69,23 @@
                 <configuration>
                     <skip>false</skip>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>${antlr.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                        <configuration>
+                            <visitor>true</visitor>
+                            <listener>true</listener>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

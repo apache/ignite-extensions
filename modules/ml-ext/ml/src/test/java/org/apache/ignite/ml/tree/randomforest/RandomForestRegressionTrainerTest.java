@@ -20,7 +20,7 @@ package org.apache.ignite.ml.tree.randomforest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregator;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link RandomForestRegressionTrainer}.
  */
-public class RandomForestRegressionTrainerTest extends TrainerTest {
+public class RandomForestRegressionTrainerTest extends AbstractTrainerTest {
     /** */
     @Test
     public void testFit() {

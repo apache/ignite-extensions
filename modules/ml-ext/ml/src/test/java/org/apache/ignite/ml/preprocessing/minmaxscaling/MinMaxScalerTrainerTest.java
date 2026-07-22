@@ -20,7 +20,7 @@ package org.apache.ignite.ml.preprocessing.minmaxscaling;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -34,7 +34,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link MinMaxScalerTrainer}.
  */
-public class MinMaxScalerTrainerTest extends TrainerTest {
+public class MinMaxScalerTrainerTest extends AbstractTrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {

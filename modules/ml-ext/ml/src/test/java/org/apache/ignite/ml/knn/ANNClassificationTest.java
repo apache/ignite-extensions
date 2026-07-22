@@ -20,7 +20,7 @@ package org.apache.ignite.ml.knn;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** Tests behaviour of ANNClassificationTest. */
-public class ANNClassificationTest extends TrainerTest {
+public class ANNClassificationTest extends AbstractTrainerTest {
     /** */
     @Test
     public void testBinaryClassification() {
