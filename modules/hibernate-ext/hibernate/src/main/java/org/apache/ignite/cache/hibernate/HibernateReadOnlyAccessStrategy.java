@@ -42,8 +42,8 @@ import org.apache.ignite.IgniteCheckedException;
  * </pre>
  * Also cache access strategy can be set using annotations:
  * <pre name="code" class="java">
- * &#064;javax.persistence.Entity
- * &#064;javax.persistence.Cacheable
+ * &#064;jakarta.persistence.Entity
+ * &#064;jakarta.persistence.Cacheable
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
  * public class Entity { ... }
  * </pre>

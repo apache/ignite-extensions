@@ -62,12 +62,12 @@ public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess impl
     }
 
     /** {@inheritDoc} */
-    @Override public Object generateCacheKey(Object[] naturalIdValues, EntityPersister persister, SharedSessionContractImplementor ses) {
+    @Override public Object generateCacheKey(Object naturalIdValues, EntityPersister persister, SharedSessionContractImplementor ses) {
         return DefaultCacheKeysFactory.staticCreateNaturalIdKey(naturalIdValues, persister, ses);
     }
 
     /** {@inheritDoc} */
-    @Override public Object[] getNaturalIdValues(Object cacheKey) {
+    @Override public Object getNaturalIdValues(Object cacheKey) {
         return DefaultCacheKeysFactory.staticGetNaturalIdValues(cacheKey);
     }
 

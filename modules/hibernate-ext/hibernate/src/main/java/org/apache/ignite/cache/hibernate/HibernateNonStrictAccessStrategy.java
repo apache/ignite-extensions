@@ -49,8 +49,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * </pre>
  * Also cache access strategy can be set using annotations:
  * <pre name="code" class="java">
- * &#064;javax.persistence.Entity
- * &#064;javax.persistence.Cacheable
+ * &#064;jakarta.persistence.Entity
+ * &#064;jakarta.persistence.Cacheable
  * &#064;org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
  * public class Entity { ... }
  * </pre>

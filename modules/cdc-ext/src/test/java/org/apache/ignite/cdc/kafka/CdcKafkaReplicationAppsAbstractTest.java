@@ -38,7 +38,7 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
+public abstract class CdcKafkaReplicationAppsAbstractTest extends CdcKafkaReplicationAbstractTest {
     /** */
     public static final String INSTANCE_NAME = "INSTANCE_NAME";
 
@@ -193,7 +193,7 @@ public class CdcKafkaReplicationAppsTest extends CdcKafkaReplicationTest {
     /** */
     public static String prepareConfig(String path, Map<String, String> params) {
         try {
-            String cfg = new String(Files.readAllBytes(Paths.get(CdcKafkaReplicationAppsTest.class.getResource(path).toURI())));
+            String cfg = new String(Files.readAllBytes(Paths.get(CdcKafkaReplicationAppsAbstractTest.class.getResource(path).toURI())));
 
             for (String key : params.keySet()) {
                 String subst = '{' + key + '}';

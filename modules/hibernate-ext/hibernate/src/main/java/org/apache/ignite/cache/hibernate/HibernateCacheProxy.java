@@ -96,8 +96,8 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalCache setSkipStore(boolean skipStore) {
-        return delegate.get().setSkipStore(skipStore);
+    @Override public IgniteInternalCache<Object, Object> withSkipStore() {
+        return delegate.get().withSkipStore();
     }
 
     /** {@inheritDoc} */
@@ -440,6 +440,32 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean lockTxEntry(CacheEntry<Object, Object> entry, long waitTimeout) throws IgniteCheckedException {
+        return delegate.get().lockTxEntry(entry, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockTxEntries(
+        Collection<CacheEntry<Object, Object>> entries,
+        long waitTimeout
+    ) throws IgniteCheckedException {
+        return delegate.get().lockTxEntries(entries, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<Object, Object> entry, long waitTimeout) {
+        return delegate.get().lockTxEntryAsync(entry, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> lockTxEntriesAsync(
+        Collection<CacheEntry<Object, Object>> entries,
+        long waitTimeout
+    ) {
+        return delegate.get().lockTxEntriesAsync(entries, waitTimeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public void unlock(Object key) throws IgniteCheckedException {
         delegate.get().unlock(keyTransformer.transform(key));
     }
@@ -597,6 +623,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     /** {@inheritDoc} */
     @Override public IgniteInternalCache withExpiryPolicy(ExpiryPolicy plc) {
         return delegate.get().withExpiryPolicy(plc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalCache<Object, Object> withKeepBinaryInInterceptor() {
+        return delegate.get().withKeepBinaryInInterceptor();
     }
 
     /** {@inheritDoc} */

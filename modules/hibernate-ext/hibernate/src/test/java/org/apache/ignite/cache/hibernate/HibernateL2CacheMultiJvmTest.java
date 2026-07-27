@@ -18,8 +18,8 @@
 package org.apache.ignite.cache.hibernate;
 
 import java.util.Map;
-import javax.persistence.Cacheable;
-import javax.persistence.Id;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Id;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
@@ -250,7 +250,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity1.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     public static class Entity1 {
@@ -311,7 +311,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity1.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     public static class Entity2 {
@@ -372,7 +372,7 @@ public class HibernateL2CacheMultiJvmTest extends GridCommonAbstractTest {
     /**
      * Test Hibernate entity1.
      */
-    @javax.persistence.Entity
+    @jakarta.persistence.Entity
     @Cacheable
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     public static class Entity3 {

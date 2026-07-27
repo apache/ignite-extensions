@@ -107,7 +107,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${spark.jackson.version}</version>
+            <version>${spark.jackson.annotations.version}</version>
         </dependency>
 
         <!-- Test dependencies -->

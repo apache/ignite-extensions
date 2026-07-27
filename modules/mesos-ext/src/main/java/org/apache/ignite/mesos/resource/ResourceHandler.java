@@ -17,23 +17,21 @@
 
 package org.apache.ignite.mesos.resource;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.Content;
+import org.eclipse.jetty.io.Content.Source;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * HTTP controller which provides on slave resources.
  */
-public class ResourceHandler extends AbstractHandler {
+public class ResourceHandler extends Handler.Abstract {
     /** */
     public static final String IGNITE_PREFIX = "/ignite/";
 
@@ -66,14 +64,9 @@ public class ResourceHandler extends AbstractHandler {
         this.igniteDir = igniteDir;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override public void handle(
-        String url,
-        Request request,
-        HttpServletRequest httpServletRequest,
-        HttpServletResponse response) throws IOException, ServletException {
+    /** {@inheritDoc} */
+    @Override public boolean handle(Request req, Response res, Callback callback) {
+        String url = req.getHttpURI().getPath();
 
         String[] path = url.split("/");
 
@@ -83,64 +76,68 @@ public class ResourceHandler extends AbstractHandler {
 
         switch (srvcPath) {
             case IGNITE_PREFIX:
-                handleRequest(response, "application/zip-archive", igniteDir + "/" + fileName);
+                handleFileRequest(res, callback, "application/zip-archive", igniteDir + "/" + fileName);
 
-                request.setHandled(true);
-                break;
+                return true;
 
             case LIBS_PREFIX:
-                handleRequest(response, "application/java-archive", libsDir + "/" + fileName);
+                handleFileRequest(res, callback, "application/java-archive", libsDir + "/" + fileName);
 
-                request.setHandled(true);
-                break;
+                return true;
 
             case CONFIG_PREFIX:
-                handleRequest(response, "application/xml", cfgPath);
+                handleFileRequest(res, callback, "application/xml", cfgPath);
 
-                request.setHandled(true);
-                break;
+                return true;
 
             case DEFAULT_CONFIG:
-                handleRequest(response, "application/xml",
+                handleStreamRequest(res, callback, "application/xml",
                     Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName),
                     fileName);
 
-                request.setHandled(true);
-                break;
+                return true;
+
+            default:
+                res.setStatus(404);
+                callback.succeeded();
+
+                return true;
         }
     }
 
     /**
-     * @param response Http response.
-     * @param type Type.
+     * @param res Jetty response.
+     * @param callback Callback to complete the request.
+     * @param contentType MIME content type.
      * @param path Path to file.
-     * @throws IOException If failed.
      */
-    private static void handleRequest(HttpServletResponse response, String type, String path) throws IOException {
+    private void handleFileRequest(Response res, Callback callback, String contentType, String path) {
         Path path0 = Paths.get(path);
 
-        response.setContentType(type);
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + path0.getFileName() + "\"");
+        res.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+        res.getHeaders().put(HttpHeader.CONTENT_DISPOSITION, "attachment; filename=\"" + path0.getFileName() + "\"");
 
-        try (HttpOutput out = (HttpOutput)response.getOutputStream()) {
-            out.sendContent(FileChannel.open(path0, StandardOpenOption.READ));
-        }
+        Content.copy(Source.from(path0), res, Callback.from(callback::succeeded, e -> {
+            res.setStatus(500);
+            callback.failed(e);
+        }));
     }
 
     /**
-     * @param response Http response.
-     * @param type Type.
-     * @param stream Stream.
+     * @param res Jetty response.
+     * @param callback Callback to complete the request.
+     * @param contentType MIME content type.
+     * @param stream Input stream.
      * @param attachmentName Attachment name.
-     * @throws IOException If failed.
      */
-    private static void handleRequest(HttpServletResponse response, String type, InputStream stream,
-        String attachmentName) throws IOException {
-        response.setContentType(type);
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + attachmentName + "\"");
+    private void handleStreamRequest(Response res, Callback callback, String contentType,
+        InputStream stream, String attachmentName) {
+        res.getHeaders().put(HttpHeader.CONTENT_TYPE, contentType);
+        res.getHeaders().put(HttpHeader.CONTENT_DISPOSITION, "attachment; filename=\"" + attachmentName + "\"");
 
-        try (HttpOutput out = (HttpOutput)response.getOutputStream()) {
-            out.sendContent(stream);
-        }
+        Content.copy(Source.from(stream), res, Callback.from(callback::succeeded, e -> {
+            res.setStatus(500);
+            callback.failed(e);
+        }));
     }
 }
