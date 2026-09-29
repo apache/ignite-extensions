@@ -19,6 +19,9 @@
     <suppress checks="(?&lt;!Missing)JavadocMethod"
               files="[\\/]ml[\\/]"/>
 
+    <suppress checks="(?&lt;!Missing)JavadocMethod"
+              files="[\\/]yardstick[\\/]"/>
+
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
               files=".*"/>
 
