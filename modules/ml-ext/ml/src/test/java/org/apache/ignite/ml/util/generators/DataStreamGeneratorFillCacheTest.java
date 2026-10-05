@@ -17,15 +17,13 @@
 
 package org.apache.ignite.ml.util.generators;
 
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.DoubleStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.LabeledDummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDataset;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
@@ -38,8 +36,6 @@ import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.generators.primitives.scalar.GaussRandomProducer;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -47,48 +43,56 @@ import org.junit.Test;
  * Test for {@link DataStreamGenerator} cache filling.
  */
 public class DataStreamGeneratorFillCacheTest extends GridCommonAbstractTest {
+    /** Ignite instance. */
+    private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() {
+        ignite = grid(1);
+        ignite.configuration().setPeerClassLoadingEnabled(true);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+    }
+
     /** */
     @Test
     public void testCacheFilling() {
-        IgniteConfiguration configuration = new IgniteConfiguration()
-            .setDiscoverySpi(new TcpDiscoverySpi()
-                .setIpFinder(new TcpDiscoveryVmIpFinder()
-                    .setAddresses(Arrays.asList("127.0.0.1:47500..47509"))));
-
         String cacheName = "TEST_CACHE";
         CacheConfiguration<UUID, LabeledVector<Double>> cacheConfiguration =
             new CacheConfiguration<UUID, LabeledVector<Double>>(cacheName)
                 .setAffinity(new RendezvousAffinityFunction(false, 10));
         int datasetSize = 5000;
 
-        try (Ignite ignite = Ignition.start(configuration)) {
-            IgniteCache<UUID, LabeledVector<Double>> cache = ignite.getOrCreateCache(cacheConfiguration);
-            DataStreamGenerator generator = new GaussRandomProducer(0).vectorize(1).asDataStream();
-            generator.fillCacheWithVecUUIDAsKey(datasetSize, cache);
+        IgniteCache<UUID, LabeledVector<Double>> cache = ignite.getOrCreateCache(cacheConfiguration);
+        DataStreamGenerator generator = new GaussRandomProducer(0).vectorize(1).asDataStream();
+        generator.fillCacheWithVecUUIDAsKey(datasetSize, cache);
 
-            LabeledDummyVectorizer<UUID, Double> vectorizer = new LabeledDummyVectorizer<>();
-            CacheBasedDatasetBuilder<UUID, LabeledVector<Double>> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
+        LabeledDummyVectorizer<UUID, Double> vectorizer = new LabeledDummyVectorizer<>();
+        CacheBasedDatasetBuilder<UUID, LabeledVector<Double>> datasetBuilder = new CacheBasedDatasetBuilder<>(ignite, cache);
 
-            IgniteFunction<SimpleDatasetData, StatPair> map = data ->
-                new StatPair(DoubleStream.of(data.getFeatures()).sum(), data.getRows());
-            LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
-            env.deployingContext().initByClientObject(map);
+        IgniteFunction<SimpleDatasetData, StatPair> map = data ->
+            new StatPair(DoubleStream.of(data.getFeatures()).sum(), data.getRows());
+        LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        env.deployingContext().initByClientObject(map);
 
-            try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
-                     datasetBuilder.build(
-                         LearningEnvironmentBuilder.defaultBuilder(),
-                         new EmptyContextBuilder<>(),
-                         new SimpleDatasetDataBuilder<>(vectorizer),
-                         env
-                     )) {
+        try (CacheBasedDataset<UUID, LabeledVector<Double>, EmptyContext, SimpleDatasetData> dataset =
+                 datasetBuilder.build(
+                     LearningEnvironmentBuilder.defaultBuilder(),
+                     new EmptyContextBuilder<>(),
+                     new SimpleDatasetDataBuilder<>(vectorizer),
+                     env
+                 )) {
 
-                StatPair res = dataset.compute(map, StatPair::sum);
-                assertEquals(datasetSize, res.cntOfRows);
-                assertEquals(0.0, res.elementsSum / res.cntOfRows, 1e-2);
-            }
-
-            ignite.destroyCache(cacheName);
+            StatPair res = dataset.compute(map, StatPair::sum);
+            assertEquals(datasetSize, res.cntOfRows);
+            assertEquals(0.0, res.elementsSum / res.cntOfRows, 1e-2);
         }
+
+        ignite.destroyCache(cacheName);
     }
 
     /** */

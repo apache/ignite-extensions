@@ -19,7 +19,7 @@ package org.apache.ignite.ml.regressions.linear;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Tests for {@link LinearRegressionSGDTrainer}.
  */
-public class LinearRegressionSGDTrainerTest extends TrainerTest {
+public class LinearRegressionSGDTrainerTest extends AbstractTrainerTest {
     /**
      * Tests {@code fit()} method on a simple small dataset.
      */

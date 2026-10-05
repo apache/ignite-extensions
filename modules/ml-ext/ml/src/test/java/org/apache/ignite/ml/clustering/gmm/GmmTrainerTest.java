@@ -20,7 +20,7 @@ package org.apache.ignite.ml.clustering.gmm;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -31,7 +31,7 @@ import org.junit.Test;
 /**
  * Tests for GMM trainer.
  */
-public class GmmTrainerTest extends TrainerTest {
+public class GmmTrainerTest extends AbstractTrainerTest {
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
 

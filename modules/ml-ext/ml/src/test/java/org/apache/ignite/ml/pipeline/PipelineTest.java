@@ -20,7 +20,7 @@ package org.apache.ignite.ml.pipeline;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * Tests for {@link Pipeline}.
  */
-public class PipelineTest extends TrainerTest {
+public class PipelineTest extends AbstractTrainerTest {
     /**
      * Test trainer on classification model y = x.
      */

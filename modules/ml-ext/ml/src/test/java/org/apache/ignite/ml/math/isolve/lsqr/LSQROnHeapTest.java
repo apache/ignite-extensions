@@ -20,7 +20,7 @@ package org.apache.ignite.ml.math.isolve.lsqr;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link LSQROnHeap}.
  */
-public class LSQROnHeapTest extends TrainerTest {
+public class LSQROnHeapTest extends AbstractTrainerTest {
     /** Tests solving simple linear system. */
     @Test
     public void testSolveLinearSystem() {

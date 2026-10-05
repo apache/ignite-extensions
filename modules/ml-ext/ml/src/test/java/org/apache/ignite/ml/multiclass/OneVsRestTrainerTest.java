@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -38,7 +38,7 @@ import org.junit.Test;
 /**
  * Tests for {@link OneVsRestTrainer}.
  */
-public class OneVsRestTrainerTest extends TrainerTest {
+public class OneVsRestTrainerTest extends AbstractTrainerTest {
     /**
      * Test trainer on 2 linearly separable sets.
      */

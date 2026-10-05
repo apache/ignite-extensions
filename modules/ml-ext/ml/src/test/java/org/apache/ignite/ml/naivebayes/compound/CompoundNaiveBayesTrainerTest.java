@@ -17,7 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.common.AbstractTrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /** Test for {@link CompoundNaiveBayesTrainer} */
-public class CompoundNaiveBayesTrainerTest extends TrainerTest {
+public class CompoundNaiveBayesTrainerTest extends AbstractTrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
 
