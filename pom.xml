@@ -60,6 +60,12 @@
         <module>modules/ml-ext</module>
         <module>modules/gatling-ext</module>
         <module>modules/yardstick</module>
+        <module>modules/spring-boot-autoconfigure-ext</module>
+        <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
+        <module>modules/spring-session-ext</module>
+        <module>modules/spring-cache-ext</module>
+        <module>modules/spring-data-ext</module>
+        <module>modules/spring-tx-ext</module>
     </modules>
 
     <profiles>
@@ -69,20 +75,6 @@
                 <module>../ignite</module>
             </modules>
         </profile>
-        <profile>
-            <id>java-17+</id>
-            <activation>
-                <jdk>[17,)</jdk>
-            </activation>
-            <modules>
-                <module>modules/spring-boot-autoconfigure-ext</module>
-                <module>modules/spring-boot-thin-client-autoconfigure-ext</module>
-                <module>modules/spring-session-ext</module>
-                <module>modules/spring-cache-ext</module>
-                <module>modules/spring-data-ext</module>
-                <module>modules/spring-tx-ext</module>
-            </modules>
-        </profile>
     </profiles>
 
     <build>
@@ -90,6 +82,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
+                <version>3.5.0</version>
                 <executions>
                     <execution>
                         <phase>clean</phase>
@@ -109,6 +102,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.4</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
