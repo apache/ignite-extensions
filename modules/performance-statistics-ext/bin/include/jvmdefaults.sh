@@ -46,7 +46,7 @@ checkJava() {
         if [ $RETCODE -ne 0 ]; then
             echo $0", ERROR:"
             echo "JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 11 or later."
+            echo "Please point JAVA_HOME variable to location of JDK 17 or later."
             echo "You can also download latest JDK at http://java.com/download"
 
             exit 1
@@ -62,10 +62,10 @@ checkJava() {
     #
     javaMajorVersion "$JAVA"
 
-    if [ $version -lt 11 ]; then
+    if [ $version -lt 17 ]; then
         echo "$0, ERROR:"
         echo "The $version version of JAVA installed in JAVA_HOME=$JAVA_HOME is incompatible."
-        echo "Please point JAVA_HOME variable to installation of JDK 11 or later."
+        echo "Please point JAVA_HOME variable to installation of JDK 17 or later."
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
     fi
@@ -79,30 +79,7 @@ getJavaSpecificOpts() {
   current_value=$2
   value=""
 
-  if [ "${version}" -ge 11 ] && [ "${version}" -lt 14 ]; then
-      value="\
-          --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-          --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
-          --illegal-access=permit \
-          ${current_value}"
-
-  elif [ "${version}" -ge 14 ] && [ "${version}" -lt 15 ]; then
-        value="\
-            --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-            --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
-            --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
-            --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
-            --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
-            --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
-            --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
-            --illegal-access=permit \
-            ${current_value}"
-
-  elif [ "${version}" -ge 15 ] ; then
+  if [ "${version}" -ge 17 ] ; then
       value="\
           --add-opens=java.base/jdk.internal.access=ALL-UNNAMED \
           --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
@@ -126,6 +103,7 @@ getJavaSpecificOpts() {
           --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
           --add-opens=java.base/java.time=ALL-UNNAMED \
           --add-opens=java.base/java.text=ALL-UNNAMED \
+          --add-opens=java.logging/java.util.logging=ALL-UNNAMED \
           --add-opens=java.management/sun.management=ALL-UNNAMED \
           --add-opens=java.desktop/java.awt.font=ALL-UNNAMED \
           ${current_value}"

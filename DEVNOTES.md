@@ -6,8 +6,8 @@
 
 ### Build Requirements
 
-- JDK 11
-- Maven 3.6.3+
+- JDK 17 or later
+- Maven 3.9.6+
 
 ### Compile and install all Extensions
 
@@ -128,11 +128,11 @@ as an action step. Use the step below to install Maven into container:
 ```yaml
 - name: Download Maven
   run: |
-    curl -sL https://www-eu.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.zip -o maven.zip
+    curl -sL https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.6/apache-maven-3.9.6-bin.zip -o maven.zip
     apt-get update
     apt-get -y install unzip
     unzip -d /usr/share maven.zip
     rm maven.zip
-    ln -s /usr/share/apache-maven-3.6.3/bin/mvn /usr/bin/mvn
-    echo "M2_HOME=/usr/share/apache-maven-3.6.3" | tee -a /etc/environment
+    ln -s /usr/share/apache-maven-3.9.6/bin/mvn /usr/bin/mvn
+    echo "M2_HOME=/usr/share/apache-maven-3.9.6" | tee -a /etc/environment
 ```
