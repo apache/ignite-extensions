@@ -36,7 +36,7 @@
     </properties>
 
     <artifactId>ignite-yardstick</artifactId>
-    <url>http://ignite.apache.org</url>
+    <url>https://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
@@ -138,7 +138,6 @@
 
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>${maven.dependency.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -156,7 +155,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven.jar.plugin.version}</version>
                 <configuration>
                     <outputDirectory>${basedir}/target/assembly/libs</outputDirectory>
                 </configuration>
@@ -165,7 +163,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven.javadoc.plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
@@ -202,7 +199,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
-                <version>${maven.deploy.plugin.version}</version>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

@@ -41,7 +41,6 @@
         <aspectj.version>1.9.21</aspectj.version>
         <embedded.postgres.version>2.0.3</embedded.postgres.version>
         <commons.dbcp2.version>2.13.0</commons.dbcp2.version>
-        <commons.lang3.version>3.20.0</commons.lang3.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
 
         <!-- The surefire argLine of ignite-parent plus the opens required by extension tests. -->

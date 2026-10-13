@@ -33,7 +33,6 @@
     </parent>
 
     <artifactId>ignite-spring-boot-autoconfigure-ext-examples</artifactId>
-    <version>${project.parent.version}</version>
 
     <url>https://ignite.apache.org</url>
 

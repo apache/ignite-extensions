@@ -36,9 +36,6 @@
     <url>https://ignite.apache.org</url>
 
     <properties>
-        <release.package>release-package-ignite-performance-statistics</release.package>
-        <tool.directory>performance-statistics-tool</tool.directory>
-
         <!--
             Third-party UI libraries of the report are not stored in the source tree. They are taken on build from
             the WebJars artifacts of the npm packages: the artifacts are unpacked by the maven-dependency-plugin and
