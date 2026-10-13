@@ -148,6 +148,10 @@
                         <jvmArg>--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</jvmArg>
                         <jvmArg>--add-opens=java.base/java.util.regex=ALL-UNNAMED</jvmArg>
                         <jvmArg>-Djava.security.manager=allow</jvmArg>
+                        <jvmArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/java.security.cert=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.security.ssl=ALL-UNNAMED</jvmArg>
+                        <jvmArg>--add-opens=java.base/sun.security.x509=ALL-UNNAMED</jvmArg>
                     </jvmArgs>
                     <skip>true</skip>
                 </configuration>
