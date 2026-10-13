@@ -21,14 +21,14 @@ set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
 if not defined JAVA_HOME (
     echo ERROR: JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 8 or later.
+    echo Please point JAVA_HOME variable to location of JDK 17 or later.
     echo You can also download latest JDK at https://jdk.java.net
     exit /b
 )
 
 if not exist "%JAVA_HOME%\bin\java.exe" (
     echo ERROR: JAVA is not found in JAVA_HOME=%JAVA_HOME%.
-    echo Please point JAVA_HOME variable to installation of JDK 8 or later.
+    echo Please point JAVA_HOME variable to installation of JDK 17 or later.
     echo You can also download latest JDK at https://jdk.java.net
     exit /b
 )
@@ -42,9 +42,9 @@ for /f "delims=.-_+ tokens=1-2" %%v in ("%JAVA_VER_STR%") do (
 
 if not defined MAJOR_JAVA_VER set MAJOR_JAVA_VER=0
 
-if %MAJOR_JAVA_VER% LSS 8 (
+if %MAJOR_JAVA_VER% LSS 17 (
     echo ERROR: The version of JAVA installed in JAVA_HOME=%JAVA_HOME% is incorrect.
-    echo Please point JAVA_HOME variable to installation of JDK 8 or later.
+    echo Please point JAVA_HOME variable to installation of JDK 17 or later.
     echo You can also download latest JDK at https://jdk.java.net
     exit /b
 )

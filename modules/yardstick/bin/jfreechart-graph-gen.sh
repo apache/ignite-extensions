@@ -29,7 +29,7 @@ checkJava() {
 
         if [ $RETCODE -ne 0 ]; then
             echo "ERROR: JAVA_HOME environment variable is not found."
-            echo "Please point JAVA_HOME variable to location of JDK 8 or later."
+            echo "Please point JAVA_HOME variable to location of JDK 17 or later."
             echo "You can also download latest JDK at https://jdk.java.net"
 
             exit 1
@@ -42,7 +42,7 @@ checkJava() {
 
     if [ ! -e "$JAVA" ]; then
         echo "ERROR: JAVA is not found in JAVA_HOME=$JAVA_HOME."
-        echo "Please point JAVA_HOME variable to installation of JDK 8 or later."
+        echo "Please point JAVA_HOME variable to installation of JDK 17 or later."
         echo "You can also download latest JDK at https://jdk.java.net"
 
         exit 1
@@ -51,9 +51,9 @@ checkJava() {
     JAVA_VER=`"$JAVA" -version 2>&1 | grep -i "version" | head -1 | sed -E 's/.*version "([^"]*)".*/\1/'`
     JAVA_MAJOR_VER=`echo "$JAVA_VER" | awk -F '[.+_-]' '{ if ($1 == "1") print $2; else print $1 }'`
 
-    if [ -z "$JAVA_MAJOR_VER" ] || [ "$JAVA_MAJOR_VER" -lt 8 ] 2>/dev/null; then
+    if [ -z "$JAVA_MAJOR_VER" ] || [ "$JAVA_MAJOR_VER" -lt 17 ] 2>/dev/null; then
         echo "ERROR: The version of JAVA installed in JAVA_HOME=$JAVA_HOME is incorrect."
-        echo "Please point JAVA_HOME variable to installation of JDK 8 or later."
+        echo "Please point JAVA_HOME variable to installation of JDK 17 or later."
         echo "You can also download latest JDK at https://jdk.java.net"
 
         exit 1
