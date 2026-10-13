@@ -6,17 +6,9 @@ Instructions on how to start examples can be found in [README.txt](README.txt).
 
 ## Running examples
 
-Ignite uses proprietary SDK APIs that are not available by default. See also [How to run Ignite](https://ignite.apache.org/docs/latest/setup#running-ignite-with-java-11-or-later)
+These examples require JDK 17 or later. Ignite accesses JDK internals; see the required JVM options in [How to run Ignite](https://ignite.apache.org/docs/latest/setup#running-ignite-with-java-17-or-later).
 
-To set up local IDE to easier access to examples, it is possible to add following options as default for all applications
-
-``--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
-   --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
-   --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
-   --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
-   --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
-   --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED
-   --illegal-access=permit``
+To run examples from an IDE, add the JVM options listed there to your run configuration.
 
 For example, for IntelliJ IDEA it is possible to use Application Templates.
 
