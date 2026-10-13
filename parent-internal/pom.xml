@@ -83,10 +83,6 @@
             --add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED
             --add-opens=java.base/java.util.regex=ALL-UNNAMED
             -Djava.security.manager=allow
-            --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
-            --add-opens=java.base/java.security.cert=ALL-UNNAMED
-            --add-opens=java.base/sun.security.ssl=ALL-UNNAMED
-            --add-opens=java.base/sun.security.x509=ALL-UNNAMED
         </surefire.argLine>
 
         <!--
