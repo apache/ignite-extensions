@@ -1,0 +1,32 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
+  <bean id="igniteCfg" abstract="false" parent="igniteBaseCfg">
+
+    <!-- Other properties -->
+    <property name="consistentId" value="cell-1_node-1"/>
+    <property name="igniteInstanceName" value="cell-1_node-1"/>
+
+    <!-- Cell partitioning -->
+    <property name="userAttributes">
+      <map>
+        <entry key="CELL" value="CELL_1"/>
+      </map>
+    </property>
+  </bean>
+
+  <bean id="condition" class="opt.apache.ignite.activation.ActivateByNodeAttribute">
+    <constructor-arg name="attributeName" value="CELL"/>
+    <constructor-arg name="requiredValues">
+      <util:set>
+        <value>CELL_1</value>
+        <value>CELL_2</value>
+      </util:set>
+    </constructor-arg>
+  </bean>
+</beans>
