@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.junit.Test;
 
@@ -142,6 +143,31 @@ public class KafkaToIgniteMetadataUpdaterTest extends GridCommonAbstractTest {
             updater.updateMetadata();
             assertTrue(POLL_SKIP_LISTENER.check());
         }
+    }
+
+    /** */
+    @Test
+    public void testCloseLeavesGroup() throws Exception {
+        KafkaToIgniteCdcStreamerConfiguration cfg = streamerConfiguration();
+
+        String grp = "metadata-group";
+
+        cfg.setMetadataConsumerGroup(grp);
+
+        try (Admin admin = Admin.create(kafkaProperties(kafka))) {
+            try (KafkaToIgniteMetadataUpdater updater = metadataUpdater(cfg)) {
+                updater.updateMetadata();
+
+                assertEquals(1, groupMembers(admin, grp));
+            }
+
+            assertEquals(0, groupMembers(admin, grp));
+        }
+    }
+
+    /** */
+    private static int groupMembers(Admin admin, String grp) throws Exception {
+        return admin.describeConsumerGroups(Collections.singleton(grp)).all().get().get(grp).members().size();
     }
 
     /** */

@@ -71,6 +71,9 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
     public static final int DFLT_PARTS = 16;
 
     /** */
+    public static final long KAFKA_CONSUMER_POLL_TIMEOUT = 500;
+
+    /** */
     private static EmbeddedKafkaCluster KAFKA = null;
 
     /** */
@@ -314,6 +317,7 @@ public abstract class CdcKafkaReplicationAbstractTest extends AbstractReplicatio
         cfg.setTopic(topic);
         cfg.setMetadataTopic(metadataTopic);
         cfg.setKafkaRequestTimeout(DFLT_KAFKA_REQ_TIMEOUT);
+        cfg.setKafkaConsumerPollTimeout(KAFKA_CONSUMER_POLL_TIMEOUT);
 
         cfg.setMetricRegistryName(DFLT_METRICS_REG_NAME + "-" + igniteCfg.getIgniteInstanceName());
 

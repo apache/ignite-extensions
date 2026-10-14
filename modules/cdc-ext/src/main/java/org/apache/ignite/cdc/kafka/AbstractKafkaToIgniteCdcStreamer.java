@@ -198,6 +198,9 @@ abstract class AbstractKafkaToIgniteCdcStreamer implements Runnable {
 
             log.warning("Kafka to Ignite streamer interrupted", e);
         }
+        finally {
+            U.closeQuiet(metaUpdr);
+        }
     }
 
     /**
