@@ -90,13 +90,6 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>${antlr.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-tools</artifactId>
-            <version>${ignite.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
 </project>

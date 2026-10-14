@@ -26,7 +26,7 @@
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-yardstick</artifactId>
     <version>to_be_replaced_by_ignite_version</version>
-    <url>http://ignite.apache.org</url>
+    <url>https://ignite.apache.org</url>
 
     <properties>
         <yardstick.version>0.8.3</yardstick.version>

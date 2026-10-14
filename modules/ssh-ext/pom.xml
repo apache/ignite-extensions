@@ -66,13 +66,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-tools</artifactId>
-            <version>${ignite.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

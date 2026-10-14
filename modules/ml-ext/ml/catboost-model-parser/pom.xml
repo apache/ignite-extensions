@@ -90,13 +90,6 @@
             <artifactId>catboost-prediction</artifactId>
             <version>${catboost.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-tools</artifactId>
-            <scope>test</scope>
-            <version>${ignite.version}</version>
-        </dependency>
     </dependencies>
 
 </project>
