@@ -25,10 +25,6 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <h2o.version>3.42.0.2</h2o.version>
-    </properties>
-
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-ml-parent-ext</artifactId>
@@ -38,20 +34,7 @@
 
     <artifactId>ignite-ml-p2p-ext</artifactId>
 
-    <url>http://ignite.apache.org</url>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <url>https://ignite.apache.org</url>
 
     <dependencies>
         <dependency>

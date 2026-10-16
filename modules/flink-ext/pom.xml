@@ -38,7 +38,6 @@
 
     <properties>
         <flink.version>1.9.1</flink.version>
-        <kryo-serializers.version>0.42</kryo-serializers.version>
         <mockito.version>1.10.19</mockito.version>
     </properties>
 
@@ -105,14 +104,12 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${ignite.version}</version>
             <scope>test</scope>
         </dependency>
 
