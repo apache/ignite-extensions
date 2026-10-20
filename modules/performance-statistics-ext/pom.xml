@@ -38,6 +38,25 @@
     <properties>
         <release.package>release-package-ignite-performance-statistics</release.package>
         <tool.directory>performance-statistics-tool</tool.directory>
+
+        <!--
+            Third-party UI libraries of the report are not stored in the source tree. They are taken on build from
+            the WebJars artifacts of the npm packages: the artifacts are unpacked by the maven-dependency-plugin and
+            the required files are copied to the report by the maven-antrun-plugin. To update a library, change its
+            version below. The build fails if a file listed in the maven-antrun-plugin configuration is not provided
+            by the artifact anymore.
+        -->
+        <report.build.dir>${project.build.directory}/report</report.build.dir>
+        <webjars.unpack.dir>${project.build.directory}/webjars</webjars.unpack.dir>
+        <webjars.dir>${webjars.unpack.dir}/META-INF/resources/webjars</webjars.dir>
+
+        <bootstrap.version>5.3.8</bootstrap.version>
+        <bootstrap-table.version>1.27.3</bootstrap-table.version>
+        <use-bootstrap-select.version>2.2.1</use-bootstrap-select.version>
+        <chartjs.version>2.9.4</chartjs.version>
+        <jquery.version>4.0.0</jquery.version>
+        <moment.version>2.30.1</moment.version>
+        <bootstrap-icons.version>1.13.1</bootstrap-icons.version>
     </properties>
 
     <dependencies>
@@ -101,15 +120,43 @@
         <plugins>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
                 <executions>
                     <execution>
-                        <!-- Builds archive with UI resources. -->
+                        <!-- Assembles UI resources with the unpacked libraries and builds archive with them. -->
                         <phase>compile</phase>
                         <configuration>
                             <target>
-                                <zip destfile="${basedir}/target/report.zip" encoding="UTF-8">
-                                    <zipfileset dir="${basedir}/report"/>
+                                <delete dir="${report.build.dir}"/>
+
+                                <copy todir="${report.build.dir}">
+                                    <fileset dir="${basedir}/report"/>
+                                </copy>
+
+                                <!-- Unlike a fileset, a filelist makes the copy fail if a listed file is missing. -->
+                                <copy todir="${report.build.dir}/libs" flatten="true">
+                                    <filelist dir="${webjars.dir}">
+                                        <file name="bootstrap/${bootstrap.version}/dist/css/bootstrap.min.css"/>
+                                        <file name="bootstrap/${bootstrap.version}/dist/js/bootstrap.bundle.min.js"/>
+                                        <file name="bootstrap-table/${bootstrap-table.version}/dist/bootstrap-table.min.css"/>
+                                        <file name="bootstrap-table/${bootstrap-table.version}/dist/bootstrap-table.min.js"/>
+                                        <file name="use-bootstrap-select/${use-bootstrap-select.version}/dist/use-bootstrap-select.min.css"/>
+                                        <file name="use-bootstrap-select/${use-bootstrap-select.version}/dist/use-bootstrap-select.min.js"/>
+                                        <file name="chart.js/${chartjs.version}/dist/Chart.min.js"/>
+                                        <file name="jquery/${jquery.version}/dist/jquery.min.js"/>
+                                        <file name="moment/${moment.version}/min/moment.min.js"/>
+                                    </filelist>
+                                </copy>
+
+                                <copy todir="${report.build.dir}/libs/bootstrap-icons">
+                                    <filelist dir="${webjars.dir}/bootstrap-icons/${bootstrap-icons.version}/font">
+                                        <file name="bootstrap-icons.min.css"/>
+                                        <file name="fonts/bootstrap-icons.woff2"/>
+                                        <file name="fonts/bootstrap-icons.woff"/>
+                                    </filelist>
+                                </copy>
+
+                                <zip destfile="${project.build.outputDirectory}/report.zip" encoding="UTF-8">
+                                    <zipfileset dir="${report.build.dir}"/>
                                 </zip>
                             </target>
                         </configuration>
@@ -120,33 +167,68 @@
                 </executions>
             </plugin>
             <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <!-- Includes zip archive with UI resources to module resources. -->
-                        <id>copy-resources</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/target</directory>
-                                    <includes>
-                                        <include>report.zip</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <!--
+                            Unpacks third-party UI libraries of the report. The libraries are referenced as artifact
+                            items rather than as project dependencies to keep them off the project classpath and to
+                            avoid resolving their transitive dependencies, some of which are declared with version
+                            ranges (see the 'chart.js' package).
+                        -->
+                        <id>unpack-report-libs</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${webjars.unpack.dir}</outputDirectory>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>bootstrap</artifactId>
+                                    <version>${bootstrap.version}</version>
+                                    <includes>**/dist/css/bootstrap.min.css,**/dist/js/bootstrap.bundle.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>bootstrap-table</artifactId>
+                                    <version>${bootstrap-table.version}</version>
+                                    <includes>**/dist/bootstrap-table.min.css,**/dist/bootstrap-table.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>use-bootstrap-select</artifactId>
+                                    <version>${use-bootstrap-select.version}</version>
+                                    <includes>**/dist/use-bootstrap-select.min.css,**/dist/use-bootstrap-select.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>chart.js</artifactId>
+                                    <version>${chartjs.version}</version>
+                                    <includes>**/dist/Chart.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>jquery</artifactId>
+                                    <version>${jquery.version}</version>
+                                    <includes>**/dist/jquery.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>moment</artifactId>
+                                    <version>${moment.version}</version>
+                                    <includes>**/min/moment.min.js</includes>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.webjars.npm</groupId>
+                                    <artifactId>bootstrap-icons</artifactId>
+                                    <version>${bootstrap-icons.version}</version>
+                                    <includes>**/font/bootstrap-icons.min.css,**/font/fonts/bootstrap-icons.woff*</includes>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
                     <execution>
                         <!-- Copy tool's dependencies. -->
                         <phase>prepare-package</phase>
