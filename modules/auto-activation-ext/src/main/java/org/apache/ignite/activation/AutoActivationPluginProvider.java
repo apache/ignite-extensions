@@ -15,16 +15,19 @@
  * limitations under the License.
  */
 
-package opt.apache.ignite.activation;
+package org.apache.ignite.activation;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -34,12 +37,10 @@ import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 
-/**
- * Activate cluster when specified condition meet.
- */
+/** Auto activation provider: cluster activates when specified condition meet. */
 public class AutoActivationPluginProvider implements PluginProvider<PluginConfiguration> {
     /** */
-    private final IgnitePredicate<Ignite> condition;
+    private final IgniteClosure<ClusterGroup, Map.Entry<Boolean, String>> condition;
 
     /** */
     private IgniteLogger logger;
@@ -47,10 +48,8 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
     /** */
     private Ignite grid;
 
-    /**
-     * @param condition Auto activation condition.
-     */
-    public AutoActivationPluginProvider(IgnitePredicate<Ignite> condition) {
+    /** @param condition Auto activation condition. */
+    public AutoActivationPluginProvider(IgniteClosure<ClusterGroup, Map.Entry<Boolean, String>> condition) {
         if (condition == null)
             throw new IllegalArgumentException("Auto activation condition must be set");
 
@@ -108,12 +107,12 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
         grid.message(grid.cluster().forServers()).localListen(
-                "auto-activation-plugin-events",
-                (nodeId, message) -> {
-                    logger.info(String.valueOf(message));
+            "auto-activation-plugin-events",
+            (nodeId, message) -> {
+                logger.info(String.valueOf(message));
 
-                    return true;
-                }
+                return true;
+            }
         );
 
         IgniteCluster cluster = grid.cluster();
@@ -132,8 +131,23 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
             return;
         }
 
-        if (condition.apply(grid))
-            cluster.state(ClusterState.ACTIVE);
+        IgniteMessaging messaging = grid.message(grid.cluster().forServers());
+
+        try {
+            Map.Entry<Boolean, String> res = condition.apply(grid.cluster().forServers());
+
+            if (res.getKey())
+                cluster.state(ClusterState.ACTIVE);
+
+            messaging.send("auto-activation-plugin-events",
+                "Sender node consistent ID: " + grid.cluster().localNode().consistentId() + ", Message: " + res.getValue());
+        }
+        catch (Exception e) {
+            messaging.send(
+                "auto-activation-plugin-events",
+                "Sender node consistent ID: " + grid.cluster().localNode().consistentId() +
+                    ", Message: Auto activation plugin FAILED to set cluster state ACTIVE:\n" + e.getMessage());
+        }
     }
 
     /** {@inheritDoc} */
@@ -157,7 +171,7 @@ public class AutoActivationPluginProvider implements PluginProvider<PluginConfig
     }
 
     /** @return Condition. */
-    public IgnitePredicate<Ignite> getCondition() {
+    public IgniteClosure<ClusterGroup, Map.Entry<Boolean, String>> getCondition() {
         return condition;
     }
 }

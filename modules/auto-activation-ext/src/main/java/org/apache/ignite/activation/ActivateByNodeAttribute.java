@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package opt.apache.ignite.activation;
+package org.apache.ignite.activation;
 
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteClosure;
 
-/**
- * Activate cluster when nodes with all specified attributes values join topology.
- */
-public class ActivateByNodeAttribute implements IgnitePredicate<Ignite> {
+/** Auto activation condition: all servers with the given attributes values are in the topology. */
+public class ActivateByNodeAttribute implements IgniteClosure<ClusterGroup, Map.Entry<Boolean, String>> {
     /** Node's attribute name. */
     private final String attrName;
 
@@ -51,32 +49,20 @@ public class ActivateByNodeAttribute implements IgnitePredicate<Ignite> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Ignite grid) {
+    @Override public Map.Entry<Boolean, String> apply(ClusterGroup servers) {
         Set<String> missingValues = new HashSet<>(requiredValues);
 
-        ClusterGroup servers = grid.cluster().forServers();
-
-        IgniteMessaging messaging = grid.message(servers);
-
         for (ClusterNode node : servers.nodes()) {
-            String attrVal = node.attribute(attrName);
+            String attrVal = Objects.toString(node.attribute(attrName), null);
 
             missingValues.remove(attrVal);
 
-            if (missingValues.isEmpty()) {
-                messaging.send(
-                    "auto-activation-plugin-events",
-                    "Auto activation plugin set cluster state ACTIVE - activation condition meet (by node attribute)"
-                );
-
-                return true;
-            }
+            if (missingValues.isEmpty())
+                return Map.entry(true, "Auto activation plugin set cluster state ACTIVE - activation " +
+                        "condition meet (by node attribute)");
         }
 
-        messaging.send("auto-activation-plugin-events",
-            "Auto activation skipped - activation condition not meet (by node attribute). "
-                    + "Attribute: " + attrName + ", Missing values [" + String.join(", ", missingValues) + "]");
-
-        return false;
+        return Map.entry(false, "Auto activation skipped - activation condition not met (by node attribute). "
+                + "Attribute: " + attrName + ", Missing values [" + String.join(", ", missingValues) + "]");
     }
 }

@@ -6,19 +6,19 @@ The plugin skips cluster activation in the following cases:
 
 - Cluster state is either ACTIVE or ACTIVE_READ_ONLY, log message:
 ```text
- [DateTime][INFO][main][AutoActivationPluginProvider] Auto activation skipped - cluster already activated
+ [DateTime][INFO][runner-#][AutoActivationPluginProvider] Auto activation skipped - cluster already activated
 ```
 - Cluster baseline topology is not empty, log message:
 ```text
- [DateTime][INFO][main][AutoActivationPluginProvider] Auto activation skipped - baseline is not empty
+ [DateTime][INFO][runner-#][AutoActivationPluginProvider] Auto activation skipped - baseline is not empty
 ```
 - The baseline topology does not include all nodes listed for activation. A message containing the consistentIds of the missing nodes will be written to ignite.log:
 ```text
- [DateTime][INFO][main][AutoActivationPluginProvider] Auto activation skipped - activation condition not meet (by consistent ID). Missing nodes [<nideConssistentId1>, <nideConssistentId2>, ...]
+ [DateTime][INFO][runner-#][AutoActivationPluginProvider] Auto activation skipped - activation condition not meet (by consistent ID). Missing nodes [<nideConssistentId1>, <nideConssistentId2>, ...]
 ```
 - The node attributes in the topology do not contain the full list of values specified in the cluster's auto-activation settings. The log message will indicate the attribute name and list the missing values as follows:
 ```text
-[DateTime][INFO][main][AutoActivationPluginProvider] Auto activation skipped - activation condition not meet (by node attribute). Attribute: <attributeName>, Missing values [<value1>, <value1>, ...]
+[DateTime][INFO][runner-#][AutoActivationPluginProvider] Auto activation skipped - activation condition not meet (by node attribute). Attribute: <attributeName>, Missing values [<value1>, <value1>, ...]
 ```
 - The required nodes list for cluster activation contains any client node. In this case, the node will simply not participate in cluster activation, and the log message will be identical to that of a missing node.
 
@@ -72,7 +72,7 @@ To enable cluster auto activation add next properties to your ignite-server.xml 
 ```
 <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
     <property name="pluginProviders">
-        <bean class="opt.apache.ignite.activation.AutoActivationPluginProvider">
+        <bean class="org.apache.ignite.activation.AutoActivationPluginProvider">
             <constructor-arg name="condition" ref="condition" />
         </bean>
     </property>
@@ -80,7 +80,7 @@ To enable cluster auto activation add next properties to your ignite-server.xml 
 ```
 where "condition" can be one of the following beans:
 ```
-<bean id="condition" class="opt.apache.ignite.activation.ActivateByConsistentID">
+<bean id="condition" class="org.apache.ignite.activation.ActivateByConsistentID">
     <constructor-arg name="requiredNodes">
         <util:set>
             <value>server-0</value>
@@ -93,7 +93,7 @@ where `server-0` and `server-1` are consistent ID's of required server nodes in 
 
 or
 ```
-<bean id="condition" class="opt.apache.ignite.activation.ActivateByNodeAttribute">
+<bean id="condition" class="org.apache.ignite.activation.ActivateByNodeAttribute">
     <constructor-arg name="attributeName" value="ATTR"/>
     <constructor-arg name="requiredValues">
         <util:set>

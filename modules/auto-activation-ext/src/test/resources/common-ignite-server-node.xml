@@ -11,38 +11,10 @@
                 <property name="defaultDataRegionConfiguration">
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="initialSize" value="#{10 * 1024 * 1024}"/>
-                        <property name="maxSize" value="#{15 * 1024 * 1024}"/>
-                        <property name="name"                       value="default"/>
                         <property name="persistenceEnabled"         value="true"/>
-                        <property name="metricsEnabled"             value="true"/>
-                        <property name="pageReplacementMode"        value="SEGMENTED_LRU"/>
                     </bean>
                 </property>
-                <property name="walSegmentSize" value="#{2 * 1024 * 1024}" />
-                <property name="walSegments" value="10" />
             </bean>
-        </property>
-
-        <!-- Cache configuration -->
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="cacheMode" value="PARTITIONED"/>
-                    <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
-                            <property name="partitions" value="32"/>
-                            <property name="affinityBackupFilter">
-                                <bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter">
-                                    <constructor-arg value="CELL"/>
-                                </bean>
-                            </property>
-                        </bean>
-                    </property>
-                    <property name="name" value="default"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="backups" value="1"/>
-                </bean>
-            </list>
         </property>
 
         <!-- TCP Discovery SPI configuration -->
@@ -75,7 +47,7 @@
         <property name="connectorConfiguration" ref="ignConnectorConfiguration"/>
 
         <property name="pluginProviders">
-            <bean class="opt.apache.ignite.activation.AutoActivationPluginProvider">
+            <bean class="org.apache.ignite.activation.AutoActivationPluginProvider">
                 <constructor-arg name="condition" ref="condition" />
             </bean>
         </property>

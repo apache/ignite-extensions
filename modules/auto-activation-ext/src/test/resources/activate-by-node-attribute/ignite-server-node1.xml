@@ -20,7 +20,7 @@
     </property>
   </bean>
 
-  <bean id="condition" class="opt.apache.ignite.activation.ActivateByNodeAttribute">
+  <bean id="condition" class="org.apache.ignite.activation.ActivateByNodeAttribute">
     <constructor-arg name="attributeName" value="CELL"/>
     <constructor-arg name="requiredValues">
       <util:set>

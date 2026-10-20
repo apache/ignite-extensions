@@ -15,26 +15,21 @@
  * limitations under the License.
  */
 
-package opt.apache.ignite.activation;
+package org.apache.ignite.activation;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteClosure;
 
-/**
- * Activate cluster when nodes with specified ConsistentID values join topology.
- */
-public class ActivateByConsistentID implements IgnitePredicate<Ignite> {
+/** Auto activation condition: all servers with the given consistent IDs are in the topology. */
+public class ActivateByConsistentID implements IgniteClosure<ClusterGroup, Map.Entry<Boolean, String>> {
     /** Collection of required nodes ConsistentIDs. */
     private final Set<String> requiredNodes;
 
-    /**
-     * @param requiredNodes List of ConsistentIDs.
-     */
+    /** @param requiredNodes List of ConsistentIDs. */
     public ActivateByConsistentID(Set<String> requiredNodes) {
         if (requiredNodes == null || requiredNodes.isEmpty())
             throw new IllegalArgumentException("requiredNodes must be set");
@@ -43,10 +38,8 @@ public class ActivateByConsistentID implements IgnitePredicate<Ignite> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(Ignite grid) {
+    @Override public Map.Entry<Boolean, String> apply(ClusterGroup servers) {
         Set<String> missingNodes = new HashSet<>(requiredNodes);
-        ClusterGroup servers = grid.cluster().forServers();
-        IgniteMessaging messaging = grid.message(servers);
 
         for (ClusterNode node : servers.nodes()) {
             String nodeConsistentId = node.consistentId().toString();
@@ -54,20 +47,12 @@ public class ActivateByConsistentID implements IgnitePredicate<Ignite> {
             missingNodes.remove(nodeConsistentId);
 
             if (missingNodes.isEmpty()) {
-                messaging.send(
-                    "auto-activation-plugin-events",
-                    "Auto activation plugin set cluster state ACTIVE - activation condition meet (by consistent ID)"
-                );
-
-                return true;
+                return Map.entry(true, "Auto activation plugin set cluster state ACTIVE - " +
+                        "activation condition meet (by consistent ID)");
             }
         }
 
-        messaging.send(
-            "auto-activation-plugin-events",
-            "Auto activation skipped - activation condition not meet (by consistent ID). Missing nodes " +
-                        "[" + String.join(", ", missingNodes) + "]");
-
-        return false;
+        return Map.entry(false, "Auto activation skipped - activation condition not met (by consistent ID). " +
+                "Missing nodes " + "[" + String.join(", ", missingNodes) + "]");
     }
 }
