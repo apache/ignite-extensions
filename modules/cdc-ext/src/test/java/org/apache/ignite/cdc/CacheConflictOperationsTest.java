@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -58,6 +59,7 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Cache conflict operations test.
@@ -367,11 +369,19 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         put(key);
         assertFalse(warnLsnr.check());
         assertFalse(errLsnr.check());
+        assertEquals(0, resolverErrorsCount());
 
         putConflict(key, 1, false);
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
+        assertEquals(1, resolverErrorsCount());
+    }
+
+    /** @return Value of the conflict resolver errors count metric on the server node. */
+    private long resolverErrorsCount() {
+        return ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
+            .<LongMetric>findMetric("ConflictResolverErrorsCount").value();
     }
 
     /** */
