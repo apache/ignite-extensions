@@ -229,6 +229,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+
+        // Ignored reordered updates are regular rejections, not resolve errors.
+        assertTrue(resolverMetric(false) > 0);
+        assertEquals(0, resolverMetric(true));
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -241,9 +245,13 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Local remove for other cluster entry should succeed.
         remove(key);
 
+        assertEquals(0, resolverMetric(true));
+
         // Conflict replicated update should ignored.
         // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
         putConflict(key, 2, false);
+
+        assertEquals(1, resolverMetric(true));
 
         key = key("UpdateThisDCConflict1", otherClusterId);
 
@@ -257,7 +265,10 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         put(key);
 
         // Conflict replicated remove should ignored.
+        // Resolve by field value not applicable because "new" value doesn't exists.
         removeConflict(key, 4, false);
+
+        assertEquals(2, resolverMetric(true));
 
         key = key("UpdateThisDCConflict3", otherClusterId);
 
@@ -265,6 +276,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
+
+        assertEquals(conflictResolveField() != null ? 2 : 3, resolverMetric(true));
     }
 
     /** Test switching debug log level for ConflictResolver during runtime. */
@@ -369,19 +382,13 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         put(key);
         assertFalse(warnLsnr.check());
         assertFalse(errLsnr.check());
-        assertEquals(0, resolverErrorsCount());
+        assertEquals(0, resolverMetric(true));
 
         putConflict(key, 1, false);
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
-        assertEquals(1, resolverErrorsCount());
-    }
-
-    /** @return Value of the conflict resolver errors count metric on the server node. */
-    private long resolverErrorsCount() {
-        return ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
-            .<LongMetric>findMetric("ConflictResolverErrorsCount").value();
+        assertEquals(1, resolverMetric(true));
     }
 
     /** */
@@ -466,5 +473,18 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
+    }
+
+    /**
+     * @param error If {@code true} then errors count, otherwise rejected count.
+     * @return Value of the conflict resolver metric on the server node.
+     */
+    private long resolverMetric(boolean error) {
+        LongMetric m = ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
+            .findMetric(error ? "ConflictResolverErrorsCount" : "ConflictResolverRejectedCount");
+
+        assertNotNull(m);
+
+        return m.value();
     }
 }
