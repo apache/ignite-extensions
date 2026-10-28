@@ -79,6 +79,9 @@ public abstract class CdcKafkaReplicationAppsAbstractTest extends CdcKafkaReplic
     public static final String KAFKA_REQ_TIMEOUT = "KAFKA_REQ_TIMEOUT";
 
     /** */
+    public static final String KAFKA_POLL_TIMEOUT = "KAFKA_POLL_TIMEOUT";
+
+    /** */
     public static final String PROPS_PATH = "PROPS_PATH";
 
     /** */
@@ -173,6 +176,7 @@ public abstract class CdcKafkaReplicationAppsAbstractTest extends CdcKafkaReplic
         params.put(PARTS_TO, Integer.toString(partTo));
         params.put(THREAD_CNT, Integer.toString((partTo - partFrom) / 3));
         params.put(KAFKA_REQ_TIMEOUT, Long.toString(DFLT_KAFKA_REQ_TIMEOUT));
+        params.put(KAFKA_POLL_TIMEOUT, Long.toString(KAFKA_CONSUMER_POLL_TIMEOUT));
         params.put(METRIC_REG_NAME, DFLT_METRICS_REG_NAME + "-" + igniteCfg.getIgniteInstanceName());
 
         return runAsync(

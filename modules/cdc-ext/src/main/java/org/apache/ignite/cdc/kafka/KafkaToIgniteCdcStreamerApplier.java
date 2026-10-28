@@ -280,8 +280,6 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
     @Override public void close() {
         log.warning("Close applier!");
 
-        metaUpdr.close();
-
         cnsmrs.forEach(KafkaConsumer::wakeup);
     }
 

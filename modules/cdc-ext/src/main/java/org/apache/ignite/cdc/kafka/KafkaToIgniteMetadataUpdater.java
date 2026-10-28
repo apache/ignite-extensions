@@ -195,7 +195,12 @@ public class KafkaToIgniteMetadataUpdater implements AutoCloseable, OffsetCommit
 
     /** {@inheritDoc} */
     @Override public void close() {
+        // Consumer is not thread-safe: wake up updateMetadata() and close under its lock.
         cnsmr.wakeup();
+
+        synchronized (this) {
+            cnsmr.close(Duration.ofMillis(kafkaReqTimeout));
+        }
     }
 
     /** {@inheritDoc} */
