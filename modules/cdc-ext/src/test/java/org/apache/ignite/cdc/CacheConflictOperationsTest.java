@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -58,6 +59,7 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Cache conflict operations test.
@@ -227,6 +229,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+
+        // Ignored reordered updates are regular rejections, not resolve failures.
+        checkResolverFailed(0);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -243,6 +248,8 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
         putConflict(key, 2, false);
 
+        checkResolverFailed(1);
+
         key = key("UpdateThisDCConflict1", otherClusterId);
 
         putConflict(key, 3, true);
@@ -257,12 +264,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Conflict replicated remove should ignored.
         removeConflict(key, 4, false);
 
+        checkResolverFailed(2);
+
         key = key("UpdateThisDCConflict3", otherClusterId);
 
         put(key);
 
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
+
+        checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
     /** Test switching debug log level for ConflictResolver during runtime. */
@@ -372,6 +383,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
+        checkResolverFailed(1);
     }
 
     /** */
@@ -456,5 +468,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
+    }
+
+    /** */
+    private void checkResolverFailed(long expVal) {
+        assertEquals(expVal, ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
+            .<LongMetric>findMetric("ConflictResolverFailedCount").value());
     }
 }

@@ -94,7 +94,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry, res);
 
         if (log.isDebugEnabled())
             debugResolve(ctx, useNew, oldEntry, newEntry);
@@ -111,6 +111,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param ctx Context.
      * @param oldEntry Old entry.
      * @param newEntry New entry.
+     * @param res Conflict resolution context, marked as failed if the conflict can't be resolved.
      * @param <K> Key type.
      * @param <V> Key type.
      * @return {@code True} is should use new entry.
@@ -118,7 +119,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        GridCacheVersionConflictContext<K, V> res
     ) {
         if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
             return true;
@@ -169,6 +171,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             "[key=" + safeKeyToString(newEntry) +
             ", fromCluster=" + newEntry.dataCenterId() +
             ", toCluster=" + oldEntry.dataCenterId() + ']');
+
+        res.markResolveFailed();
 
         // Ignoring update.
         return false;
