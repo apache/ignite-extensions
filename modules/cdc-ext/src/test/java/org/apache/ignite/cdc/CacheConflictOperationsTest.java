@@ -231,7 +231,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
 
         // Ignored reordered updates are regular rejections, not resolve failures.
-        assertEquals(0, resolverFailed());
+        checkResolverFailed(0);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -248,7 +248,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
         putConflict(key, 2, false);
 
-        assertEquals(1, resolverFailed());
+        checkResolverFailed(1);
 
         key = key("UpdateThisDCConflict1", otherClusterId);
 
@@ -264,7 +264,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Conflict replicated remove should ignored.
         removeConflict(key, 4, false);
 
-        assertEquals(2, resolverFailed());
+        checkResolverFailed(2);
 
         key = key("UpdateThisDCConflict3", otherClusterId);
 
@@ -273,7 +273,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
 
-        assertEquals(conflictResolveField() != null ? 2 : 3, resolverFailed());
+        checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
     /** Test switching debug log level for ConflictResolver during runtime. */
@@ -383,7 +383,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
-        assertEquals(1, resolverFailed());
+        checkResolverFailed(1);
     }
 
     /** */
@@ -470,9 +470,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         return null;
     }
 
-    /** @return Value of the {@code ConflictResolverFailedCount} metric on the server node. */
-    private long resolverFailed() {
-        return ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
-            .<LongMetric>findMetric("ConflictResolverFailedCount").value();
+    /** */
+    private void checkResolverFailed(long expVal) {
+        assertEquals(expVal, ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
+            .<LongMetric>findMetric("ConflictResolverFailedCount").value());
     }
 }
