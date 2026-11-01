@@ -276,6 +276,33 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
+    /** Tests that replicated update with the same field value is ignored and counted as a resolve failure. */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
+    public void testUpdateConflictWithEqualField() throws Exception {
+        Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        String key = key("UpdateThisDCConflictEqualField", otherClusterId);
+
+        LogListener warnLsnr = LogListener.matches("Field-based conflicts resolving failed, field values are equal " +
+            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+
+        LogListener errLsnr = LogListener.matches("Conflict can't be resolved, update ignored " +
+            "[key=" + key + ", fromCluster=" + otherClusterId + ", toCluster=" + SECOND_CLUSTER_ID + "]").build();
+
+        listeningLog.registerListener(warnLsnr);
+        listeningLog.registerListener(errLsnr);
+
+        put(key);
+
+        putConflict(key, new GridCacheVersion(1, 1, 1, otherClusterId),
+            new ConflictResolvableTestData(new byte[] {1}, ConflictResolvableTestData.REQUEST_ID.get()), false);
+
+        assertTrue(warnLsnr.check());
+        assertTrue(errLsnr.check());
+        checkResolverFailed(1);
+    }
+
     /** Test switching debug log level for ConflictResolver during runtime. */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
@@ -410,8 +437,17 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
+        putConflict(k, newVer, ConflictResolvableTestData.create(), success);
+    }
+
+    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
+    private void putConflict(
+        String k,
+        GridCacheVersion newVer,
+        ConflictResolvableTestData newVal,
+        boolean success
+    ) throws IgniteCheckedException {
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
-        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);

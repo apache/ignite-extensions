@@ -189,9 +189,10 @@ Default conflict resolve algorithm based on entry version and `conflictResolveFi
 Conflict resolution field should contain user provided monotonically increasing value such as query id or timestamp.
 
 . Changes from the "local" cluster always win.
+. If the entry is freshly created (there is no previous version of it) then the new entry is used.
 . If both old and new entry from the same cluster version comparison used to determine order.
 . If `conflictResolveField` if provided then field values comparison used to determine order.
-. Conflict resolution failed. Update will be ignored.
+. Conflict resolution failed. Update will be ignored. Failure will be logged and counted by the `ConflictResolverFailedCount` link:https://ignite.apache.org/docs/latest/monitoring-metrics/new-metrics#caches[cache metric].
 
 === Configuration example
 Configuration is done via Ignite node plugin:

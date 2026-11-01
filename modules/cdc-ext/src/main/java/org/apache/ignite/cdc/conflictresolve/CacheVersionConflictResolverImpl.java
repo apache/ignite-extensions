@@ -147,7 +147,14 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
             if (oldVal != null && newVal != null) {
                 try {
-                    return value(oldVal).compareTo(value(newVal)) < 0;
+                    int cmp = value(oldVal).compareTo(value(newVal));
+
+                    if (cmp != 0)
+                        return cmp < 0;
+
+                    log.warning("Field-based conflicts resolving failed, field values are equal " +
+                        "[key=" + safeKeyToString(newEntry) +
+                        ", field=" + conflictResolveField + ']');
                 }
                 catch (Exception e) {
                     log.error("Error during field-based conflicts resolving " +
