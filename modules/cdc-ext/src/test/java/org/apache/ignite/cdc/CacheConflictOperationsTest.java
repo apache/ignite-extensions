@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -58,6 +59,7 @@ import org.junit.runners.Parameterized;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Cache conflict operations test.
@@ -227,6 +229,9 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Remove with the higher nodeOrder should succeed.
         putConflict(key, new GridCacheVersion(topVer, order, 3, otherClusterId), true);
+
+        // Ignored reordered updates are regular rejections, not resolve failures.
+        checkResolverFailed(0);
     }
 
     /** Tests cache operations for entry replicated from another cluster. */
@@ -263,6 +268,47 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         // Conflict replicated update succeed only if resolved by field.
         putConflict(key, 5, conflictResolveField() != null);
+
+        checkResolverFailed(conflictResolveField() != null ? 2 : 3);
+    }
+
+    /** Tests which outcomes of the field-based resolving are counted as a resolve failure. */
+    @Test
+    public void testUpdateConflictResolveByField() throws Exception {
+        Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        cachex = cachex.keepBinary();
+
+        String key = key("UpdateThisDCConflictByField", otherClusterId);
+        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, otherClusterId);
+
+        LogListener errLsnr = LogListener.matches("Conflict can't be resolved").build();
+
+        listeningLog.registerListener(errLsnr);
+
+        put(key);
+
+        long reqId = ConflictResolvableTestData.REQUEST_ID.get();
+
+        // Old field is greater: regular rejection.
+        putConflict(key, ver, new ConflictResolvableTestData(new byte[] {1}, reqId - 1), false);
+
+        // The same value came back, e.g. after the CDC resend command: nothing to resolve.
+        putConflict(key, ver, cache.get(key), false);
+
+        assertFalse(errLsnr.check());
+        checkResolverFailed(0);
+
+        // Equal fields, different values: the conflict can't be resolved.
+        putConflict(key, ver, new ConflictResolvableTestData(new byte[] {1}, reqId), false);
+
+        assertTrue(errLsnr.check());
+        checkResolverFailed(1);
+
+        // The field can't be read: the conflict can't be resolved.
+        putConflict(key, ver, "no-field-value", false);
+
+        checkResolverFailed(2);
     }
 
     /** Test switching debug log level for ConflictResolver during runtime. */
@@ -398,8 +444,17 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
     /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
     private void putConflict(String k, GridCacheVersion newVer, boolean success) throws IgniteCheckedException {
+        putConflict(k, newVer, ConflictResolvableTestData.create(), success);
+    }
+
+    /** Puts entry via {@link IgniteInternalCache#putAllConflict(Map)}. */
+    private void putConflict(
+        String k,
+        GridCacheVersion newVer,
+        Object newVal,
+        boolean success
+    ) throws IgniteCheckedException {
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);
-        ConflictResolvableTestData newVal = ConflictResolvableTestData.create();
 
         KeyCacheObject key = new KeyCacheObjectImpl(k, null, cachex.context().affinity().partition(k));
         CacheObject val = new CacheObjectImpl(client.binary().toBinary(newVal), null);
@@ -456,5 +511,11 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     /** */
     protected String conflictResolveField() {
         return null;
+    }
+
+    /** */
+    private void checkResolverFailed(long expVal) {
+        assertEquals(expVal, ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
+            .<LongMetric>findMetric("ConflictResolverFailedCount").value());
     }
 }

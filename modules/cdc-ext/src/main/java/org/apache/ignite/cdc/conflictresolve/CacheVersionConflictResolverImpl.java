@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     then entry with the greater {@link GridCacheVersionedEntryEx#order()} used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of new entry greater then new version used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of old entry greater then old version used.</li>
+ *     <li>If {@link #conflictResolveField} provided and values of both entries are equal then old version used.</li>
  *     <li>Conflict can't be resolved. Update ignored. Old version used.</li>
  * </ul>
  */
@@ -94,7 +95,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     ) {
         GridCacheVersionConflictContext<K, V> res = new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
-        boolean useNew = isUseNew(ctx, oldEntry, newEntry);
+        boolean useNew = isUseNew(ctx, oldEntry, newEntry, res);
 
         if (log.isDebugEnabled())
             debugResolve(ctx, useNew, oldEntry, newEntry);
@@ -111,6 +112,7 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param ctx Context.
      * @param oldEntry Old entry.
      * @param newEntry New entry.
+     * @param res Conflict resolution context, marked as failed if the conflict can't be resolved.
      * @param <K> Key type.
      * @param <V> Key type.
      * @return {@code True} is should use new entry.
@@ -118,7 +120,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
         GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
+        GridCacheVersionedEntryEx<K, V> newEntry,
+        GridCacheVersionConflictContext<K, V> res
     ) {
         if (newEntry.dataCenterId() == clusterId) // Update made on the local cluster always win.
             return true;
@@ -145,7 +148,14 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
 
             if (oldVal != null && newVal != null) {
                 try {
-                    return value(oldVal).compareTo(value(newVal)) < 0;
+                    int cmp = value(oldVal).compareTo(value(newVal));
+
+                    if (cmp != 0)
+                        return cmp < 0;
+
+                    // The same value came back, e.g. the resend command strips otherClusterVersion. There is nothing to resolve.
+                    if (oldVal.equals(newVal))
+                        return false;
                 }
                 catch (Exception e) {
                     log.error("Error during field-based conflicts resolving " +
@@ -169,6 +179,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             "[key=" + safeKeyToString(newEntry) +
             ", fromCluster=" + newEntry.dataCenterId() +
             ", toCluster=" + oldEntry.dataCenterId() + ']');
+
+        res.markResolveFailed();
 
         // Ignoring update.
         return false;
