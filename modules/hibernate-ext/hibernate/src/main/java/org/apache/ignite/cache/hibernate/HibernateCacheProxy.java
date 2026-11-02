@@ -471,8 +471,8 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection keys) throws IgniteCheckedException {
-        delegate.get().unlockAll(transform(keys));
+    @Override public boolean unlockAll(@Nullable Collection keys) throws IgniteCheckedException {
+        return delegate.get().unlockAll(transform(keys));
     }
 
     /** {@inheritDoc} */
