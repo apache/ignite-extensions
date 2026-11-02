@@ -248,8 +248,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Resolve by field value not applicable because after remove operation "old" value doesn't exists.
         putConflict(key, 2, false);
 
-        checkResolverFailed(1);
-
         key = key("UpdateThisDCConflict1", otherClusterId);
 
         putConflict(key, 3, true);
@@ -264,8 +262,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         // Conflict replicated remove should ignored.
         removeConflict(key, 4, false);
 
-        checkResolverFailed(2);
-
         key = key("UpdateThisDCConflict3", otherClusterId);
 
         put(key);
@@ -276,31 +272,43 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
-    /** Tests that replicated update with the same field value is ignored and counted as a resolve failure. */
+    /** Tests which outcomes of the field-based resolving are counted as a resolve failure. */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
-    public void testUpdateConflictWithEqualField() throws Exception {
+    public void testUpdateConflictResolveByField() throws Exception {
         Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
 
-        String key = key("UpdateThisDCConflictEqualField", otherClusterId);
+        cachex = cachex.keepBinary();
 
-        LogListener warnLsnr = LogListener.matches("Field-based conflicts resolving failed, field values are equal " +
-            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+        String key = key("UpdateThisDCConflictByField", otherClusterId);
+        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, otherClusterId);
 
-        LogListener errLsnr = LogListener.matches("Conflict can't be resolved, update ignored " +
-            "[key=" + key + ", fromCluster=" + otherClusterId + ", toCluster=" + SECOND_CLUSTER_ID + "]").build();
+        LogListener errLsnr = LogListener.matches("Conflict can't be resolved").build();
 
-        listeningLog.registerListener(warnLsnr);
         listeningLog.registerListener(errLsnr);
 
         put(key);
 
-        putConflict(key, new GridCacheVersion(1, 1, 1, otherClusterId),
-            new ConflictResolvableTestData(new byte[] {1}, ConflictResolvableTestData.REQUEST_ID.get()), false);
+        long reqId = ConflictResolvableTestData.REQUEST_ID.get();
 
-        assertTrue(warnLsnr.check());
+        // Old field is greater: regular rejection.
+        putConflict(key, ver, new ConflictResolvableTestData(new byte[] {1}, reqId - 1), false);
+
+        // The same value came back, e.g. after the CDC resend command: nothing to resolve.
+        putConflict(key, ver, cache.get(key), false);
+
+        assertFalse(errLsnr.check());
+        checkResolverFailed(0);
+
+        // Equal fields, different values: the conflict can't be resolved.
+        putConflict(key, ver, new ConflictResolvableTestData(new byte[] {1}, reqId), false);
+
         assertTrue(errLsnr.check());
         checkResolverFailed(1);
+
+        // The field can't be read: the conflict can't be resolved.
+        putConflict(key, ver, "no-field-value", false);
+
+        checkResolverFailed(2);
     }
 
     /** Test switching debug log level for ConflictResolver during runtime. */
@@ -410,7 +418,6 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
-        checkResolverFailed(1);
     }
 
     /** */
@@ -444,7 +451,7 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private void putConflict(
         String k,
         GridCacheVersion newVer,
-        ConflictResolvableTestData newVal,
+        Object newVal,
         boolean success
     ) throws IgniteCheckedException {
         CacheEntry<String, ConflictResolvableTestData> oldEntry = cache.getEntry(k);

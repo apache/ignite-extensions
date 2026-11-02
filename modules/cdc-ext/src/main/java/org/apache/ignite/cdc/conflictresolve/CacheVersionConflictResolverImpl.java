@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     then entry with the greater {@link GridCacheVersionedEntryEx#order()} used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of new entry greater then new version used.</li>
  *     <li>If {@link #conflictResolveField} provided and field of old entry greater then old version used.</li>
+ *     <li>If {@link #conflictResolveField} provided and values of both entries are equal then old version used.</li>
  *     <li>Conflict can't be resolved. Update ignored. Old version used.</li>
  * </ul>
  */
@@ -152,9 +153,9 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     if (cmp != 0)
                         return cmp < 0;
 
-                    log.warning("Field-based conflicts resolving failed, field values are equal " +
-                        "[key=" + safeKeyToString(newEntry) +
-                        ", field=" + conflictResolveField + ']');
+                    // The same value came back, e.g. the resend command strips otherClusterVersion. There is nothing to resolve.
+                    if (oldVal.equals(newVal))
+                        return false;
                 }
                 catch (Exception e) {
                     log.error("Error during field-based conflicts resolving " +
