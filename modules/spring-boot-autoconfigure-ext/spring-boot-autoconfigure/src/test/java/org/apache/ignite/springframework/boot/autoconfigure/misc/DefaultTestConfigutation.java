@@ -19,6 +19,8 @@ package org.apache.ignite.springframework.boot.autoconfigure.misc;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -34,6 +36,7 @@ public class DefaultTestConfigutation {
         return new IgniteConfiguration()
             .setCacheConfiguration(new CacheConfiguration<Long, Object>().setName("objectCache"))
             .setIgniteInstanceName("test-name")
-            .setConsistentId("test-id");
+            .setConsistentId("test-id")
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)));
     }
 }
