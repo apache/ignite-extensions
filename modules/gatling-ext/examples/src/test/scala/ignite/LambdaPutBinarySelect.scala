@@ -45,10 +45,11 @@ class LambdaPutBinarySelect extends Simulation {
     // It is started at the same JVM the simulation would run just for simplicity.
     // In the real world testing conditions server ignite cluster nodes forming the cluster
     // under test would be started in some other way, outside the simulation class.
-    private val server: Ignite = Ignition.start()
+    private val server: Ignite = Ignition.start("ignite-config.xml")
 
     // Start ignite client node to be used to generate the load.
-    private val client = Ignition.start(new IgniteConfiguration().setIgniteInstanceName("client").setClientMode(true))
+    private val client = Ignition.start(Ignition.loadSpringBean[IgniteConfiguration]("ignite-config.xml", "ignite.cfg")
+        .setIgniteInstanceName("client").setClientMode(true))
 
     // Create test table before the simulation start.
     client.asInstanceOf[IgniteEx].context().query().querySqlFields(new SqlFieldsQuery(

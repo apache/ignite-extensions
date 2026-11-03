@@ -98,18 +98,6 @@
             <version>${spark.jackson.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${spark.jackson.annotations.version}</version>
-        </dependency>
-
         <!-- Test dependencies -->
 
         <dependency>

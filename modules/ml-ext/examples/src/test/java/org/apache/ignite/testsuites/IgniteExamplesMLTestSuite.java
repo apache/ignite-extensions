@@ -56,6 +56,9 @@ public class IgniteExamplesMLTestSuite {
     /** Test class name pattern. */
     private static final String clsNamePtrn = ".*Example$";
 
+    /** Test classes. Created once since JUnit Platform may instantiate the suite runner more than once. */
+    private static Class<?>[] testClasses;
+
     /** */
     @BeforeClass
     public static void init() {
@@ -70,11 +73,15 @@ public class IgniteExamplesMLTestSuite {
      * @throws IOException, ClassNotFoundException If failed.
      */
     public static Class<?>[] suite() throws IOException, ClassNotFoundException {
-        return getClasses(basePkgForTests)
-            .stream()
-            .map(IgniteExamplesMLTestSuite::makeTestClass)
-            .collect(Collectors.toList())
-            .toArray(new Class[] {null});
+        if (testClasses == null) {
+            testClasses = getClasses(basePkgForTests)
+                .stream()
+                .map(IgniteExamplesMLTestSuite::makeTestClass)
+                .collect(Collectors.toList())
+                .toArray(new Class[] {null});
+        }
+
+        return testClasses;
     }
 
     /**

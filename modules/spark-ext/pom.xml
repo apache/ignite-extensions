@@ -38,7 +38,6 @@
         <scala.test.version>3.2.20</scala.test.version>
         <spark.version>3.5.8</spark.version>
         <spark.jackson.version>2.21.1</spark.jackson.version>
-        <spark.jackson.annotations.version>2.21</spark.jackson.annotations.version>
     </properties>
 
     <modules>

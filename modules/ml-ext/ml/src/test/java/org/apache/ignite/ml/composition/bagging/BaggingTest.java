@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
@@ -49,23 +48,6 @@ import org.junit.Test;
  * Tests for bagging algorithm.
  */
 public class BaggingTest extends TrainerTest {
-    /**
-     * Dependency of weights of first model in ensemble after training in
-     * {@link BaggingTest#testNaiveBaggingLogRegression()}. This dependency is tested to ensure that it is
-     * fully determined by provided seeds.
-     */
-    private static Map<Integer, Vector> firstMdlWeights;
-
-    static {
-        firstMdlWeights = new HashMap<>();
-
-        firstMdlWeights.put(1, VectorUtils.of(-0.14721735583126058, 4.366377931980097));
-        firstMdlWeights.put(2, VectorUtils.of(0.37824664453495443, 2.9422474282114495));
-        firstMdlWeights.put(3, VectorUtils.of(-1.584467989609169, 2.8467326345685824));
-        firstMdlWeights.put(4, VectorUtils.of(-2.543461229777167, 0.1317660102621108));
-        firstMdlWeights.put(13, VectorUtils.of(-1.6329364937353634, 0.39278455436019116));
-    }
-
     /**
      * Test that count of entries in context is equal to initial dataset size * subsampleRatio.
      */
@@ -107,18 +89,24 @@ public class BaggingTest extends TrainerTest {
             new OnMajorityPredictionsAggregator())
             .withEnvironmentBuilder(TestUtils.testEnvBuilder());
 
-        BaggedModel mdl = baggedTrainer.fit(
-            cacheMock,
-            parts,
-            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
-        );
+        Vectorizer<Integer, double[], Integer, Double> vectorizer =
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
-        Vector weights = ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
-            .model()).innerModel()).submodels().get(0)).innerModel()).weights();
+        BaggedModel mdl = baggedTrainer.fit(cacheMock, parts, vectorizer);
 
-        TestUtils.assertEquals(firstMdlWeights.get(parts), weights, 0.0);
+        // Training is fully determined by the provided seeds.
+        TestUtils.assertEquals(firstMdlWeights(baggedTrainer.fit(cacheMock, parts, vectorizer)), firstMdlWeights(mdl), 0.0);
         TestUtils.assertEquals(0, mdl.predict(VectorUtils.of(100, 10)), PRECISION);
         TestUtils.assertEquals(1, mdl.predict(VectorUtils.of(10, 100)), PRECISION);
+    }
+
+    /**
+     * @param mdl Bagged model.
+     * @return Weights of the first model in the ensemble.
+     */
+    private static Vector firstMdlWeights(BaggedModel mdl) {
+        return ((LogisticRegressionModel)((AdaptableDatasetModel)((ModelsParallelComposition)((AdaptableDatasetModel)mdl
+            .model()).innerModel()).submodels().get(0)).innerModel()).weights();
     }
 
     /**
