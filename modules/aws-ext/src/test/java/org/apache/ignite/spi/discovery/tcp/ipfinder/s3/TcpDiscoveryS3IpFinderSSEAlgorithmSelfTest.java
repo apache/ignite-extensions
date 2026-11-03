@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.ignite.util.IgniteS3TestConfiguration;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,6 +44,7 @@ public class TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest extends TcpDiscoveryS3Ip
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2420")
     @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
