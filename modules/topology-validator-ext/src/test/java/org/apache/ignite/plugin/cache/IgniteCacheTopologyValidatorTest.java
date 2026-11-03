@@ -332,6 +332,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
 
         checkPutGet(G.allGrids(), false);
 
+        assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(1).cluster().state(), getTestTimeout()));
+
         grid(1).cluster().state(ACTIVE);
 
         checkPutGet(0, false);
@@ -344,6 +346,8 @@ public class IgniteCacheTopologyValidatorTest extends IgniteCacheTopologySplitAb
         failNode(1, Collections.singleton(grid(3)));
 
         checkPutGet(Collections.singleton(grid(3)), false);
+
+        assertTrue(waitForCondition(() -> ACTIVE_READ_ONLY == grid(3).cluster().state(), getTestTimeout()));
 
         grid(3).cluster().state(ACTIVE);
 
