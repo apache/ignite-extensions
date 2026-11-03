@@ -44,7 +44,7 @@ class DslPutAsyncThinPool extends Simulation {
     // It is started at the same JVM the simulation would run just for simplicity.
     // In the real world testing conditions server ignite cluster nodes forming the cluster
     // under test would be started in some other way, outside the simulation class.
-    private val server: Ignite = Ignition.start()
+    private val server: Ignite = Ignition.start("ignite-config.xml")
 
     // Ensure Gatling engine creates enough threads.
     System.setProperty("io.netty.eventLoopThreads", "16")
