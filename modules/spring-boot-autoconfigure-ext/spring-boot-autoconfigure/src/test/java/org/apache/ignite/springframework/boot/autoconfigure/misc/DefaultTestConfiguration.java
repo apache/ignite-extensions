@@ -28,8 +28,7 @@ import org.springframework.context.annotation.Configuration;
  * Default Ignite configuration for Ignite Spring Data autoconfigure test
  */
 @Configuration
-public class DefaultTestConfigutation {
-
+public class DefaultTestConfiguration {
     /** */
     @Bean
     public IgniteConfiguration igniteConfiguration() {
