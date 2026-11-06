@@ -19,6 +19,9 @@ package org.apache.ignite.spring.sessions;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  * Utility class for Ignite integration tests.
@@ -33,6 +36,7 @@ final class IgniteTestUtils {
      * @return the Ignite instance
      */
     static Ignite embeddedIgniteServer() {
-        return Ignition.start();
+        return Ignition.start(new IgniteConfiguration()
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true))));
     }
 }

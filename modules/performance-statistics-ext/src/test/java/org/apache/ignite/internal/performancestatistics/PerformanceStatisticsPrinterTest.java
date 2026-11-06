@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -71,6 +72,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.junits.GridAbstractTest.LOCAL_IP_FINDER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -102,6 +104,7 @@ public class PerformanceStatisticsPrinterTest {
     public void testSystemViewOperation() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setNodeId(NODE_ID);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         ListeningTestLogger log = new ListeningTestLogger(new JavaLogger());
         cfg.setGridLogger(log);
@@ -143,6 +146,7 @@ public class PerformanceStatisticsPrinterTest {
     public void testSystemViewOperationFilter() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setNodeId(NODE_ID);
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(LOCAL_IP_FINDER));
 
         ListeningTestLogger log = new ListeningTestLogger(new JavaLogger());
         cfg.setGridLogger(log);

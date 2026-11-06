@@ -21,6 +21,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 import org.apache.ignite.springframework.boot.autoconfigure.misc.ObjectRepository;
 import org.junit.jupiter.api.AfterAll;
@@ -52,6 +54,7 @@ public class IgniteClientRepositoriesAutoconfigureTest {
     @BeforeAll
     public static void beforeClass() {
         node = Ignition.start(new IgniteConfiguration()
+            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)))
             .setClientConnectorConfiguration(
                 new ClientConnectorConfiguration().setPort(10801)));
         node.createCache(CACHE_NAME);

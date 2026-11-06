@@ -18,7 +18,7 @@
 package org.apache.ignite.springframework.boot.autoconfigure;
 
 import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
-import org.apache.ignite.springframework.boot.autoconfigure.misc.DefaultTestConfigutation;
+import org.apache.ignite.springframework.boot.autoconfigure.misc.DefaultTestConfiguration;
 import org.apache.ignite.springframework.boot.autoconfigure.misc.ObjectRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class IgniteRepositoriesAutoconfigureTest {
     /** Spring test application context. */
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-        .withUserConfiguration(DefaultTestConfigutation.class)
+        .withUserConfiguration(DefaultTestConfiguration.class)
         .withConfiguration(AutoConfigurations.of(IgniteAutoConfiguration.class, IgniteRepositoryAutoConfiguration.class));
 
     /** Test default autoconfiguration */
