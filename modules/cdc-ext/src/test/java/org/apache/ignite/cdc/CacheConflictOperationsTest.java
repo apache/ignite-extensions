@@ -272,6 +272,167 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
+    /** Tests that a value that can't be deserialized fails the resolution of the entry, but the node is alive. */
+    @Test
+    public void testUnreadableNewValue() throws Exception {
+        Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        String key = key("UnreadableNewValue", otherClusterId);
+
+        LogListener deserializeLsnr = LogListener.matches("Failed to deserialize new value for conflict resolution, update ignored " +
+            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+
+        listeningLog.registerListener(deserializeLsnr);
+
+        put(key);
+
+        ConflictResolvableTestData oldVal = cache.get(key);
+
+        assertFalse(deserializeLsnr.check());
+
+        BinaryObject newVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
+            .setField("reqId", 1L)
+            .build();
+
+        putConflict(key, new GridCacheVersion(1, 1, 1, otherClusterId), newVal, false);
+
+        assertTrue(deserializeLsnr.check());
+
+        assertEquals(oldVal, cache.get(key));
+
+        checkResolverFailed(1);
+    }
+
+    /** Tests that an old value that can't be deserialized fails the resolution of the entry, but the node is alive. */
+    @Test
+    public void testUnreadableOldValue() throws Exception {
+        Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        String key = key("UnreadableOldValue", otherClusterId);
+
+        IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+        LogListener lsnr = LogListener.matches("Failed to deserialize old value for conflict resolution, update ignored " +
+            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+
+        listeningLog.registerListener(lsnr);
+
+        BinaryObject oldVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
+            .setField("reqId", 1L)
+            .build();
+
+        binCache.put(key, oldVal);
+
+        CacheEntry<?, ?> oldEntry = binCache.getEntry(key);
+        GridCacheVersion oldVer = (GridCacheVersion)oldEntry.version();
+
+        putConflictRaw(key, "new", new GridCacheVersion(1, 1, 1, otherClusterId));
+
+        assertTrue(lsnr.check());
+
+        checkResolverFailed(1);
+
+        assertEquals(oldVal, binCache.get(key));
+        assertEquals(oldVer, binCache.getEntry(key).version());
+    }
+
+    /** Tests that when both old and new values are unreadable, the error refers to the old value. */
+    @Test
+    public void testBothValuesUnreadable() throws Exception {
+        Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+        String key = key("BothUnreadable", otherClusterId);
+
+        LogListener lsnr = LogListener.matches("Failed to deserialize old value for conflict resolution, update ignored " +
+            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+
+        listeningLog.registerListener(lsnr);
+
+        BinaryObject oldVal = client.binary().builder("org.apache.ignite.cdc.MissingOldClass")
+            .setField("reqId", 1L)
+            .build();
+
+        binCache.put(key, oldVal);
+
+        BinaryObject newVal = client.binary().builder("org.apache.ignite.cdc.MissingNewClass")
+            .setField("reqId", 2L)
+            .build();
+
+        putConflictRaw(key, newVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+
+        assertTrue(lsnr.check());
+
+        checkResolverFailed(1);
+
+        assertEquals(oldVal, binCache.get(key));
+    }
+
+    /** Tests that a key that can't be read does not break the handling of a failed resolution. */
+    @Test
+    public void testUnreadableKey() throws Exception {
+        IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+        LogListener finalLsnr = LogListener.matches("[unreadable key: ").andMatches("MissingKeyClass").build();
+
+        listeningLog.registerListener(finalLsnr);
+
+        BinaryObject key = client.binary().builder("org.apache.ignite.cdc.MissingKeyClass").setField("id", 1).build();
+
+        binCache.put(key, "old");
+
+        putConflictRaw(key, "new", new GridCacheVersion(1, 1, 1, otherClusterId));
+
+        assertTrue(finalLsnr.check());
+
+        assertEquals("old", binCache.get(key));
+
+        checkResolverFailed(1);
+    }
+
+    /**
+     * Tests that cross-cluster conflict resolution handles an unreadable value without error when the resolve field
+     * is not enabled.
+     */
+    @Test
+    public void testUnreadableValueFieldDisabled() throws Exception {
+        Assume.assumeTrue("Should not run with enabled field", conflictResolveField() == null);
+
+        IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
+
+        String key = key("UnreadableValueFieldDisabled", otherClusterId);
+
+        LogListener warnLsnr = LogListener.matches("Field-based conflicts resolving is not enabled: key=" + key).build();
+
+        LogListener errLsnr = LogListener.matches("Conflict can't be resolved, update ignored " +
+            "[key=" + key + ", fromCluster=" + otherClusterId + ", toCluster=" + SECOND_CLUSTER_ID + "]").build();
+
+        listeningLog.registerAllListeners(warnLsnr, errLsnr);
+
+        binCache.put(key, "old");
+
+        CacheEntry<?, ?> oldEntry = binCache.getEntry(key);
+        GridCacheVersion oldVer = (GridCacheVersion)oldEntry.version();
+
+        assertFalse(warnLsnr.check());
+        assertFalse(errLsnr.check());
+
+        BinaryObject unreadableVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
+            .setField("reqId", 1L)
+            .build();
+
+        putConflictRaw(key, unreadableVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+
+        assertTrue(warnLsnr.check());
+        assertTrue(errLsnr.check());
+
+        assertEquals("old", binCache.get(key));
+        assertEquals(oldVer, binCache.getEntry(key).version());
+
+        checkResolverFailed(1);
+    }
+
     /** Tests which outcomes of the field-based resolving are counted as a resolve failure. */
     @Test
     public void testUpdateConflictResolveByField() throws Exception {
@@ -469,6 +630,14 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
             assertEquals(oldEntry.getValue(), cache.get(k));
             assertEquals(oldEntry.version(), cache.getEntry(k).version());
         }
+    }
+
+    /** Puts a conflict entry without reading the old value. */
+    private void putConflictRaw(Object key, Object val, GridCacheVersion ver) throws IgniteCheckedException {
+        cachex.putAllConflict(singletonMap(
+            cachex.context().toCacheKeyObject(key),
+            new GridCacheDrInfo(cachex.context().toCacheObject(val), ver)
+        ));
     }
 
     /** */

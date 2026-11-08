@@ -114,8 +114,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param newEntry New entry.
      * @param res Conflict resolution context, marked as failed if the conflict can't be resolved.
      * @param <K> Key type.
-     * @param <V> Key type.
-     * @return {@code True} is should use new entry.
+     * @param <V> Value type.
+     * @return {@code true} if new entry should be used.
      */
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
@@ -142,9 +142,31 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             return cmp > 0; // New version from the same cluster.
         }
 
+        String keyStr = safeKeyToString(newEntry);
+
         if (conflictResolveFieldEnabled) {
-            Object oldVal = oldEntry.value(ctx);
-            Object newVal = newEntry.value(ctx);
+            Object oldVal;
+            Object newVal;
+
+            boolean oldValRead = false;
+
+            try {
+                oldVal = oldEntry.value(ctx);
+
+                oldValRead = true;
+
+                newVal = newEntry.value(ctx);
+            }
+            catch (Exception e) {
+                String failedVal = oldValRead ? "new" : "old";
+
+                log.error("Failed to deserialize " + failedVal + " value for conflict resolution, update ignored " +
+                    "[key=" + keyStr + ", field=" + conflictResolveField + ']', e);
+
+                res.markResolveFailed();
+
+                return false;
+            }
 
             if (oldVal != null && newVal != null) {
                 try {
@@ -159,24 +181,22 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                 }
                 catch (Exception e) {
                     log.error("Error during field-based conflicts resolving " +
-                            "[key=" + safeKeyToString(newEntry) +
-                            ", field=" + conflictResolveField + ']',
-                        e);
+                            "[key=" + keyStr + ", field=" + conflictResolveField + ']', e);
                 }
             }
             else {
                 log.warning(
                     "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
-                        "[key=" + safeKeyToString(newEntry) +
+                        "[key=" + keyStr +
                         ", oldValIsNull=" + (oldVal == null) +
                         ", newValIsNull=" + (newVal == null) + ']');
             }
         }
         else
-            log.warning("Field-based conflicts resolving is not enabled: key=" + safeKeyToString(newEntry));
+            log.warning("Field-based conflicts resolving is not enabled: key=" + keyStr);
 
-        log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
-            "[key=" + safeKeyToString(newEntry) +
+        log.error("Conflict can't be resolved, update ignored " +
+            "[key=" + keyStr +
             ", fromCluster=" + newEntry.dataCenterId() +
             ", toCluster=" + oldEntry.dataCenterId() + ']');
 
@@ -193,24 +213,6 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             : U.field(val, conflictResolveField);
     }
 
-    /** @return Sensitive-safe string representation of an entry key. */
-    private static <K, V> String safeKeyToString(GridCacheVersionedEntryEx<K, V> entry) {
-        return safeToString(entry.key());
-    }
-
-    /**
-     * @param obj Object.
-     *
-     * @return Sensitive-safe string representation of an object.
-     * @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
-     */
-    private static String safeToString(Object obj) {
-        if (obj instanceof BinaryObject)
-            return Objects.toString(obj);
-
-        return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveDataHash=" + Objects.hashCode(obj) + ']';
-    }
-
     /** */
     private <K, V> void debugResolve(
         CacheObjectValueContext ctx,
@@ -218,16 +220,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
     ) {
-        Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
-        Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
-
         String keyStr = safeKeyToString(newEntry);
 
-        if (oldVal != null)
-            oldVal = debugValue(keyStr, oldVal);
-
-        if (newVal != null)
-            newVal = debugValue(keyStr, newVal);
+        String oldVal = conflictResolveFieldEnabled ? safeValueToString(ctx, keyStr, oldEntry) : null;
+        String newVal = conflictResolveFieldEnabled ? safeValueToString(ctx, keyStr, newEntry) : null;
 
         log.debug("isUseNew [" +
             "key=" + keyStr +
@@ -241,20 +237,44 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             ", res=" + useNew + ']');
     }
 
-    /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
-    private Object debugValue(String keyStr, Object val) {
+    /** @return Sensitive-safe string representation of an entry key. */
+    private static <K, V> String safeKeyToString(GridCacheVersionedEntryEx<K, V> entry) {
         try {
-            return safeToString(value(val));
+            return safeToString(entry.key());
         }
         catch (Exception e) {
-            log.error("Can't resolve field value " +
-                    "[key=" + keyStr +
-                    ", field=" + conflictResolveField +
-                    ", val=" + safeToString(val) + ']',
-                e);
+            return "[unreadable key: " + e + ']';
+        }
+    }
+
+    /**
+     * @return Sensitive-safe string representation of the conflict resolve field value, or {@code null}
+     * if there is no value, or it can't be read.
+     */
+    private String safeValueToString(CacheObjectValueContext ctx, String keyStr, GridCacheVersionedEntryEx<?, ?> entry) {
+        try {
+            Object val = entry.value(ctx);
+
+            return val == null ? null : safeToString(value(val));
+        }
+        catch (Exception e) {
+            log.error("Failed to resolve field value [key=" + keyStr + ", field=" + conflictResolveField + ']', e);
 
             return null;
         }
+    }
+
+    /**
+     * @param obj Object.
+     *
+     * @return Sensitive-safe string representation of an object.
+     * @see IgniteCommonsSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE
+     */
+    private static String safeToString(Object obj) {
+        if (obj instanceof BinaryObject)
+            return Objects.toString(obj);
+
+        return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveDataHash=" + Objects.hashCode(obj) + ']';
     }
 
     /** {@inheritDoc} */
