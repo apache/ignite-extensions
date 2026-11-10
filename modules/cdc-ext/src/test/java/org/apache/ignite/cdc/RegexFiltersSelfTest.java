@@ -253,9 +253,9 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> destCache = getCache(dest, REGEX_MATCHING_CACHE_1);
 
-        IgniteCache<Integer, Integer> srcCache2 = src.getOrCreateCache(REGEX_MATCHING_CACHE_2);
+        IgniteCache<Integer, Integer> srcCache2 = src.cache(REGEX_MATCHING_CACHE_2);
 
-        IgniteCache<Integer, Integer> destCache2 = dest.getOrCreateCache(REGEX_MATCHING_CACHE_2);
+        IgniteCache<Integer, Integer> destCache2 = dest.cache(REGEX_MATCHING_CACHE_2);
 
         //Cache created through CacheConfiguration on cluster start should be also added to CDC
         try {
@@ -274,6 +274,47 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
             runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));
 
             waitForSameData(srcCache, destCache, KEYS_CNT, WaitDataMode.EXISTS, cdc2);
+        }
+        finally {
+            cdc2.cancel();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDestroyedCacheDeferredUpdate() throws Exception {
+        src.cluster().state(ClusterState.ACTIVE);
+
+        dest.cluster().state(ClusterState.ACTIVE);
+
+        //Start CDC only with 'test-cache' set in 'caches' property of streamer config and cache masks (regex filters)
+        IgniteInternalFuture<?> cdc = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN, "");
+
+        IgniteCache<Integer, Integer> srcCache = getCache(src, REGEX_MATCHING_CACHE_1);
+
+        IgniteCache<Integer, Integer> destCache = getCache(dest, REGEX_MATCHING_CACHE_1);
+
+        cdc.cancel();
+
+        try {
+            runAsync(generateData(srcCache, IntStream.range(0, KEYS_CNT)));
+
+            waitForCondition(() -> srcCache.size() == KEYS_CNT, getTestTimeout());
+        }
+        finally {
+            srcCache.destroy();
+        }
+
+        //Dummy cache, doesn't participate in CDC. Used only for checking that updates from destroyed `srcCache`
+        //are applied in dest cluster.
+        IgniteCache<Integer, Integer> stub = getCache(src, REGEX_EXCLUDED_CACHE);
+
+        IgniteInternalFuture<?> cdc2 = startCdc(src.configuration(), TEST_CACHE, REGEX_INCLUDE_PATTERN, "");
+
+        try {
+            runAsync(generateData(stub, IntStream.range(0, KEYS_CNT)));
+
+            waitForSameData(stub, destCache, KEYS_CNT, WaitDataMode.EXISTS, cdc2);
         }
         finally {
             cdc2.cancel();
@@ -323,6 +364,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
     /**
      * Test checks whether caches matching exclude regex filters are excluded from CDC.
      */
+    //TODO: Remove, same logic as in AbstractReplicationTest
     @Test
     public void testRegexExcludeFilters() throws Exception {
         src.cluster().state(ClusterState.ACTIVE);
