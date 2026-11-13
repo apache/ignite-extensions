@@ -69,8 +69,8 @@ public class IgniteToIgniteClientCdcStreamer extends AbstractIgniteCdcStreamer {
     private long aliveCheckTimeout = DFLT_ALIVE_CHECK_TIMEOUT;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg, Iterator<CdcCacheEvent> cacheEvents) {
-        super.start(mreg, cacheEvents);
+    @Override public void start(MetricRegistry mreg, Iterator<String> cacheNames) {
+        super.start(mreg, cacheNames);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Client Streamer [caches=" + cachesPredicate + ']');

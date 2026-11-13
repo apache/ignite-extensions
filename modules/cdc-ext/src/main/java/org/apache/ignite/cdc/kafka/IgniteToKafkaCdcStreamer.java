@@ -318,14 +318,14 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry reg, Iterator<CdcCacheEvent> cacheEvents) {
+    @Override public void start(MetricRegistry reg, Iterator<String> cacheNames) {
         A.notNull(kafkaProps, "Kafka properties");
         A.notNull(evtTopic, "Kafka topic");
         A.notNull(metadataTopic, "Kafka metadata topic");
         A.ensure(kafkaParts > 0, "The number of Kafka partitions must be explicitly set to a value greater than zero.");
         A.ensure(kafkaReqTimeout >= 0, "The Kafka request timeout cannot be negative.");
 
-        cachesPredicate.init(log, cacheEvents);
+        cachesPredicate.init(log, cacheNames);
 
         kafkaProps.setProperty(KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         kafkaProps.setProperty(VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());

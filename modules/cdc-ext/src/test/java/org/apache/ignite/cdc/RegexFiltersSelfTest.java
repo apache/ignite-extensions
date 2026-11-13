@@ -92,9 +92,6 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
     private static final String REGEX_INCLUDE_PATTERN = "regex.*";
 
     /** */
-    private static final String REGEX_EXCLUDE_PATTERN = "forbidden.*";
-
-    /** */
     private static final String INVALID_PATTERN = "[aaaaaaaaaaaaa";
 
     /** */
@@ -280,7 +277,10 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Test checks whether cache events are properly applied in the destination cluster after cache destroy in source
+     * cluster.
+     */
     @Test
     public void testDestroyedCacheDeferredUpdate() throws Exception {
         src.cluster().state(ClusterState.ACTIVE);
@@ -305,7 +305,7 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
             srcCache.destroy();
         }
 
-        //Dummy cache, doesn't participate in CDC. Used only for checking that updates from destroyed `srcCache`
+        //Dummy cache, doesn't participate in CDC. Used only for checking that same updates from destroyed `srcCache`
         //are applied in dest cluster.
         IgniteCache<Integer, Integer> stub = getCache(src, REGEX_EXCLUDED_CACHE);
 
@@ -359,19 +359,6 @@ public class RegexFiltersSelfTest extends GridCommonAbstractTest {
         finally {
             cdc2.cancel();
         }
-    }
-
-    /**
-     * Test checks whether caches matching exclude regex filters are excluded from CDC.
-     */
-    //TODO: Remove, same logic as in AbstractReplicationTest
-    @Test
-    public void testRegexExcludeFilters() throws Exception {
-        src.cluster().state(ClusterState.ACTIVE);
-
-        dest.cluster().state(ClusterState.ACTIVE);
-
-        doTestCdcExclude(src.configuration(), TEST_CACHE, "", REGEX_EXCLUDE_PATTERN, REGEX_EXCLUDED_CACHE);
     }
 
     /**

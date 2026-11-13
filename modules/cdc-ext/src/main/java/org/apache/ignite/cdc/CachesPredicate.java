@@ -66,7 +66,7 @@ public class CachesPredicate implements Predicate<Integer> {
     private IgniteLogger log;
 
     /** */
-    public void init(IgniteLogger log, Iterator<CdcCacheEvent> cacheEvents) {
+    public void init(IgniteLogger log, Iterator<String> cacheNames) {
         this.log = log;
 
         if (includeRegex == null)
@@ -87,7 +87,7 @@ public class CachesPredicate implements Predicate<Integer> {
             throw new IgniteException("Invalid cache regexp template", e);
         }
 
-        cacheEvents.forEachRemaining(evt -> onCacheEvent(evt.configuration().getName()));
+        cacheNames.forEachRemaining(this::onCacheEvent);
     }
 
     /**
@@ -154,8 +154,7 @@ public class CachesPredicate implements Predicate<Integer> {
     }
 
     /** @return {@link Set} of cache IDs participating in CDC. */
-    // TODO Remove.
-    public Set<Integer> getCacheIds() {
+    Set<Integer> getCacheIds() {
         Set<Integer> cacheIds = new HashSet<>(this.cacheIds) ;
 
         cacheIds.addAll(cacheRegexIds);

@@ -61,8 +61,8 @@ public class IgniteToIgniteCdcStreamer extends AbstractIgniteCdcStreamer impleme
     private volatile boolean alive = true;
 
     /** {@inheritDoc} */
-    @Override public void start(MetricRegistry mreg, Iterator<CdcCacheEvent> cacheEvents) {
-        super.start(mreg, cacheEvents);
+    @Override public void start(MetricRegistry mreg, Iterator<String> cacheNames) {
+        super.start(mreg, cacheNames);
 
         if (log.isInfoEnabled())
             log.info("Ignite To Ignite Streamer [caches=" + cachesPredicate + ']');
