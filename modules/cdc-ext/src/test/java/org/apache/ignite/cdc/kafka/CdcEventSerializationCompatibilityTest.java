@@ -20,7 +20,6 @@ package org.apache.ignite.cdc.kafka;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -29,25 +28,31 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcEventImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cdc.kafka.CdcEventInputStream.INCOMPATIBLE_CLS;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_17_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_18_0;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -68,42 +73,17 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  */
 @RunWith(Parameterized.class)
 public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** Thin client address of the old version node. */
-    private static final String ADDR = "127.0.0.1:10800";
-
-    /** Name of the cache on the old version node to pass data to the test JVM. */
-    private static final String EXCHANGE_CACHE = "exchange";
-
-    /** Suffix of the {@link #EXCHANGE_CACHE} key for the result of read with the default {@link ObjectInputStream}. */
-    private static final String DFLT_STREAM = ":ObjectInputStream";
-
-    /** Suffix of the {@link #EXCHANGE_CACHE} key for the result of read with the {@link CdcEventInputStream}. */
-    private static final String CDC_STREAM = ":CdcEventInputStream";
-
     /** Prefix of the names of the events that contain binary objects. */
-    private static final String BINARY_EVT_PREFIX = "binaryObject";
-
-    /**
-     * Class that had no explicit {@code serialVersionUID} before the fix.
-     * The value computed by JVM in 2.17 and earlier versions is the explicit value now.
-     * The value computed in 2.18.0 differs.
-     */
-    private static final String INCOMPATIBLE_CLS = "org.apache.ignite.internal.binary.BinaryObjectExImpl";
-
-    /** Versions with the {@code serialVersionUID} of the {@link #INCOMPATIBLE_CLS} that differs from the current one. */
-    private static final Set<String> INCOMPATIBLE_VERS = Set.of("2.18.0");
-
-    /** Cache id. */
-    private static final int CACHE_ID = 42;
+    private static final String INCOMPATIBLE_DATA = "binaryObject";
 
     /** Old Ignite version. */
     @Parameterized.Parameter
-    public String oldVer;
+    public IgniteReleasedVersion oldVer;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "oldVer={0}")
-    public static Collection<String> versions() {
-        return List.of("2.17.0", "2.18.0");
+    public static Collection<IgniteReleasedVersion> versions() {
+        return List.of(VER_2_17_0, VER_2_18_0);
     }
 
     /** {@inheritDoc} */
@@ -115,48 +95,31 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
 
     /**
      * Events written by old version must be readable by the current one with the {@link CdcEventInputStream}.
-     * Default {@link ObjectInputStream} fails for incompatible versions.
+     * {@link ObjectInputStream} fails for incompatible versions.
      */
     @Test
-    public void testOldVersionEventReadByCurrent() throws Exception {
-        startGrid(1, oldVer, cfg -> {
-            // No-op.
-        }, ign -> ign.getOrCreateCache(EXCHANGE_CACHE).putAll(serializedEvents(ign)));
+    public void testOldEventRead() throws Exception {
+        startGrid(
+            1,
+            oldVer.toString(),
+            cfg -> {/* No-op. */},
+            ign -> ign.getOrCreateCache(DEFAULT_CACHE_NAME).putAll(serializedEvents(ign))
+        );
 
-        Map<String, byte[]> serialized = exchangeCacheContent();
+        Map<String, byte[]> oldNodeEvts = new LinkedHashMap<>();
+
+        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
+            ClientCache<String, byte[]> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+            for (Cache.Entry<String, byte[]> e : cache.query(new ScanQuery<String, byte[]>()).getAll())
+                oldNodeEvts.put(e.getKey(), e.getValue());
+        }
 
         stopAllGrids();
 
         IgniteEx ign = startGrid(0);
 
-        // The same as KafkaToIgniteCdcStreamer does: binary objects are bound to the node on deserialization.
-        String oldName = U.setCurrentIgniteName(ign.name());
-
-        try {
-            for (Map.Entry<String, CdcEvent> e : events(ign).entrySet()) {
-                String name = e.getKey();
-                CdcEvent exp = e.getValue();
-
-                byte[] bytes = serialized.get(name);
-
-                assertNotNull(name, bytes);
-
-                if (incompatible(name)) {
-                    assertThrows(log, () -> read(new ObjectInputStream(new ByteArrayInputStream(bytes))),
-                        InvalidClassException.class, INCOMPATIBLE_CLS);
-                }
-                else {
-                    assertTrue(name + ": unexpected event read by ObjectInputStream",
-                        same(exp, read(new ObjectInputStream(new ByteArrayInputStream(bytes)))));
-                }
-
-                assertTrue(name + ": unexpected event read by CdcEventInputStream",
-                    same(exp, read(new CdcEventInputStream(new ByteArrayInputStream(bytes)))));
-            }
-        }
-        finally {
-            U.restoreOldIgniteName(oldName, ign.name());
-        }
+        deserializeAndCheck(ign, oldNodeEvts);
     }
 
     /**
@@ -164,67 +127,61 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
      * Default {@link ObjectInputStream} fails for incompatible versions.
      */
     @Test
-    public void testCurrentVersionEventReadByOld() throws Exception {
-        Map<String, byte[]> serialized = serializedEvents(startGrid(0));
+    public void testCurrentEventReadByOld() throws Exception {
+        Map<String, byte[]> curNodeEvts = serializedEvents(startGrid(0));
 
         stopAllGrids();
 
         // Serialized events are passed to the old version node inside the closure.
-        startGrid(1, oldVer, cfg -> {
-            // No-op.
-        }, ign -> ign.getOrCreateCache(EXCHANGE_CACHE).putAll(readOnOldVersion(ign, serialized)));
+        startGrid(
+            1,
+            oldVer.toString(),
+            cfg -> {/* No-op. */},
+            ign -> deserializeAndCheck((IgniteEx)ign, curNodeEvts)
+        );
+    }
 
-        Map<String, String> res = exchangeCacheContent();
+    /** */
+    private void deserializeAndCheck(IgniteEx ign, Map<String, byte[]> serializedEvts) {
+        String oldName = U.setCurrentIgniteName(ign.name());
 
-        for (String name : serialized.keySet()) {
-            String dfltErr = res.get(name + DFLT_STREAM);
-            String cdcErr = res.get(name + CDC_STREAM);
+        try {
+            for (Map.Entry<String, CdcEvent> e : events(ign).entrySet()) {
+                String name = e.getKey();
+                byte[] oldNodeEvt = serializedEvts.get(name);
 
-            assertNotNull(name, dfltErr);
-            assertNotNull(name, cdcErr);
+                assertNotNull(name, oldNodeEvt);
+                assertTrue(name, same(e.getValue(), read(new CdcEventInputStream(new ByteArrayInputStream(oldNodeEvt)))));
 
-            if (incompatible(name)) {
-                assertTrue(name + ": " + dfltErr,
-                    dfltErr.contains(InvalidClassException.class.getName()) && dfltErr.contains(INCOMPATIBLE_CLS));
+                if (incompatible(name)) {
+                    assertThrows(
+                        log,
+                        () -> read(new ObjectInputStream(new ByteArrayInputStream(oldNodeEvt))),
+                        InvalidClassException.class,
+                        INCOMPATIBLE_CLS
+                    );
+                }
+                else
+                    assertTrue(name, same(e.getValue(), read(new ObjectInputStream(new ByteArrayInputStream(oldNodeEvt)))));
             }
-            else
-                assertTrue(name + ": " + dfltErr, dfltErr.isEmpty());
-
-            assertTrue(name + ": " + cdcErr, cdcErr.isEmpty());
+        }
+        catch (ClassNotFoundException | IOException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            U.restoreOldIgniteName(oldName, ign.name());
         }
     }
 
     /**
      * @param evtName Event name.
-     * @return {@code True} if the event written by {@link #oldVer} can't be read by the current version
-     *      (and vice versa) with the default {@link ObjectInputStream}.
+     * @return {@code True} if the event can't be read by the current version (and vice versa) with the default {@link ObjectInputStream}.
      */
     private boolean incompatible(String evtName) {
-        return evtName.startsWith(BINARY_EVT_PREFIX) && INCOMPATIBLE_VERS.contains(oldVer);
+        return evtName.startsWith(INCOMPATIBLE_DATA) && VER_2_17_0.equals(oldVer);
     }
 
-    /**
-     * @return Content of the {@link #EXCHANGE_CACHE} of the old version node.
-     * @param <V> Type of the cache value.
-     */
-    private static <V> Map<String, V> exchangeCacheContent() throws Exception {
-        Map<String, V> res = new LinkedHashMap<>();
-
-        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
-            for (Cache.Entry<String, V> e : cli.<String, V>cache(EXCHANGE_CACHE).query(new ScanQuery<String, V>()).getAll())
-                res.put(e.getKey(), e.getValue());
-        }
-
-        return res;
-    }
-
-    /**
-     * Note, the method is executed both by the current and by the old Ignite version,
-     * so only the API available in all tested versions can be used.
-     *
-     * @param ign Node to build binary objects with.
-     * @return Events to check, by name.
-     */
+    /** */
     private static Map<String, CdcEvent> events(Ignite ign) {
         GridCacheVersion ver = new GridCacheVersion(1, 2L, 3, 4);
         GridCacheVersion conflictVer = new GridCacheVersionEx(1, 3, 5L, new GridCacheVersion(1, 2L, 3, 5));
@@ -234,27 +191,21 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
             .build();
 
         BinaryObject val = ign.binary().builder("CdcTestValue")
-            .setField("name", "val")
-            .setField("amount", 42L)
+            .setField("name", "Sarah Connor")
+            .setField("year", 1984L)
             .build();
 
         Map<String, CdcEvent> evts = new LinkedHashMap<>();
 
-        evts.put("primitive", new CdcEventImpl(1, "val", true, 1, ver, CACHE_ID, 0));
-        evts.put("primitiveConflictVersion", new CdcEventImpl(2, "val", false, 2, conflictVer, CACHE_ID, 0));
-        evts.put(BINARY_EVT_PREFIX, new CdcEventImpl(key, val, true, 3, ver, CACHE_ID, 100));
-        evts.put(BINARY_EVT_PREFIX + "Remove", new CdcEventImpl(key, null, true, 3, ver, CACHE_ID, 0));
+        evts.put("1", new CdcEventImpl(1, "val", true, 1, ver, CU.cacheId(DEFAULT_CACHE_NAME), 0));
+        evts.put("2", new CdcEventImpl(2, "val", false, 2, conflictVer, CU.cacheId(DEFAULT_CACHE_NAME), 0));
+        evts.put(INCOMPATIBLE_DATA + "3", new CdcEventImpl(key, val, true, 3, ver, CU.cacheId(DEFAULT_CACHE_NAME), 100));
+        evts.put(INCOMPATIBLE_DATA + "4", new CdcEventImpl(key, null, true, 3, ver, CU.cacheId(DEFAULT_CACHE_NAME), 0));
 
         return evts;
     }
 
-    /**
-     * Serializes events the same way {@link IgniteToKafkaCdcStreamer} does.
-     * Note, the method is executed both by the current and by the old Ignite version.
-     *
-     * @param ign Node.
-     * @return Serialized events, by name.
-     */
+    /** Serializes events the same way {@link IgniteToKafkaCdcStreamer} does. */
     private static Map<String, byte[]> serializedEvents(Ignite ign) {
         Map<String, byte[]> res = new LinkedHashMap<>();
 
@@ -277,61 +228,14 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
         return res;
     }
 
-    /**
-     * Reads events with the default {@link ObjectInputStream} and with the {@link CdcEventInputStream}
-     * on the old version node and compares them with expected.
-     *
-     * @param ign Node.
-     * @param serialized Serialized events, by name.
-     * @return Error description (empty if event successfully read), by event name with the stream suffix.
-     */
-    private static Map<String, String> readOnOldVersion(Ignite ign, Map<String, byte[]> serialized) {
-        Map<String, String> res = new LinkedHashMap<>();
-
-        String oldName = U.setCurrentIgniteName(ign.name());
-
-        try {
-            for (Map.Entry<String, CdcEvent> e : events(ign).entrySet()) {
-                for (String stream : List.of(DFLT_STREAM, CDC_STREAM)) {
-                    String err;
-
-                    try {
-                        InputStream in = new ByteArrayInputStream(serialized.get(e.getKey()));
-
-                        CdcEvent act = read(DFLT_STREAM.equals(stream) ? new ObjectInputStream(in) : new CdcEventInputStream(in));
-
-                        err = same(e.getValue(), act) ? "" : "unexpected event [exp=" + e.getValue() + ", act=" + act + ']';
-                    }
-                    catch (Throwable t) {
-                        err = String.valueOf(t);
-                    }
-
-                    res.put(e.getKey() + stream, err);
-                }
-            }
-        }
-        finally {
-            U.restoreOldIgniteName(oldName, ign.name());
-        }
-
-        return res;
-    }
-
-    /**
-     * @param is Stream to read event from.
-     * @return Event.
-     */
+    /** */
     private static CdcEvent read(ObjectInputStream is) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is0 = is) {
             return (CdcEvent)is0.readObject();
         }
     }
 
-    /**
-     * @param exp Expected event.
-     * @param act Actual event.
-     * @return {@code True} if events are the same.
-     */
+    /** */
     private static boolean same(CdcEvent exp, CdcEvent act) {
         return Objects.equals(exp.key(), act.key())
             && Objects.equals(exp.value(), act.value())
