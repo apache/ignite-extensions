@@ -25,7 +25,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.cache.Cache;
@@ -52,7 +51,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cdc.kafka.CdcEventInputStream.INCOMPATIBLE_CLS;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_17_0;
-import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_18_0;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -78,12 +76,12 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
 
     /** Old Ignite version. */
     @Parameterized.Parameter
-    public IgniteReleasedVersion oldVer;
+    public String oldVer;
 
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "oldVer={0}")
-    public static Collection<IgniteReleasedVersion> versions() {
-        return List.of(VER_2_17_0, VER_2_18_0);
+    public static Collection<String> versions() {
+        return IgniteReleasedVersion.since(VER_2_17_0);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +99,7 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
     public void testOldEventRead() throws Exception {
         startGrid(
             1,
-            oldVer.toString(),
+            oldVer,
             cfg -> {/* No-op. */},
             ign -> ign.getOrCreateCache(DEFAULT_CACHE_NAME).putAll(serializedEvents(ign))
         );
@@ -135,7 +133,7 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
         // Serialized events are passed to the old version node inside the closure.
         startGrid(
             1,
-            oldVer.toString(),
+            oldVer,
             cfg -> {/* No-op. */},
             ign -> deserializeAndCheck(ign, curNodeEvts)
         );
@@ -178,7 +176,7 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
      * @return {@code True} if the event can't be read by the current version (and vice versa) with the default {@link ObjectInputStream}.
      */
     private boolean incompatible(String evtName) {
-        return evtName.startsWith(INCOMPATIBLE_DATA) && VER_2_17_0.equals(oldVer);
+        return evtName.startsWith(INCOMPATIBLE_DATA) && VER_2_17_0.toString().equals(oldVer);
     }
 
     /** */
