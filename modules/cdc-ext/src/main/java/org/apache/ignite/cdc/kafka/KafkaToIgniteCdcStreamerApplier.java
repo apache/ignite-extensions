@@ -268,7 +268,7 @@ class KafkaToIgniteCdcStreamerApplier implements Runnable, AutoCloseable {
      * @return CDC event.
      */
     private CdcEvent deserialize(ConsumerRecord<Integer, byte[]> rec) {
-        try (ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(rec.value()))) {
+        try (ObjectInputStream is = new CdcEventInputStream(new ByteArrayInputStream(rec.value()))) {
             return (CdcEvent)is.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
