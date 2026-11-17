@@ -137,32 +137,32 @@ public class CdcEventSerializationCompatibilityTest extends IgniteCompatibilityA
             1,
             oldVer.toString(),
             cfg -> {/* No-op. */},
-            ign -> deserializeAndCheck((IgniteEx)ign, curNodeEvts)
+            ign -> deserializeAndCheck(ign, curNodeEvts)
         );
     }
 
     /** */
-    private void deserializeAndCheck(IgniteEx ign, Map<String, byte[]> serializedEvts) {
+    private void deserializeAndCheck(Ignite ign, Map<String, byte[]> serializedEvts) {
         String oldName = U.setCurrentIgniteName(ign.name());
 
         try {
             for (Map.Entry<String, CdcEvent> e : events(ign).entrySet()) {
                 String name = e.getKey();
-                byte[] oldNodeEvt = serializedEvts.get(name);
+                byte[] evt = serializedEvts.get(name);
 
-                assertNotNull(name, oldNodeEvt);
-                assertTrue(name, same(e.getValue(), read(new CdcEventInputStream(new ByteArrayInputStream(oldNodeEvt)))));
+                assertNotNull(name, evt);
+                assertTrue(name, same(e.getValue(), read(new CdcEventInputStream(new ByteArrayInputStream(evt)))));
 
                 if (incompatible(name)) {
                     assertThrows(
                         log,
-                        () -> read(new ObjectInputStream(new ByteArrayInputStream(oldNodeEvt))),
+                        () -> read(new ObjectInputStream(new ByteArrayInputStream(evt))),
                         InvalidClassException.class,
                         INCOMPATIBLE_CLS
                     );
                 }
                 else
-                    assertTrue(name, same(e.getValue(), read(new ObjectInputStream(new ByteArrayInputStream(oldNodeEvt)))));
+                    assertTrue(name, same(e.getValue(), read(new ObjectInputStream(new ByteArrayInputStream(evt)))));
             }
         }
         catch (ClassNotFoundException | IOException e) {
