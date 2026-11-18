@@ -58,16 +58,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests active-active CDC replication through Kafka between clusters of different Ignite versions.
- * <p>
- * The old version cluster, its CDC application ({@link IgniteToKafkaCdcStreamer}) and its applier
- * ({@link KafkaToIgniteClientCdcStreamer}) are started in a separate JVM with the old Ignite version in the classpath.
- * The same for the current version cluster in the test JVM.
  */
 @RunWith(Parameterized.class)
 public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbstractTest {
-    /** */
-    private static final String CACHE = "replicated-cache";
-
     /** */
     private static final String VAL_TYPE = "TestValue";
 
@@ -143,25 +136,38 @@ public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbs
     public void testActiveActiveReplication() throws Exception {
         String kafkaAddrs = kafka.bootstrapServers();
 
-        // Old version cluster: source for the SRC_DEST topics, destination for the DEST_SRC topics.
         startGrid(
             1,
-            oldVer.toString(),
+            oldVer,
             cfg -> configure(cfg, "old", OLD_DISCO_PORT, OLD_CLI_PORT, OLD_CLUSTER_ID),
             ign -> startCacheAndReplication(
-                ign, kafkaAddrs, SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, OLD_CLI_PORT)
+                ign,
+                kafkaAddrs,
+                SRC_DEST_TOPIC,
+                SRC_DEST_META_TOPIC,
+                DEST_SRC_TOPIC,
+                DEST_SRC_META_TOPIC,
+                OLD_CLI_PORT
+            )
         );
 
-        // Current version cluster. The node is started directly, because it must not join the old version one.
         Ignite cur = Ignition.start(
-            configure(getConfiguration(getTestIgniteInstanceName(0)), "current", CUR_DISCO_PORT, CUR_CLI_PORT, CUR_CLUSTER_ID));
+            configure(getConfiguration(getTestIgniteInstanceName(0)), "current", CUR_DISCO_PORT, CUR_CLI_PORT, CUR_CLUSTER_ID)
+        );
 
         curApps = startCacheAndReplication(
-            cur, kafkaAddrs, DEST_SRC_TOPIC, DEST_SRC_META_TOPIC, SRC_DEST_TOPIC, SRC_DEST_META_TOPIC, CUR_CLI_PORT);
+            cur,
+            kafkaAddrs,
+            DEST_SRC_TOPIC,
+            DEST_SRC_META_TOPIC,
+            SRC_DEST_TOPIC,
+            SRC_DEST_META_TOPIC,
+            CUR_CLI_PORT
+        );
 
         try (IgniteClient oldCli = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:" + OLD_CLI_PORT))) {
-            ClientCache<Integer, BinaryObject> oldCache = oldCli.<Integer, Object>cache(CACHE).withKeepBinary();
-            IgniteCache<Integer, BinaryObject> curCache = cur.<Integer, Object>cache(CACHE).withKeepBinary();
+            ClientCache<Integer, BinaryObject> oldCache = oldCli.<Integer, Object>cache(DEFAULT_CACHE_NAME).withKeepBinary();
+            IgniteCache<Integer, BinaryObject> curCache = cur.<Integer, Object>cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
             for (int i = 0; i < KEYS_CNT; i++)
                 oldCache.put(i, oldCli.binary().builder(VAL_TYPE).setField("id", i).setField("name", "old-" + i).build());
@@ -190,21 +196,12 @@ public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbs
         return val != null && Integer.valueOf(id).equals(val.field("id")) && name.equals(val.field("name"));
     }
 
-    /**
-     * Note, the method is executed both by the current and by the old Ignite version.
-     *
-     * @param cfg Configuration to tune.
-     * @param consId Consistent id.
-     * @param discoPort Discovery port, each cluster has its own.
-     * @param cliPort Thin client port.
-     * @param clusterId Cluster id for the conflict resolver.
-     * @return Tuned configuration.
-     */
+    /** */
     private static IgniteConfiguration configure(IgniteConfiguration cfg, String consId, int discoPort, int cliPort, byte clusterId) {
         CacheVersionConflictResolverPluginProvider<?> conflictPlugin = new CacheVersionConflictResolverPluginProvider<>();
 
         conflictPlugin.setClusterId(clusterId);
-        conflictPlugin.setCaches(Collections.singleton(CACHE));
+        conflictPlugin.setCaches(Collections.singleton(DEFAULT_CACHE_NAME));
 
         return cfg
             .setConsistentId(consId)
@@ -222,20 +219,7 @@ public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbs
                     .setCdcEnabled(true)));
     }
 
-    /**
-     * Creates the cache and starts both directions of the replication for the node:
-     * CDC application that streams changes of the node to Kafka and applier of the changes of another cluster.
-     * Note, the method is executed both by the current and by the old Ignite version.
-     *
-     * @param ign Node.
-     * @param kafkaAddrs Kafka bootstrap servers.
-     * @param outTopic Topic to stream changes of the node to.
-     * @param outMetaTopic Topic to stream metadata of the node to.
-     * @param inTopic Topic with changes of another cluster.
-     * @param inMetaTopic Topic with metadata of another cluster.
-     * @param cliPort Thin client port of the node.
-     * @return Threads of the started applications.
-     */
+    /** */
     private static List<Thread> startCacheAndReplication(
         Ignite ign,
         String kafkaAddrs,
@@ -247,13 +231,13 @@ public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbs
     ) {
         ign.cluster().state(ClusterState.ACTIVE);
 
-        ign.getOrCreateCache(CACHE);
+        ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteToKafkaCdcStreamer cdcCnsmr = new IgniteToKafkaCdcStreamer()
             .setTopic(outTopic)
             .setMetadataTopic(outMetaTopic)
             .setKafkaPartitions(DFLT_PARTS)
-            .setCaches(Collections.singleton(CACHE))
+            .setCaches(Collections.singleton(DEFAULT_CACHE_NAME))
             .setKafkaProperties(kafkaProperties(kafkaAddrs, outTopic));
 
         CdcConfiguration cdcCfg = new CdcConfiguration();
@@ -267,10 +251,9 @@ public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbs
         applierCfg.setKafkaPartsFrom(0);
         applierCfg.setKafkaPartsTo(DFLT_PARTS);
         applierCfg.setThreadCount(2);
-        applierCfg.setCaches(Collections.singletonList(CACHE));
+        applierCfg.setCaches(Collections.singletonList(DEFAULT_CACHE_NAME));
         applierCfg.setTopic(inTopic);
         applierCfg.setMetadataTopic(inMetaTopic);
-        applierCfg.setMetricRegistryName("applier-" + inTopic);
 
         Thread applier = runDaemon(
             new KafkaToIgniteClientCdcStreamer(
