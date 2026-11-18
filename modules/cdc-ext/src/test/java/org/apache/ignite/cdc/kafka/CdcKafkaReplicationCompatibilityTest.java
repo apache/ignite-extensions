@@ -58,6 +58,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests active-active CDC replication through Kafka between clusters of different Ignite versions.
+ * cdc-ext has no releases coupled with the 2.18 - current cdc-ext used for both, old and current nodes.
  */
 @RunWith(Parameterized.class)
 public class CdcKafkaReplicationCompatibilityTest extends IgniteCompatibilityAbstractTest {
