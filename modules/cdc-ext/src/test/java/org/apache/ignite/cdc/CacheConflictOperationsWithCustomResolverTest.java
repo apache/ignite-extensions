@@ -82,27 +82,6 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
 
     /** {@inheritDoc} */
     @Test
-    @Ignore("Custom resolver does not deserialize values/keys.")
-    @Override public void testUnreadableNewValue() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Ignore("Custom resolver does not deserialize values/keys.")
-    @Override public void testUnreadableOldValue() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Ignore("Custom resolver does not deserialize values/keys.")
-    @Override public void testUnreadableKey() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Test
     @Ignore("Custom resolver does not use standard conflict resolution logging.")
     @Override public void testUnreadableValueFieldDisabled() {
         // No-op.

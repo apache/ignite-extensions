@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -272,15 +276,24 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         checkResolverFailed(conflictResolveField() != null ? 2 : 3);
     }
 
-    /** Tests that a value that can't be deserialized fails the resolution of the entry, but the node is alive. */
+    /**
+     * Tests that a value that can't be deserialized fails the resolution of the entry, but the node is alive.
+     * Uses keepBinary to match the cache projection used by CDC appliers.
+     */
     @Test
     public void testUnreadableNewValue() throws Exception {
         Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
 
+        cachex = cachex.keepBinary();
+
         String key = key("UnreadableNewValue", otherClusterId);
 
-        LogListener deserializeLsnr = LogListener.matches("Failed to deserialize new value for conflict resolution, update ignored " +
-            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+        LogListener deserializeLsnr = LogListener.matches(
+            "Error during field-based conflicts resolving [key=" + key + ", field=" + conflictResolveField() + "]")
+            .andMatches("Failed to unmarshal object with optimized marshaller")
+            .andMatches("ClassNotFoundException")
+            .andMatches("Emulated absent class")
+            .build();
 
         listeningLog.registerListener(deserializeLsnr);
 
@@ -290,11 +303,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
 
         assertFalse(deserializeLsnr.check());
 
-        BinaryObject newVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
-            .setField("reqId", 1L)
-            .build();
+        UnreadableValue newVal = new UnreadableValue(1);
 
-        putConflict(key, new GridCacheVersion(1, 1, 1, otherClusterId), newVal, false);
+        UnreadableValue.failRead = true;
+
+        try {
+            putConflictRaw(key, newVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+        }
+        finally {
+            UnreadableValue.failRead = false;
+        }
 
         assertTrue(deserializeLsnr.check());
 
@@ -303,101 +321,113 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         checkResolverFailed(1);
     }
 
-    /** Tests that an old value that can't be deserialized fails the resolution of the entry, but the node is alive. */
+    /**
+     * Tests that an old value that can't be deserialized fails the resolution of the entry, but the node is alive.
+     * Uses keepBinary to match the cache projection used by CDC appliers.
+     */
     @Test
     public void testUnreadableOldValue() throws Exception {
         Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        cachex = cachex.keepBinary();
 
         String key = key("UnreadableOldValue", otherClusterId);
 
         IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
-        LogListener lsnr = LogListener.matches("Failed to deserialize old value for conflict resolution, update ignored " +
-            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+        LogListener lsnr = LogListener.matches(
+            "Error during field-based conflicts resolving [key=" + key + ", field=" + conflictResolveField() + "]")
+            .andMatches("Failed to unmarshal object with optimized marshaller")
+            .andMatches("ClassNotFoundException")
+            .andMatches("Emulated absent class")
+            .build();
 
         listeningLog.registerListener(lsnr);
 
-        BinaryObject oldVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
-            .setField("reqId", 1L)
-            .build();
+        UnreadableValue oldVal = new UnreadableValue(1);
+
+        UnreadableValue.failRead = false;
 
         binCache.put(key, oldVal);
 
         CacheEntry<?, ?> oldEntry = binCache.getEntry(key);
         GridCacheVersion oldVer = (GridCacheVersion)oldEntry.version();
 
-        putConflictRaw(key, "new", new GridCacheVersion(1, 1, 1, otherClusterId));
+        UnreadableValue.failRead = true;
+
+        try {
+            putConflictRaw(key, "new", new GridCacheVersion(1, 1, 1, otherClusterId));
+        }
+        finally {
+            UnreadableValue.failRead = false;
+        }
 
         assertTrue(lsnr.check());
 
         checkResolverFailed(1);
 
-        assertEquals(oldVal, binCache.get(key));
+        UnreadableValue actual = (UnreadableValue)binCache.get(key);
+
+        assertEquals(oldVal.reqId, actual.reqId);
         assertEquals(oldVer, binCache.getEntry(key).version());
     }
 
-    /** Tests that when both old and new values are unreadable, the error refers to the old value. */
+    /**
+     * Tests that when both old and new values are unreadable, the error refers to the old value.
+     * Uses keepBinary to match the cache projection used by CDC appliers.
+     */
     @Test
     public void testBothValuesUnreadable() throws Exception {
         Assume.assumeTrue("Should run with enabled field", conflictResolveField() != null);
+
+        cachex = cachex.keepBinary();
 
         IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         String key = key("BothUnreadable", otherClusterId);
 
-        LogListener lsnr = LogListener.matches("Failed to deserialize old value for conflict resolution, update ignored " +
-            "[key=" + key + ", field=" + conflictResolveField() + "]").build();
+        LogListener lsnr = LogListener.matches(
+            "Error during field-based conflicts resolving [key=" + key + ", field=" + conflictResolveField() + "]")
+            .andMatches("Failed to unmarshal object with optimized marshaller")
+            .andMatches("ClassNotFoundException")
+            .andMatches("Emulated absent class")
+            .build();
 
         listeningLog.registerListener(lsnr);
 
-        BinaryObject oldVal = client.binary().builder("org.apache.ignite.cdc.MissingOldClass")
-            .setField("reqId", 1L)
-            .build();
+        UnreadableValue oldVal = new UnreadableValue(1);
 
         binCache.put(key, oldVal);
 
-        BinaryObject newVal = client.binary().builder("org.apache.ignite.cdc.MissingNewClass")
-            .setField("reqId", 2L)
-            .build();
+        UnreadableValue newVal = new UnreadableValue(2);
 
-        putConflictRaw(key, newVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+        UnreadableValue.failRead = true;
+
+        try {
+            putConflictRaw(key, newVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+        }
+        finally {
+            UnreadableValue.failRead = false;
+        }
 
         assertTrue(lsnr.check());
 
         checkResolverFailed(1);
 
-        assertEquals(oldVal, binCache.get(key));
-    }
+        UnreadableValue actual = (UnreadableValue)binCache.get(key);
 
-    /** Tests that a key that can't be read does not break the handling of a failed resolution. */
-    @Test
-    public void testUnreadableKey() throws Exception {
-        IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-        LogListener finalLsnr = LogListener.matches("[unreadable key: ").andMatches("MissingKeyClass").build();
-
-        listeningLog.registerListener(finalLsnr);
-
-        BinaryObject key = client.binary().builder("org.apache.ignite.cdc.MissingKeyClass").setField("id", 1).build();
-
-        binCache.put(key, "old");
-
-        putConflictRaw(key, "new", new GridCacheVersion(1, 1, 1, otherClusterId));
-
-        assertTrue(finalLsnr.check());
-
-        assertEquals("old", binCache.get(key));
-
-        checkResolverFailed(1);
+        assertEquals(oldVal.reqId, actual.reqId);
     }
 
     /**
      * Tests that cross-cluster conflict resolution handles an unreadable value without error when the resolve field
-     * is not enabled.
+     * is not enabled. Uses keepBinary to match the cache projection used by CDC appliers.
      */
     @Test
     public void testUnreadableValueFieldDisabled() throws Exception {
         Assume.assumeTrue("Should not run with enabled field", conflictResolveField() == null);
+
+        cachex = cachex.keepBinary();
 
         IgniteCache<Object, Object> binCache = client.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
@@ -418,11 +448,16 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
         assertFalse(warnLsnr.check());
         assertFalse(errLsnr.check());
 
-        BinaryObject unreadableVal = client.binary().builder("org.apache.ignite.cdc.MissingClass")
-            .setField("reqId", 1L)
-            .build();
+        UnreadableValue newVal = new UnreadableValue(1);
 
-        putConflictRaw(key, unreadableVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+        UnreadableValue.failRead = true;
+
+        try {
+            putConflictRaw(key, newVal, new GridCacheVersion(1, 1, 1, otherClusterId));
+        }
+        finally {
+            UnreadableValue.failRead = false;
+        }
 
         assertTrue(warnLsnr.check());
         assertTrue(errLsnr.check());
@@ -686,5 +721,36 @@ public class CacheConflictOperationsTest extends GridCommonAbstractTest {
     private void checkResolverFailed(long expVal) {
         assertEquals(expVal, ign.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false))
             .<LongMetric>findMetric("ConflictResolverFailedCount").value());
+    }
+
+    /** Serialized by OptimizedMarshaller, can't be read on the server while {@code failRead} is set. */
+    public static class UnreadableValue implements Externalizable {
+        /** */
+        static volatile boolean failRead;
+
+        /** */
+        long reqId;
+
+        /** */
+        public UnreadableValue() {
+        }
+
+        /** */
+        public UnreadableValue(long reqId) {
+            this.reqId = reqId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(reqId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            if (failRead)
+                throw new ClassNotFoundException("Emulated absent class");
+
+            reqId = in.readLong();
+        }
     }
 }

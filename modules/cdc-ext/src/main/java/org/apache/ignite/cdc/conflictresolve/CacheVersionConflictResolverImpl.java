@@ -142,34 +142,12 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             return cmp > 0; // New version from the same cluster.
         }
 
-        String keyStr = safeKeyToString(newEntry);
-
         if (conflictResolveFieldEnabled) {
-            Object oldVal;
-            Object newVal;
-
-            boolean oldValRead = false;
-
             try {
-                oldVal = oldEntry.value(ctx);
+                Object oldVal = oldEntry.value(ctx);
+                Object newVal = newEntry.value(ctx);
 
-                oldValRead = true;
-
-                newVal = newEntry.value(ctx);
-            }
-            catch (Exception e) {
-                String failedVal = oldValRead ? "new" : "old";
-
-                log.error("Failed to deserialize " + failedVal + " value for conflict resolution, update ignored " +
-                    "[key=" + keyStr + ", field=" + conflictResolveField + ']', e);
-
-                res.markResolveFailed();
-
-                return false;
-            }
-
-            if (oldVal != null && newVal != null) {
-                try {
+                if (oldVal != null && newVal != null) {
                     int cmp = value(oldVal).compareTo(value(newVal));
 
                     if (cmp != 0)
@@ -179,24 +157,26 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     if (oldVal.equals(newVal))
                         return false;
                 }
-                catch (Exception e) {
-                    log.error("Error during field-based conflicts resolving " +
-                            "[key=" + keyStr + ", field=" + conflictResolveField + ']', e);
+                else {
+                    log.warning(
+                        "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
+                            "[key=" + safeKeyToString(newEntry) +
+                            ", oldValIsNull=" + (oldVal == null) +
+                            ", newValIsNull=" + (newVal == null) + ']');
                 }
             }
-            else {
-                log.warning(
-                    "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
-                        "[key=" + keyStr +
-                        ", oldValIsNull=" + (oldVal == null) +
-                        ", newValIsNull=" + (newVal == null) + ']');
+            catch (Exception e) {
+                log.error("Error during field-based conflicts resolving " +
+                        "[key=" + safeKeyToString(newEntry) +
+                        ", field=" + conflictResolveField + ']',
+                    e);
             }
         }
         else
-            log.warning("Field-based conflicts resolving is not enabled: key=" + keyStr);
+            log.warning("Field-based conflicts resolving is not enabled: key=" + safeKeyToString(newEntry));
 
         log.error("Conflict can't be resolved, update ignored " +
-            "[key=" + keyStr +
+            "[key=" + safeKeyToString(newEntry) +
             ", fromCluster=" + newEntry.dataCenterId() +
             ", toCluster=" + oldEntry.dataCenterId() + ']');
 
@@ -213,55 +193,9 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             : U.field(val, conflictResolveField);
     }
 
-    /** */
-    private <K, V> void debugResolve(
-        CacheObjectValueContext ctx,
-        boolean useNew,
-        GridCacheVersionedEntryEx<K, V> oldEntry,
-        GridCacheVersionedEntryEx<K, V> newEntry
-    ) {
-        String keyStr = safeKeyToString(newEntry);
-
-        String oldVal = conflictResolveFieldEnabled ? safeValueToString(ctx, keyStr, oldEntry) : null;
-        String newVal = conflictResolveFieldEnabled ? safeValueToString(ctx, keyStr, newEntry) : null;
-
-        log.debug("isUseNew [" +
-            "key=" + keyStr +
-            ", start=" + oldEntry.isStartVersion() +
-            ", oldVer=" + oldEntry.version() +
-            ", newVer=" + newEntry.version() +
-            ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
-            ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
-            ", oldResolveField=" + oldVal +
-            ", newResolveField=" + newVal +
-            ", res=" + useNew + ']');
-    }
-
     /** @return Sensitive-safe string representation of an entry key. */
     private static <K, V> String safeKeyToString(GridCacheVersionedEntryEx<K, V> entry) {
-        try {
-            return safeToString(entry.key());
-        }
-        catch (Exception e) {
-            return "[unreadable key: " + e + ']';
-        }
-    }
-
-    /**
-     * @return Sensitive-safe string representation of the conflict resolve field value, or {@code null}
-     * if there is no value, or it can't be read.
-     */
-    private String safeValueToString(CacheObjectValueContext ctx, String keyStr, GridCacheVersionedEntryEx<?, ?> entry) {
-        try {
-            Object val = entry.value(ctx);
-
-            return val == null ? null : safeToString(value(val));
-        }
-        catch (Exception e) {
-            log.error("Failed to resolve field value [key=" + keyStr + ", field=" + conflictResolveField + ']', e);
-
-            return null;
-        }
+        return safeToString(entry.key());
     }
 
     /**
@@ -275,6 +209,47 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             return Objects.toString(obj);
 
         return S.includeSensitive() ? Objects.toString(obj) : "[sensitiveDataHash=" + Objects.hashCode(obj) + ']';
+    }
+
+    /** */
+    private <K, V> void debugResolve(
+        CacheObjectValueContext ctx,
+        boolean useNew,
+        GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry
+    ) {
+        String keyStr = safeKeyToString(newEntry);
+
+        String oldVal = conflictResolveFieldEnabled ? debugValue(ctx, keyStr, oldEntry) : null;
+        String newVal = conflictResolveFieldEnabled ? debugValue(ctx, keyStr, newEntry) : null;
+
+        log.debug("isUseNew [" +
+            "key=" + keyStr +
+            ", start=" + oldEntry.isStartVersion() +
+            ", oldVer=" + oldEntry.version() +
+            ", newVer=" + newEntry.version() +
+            ", oldExpire=[" + oldEntry.ttl() + "," + oldEntry.expireTime() + ']' +
+            ", newExpire=[" + newEntry.ttl() + "," + newEntry.expireTime() + ']' +
+            ", oldResolveField=" + oldVal +
+            ", newResolveField=" + newVal +
+            ", res=" + useNew + ']');
+    }
+
+    /**
+     * @return Sensitive-safe string representation of the conflict resolve field value, or {@code null}
+     * if there is no value, or it can't be read.
+     */
+    private String debugValue(CacheObjectValueContext ctx, String keyStr, GridCacheVersionedEntryEx<?, ?> entry) {
+        try {
+            Object val = entry.value(ctx);
+
+            return val == null ? null : safeToString(value(val));
+        }
+        catch (Exception e) {
+            log.error("Can't resolve field value [key=" + keyStr + ", field=" + conflictResolveField + ']', e);
+
+            return null;
+        }
     }
 
     /** {@inheritDoc} */
