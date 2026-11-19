@@ -38,6 +38,8 @@
   url: spring/spring-tx
 - title: Apache Kafka Streamer
   url: kafka/kafka-streamer
+- title: Apache Spark Extension
+  url: spark/spark
 - title: Apache Storm Streamer
   url: storm/storm-streamer
 - title: Change Data Capture Extension
