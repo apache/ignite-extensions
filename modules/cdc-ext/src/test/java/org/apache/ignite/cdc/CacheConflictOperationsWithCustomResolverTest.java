@@ -80,6 +80,13 @@ public class CacheConflictOperationsWithCustomResolverTest extends CacheConflict
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Custom resolver does not use standard conflict resolution logging.")
+    @Override public void testUnreadableValueFieldDisabled() {
+        // No-op.
+    }
+
     /**
      *
      */

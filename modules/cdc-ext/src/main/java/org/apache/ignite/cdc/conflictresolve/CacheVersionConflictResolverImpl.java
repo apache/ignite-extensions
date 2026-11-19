@@ -114,8 +114,8 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
      * @param newEntry New entry.
      * @param res Conflict resolution context, marked as failed if the conflict can't be resolved.
      * @param <K> Key type.
-     * @param <V> Key type.
-     * @return {@code True} is should use new entry.
+     * @param <V> Value type.
+     * @return {@code true} if new entry should be used.
      */
     protected <K, V> boolean isUseNew(
         CacheObjectValueContext ctx,
@@ -143,11 +143,11 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         }
 
         if (conflictResolveFieldEnabled) {
-            Object oldVal = oldEntry.value(ctx);
-            Object newVal = newEntry.value(ctx);
+            try {
+                Object oldVal = oldEntry.value(ctx);
+                Object newVal = newEntry.value(ctx);
 
-            if (oldVal != null && newVal != null) {
-                try {
+                if (oldVal != null && newVal != null) {
                     int cmp = value(oldVal).compareTo(value(newVal));
 
                     if (cmp != 0)
@@ -157,25 +157,25 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
                     if (oldVal.equals(newVal))
                         return false;
                 }
-                catch (Exception e) {
-                    log.error("Error during field-based conflicts resolving " +
+                else {
+                    log.warning(
+                        "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
                             "[key=" + safeKeyToString(newEntry) +
-                            ", field=" + conflictResolveField + ']',
-                        e);
+                            ", oldValIsNull=" + (oldVal == null) +
+                            ", newValIsNull=" + (newVal == null) + ']');
                 }
             }
-            else {
-                log.warning(
-                    "Field-based conflicts resolving is enabled, but at least one of entries has null value " +
+            catch (Exception e) {
+                log.error("Error during field-based conflicts resolving " +
                         "[key=" + safeKeyToString(newEntry) +
-                        ", oldValIsNull=" + (oldVal == null) +
-                        ", newValIsNull=" + (newVal == null) + ']');
+                        ", field=" + conflictResolveField + ']',
+                    e);
             }
         }
         else
             log.warning("Field-based conflicts resolving is not enabled: key=" + safeKeyToString(newEntry));
 
-        log.error("Conflict can't be resolved, " + (newEntry.value(ctx) == null ? "remove" : "update") + " ignored " +
+        log.error("Conflict can't be resolved, update ignored " +
             "[key=" + safeKeyToString(newEntry) +
             ", fromCluster=" + newEntry.dataCenterId() +
             ", toCluster=" + oldEntry.dataCenterId() + ']');
@@ -218,16 +218,10 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
         GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry
     ) {
-        Object oldVal = conflictResolveFieldEnabled ? oldEntry.value(ctx) : null;
-        Object newVal = conflictResolveFieldEnabled ? newEntry.value(ctx) : null;
-
         String keyStr = safeKeyToString(newEntry);
 
-        if (oldVal != null)
-            oldVal = debugValue(keyStr, oldVal);
-
-        if (newVal != null)
-            newVal = debugValue(keyStr, newVal);
+        String oldVal = conflictResolveFieldEnabled ? debugValue(ctx, keyStr, oldEntry) : null;
+        String newVal = conflictResolveFieldEnabled ? debugValue(ctx, keyStr, newEntry) : null;
 
         log.debug("isUseNew [" +
             "key=" + keyStr +
@@ -241,17 +235,18 @@ public class CacheVersionConflictResolverImpl implements CacheVersionConflictRes
             ", res=" + useNew + ']');
     }
 
-    /** @return Conflict resolve field value, or specified {@code val} if the field not found. */
-    private Object debugValue(String keyStr, Object val) {
+    /**
+     * @return Sensitive-safe string representation of the conflict resolve field value, or {@code null}
+     * if there is no value, or it can't be read.
+     */
+    private String debugValue(CacheObjectValueContext ctx, String keyStr, GridCacheVersionedEntryEx<?, ?> entry) {
         try {
-            return safeToString(value(val));
+            Object val = entry.value(ctx);
+
+            return val == null ? null : safeToString(value(val));
         }
         catch (Exception e) {
-            log.error("Can't resolve field value " +
-                    "[key=" + keyStr +
-                    ", field=" + conflictResolveField +
-                    ", val=" + safeToString(val) + ']',
-                e);
+            log.error("Can't resolve field value [key=" + keyStr + ", field=" + conflictResolveField + ']', e);
 
             return null;
         }
