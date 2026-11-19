@@ -37,7 +37,7 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.cdc.conflictresolve.CacheVersionConflictResolverImpl;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
@@ -225,7 +225,12 @@ public class IgniteToKafkaCdcStreamer implements CdcConsumer {
     @Override public void onTypes(Iterator<BinaryType> types) {
         sendAll(
             types,
-            t -> new ProducerRecord<>(metadataTopic, 0, null, IgniteUtils.toBytes(((BinaryTypeImpl)t).metadata())),
+            t -> new ProducerRecord<>(
+                metadataTopic,
+                0,
+                null,
+                IgniteUtils.toBytes(BinaryUtils.binaryMetadataFromType(t))
+            ),
             typesCnt
         );
 
